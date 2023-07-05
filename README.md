@@ -1,4 +1,5 @@
-# TricklerCache (from the Lambda-S3 starter project)
+# TricklerCache 
+    (from a Lambda-S3 starter project)
 
 This project contains source code and supporting files for the serverless application TricklerCache, created via the AWS Lambda console. 
 Update the application by committing and pushing changes to the AWS CodeCommit repository.
