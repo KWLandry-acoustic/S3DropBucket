@@ -1,6 +1,7 @@
-# Lambda-S3 starter project
+# TricklerCache (from the Lambda-S3 starter project)
 
-This project contains source code and supporting files for the serverless application that you created in the AWS Lambda console. You can update your application at any time by committing and pushing changes to your AWS CodeCommit or GitHub repository.
+This project contains source code and supporting files for the serverless application TricklerCache, created via the AWS Lambda console. 
+Update the application by committing and pushing changes to the AWS CodeCommit repository.
 
 This project includes the following files and folders:
 
@@ -10,25 +11,28 @@ This project includes the following files and folders:
 - template.yml - A SAM template that defines the application's AWS resources.
 - buildspec.yml -  A build specification file that tells AWS CodeBuild how to create a deployment package for the function.
 
-Your Lambda application includes two AWS CloudFormation stacks. The first stack creates the pipeline that builds and deploys your application.
-
-The pipeline creates a second stack that contains your application's resources, including Lambda functions, and an Amazon S3 bucket. These resources are defined in the `template.yml` file in this project. You can update the template to add AWS resources through the same deployment process that updates your application code. You can view those resources in the **Resources** section of the application overview in the Lambda console.
+This Lambda monorepo application includes two AWS CloudFormation stacks. 
+    The first stack creates the pipeline that builds and deploys the application.
+    The second stack contains the application's resources, including Lambda functions, and an Amazon S3 bucket. 
+        These resources are defined in the `template.yml` file in this project. 
+        Update the template to add AWS resources through the same deployment process that updates the application code (vscode, etc...). 
+        You can view resources in the **Resources** section of the application overview in the Lambda console.
 
 For a full list of possible operations, see the [AWS Lambda Applications documentation](https://docs.aws.amazon.com/lambda/latest/dg/deploying-lambda-apps.html).
 
-## Try the application out
+    ## Try the application out
+    
+    1. Go to the Lambda console.
+    2. Select **Applications** and select the one you created.
+    3. Select **S3Bucket** in **Resources** table, which will redirect you to the S3 console.
+    4. Click on the **Upload** tab, then click **Add files** to choose a file that ends in `.json` to add to the bucket. You can use the example file in the repository, found at `__tests__/s3-example/log.json`.
+    5. Go back to the Lambda console, and find your application again.
+    6. Select **s3JsonLoggerFunction** in the **Resources** table.
+    7. Select the **Monitoring** tab, then click **View logs in CloudWatch**, which will take you to the CloudWatch Logs console.
+    8. Click on the latest log stream entry, and you will find the content of the file you added to the S3 bucket in the log stream.
 
-1. Go to the Lambda console.
-2. Select **Applications** and select the one you created.
-3. Select **S3Bucket** in **Resources** table, which will redirect you to the S3 console.
-4. Click on the **Upload** tab, then click **Add files** to choose a file that ends in `.json` to add to the bucket. You can use the example file in the repository, found at `__tests__/s3-example/log.json`.
-5. Go back to the Lambda console, and find your application again.
-6. Select **s3JsonLoggerFunction** in the **Resources** table.
-7. Select the **Monitoring** tab, then click **View logs in CloudWatch**, which will take you to the CloudWatch Logs console.
-8. Click on the latest log stream entry, and you will find the content of the file you added to the S3 bucket in the log stream.
 
-
-## Add a resource to your application
+## Add a resource to the application
 
 The application template uses the AWS Serverless Application Model (AWS SAM) to define application resources. AWS SAM is an extension of AWS CloudFormation with a simpler syntax for configuring common serverless application resources, such as functions, triggers, and APIs. For resources that aren't included in the [AWS SAM specification](https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md), you can use the standard [AWS CloudFormation resource types](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-template-resource-type-ref.html).
 
