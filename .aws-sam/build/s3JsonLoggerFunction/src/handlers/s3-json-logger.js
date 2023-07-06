@@ -1,14 +1,14 @@
 // Create clients outside of the handler
 
 // Create a client to read objects from S3
-import { S3 } from 'aws-sdk';
+const AWS = require('aws-sdk');
 
-const s3 = new S3();
+const s3 = new AWS.S3();
 
 /**
   * A Lambda function that logs the payload received from S3.
   */
-export async function s3JsonLoggerHandler(event, context) {
+exports.s3JsonLoggerHandler = async (event, context) => {
     const getObjectRequests = event.Records.map(async (record) => {
         const params = {
             Bucket: record.s3.bucket.name,
@@ -26,4 +26,4 @@ export async function s3JsonLoggerHandler(event, context) {
     });
 
     await Promise.all(getObjectRequests);
-}
+};
