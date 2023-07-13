@@ -33,100 +33,6 @@ export async function s3JsonLoggerHandler(event, context) {
         console.log("This is line 47 r: \n\n", r)
         })
 
-
-
-        // const getObjectPromise = () => new Promise((resolve, reject) => {
-        //     try {
-        //         const data = s3.getObject(params);
-        //         resolve(data);
-        //     } catch (error) {
-        //         reject(error);
-        //     }
-        // });
-
-        // const response = await getObjectPromise();
-
-
-
-        // const s = await getObjectS3(params.Bucket, params.Key)
-        //     .catch(function (err) {
-        //         console.log("Promise Exception-Message: \n", err.message);
-        //         console.log("Promise Exception-Stack: \n", err.stack);
-        //     })
-        //     .then(function (d) {
-        //         console.log("This is getObjectS3: \n", d)
-        //     })
-        // console.log("This is S: \n\n", s)
-
-
-        // try {
-
-        //     console.log("Trying to fetch " + record.s3.object.key + " from bucket " + record.s3.bucket.name)
-        //     const data = await s3.getObject(params).promise()
-
-        // const data = (await (s3.getObject(params).promise())).Body.toString('utf-8')
-        //const data = s3.getObject(params)
-
-        // console.log("Done loading image from S3:\n\n", data.Body)
-        //console.log( data.Body.toString('utf-8'))
-
-        // console.log("This is here: \n\n", params, "\n\n")
-
-        // const r = (await (s3.getObject(params).promise())).Body.toString('utf-8')
-        // //const data: string[] = [];     
-        // const data = [];
-        // for await (const chunk of data) {
-        //     data.push(chunk.toString());
-        // }
-
-        // return data.join('');
-
-        // console.log("Waiting on Get Object Requests \n\n\n", d)
-
-
-        // const { Body } = s3.getObject(params, async (resp) => {
-
-        // })
-
-
-        // const Body = await s3.getObject(params);
-
-
-        //const {Body} = await s3.getObject(params).promise();
-
-        //s3.getObject(params);
-
-        // return await s3.getObject(params).promise().then(async (res) => {
-        //     return res
-        // })            
-
-        //return s3.getObject(params).promise()
-
-        //const data1 = (await (s3.getObject(params).promise())).Body.toString('utf-8')
-        //console.log("This is data1: ", { data1 });
-
-
-        // All log statements are written to CloudWatch by default. For more information, see
-        // https://docs.aws.amazon.com/lambda/latest/dg/nodejs-prog-model-logging.html
-        //console.log("This is the Body: \n\n", Body.toString());
-
-
-        // } catch (e) {
-        //     console.error('\n\n\nError calling S3 getObject:\n\n', e);
-        //     //throw e;
-        // }
-        // finally {
-        //     console.log("Finally here: \n\n") // , Body.Body, "\n\n")
-        // }
-        // });
-
-
-    // })
-
-
-}
-
-
     await Promise.all(getObjectRequest)
         .catch(function (err) {
             console.log("await Promise.all GetObjectRequests Promise Exception-Message: \n", err.message);
@@ -138,6 +44,8 @@ export async function s3JsonLoggerHandler(event, context) {
     //console.log("This is Resp: \n", gor)
 
 
+
+}
 
 
 
