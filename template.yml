@@ -5,7 +5,7 @@
 # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/format-version-structure.html
 AWSTemplateFormatVersion: 2010-09-09
 Description: >-
-  Lambda-S3 starter project
+  Lambda-S3 project
 
 # Transform section specifies one or more macros that AWS CloudFormation uses to process your template
 # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/transform-section-structure.html
@@ -25,6 +25,7 @@ Parameters:
   AppId:
     Type: String
 
+
 # Resources declares the AWS resources that you want to include in the stack
 # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/resources-section-structure.html
 Resources:
@@ -40,7 +41,7 @@ Resources:
       Runtime: nodejs18.x
       Description: A Lambda function that logs a json file sent to S3 bucket.
       MemorySize: 128
-      Timeout: 60
+      Timeout: 6000
       Policies:
         # Give Read Permissions to the S3 Bucket
         - S3ReadPolicy:

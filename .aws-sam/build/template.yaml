@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: Lambda-S3 starter project
+Description: Lambda-S3 project
 Transform: AWS::Serverless-2016-10-31
 Globals:
   Function:
@@ -17,7 +17,7 @@ Resources:
       Runtime: nodejs18.x
       Description: A Lambda function that logs a json file sent to S3 bucket.
       MemorySize: 128
-      Timeout: 60
+      Timeout: 6000
       Policies:
       - S3ReadPolicy:
           BucketName:

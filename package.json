@@ -1,8 +1,9 @@
 {
     "name": "lambda-s3",
-    "description": "Lambda-S3 starter project",
+    "description": "Lambda-S3 project",
     "version": "0.0.1",
     "private": true,
+    "type": "module",
     "dependencies": {
         "aws-sdk": "^2.660.0"
     },
