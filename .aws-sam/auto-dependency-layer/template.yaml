@@ -34,6 +34,10 @@ Resources:
                 Rules:
                 - Name: suffix
                   Value: .json
+      Layers:
+      - Fn::GetAtt:
+        - AwsSamAutoDependencyLayerNestedStack
+        - Outputs.s3JsonLoggerFunction0bb40ffeDepLayer
     Metadata:
       SamResourceId: s3JsonLoggerFunction
   simpleappbucket:
@@ -45,3 +49,10 @@ Resources:
         ServerSideEncryptionConfiguration:
         - ServerSideEncryptionByDefault:
             SSEAlgorithm: AES256
+  AwsSamAutoDependencyLayerNestedStack:
+    DeletionPolicy: Delete
+    Metadata:
+      CreatedBy: AWS SAM CLI sync command
+    Properties:
+      TemplateURL: /Users/kwlandry/Dropbox/Documents/A. Campaign/CodeFolder/A.TricklerCache_codecommit/.aws-sam/auto-dependency-layer/adl_nested_template.yaml
+    Type: AWS::CloudFormation::Stack
