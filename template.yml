@@ -22,7 +22,7 @@ Globals:
     PermissionsBoundary: !Sub 'arn:${AWS::Partition}:iam::${AWS::AccountId}:policy/${AppId}-${AWS::Region}-PermissionsBoundary'
 
 Parameters:
-  AppId:
+  AppId: 'tricklercache'
     Type: String
 
 
