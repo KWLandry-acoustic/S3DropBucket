@@ -31,7 +31,7 @@ describe('Test for s3-json-logger', () => {
         };
 
         // Import all functions from s3-json-logger.js. The imported module uses the mock AWS SDK
-        const s3JsonLogger = require('../../../src/handlers/s3-json-logger.js');
+        const s3JsonLogger = require('../../../src/handlers/s3-json-logger.ts');
         await s3JsonLogger.s3JsonLoggerHandler(event, null);
 
         // Verify that console.log has been called with the expected payload
