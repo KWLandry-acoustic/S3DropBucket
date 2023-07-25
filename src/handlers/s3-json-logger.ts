@@ -3,16 +3,16 @@
 // Create a client to read objects from S3
 import pkg from 'aws-sdk';
 const { S3 } = pkg
-const s3 = new S3({ httpOptions: { timeout: 900 }, timeout: 900 });
+const s3 = new S3({ httpOptions: { timeout: 900 }});
 
-//run it again
+//run it again and again
 
 /**
   * A Lambda function that logs the payload received from S3.
   */
 export async function s3JsonLoggerHandler(event, context) {
 
-    console.log("This is handled: \n\n") //, event.Records.Body, "\n\n", context) 
+    console.log("Handler w/ event:\n",  event.Records.Body, "\n\n", context) 
 
     const getObjectRequest = event.Records.map(async (record) => {
         // event.Records.map(async (record) => {
@@ -28,10 +28,10 @@ export async function s3JsonLoggerHandler(event, context) {
                 console.log("Promise Exception-Stack: \n", err.stack);
             })
             .then(function (d) {
-                console.log("This is await getObject - d : \n", d)
+                console.log("await getObject:\n", d)
             })
 
-        console.log("This is line 47 r: \n\n", r)
+        // console.log("This is line 47 r: \n\n", r)
         })
 
     await Promise.all(getObjectRequest)
