@@ -3,6 +3,8 @@ phases:
   install:
     commands:
       # Install all dependencies (including dependencies for running tests)
+      - npm remove node_modules 
+      - npm remove package-lock.json
       - npm install
   pre_build:
     commands:
