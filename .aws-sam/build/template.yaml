@@ -21,13 +21,13 @@ Resources:
       Policies:
       - S3ReadPolicy:
           BucketName:
-            Fn::Sub: aws-${AWS::Region}-${AWS::AccountId}-${AppId}-simpleappbucket
+            Fn::Sub: aws-${AWS::Region}-${AWS::AccountId}-${AppId}-tricklercache
       Events:
-        simpleappbucketEvent:
+        tricklercacheEvent:
           Type: S3
           Properties:
             Bucket:
-              Ref: simpleappbucket
+              Ref: tricklercache
             Events: s3:ObjectCreated:*
             Filter:
               S3Key:
@@ -40,7 +40,7 @@ Resources:
     Type: AWS::S3::Bucket
     Properties:
       BucketName:
-        Fn::Sub: aws-${AWS::Region}-${AWS::AccountId}-${AppId}-simpleappbucket
+        Fn::Sub: aws-${AWS::Region}-${AWS::AccountId}-${AppId}-tricklercache
       BucketEncryption:
         ServerSideEncryptionConfiguration:
         - ServerSideEncryptionByDefault:

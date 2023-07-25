@@ -45,12 +45,12 @@ Resources:
       Policies:
         # Give Read Permissions to the S3 Bucket
         - S3ReadPolicy:
-            BucketName: !Sub aws-${AWS::Region}-${AWS::AccountId}-${AppId}-simpleappbucket
+            BucketName: !Sub aws-${AWS::Region}-${AWS::AccountId}-${AppId}-tricklercache
       Events:
-        simpleappbucketEvent:
+        tricklercacheEvent:
           Type: S3
           Properties:
-            Bucket: !Ref simpleappbucket
+            Bucket: !Ref tricklercache
             Events: s3:ObjectCreated:*
             Filter:
               S3Key:
@@ -60,7 +60,7 @@ Resources:
   simpleappbucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: !Sub aws-${AWS::Region}-${AWS::AccountId}-${AppId}-simpleappbucket
+      BucketName: !Sub aws-${AWS::Region}-${AWS::AccountId}-${AppId}-tricklercache
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
