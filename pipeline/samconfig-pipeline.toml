@@ -1,0 +1,45 @@
+version = 0.1
+
+[1]
+[1.global]
+[1.global.parameters]
+stack_name = "sam-app"
+s3_prefix = "sam-app"
+s3_bucket = "aws-sam-cli-managed-initial-dev-p-artifactsbucket-mg8347wjhs8"
+region = "us-east-1"
+
+[1.deploy]
+[1.deploy.parameters]
+template = "packaged-testing.yaml"
+fail_on_empty_changeset = false
+capabilities = "CAPABILITY_IAM"
+# parameter_overrides = ""
+
+# ############################################## #
+
+[2]
+[2.global]
+[2.global.parameters]
+stack_name = "sam-app-prod"
+s3_prefix = "sam-app-prod"
+s3_bucket = "aws-sam-cli-managed-second-dev-pi-artifactsbucket-8k88g3b259qe"
+region = "us-east-1"
+
+[2.deploy]
+[2.deploy.parameters]
+template = "packaged-prod.yaml"
+fail_on_empty_changeset = false
+capabilities = "CAPABILITY_IAM"
+# parameter_overrides = ""
+
+# ############################################## #
+
+[pipeline]
+[pipeline.deploy]
+[pipeline.deploy.parameters]
+stack_name = "tricklerCache"
+s3_prefix = "tricklerCache"
+resolve_s3 = true
+fail_on_empty_changeset = false
+template = "codepipeline.yaml"
+capabilities = "CAPABILITY_IAM"
