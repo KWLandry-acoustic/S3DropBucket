@@ -1,18 +1,72 @@
-// Create clients outside of the handler
+import { Metrics, MetricUnits } from '@aws-lambda-powertools/metrics';
+import { Logger } from '@aws-lambda-powertools/logger';
+import { Tracer } from '@aws-lambda-powertools/tracer';
+
+//run it again and again and 3
 
 // Create a client to read objects from S3
+import { Context, S3Event } from 'aws-lambda';
 import pkg from 'aws-sdk';
 const { S3 } = pkg
 const s3 = new S3({ httpOptions: { timeout: 900 }});
 
-//run it again and again
+
+const metrics = new Metrics();
+const logger = new Logger();
+const tracer = new Tracer();
+
+
+
 
 /**
   * A Lambda function that logs the payload received from S3.
   */
-export async function s3JsonLoggerHandler(event, context) {
+export async function s3JsonLoggerHandler(event: S3Event, context: Context) {
 
-    console.log("Handler w/ event:\n",  event.Records.Body, "\n\n", context) 
+    let r: {}
+
+    console.log("Handler w/ event:\n",  event.Records.map, "\n\n", context) 
+
+    // Log the incoming event
+    logger.info('Lambda invocation event', { event });
+
+    // Append awsRequestId to each log statement
+    logger.appendKeys({
+        awsRequestId: context.awsRequestId,
+    });
+
+    // Get facade segment created by AWS Lambda
+    const segment = tracer.getSegment();
+
+    if (!segment) {
+        r = {
+            statusCode: 500,
+            body: "Failed to get segment"
+        }
+        return r;
+    }
+
+    // Create subsegment for the function & set it as active
+    const handlerSegment = segment.addNewSubsegment(`## ${process.env._HANDLER}`);
+    tracer.setSegment(handlerSegment);
+
+    // Annotate the subsegment with the cold start & serviceName
+    tracer.annotateColdStart();
+    tracer.addServiceNameAnnotation();
+
+    // Add annotation for the awsRequestId
+    tracer.putAnnotation('awsRequestId', context.awsRequestId);
+    // Capture cold start metrics
+    metrics.captureColdStartMetric();
+    // Create another subsegment & set it as active
+    const subsegment = handlerSegment.addNewSubsegment('### MySubSegment');
+    tracer.setSegment(subsegment);
+
+
+
+
+
+
 
     const getObjectRequest = event.Records.map(async (record) => {
         // event.Records.map(async (record) => {
@@ -32,6 +86,12 @@ export async function s3JsonLoggerHandler(event, context) {
             })
 
         // console.log("This is line 47 r: \n\n", r)
+
+        return {
+            statusCode: 200,
+            body: JSON.stringify(r)
+          }
+
         })
 
     await Promise.all(getObjectRequest)
@@ -41,10 +101,25 @@ export async function s3JsonLoggerHandler(event, context) {
         })
         .then(function (res) {
             console.log("This is await Promise.all GetObjectRequests - res: \n", res)
+            return {
+                statusCode: 200,
+                body: JSON.stringify(res)
+              }
         })
+
+        logger.info(`Successful response from API enpoint: ${event.path}`, response.body);
+        tracer.addErrorAsMetadata(err as Error);
+        logger.error(`Error response from API enpoint: ${err}`, response.body);
+
+
+        // Set the facade segment as active again (the one created by AWS Lambda)
+        tracer.setSegment(segment);
+        // Publish all stored metrics
+        metrics.publishStoredMetrics();
+
     //console.log("This is Resp: \n", gor)
 
-
+// return response
 
 }
 

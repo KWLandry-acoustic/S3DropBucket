@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: Lambda-S3 project
+Description: Lambda-S3 Logging Project
 Transform: AWS::Serverless-2016-10-31
 Globals:
   Function:
@@ -13,11 +13,11 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: s3JsonLoggerFunction
-      Handler: src/handlers/s3-json-logger.s3JsonLoggerHandler
+      Handler: s3-json-logger.s3JsonLoggerHandler
       Runtime: nodejs18.x
       Description: A Lambda function that logs a json file sent to S3 bucket.
       MemorySize: 128
-      Timeout: 6000
+      Timeout: 900
       Policies:
       - S3ReadPolicy:
           BucketName:
@@ -36,7 +36,7 @@ Resources:
                   Value: .json
     Metadata:
       SamResourceId: s3JsonLoggerFunction
-  simpleappbucket:
+  tricklercache:
     Type: AWS::S3::Bucket
     Properties:
       BucketName:

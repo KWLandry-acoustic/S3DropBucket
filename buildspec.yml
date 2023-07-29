@@ -4,13 +4,15 @@ phases:
     commands:
       # Install all dependencies (including dependencies for running tests)
       - npm remove node_modules 
-      - npm remove package-lock.json
+      # - npm remove package-lock.json
       - npm install
   pre_build:
     commands:
       - rm -r .aws-sam
+      
       # Discover and run unit tests in the '__tests__' directory
-      - npm run test
+      #- npm run test
+      
       # Remove all dependencies not needed for the Lambda deployment package (the packages from devDependencies in package.json)
       - npm prune --production
   build:

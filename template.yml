@@ -5,7 +5,7 @@
 # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/format-version-structure.html
 AWSTemplateFormatVersion: 2010-09-09
 Description: >-
-  Lambda-S3 project
+  Lambda-S3 Logging Project
 
 # Transform section specifies one or more macros that AWS CloudFormation uses to process your template
 # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/transform-section-structure.html
@@ -36,12 +36,12 @@ Resources:
   s3JsonLoggerFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: ./
-      Handler: src/handlers/s3-json-logger.s3JsonLoggerHandler
+      CodeUri: ./src/handlers/
+      Handler: s3-json-logger.s3JsonLoggerHandler
       Runtime: nodejs18.x
       Description: A Lambda function that logs a json file sent to S3 bucket.
       MemorySize: 128
-      Timeout: 6000
+      Timeout: 900
       Policies:
         # Give Read Permissions to the S3 Bucket
         - S3ReadPolicy:
@@ -51,13 +51,15 @@ Resources:
           Type: S3
           Properties:
             Bucket: !Ref tricklercache
+            # Bucket: !Sub aws-${AWS::Region}-${AWS::AccountId}-${AppId}-tricklercache
             Events: s3:ObjectCreated:*
+            # S3Event: s3:ObjectCreated:Put, s3:ObjectCreated:Post, s3:ObjectCreated:Copy, s3:ObjectCreated:CompleteMultipartUpload
             Filter:
               S3Key:
                 Rules:
                   - Name: suffix
                     Value: ".json"
-  simpleappbucket:
+  tricklercache:
     Type: AWS::S3::Bucket
     Properties:
       BucketName: !Sub aws-${AWS::Region}-${AWS::AccountId}-${AppId}-tricklercache
