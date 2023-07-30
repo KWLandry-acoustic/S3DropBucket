@@ -19,7 +19,7 @@ resolve_s3 = true
 s3_prefix = "tricklercache"
 region = "us-east-1"
 profile = "cis-dev-ecs-devteam-user"
-parameter_overrides = "AppId=\"tricklercache\",DeploymentTimestamp=\"07302023:15:30:30\""
+parameter_overrides = "AppId=\"tricklercache\""
 image_repositories = []
 disable_rollback = true
 confirm_changeset = false
