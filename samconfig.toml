@@ -23,6 +23,9 @@ parameter_overrides = "AppId=\"tricklercache\""
 image_repositories = []
 disable_rollback = true
 confirm_changeset = false
+role = "tricklercache-s3JsonLoggerFunctionRole-1HQYY60B3HZMT"
+
+
 
 [default.package.parameters]
 resolve_s3 = true
