@@ -1,6 +1,6 @@
 {
     "name": "lambda-s3",
-    "description": "Lambda-S3 project",
+    "description": "Lambda-S3 TricklerCache Project",
     "version": "0.0.1",
     "private": true,
     "type": "module",
@@ -33,7 +33,7 @@
     },
     "scripts": {
         "compile": "tsc",
-        "test": "jest",   
+        "test": "jest",
         "unit": "jest",
         "lint": "eslint '*.ts' --quiet --fix"
     }
