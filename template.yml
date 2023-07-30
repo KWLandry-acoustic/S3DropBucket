@@ -20,7 +20,7 @@ Resources:
       Runtime: nodejs18.x
       Description: A Lambda function that logs a json file sent to S3 bucket.
       MemorySize: 128
-      Timeout: 900
+      Timeout: 899
       Policies:
         - S3ReadPolicy:
             BucketName: !Sub aws-${AWS::Region}-${AWS::AccountId}-${AppId}-tricklercache
