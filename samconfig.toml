@@ -14,16 +14,16 @@ parallel = true
 lint = true
 
 [default.deploy.parameters]
-capabilities = "CAPABILITY_IAM CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND"
+capabilities = "CAPABILITY_IAM"
 resolve_s3 = true
-s3_prefix = "tric
-
+s3_prefix = "tricklercache"
 region = "us-east-1"
-parameter_overrides = "AppId=\"tricklercache\" DeploymentTimestamp=\"2155\""
+profile = "cis-dev-ecs-devteam-user"
+parameter_overrides = "AppId=\"tricklercache\""
 image_repositories = []
 disable_rollback = true
 confirm_changeset = false
-
+role = "tricklercache-s3JsonLoggerFunctionRole-1HQYY60B3HZMT"
 
 [default.package.parameters]
 resolve_s3 = true
