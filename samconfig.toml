@@ -18,12 +18,15 @@ capabilities = "CAPABILITY_IAM"
 resolve_s3 = true
 s3_prefix = "tricklercache"
 region = "us-east-1"
-profile = "cis-dev-ecs-devteam-user"
-parameter_overrides = "AppId=\"tricklercache\""
+profile = "Acoustic-cis-dev-ecs-devteam-user"
+parameter_overrides = "AppId=\"tricklercache\" DeploymentTimestamp=\"2199\""
 image_repositories = []
-disable_rollback = true
+disable_rollback = false
 confirm_changeset = false
-role = "tricklercache-s3JsonLoggerFunctionRole-1HQYY60B3HZMT"
+#role = "tricklercache-s3JsonLoggerFunctionRole-1HQYY60B3HZMT"
+role = "arn:aws:iam::777957353822:role/tricklercacheExecutionRole"
+#role = "tricklercache-s3JsonLoggerFunctionRole-1HQYY60B3HZMT"
+
 
 [default.package.parameters]
 resolve_s3 = true
