@@ -2,7 +2,7 @@ import { Metrics, MetricUnits } from '@aws-lambda-powertools/metrics';
 import { Logger } from '@aws-lambda-powertools/logger';
 import { Tracer } from '@aws-lambda-powertools/tracer';
 
-//run it again and again and 5
+//run it again and again and 6
 
 // Create a client to read objects from S3
 import { Context, S3Event } from 'aws-lambda';
@@ -14,7 +14,6 @@ const s3 = new S3({ httpOptions: { timeout: 900 }});
 const metrics = new Metrics();
 const logger = new Logger();
 const tracer = new Tracer();
-
 
 
 
