@@ -15,7 +15,9 @@
             },
             "aws": {
                 "region": "us-east-1",
-                "credentials": "profile:cis-dev-ecs-devteam-user"
+                // "credentials": "profile:Acoustic-cis-dev-ecs-devteam-user"                
+                // "credentials": "profile:Acoustic-kwl-devtest-1"                
+                "credentials": "profile:Acoustic-cis-dev-ecs-devteam-user"
             },
             "lambda": {
                 "runtime": "nodejs18.x",
@@ -46,7 +48,7 @@
                                         "ownerIdentity": {
                                             "principalId": "EXAMPLE"
                                         },
-                                        "arn": "arn:aws:s3:::aws-us-east-1-777957353822-tricklercache-simpleappbucket"
+                                        "arn": "arn:aws:s3:::aws-us-east-1-777957353822-tricklercache-tricklercache"
                                     },
                                     "object": {
                                         "key": "test/key",

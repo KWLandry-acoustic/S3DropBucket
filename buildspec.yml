@@ -5,12 +5,14 @@ phases:
       # Install all dependencies (including dependencies for running tests)
       - npm remove node_modules 
       # - npm remove package-lock.json
-      - cd ./dependencyLayer
+      # - cd ./dependencyLayer/nodejs
+      # - npm remove node_modules 
       - npm install
+      # - cd ..
   pre_build:
     commands:
       - rm -r .aws-sam
-      
+
       # Discover and run unit tests in the '__tests__' directory
       #- npm run test
       

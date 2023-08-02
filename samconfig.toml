@@ -14,12 +14,12 @@ parallel = true
 lint = true
 
 [default.deploy.parameters]
-capabilities = "CAPABILITY_IAM"
+capabilities = "CAPABILITY_IAM CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND"
 resolve_s3 = true
-s3_prefix = "tricklercache"
+s3_prefix = "tric
+
 region = "us-east-1"
-profile = "cis-dev-ecs-devteam-user"
-parameter_overrides = "AppId=\"tricklercache\""
+parameter_overrides = "AppId=\"tricklercache\" DeploymentTimestamp=\"2155\""
 image_repositories = []
 disable_rollback = true
 confirm_changeset = false

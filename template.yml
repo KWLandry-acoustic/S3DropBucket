@@ -7,9 +7,9 @@ Globals:
 Parameters:
   AppId:
     Type: String
-  # DeploymentTimestamp:
-  #   Type: Number
-  #   Description: Deployment preparation timestamp in milliseconds Since Epoch (injected by Stackery at deployment time)
+  DeploymentTimestamp:
+    Type: Number
+    Description: Deployment preparation timestamp in milliseconds Since Epoch (injected by Stackery at deployment time)
 Resources:
   s3JsonLoggerFunction:
     Type: AWS::Serverless::Function
@@ -23,7 +23,7 @@ Resources:
       Timeout: 899
       Policies:
         - S3ReadPolicy:
-            BucketName: !Sub aws-${AWS::Region}-${AWS::AccountId}-${AppId}-tricklercache
+            BucketName: arn:aws:s3:::aws-us-east-1-777957353822-tricklercache-tricklercache
       Events:
         tricklercacheEvent:
           Type: S3
@@ -36,11 +36,11 @@ Resources:
                   - Name: suffix
                     Value: .json
       Layers:
-        - dependencyLayer
+        - arn:aws:lambda:us-east-1:777957353822:layer:dependencyLayer:1
   tricklercache:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: !Sub aws-${AWS::Region}-${AWS::AccountId}-${AppId}-tricklercache
+      BucketName: arn:aws:s3:::aws-us-east-1-777957353822-tricklercache-tricklercache
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
