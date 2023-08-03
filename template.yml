@@ -7,9 +7,6 @@ Globals:
 Parameters:
   AppId:
     Type: String
-  DeploymentTimestamp:
-    Type: Number
-    Description: Deployment preparation timestamp in milliseconds Since Epoch (injected by Stackery at deployment time)
 Resources:
   s3JsonLoggerFunction:
     Type: AWS::Serverless::Function
@@ -45,8 +42,3 @@ Resources:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
               SSEAlgorithm: AES256
-  # s3JsonLoggerFunctionDeployTrigger:
-  #   Type: Custom::FunctionDeployTrigger
-  #   Properties:
-  #     ServiceToken: !GetAtt s3JsonLoggerFunction.Arn
-  #     DeploymentTimestamp: !Ref DeploymentTimestamp
