@@ -17,7 +17,7 @@ lint = true
 capabilities = "CAPABILITY_IAM"
 #resolve_s3 = true
 s3-bucket = "arn:aws:s3:::aws-us-east-1-777957353822-tricklercache-pipe"
-s3_prefix = "tricklercache"
+s3-prefix = "tricklercache"
 region = "us-east-1"
 profile = "Acoustic-cis-dev-ecs-devteam-user"
 parameter_overrides = "AppId=\"tricklercache\" "
