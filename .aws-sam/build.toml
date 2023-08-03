@@ -5,7 +5,7 @@ codeuri = "/Users/kwlandry/Dropbox/Documents/A.Campaign/CodeFolder/A.TricklerCac
 runtime = "nodejs18.x"
 architecture = "x86_64"
 handler = "./src/handlers/s3-json-logger.s3JsonLoggerHandler"
-manifest_hash = ""
+manifest_hash = "08658bb4671009da019b8aae2b3e06f0"
 packagetype = "Zip"
 functions = ["s3JsonLoggerFunction"]
 
