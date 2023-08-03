@@ -5,8 +5,8 @@ phases:
       # Install all dependencies (including dependencies for running tests)
       - ls -l
       - pwd
-      - npm remove node_modules 
-      - npm install
+      - npm remove node_modules --loglevel verbose
+      - npm install --loglevel verbose
 
   pre_build:
     commands:
@@ -16,9 +16,9 @@ phases:
       #- npm run test
       
       # Remove all dependencies not needed for the Lambda deployment package (the packages from devDependencies in package.json)
-      - npm prune --production
+      - npm prune --production --loglevel verbose
 
-      - codebuild-breakpoint
+      # - codebuild-breakpoint
       
   build:
     commands:
