@@ -2,7 +2,7 @@ import { Metrics, MetricUnits } from '@aws-lambda-powertools/metrics';
 import { Logger } from '@aws-lambda-powertools/logger';
 import { Tracer } from '@aws-lambda-powertools/tracer';
 
-//run it again and again and 8
+//run it again and again and 9
 
 // Create a client to read objects from S3
 import { Context, S3Event } from 'aws-lambda';
