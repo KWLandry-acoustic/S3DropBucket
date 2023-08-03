@@ -45,8 +45,8 @@ Resources:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
               SSEAlgorithm: AES256
-  s3JsonLoggerFunctionDeployTrigger:
-    Type: Custom::FunctionDeployTrigger
-    Properties:
-      ServiceToken: !GetAtt s3JsonLoggerFunction.Arn
-      DeploymentTimestamp: !Ref DeploymentTimestamp
+  # s3JsonLoggerFunctionDeployTrigger:
+  #   Type: Custom::FunctionDeployTrigger
+  #   Properties:
+  #     ServiceToken: !GetAtt s3JsonLoggerFunction.Arn
+  #     DeploymentTimestamp: !Ref DeploymentTimestamp
