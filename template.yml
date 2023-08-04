@@ -20,24 +20,24 @@ Resources:
       Timeout: 899
       Policies:
         - S3ReadPolicy:
-            BucketName: arn:aws:s3:::aws-us-east-1-777957353822-tricklercache-tricklercache
-      Events:
-        tricklercacheEvent:
-          Type: S3
-          Properties:
-            Bucket: !Sub ${BucketName}            #  !Ref BucketName     #         #Bucket: !Ref tricklercache
-            Events: s3:ObjectCreated:*
-            Filter:
-              S3Key:
-                Rules:
-                  - Name: suffix
-                    Value: .json
+            BucketName: !Sub ${BucketName} 
+      # Events:
+      #   tricklercacheEvent:
+      #     Type: S3
+      #     Properties:
+      #       Bucket: !Sub ${BucketName} 
+      #       Events: s3:ObjectCreated:*
+      #       Filter:
+      #         S3Key:
+      #           Rules:
+      #             - Name: suffix
+      #               Value: .json
       Layers:
         - arn:aws:lambda:us-east-1:777957353822:layer:dependencyLayer:1
   tricklercache:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: arn:aws:s3:::aws-us-east-1-777957353822-tricklercache-tricklercache
+      BucketName: tricklercache
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
