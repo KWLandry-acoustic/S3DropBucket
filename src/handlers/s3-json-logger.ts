@@ -1,30 +1,30 @@
-import { Metrics, MetricUnits } from '@aws-lambda-powertools/metrics';
-import { Logger } from '@aws-lambda-powertools/logger';
-import { Tracer } from '@aws-lambda-powertools/tracer';
+import * as metrics_1 from '../../package/nodejs/node_modules/@aws-lambda-powertools/metrics';
+import * as logger_1 from '../../package/nodejs/node_modules/@aws-lambda-powertools/logger';
+import * as tracer_1 from '../../package/nodejs/node_modules/@aws-lambda-powertools/tracer';
 
 //run it again and again and 9
 
 // Create a client to read objects from S3
-import { Context, S3Event } from 'aws-lambda';
-import pkg from 'aws-sdk';
+import * as lambda from '../../package/nodejs/node_modules/@types/aws-lambda';
+import pkg from '../../package/nodejs/node_modules/aws-sdk';
 const { S3 } = pkg
-const s3 = new S3({ httpOptions: { timeout: 900 }});
+const s3 = new S3({ httpOptions: { timeout: 900 } });
 
 
-const metrics = new Metrics();
-const logger = new Logger();
-const tracer = new Tracer();
+const metrics = new metrics_1.Metrics();
+const logger = new logger_1.Logger();
+const tracer = new tracer_1.Tracer();
 
 
 
 /**
   * A Lambda function that logs the payload received from S3.
   */
-export async function s3JsonLoggerHandler(event: S3Event, context: Context) {
+export async function s3JsonLoggerHandler(event: lambda.S3Event, context: lambda.Context) {
 
     let r: {}
 
-    console.log("Handler w/ event:\n",  event.Records.map, "\n\n", context) 
+    console.log("Handler w/ event:\n", event.Records.map, "\n\n", context)
 
     // Log the incoming event
     logger.info('Lambda invocation event', { event });
@@ -89,38 +89,41 @@ export async function s3JsonLoggerHandler(event: S3Event, context: Context) {
         return {
             statusCode: 200,
             body: JSON.stringify(r)
-          }
+        }
 
-        })
+    })
 
     await Promise.all(getObjectRequest)
         .catch(function (err) {
             console.log("await Promise.all GetObjectRequests Promise Exception-Message: \n", err.message);
             console.log("await Promise.all GetObjectRequests Promise Exception-Stack: \n", err.stack);
+            tracer.addErrorAsMetadata(err as Error);
+            logger.error(`Error response from API endpoint: ${err}`)
         })
         .then(function (res) {
             console.log("This is await Promise.all GetObjectRequests - res: \n", res)
+            logger.info(`Successful response from API endpoint: ${event.Records}`, JSON.stringify(res));
+
             return {
                 statusCode: 200,
                 body: JSON.stringify(res)
-              }
+            }
         })
-
-        logger.info(`Successful response from API enpoint: ${event.path}`, response.body);
-        tracer.addErrorAsMetadata(err as Error);
-        logger.error(`Error response from API enpoint: ${err}`, response.body);
+        
 
 
-        // Set the facade segment as active again (the one created by AWS Lambda)
-        tracer.setSegment(segment);
-        // Publish all stored metrics
-        metrics.publishStoredMetrics();
+
+
+    // Set the facade segment as active again (the one created by AWS Lambda)
+    tracer.setSegment(segment)
+    // Publish all stored metrics
+    metrics.publishStoredMetrics();
 
     //console.log("This is Resp: \n", gor)
 
-// return response
+    // return response
 
-}
+    }
 
 
 
@@ -128,7 +131,7 @@ export async function s3JsonLoggerHandler(event: S3Event, context: Context) {
 // try {
 
     // const interval = 2000; // Blocks the main thread in 100 millisecond interval
-    // //const blockingInterval = setInterval(() => undefined, 100)        
+    // //const blockingInterval = setInterval(() => undefined, 100)
     // const blockingInterval = setInterval(function () {
 
     //     // await getObjectS3("simple-app-bucket", "test/key")
@@ -223,7 +226,7 @@ export async function s3JsonLoggerHandler(event: S3Event, context: Context) {
 
 
 
-    //     // console.log("This is r: \n\n", r) 
+    //     // console.log("This is r: \n\n", r)
 
     //     //const response = await getObjectRequests().then()
     //     //const r = await response.Records
