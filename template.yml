@@ -25,7 +25,7 @@ Resources:
         tricklercacheEvent:
           Type: S3
           Properties:
-            Bucket: !Ref tricklercache
+            Bucket: !Ref BucketName     # !Sub ${BucketName}        #Bucket: !Ref tricklercache
             Events: s3:ObjectCreated:*
             Filter:
               S3Key:
