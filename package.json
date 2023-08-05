@@ -19,7 +19,7 @@
     "aws-sdk": "^2.1425.0",
     "aws-sdk-mock": "^5.7.0",
     "babel-jest": "^29.6.1",
-    "esbuild": "^0.17.6",
+    "esbuild": "^0.17.19",
     "eslint": "^8.30.0",
     "eslint-config-prettier": "^8.3.0",
     "eslint-plugin-prettier": "^4.0.0",
@@ -33,7 +33,9 @@
     "compile": "tsc",
     "test": "jest",
     "unit": "jest",
-    "lint": "eslint '*.ts' --quiet --fix"
+    "lint": "eslint '*.ts' --quiet --fix",
+    "build": "./node_modules/.bin/esbuild s3-json-logger.ts --bundle --minify --sourcemap --platform=node --target=es2020 --outfile=src/handler/s3-json-logger.js",
+    "postbuild": "cd src/handler && zip -r s3-json-logger.zip s3-json-logger.js*"
   },
   "main": ".eslintrc.js",
   "repository": {
@@ -43,6 +45,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "aws-lambda": "^1.0.7"
+    "aws-lambda": "^1.0.7",
+      "esbuild": "^0.17.19"
   }
 }

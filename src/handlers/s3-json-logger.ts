@@ -30,9 +30,7 @@ export async function s3JsonLoggerHandler(event: lambda.S3Event, context: lambda
     logger.info('Lambda invocation event', { event });
 
     // Append awsRequestId to each log statement
-    logger.appendKeys({
-        awsRequestId: context.awsRequestId,
-    });
+    logger.appendKeys({awsRequestId: context.awsRequestId});
 
     // Get facade segment created by AWS Lambda
     const segment = tracer.getSegment();
@@ -60,10 +58,6 @@ export async function s3JsonLoggerHandler(event: lambda.S3Event, context: lambda
     // Create another subsegment & set it as active
     const subsegment = handlerSegment.addNewSubsegment('### MySubSegment');
     tracer.setSegment(subsegment);
-
-
-
-
 
 
 

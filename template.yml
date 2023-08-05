@@ -10,6 +10,19 @@ Parameters:
 Resources:
   s3JsonLoggerFunction:
     Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Format: esm
+        Minify: false
+        OutExtension:
+          - .js=.mjs
+        Target: "es2020"
+        Sourcemap: true
+        EntryPoints: 
+          - ./src/handlers/s3-json-logger.ts
+        External:
+          - "<package-to-exclude>"
     Properties:
       CodeUri: ./
       Role: arn:aws:iam::777957353822:role/tricklercacheExecutionRole
