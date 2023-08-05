@@ -5,7 +5,7 @@ codeuri = "/Users/kwlandry/Dropbox/Documents/A.Campaign/CodeFolder/A.TricklerCac
 runtime = "nodejs18.x"
 architecture = "x86_64"
 handler = "./src/handlers/s3-json-logger.s3JsonLoggerHandler"
-manifest_hash = "0b1da7ef4e44f72d76ec619a295c11bd"
+manifest_hash = "4382db81aee9c5aa0d59f9b103f727ee"
 packagetype = "Zip"
 functions = ["s3JsonLoggerFunction"]
 
@@ -20,6 +20,18 @@ Target = "es2020"
 Sourcemap = true
 EntryPoints = ["./src/handlers/s3-json-logger.ts"]
 External = ["<package-to-exclude>"]
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
