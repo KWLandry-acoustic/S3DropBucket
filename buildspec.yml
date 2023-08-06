@@ -33,6 +33,8 @@ phases:
       - ./node_modules/.bin/esbuild ./src/handlers/s3-json-logger.ts --bundle --minify --sourcemap --platform=node --target=es2020 --outfile=./src/handlers/s3-json-logger.js
       - ls -l 
       - cd src/handlers && zip -r s3-json-logger.zip s3-json-logger.js*
+      - cd ../../
+      
         # Use AWS SAM to package the application by using AWS CloudFormation
       - aws cloudformation package --debug --template-file template.yml --s3-bucket $S3_BUCKET --output-template-file template-export.yml
 artifacts:
