@@ -6,11 +6,13 @@ phases:
       - ls -l
       - pwd
       - npm remove node_modules --loglevel verbose
-      - npm install
+      - npm install --omit-dev
 
 
   pre_build:
     commands:
+      - pwd 
+      - ls -l 
       - rm -r .aws-sam
 
 
