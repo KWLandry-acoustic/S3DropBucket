@@ -8,24 +8,23 @@ phases:
       - npm remove node_modules --loglevel verbose
       - npm install --omit-dev
 
-
   pre_build:
     commands:
       - pwd 
       - ls -l 
       # - rm -r .aws-sam
 
-
       # Discover and run unit tests in the '__tests__' directory
       #- npm run test
 
       
       # Remove all dependencies not needed for the Lambda deployment package (the packages from devDependencies in package.json)
-      # - npm prune --omit-dev --loglevel verbose
-      - npm ci --loglevel verbose
-      - npm prune --production --loglevel verbose
 
-      # - npm install esbuild --loglevel verbose
+      - npm ci --loglevel verbose
+      - npm prune --omit-dev --loglevel verbose
+      # - npm prune --production --loglevel verbose
+
+      - npm install --omit-dev --loglevel verbose
       # - codebuild-breakpoint
       
   build:
