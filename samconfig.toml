@@ -5,6 +5,7 @@ version = 0.1
 [default]
 [default.global.parameters]
 stack_name = "tricklercache"
+resolve_s3 = false
 
 [default.build.parameters]
 cached = true
@@ -15,9 +16,6 @@ lint = true
 
 [default.deploy.parameters]
 capabilities = "CAPABILITY_IAM"
-#resolve_s3 = true
-s3-bucket = "arn:aws:s3:::aws-us-east-1-777957353822-tricklercache-pipe"
-s3-prefix = "tricklercache"
 region = "us-east-1"
 profile = "Acoustic-cis-dev-ecs-devteam-user"
 parameter_overrides = "AppId=\"tricklercache\""
@@ -27,12 +25,14 @@ confirm_changeset = false
 #role = "tricklercache-s3JsonLoggerFunctionRole-1HQYY60B3HZMT"
 #role = "arn:aws:iam::777957353822:role/tricklercacheExecutionRole"
 #role = "tricklercache-s3JsonLoggerFunctionRole-1HQYY60B3HZMT"
-resolve_s3 = true
+resolve_s3 = false
+s3-bucket = "arn:aws:s3:::aws-us-east-1-777957353822-tricklercache-pipe"
 s3_prefix = "tricklercache"
 
 
 [default.package.parameters]
-resolve_s3 = true
+resolve_s3 = false
+s3-bucket = "arn:aws:s3:::aws-us-east-1-777957353822-tricklercache-pipe"
 
 [default.sync.parameters]
 watch = true
