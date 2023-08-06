@@ -1,12 +1,13 @@
-import * as metrics_1 from '../../package/nodejs/node_modules/@aws-lambda-powertools/metrics';
-import * as logger_1 from '../../package/nodejs/node_modules/@aws-lambda-powertools/logger';
-import * as tracer_1 from '../../package/nodejs/node_modules/@aws-lambda-powertools/tracer';
+import * as metrics_1 from '@aws-lambda-powertools/metrics';
+import * as logger_1 from '@aws-lambda-powertools/logger';
+import * as tracer_1 from '@aws-lambda-powertools/tracer';
+// import "source-map-support/register";
 
 //run it again and again and 9
 
 // Create a client to read objects from S3
-import * as lambda from '../../package/nodejs/node_modules/@types/aws-lambda';
-import pkg from '../../package/nodejs/node_modules/aws-sdk';
+import * as lambda from 'aws-lambda';
+import pkg from 'aws-sdk';
 const { S3 } = pkg
 const s3 = new S3({ httpOptions: { timeout: 900 } });
 
