@@ -37,11 +37,14 @@ phases:
       - cd src/handlers && zip -r s3-json-logger.zip s3-json-logger.js*
       - cd ../../
 
+
+
         # Use AWS SAM to package the application by using AWS CloudFormation
-      - aws cloudformation package --debug --template-file template.yml --s3-bucket $S3_BUCKET --output-template-file template-export.yml
+      # - aws cloudformation package --debug --template-file template.yml --s3-bucket $S3_BUCKET --output-template-file template-export.yml
+      - aws cloudformation package --template-file template.yml --s3-bucket $S3_BUCKET --output-template-file template-export.yml
       - pwd 
       - ls -lh
-      
+
 artifacts:
   files:
     - template-export.yml
