@@ -37,10 +37,7 @@ phases:
       
       # - cd src/handlers && zip -r s3-json-logger.zip s3-json-logger.js*
       # - cd ../../
-
-      - cd node_modules
-      - ls -lh
-      - cd ../
+      - npm pack 
 
 
         # Use AWS SAM to package the application by using AWS CloudFormation
