@@ -21,9 +21,11 @@ phases:
 
       
       # Remove all dependencies not needed for the Lambda deployment package (the packages from devDependencies in package.json)
-      - npm prune --omit-dev --loglevel verbose
+      # - npm prune --omit-dev --loglevel verbose
+      - npm ci --loglevel verbose
+      - npm prune --production --loglevel verbose
 
-      - npm install esbuild --loglevel verbose
+      # - npm install esbuild --loglevel verbose
       # - codebuild-breakpoint
       
   build:
@@ -34,7 +36,7 @@ phases:
       - ls -l 
       - cd src/handlers && zip -r s3-json-logger.zip s3-json-logger.js*
       - cd ../../
-      
+
         # Use AWS SAM to package the application by using AWS CloudFormation
       - aws cloudformation package --debug --template-file template.yml --s3-bucket $S3_BUCKET --output-template-file template-export.yml
 artifacts:
