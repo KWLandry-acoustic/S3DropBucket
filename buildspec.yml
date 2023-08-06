@@ -13,7 +13,7 @@ phases:
     commands:
       - pwd 
       - ls -l 
-      - rm -r .aws-sam
+      # - rm -r .aws-sam
 
 
       # Discover and run unit tests in the '__tests__' directory
@@ -21,7 +21,7 @@ phases:
 
       
       # Remove all dependencies not needed for the Lambda deployment package (the packages from devDependencies in package.json)
-      - npm prune --production --loglevel verbose
+      - npm prune --omit-dev --loglevel verbose
 
       - npm install esbuild --loglevel verbose
       # - codebuild-breakpoint
