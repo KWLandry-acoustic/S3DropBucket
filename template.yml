@@ -21,7 +21,7 @@ Resources:
         Sourcemap: true
         EntryPoints: 
           - ./src/handlers/s3-json-logger.ts
-        External: 
+        # External: 
             # - ./node_modules/*
     Properties:
       CodeUri: ./
