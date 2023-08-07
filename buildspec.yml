@@ -12,7 +12,7 @@ phases:
 
   pre_build:
     commands:
-      - if [ -z ".aws-sam/" ]; then rm -r .aws-sam
+      - if [ -z ".aws-sam/" ]; then rm -r .aws-sam; fi
       - pwd 
       - ls -lh
 
