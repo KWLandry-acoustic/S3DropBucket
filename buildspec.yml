@@ -18,8 +18,8 @@ phases:
 
       # Remove all dependencies not needed for the Lambda deployment package (the packages from devDependencies in package.json)
      
-      - rm -r .node_modules
-      
+      - rm -r node_modules
+
       # - npm ci --loglevel verbose
       # - npm prune --production --loglevel verbose
       # - npm prune --production --loglevel verbose
