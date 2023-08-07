@@ -17,12 +17,14 @@ phases:
       #- npm run test
 
       # Remove all dependencies not needed for the Lambda deployment package (the packages from devDependencies in package.json)
-
-      - npm ci --loglevel verbose
-      - npm prune --omit-dev --loglevel verbose
+     
+      - rm -r .node_modules
+      
+      # - npm ci --loglevel verbose
+      # - npm prune --production --loglevel verbose
       # - npm prune --production --loglevel verbose
 
-      - npm install --omit-dev --loglevel verbose
+      - npm install --omit=dev --loglevel verbose
       # - codebuild-breakpoint
 
       # - pwd
