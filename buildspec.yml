@@ -45,6 +45,10 @@ phases:
       
       - pwd 
       - ls -lh
+    post_build:
+      commands:
+        - cd nodes_modules
+        - ls -lh 
 
 artifacts:
   files:
