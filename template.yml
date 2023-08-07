@@ -24,7 +24,7 @@ Resources:
         # External:
         #   - "'stream', 'crypto', 'os', 'path', 'fs', 'http', 'https', 'nise'"
         External: 
-            - './node_modules/*' 
+            - ./node_modules/*
     Properties:
       CodeUri: ./
       Role: arn:aws:iam::777957353822:role/tricklercacheExecutionRole
