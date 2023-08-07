@@ -12,10 +12,9 @@ const { S3 } = pkg
 const s3 = new S3({ httpOptions: { timeout: 900 } });
 
 
-const metrics = new metrics_1.Metrics();
+// const metrics = new metrics_1.Metrics();
 const logger = new logger_1.Logger();
-const tracer = new tracer_1.Tracer();
-
+// const tracer = new tracer_1.Tracer();
 
 
 /**
@@ -34,31 +33,31 @@ export async function s3JsonLoggerHandler(event: lambda.S3Event, context: lambda
     logger.appendKeys({awsRequestId: context.awsRequestId});
 
     // Get facade segment created by AWS Lambda
-    const segment = tracer.getSegment();
+    // const segment = tracer.getSegment();
 
-    if (!segment) {
-        r = {
-            statusCode: 500,
-            body: "Failed to get segment"
-        }
-        return r;
-    }
+    // if (!segment) {
+    //     r = {
+    //         statusCode: 500,
+    //         body: "Failed to get segment"
+    //     }
+    //     return r;
+    // }
 
-    // Create subsegment for the function & set it as active
-    const handlerSegment = segment.addNewSubsegment(`## ${process.env._HANDLER}`);
-    tracer.setSegment(handlerSegment);
+    // // Create subsegment for the function & set it as active
+    // const handlerSegment = segment.addNewSubsegment(`## ${process.env._HANDLER}`);
+    // tracer.setSegment(handlerSegment);
 
-    // Annotate the subsegment with the cold start & serviceName
-    tracer.annotateColdStart();
-    tracer.addServiceNameAnnotation();
+    // // Annotate the subsegment with the cold start & serviceName
+    // tracer.annotateColdStart();
+    // tracer.addServiceNameAnnotation();
 
-    // Add annotation for the awsRequestId
-    tracer.putAnnotation('awsRequestId', context.awsRequestId);
-    // Capture cold start metrics
-    metrics.captureColdStartMetric();
-    // Create another subsegment & set it as active
-    const subsegment = handlerSegment.addNewSubsegment('### MySubSegment');
-    tracer.setSegment(subsegment);
+    // // Add annotation for the awsRequestId
+    // tracer.putAnnotation('awsRequestId', context.awsRequestId);
+    // // Capture cold start metrics
+    // metrics.captureColdStartMetric();
+    // // Create another subsegment & set it as active
+    // const subsegment = handlerSegment.addNewSubsegment('### MySubSegment');
+    // tracer.setSegment(subsegment);
 
 
 
@@ -92,7 +91,7 @@ export async function s3JsonLoggerHandler(event: lambda.S3Event, context: lambda
         .catch(function (err) {
             console.log("await Promise.all GetObjectRequests Promise Exception-Message: \n", err.message);
             console.log("await Promise.all GetObjectRequests Promise Exception-Stack: \n", err.stack);
-            tracer.addErrorAsMetadata(err as Error);
+            // tracer.addErrorAsMetadata(err as Error);
             logger.error(`Error response from API endpoint: ${err}`)
         })
         .then(function (res) {
@@ -110,9 +109,10 @@ export async function s3JsonLoggerHandler(event: lambda.S3Event, context: lambda
 
 
     // Set the facade segment as active again (the one created by AWS Lambda)
-    tracer.setSegment(segment)
+    // tracer.setSegment(segment)
+
     // Publish all stored metrics
-    metrics.publishStoredMetrics();
+    // metrics.publishStoredMetrics();
 
     //console.log("This is Resp: \n", gor)
 
