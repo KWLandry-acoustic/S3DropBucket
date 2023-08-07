@@ -18,13 +18,11 @@ Resources:
         OutExtension:
           - .js=.mjs
         Target: "es2020"
-        Sourcemap: false
+        Sourcemap: true
         EntryPoints: 
           - ./src/handlers/s3-json-logger.ts
-        # External:
-        #   - "'stream', 'crypto', 'os', 'path', 'fs', 'http', 'https', 'nise'"
         External: 
-            - ./node_modules/*
+            # - ./node_modules/*
     Properties:
       CodeUri: ./
       Role: arn:aws:iam::777957353822:role/tricklercacheExecutionRole
@@ -37,6 +35,7 @@ Resources:
         - S3ReadPolicy:
             BucketName: !Sub ${BucketName} 
       # Events:
+      #Needed on first definition, once S3 Bucket Trigger has definition to trigger the Lambda function on All Create Events then not needed anymore
       #   tricklercacheEvent:
       #     Type: S3
       #     Properties:

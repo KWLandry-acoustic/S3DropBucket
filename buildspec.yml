@@ -23,7 +23,7 @@ phases:
   build:
     commands: 
 
-      - node_modules/.bin/esbuild ./src/handlers/s3-json-logger.ts --bundle --minify --sourcemap --platform=node --target=es2020 --outfile=./src/handlers/s3-json-logger.js
+      # - node_modules/.bin/esbuild ./src/handlers/s3-json-logger.ts --bundle --minify --sourcemap --platform=node --target=es2020 --outfile=./src/handlers/s3-json-logger.js
       - pwd 
       - ls -lh
       
