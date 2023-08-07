@@ -34,7 +34,7 @@ phases:
     commands: 
       - pwd 
       - ls -lh
-      - ./node_modules/bin/esbuild ./src/handlers/s3-json-logger.ts --bundle --minify --sourcemap --platform=node --target=es2020 --outfile=./src/handlers/s3-json-logger.js
+      - /node_modules/bin/esbuild ./src/handlers/s3-json-logger.ts --bundle --minify --sourcemap --platform=node --target=es2020 --outfile=./src/handlers/s3-json-logger.js
       - ls -lh 
       
       # - cd src/handlers && zip -r s3-json-logger.zip s3-json-logger.js*
