@@ -22,7 +22,7 @@ Resources:
         EntryPoints: 
           - ./src/handlers/s3-json-logger.ts
         External:
-          - "'stream', 'crypto', 'os', 'path', 'fs', 'http', 'https'"
+          - "'stream', 'crypto', 'os', 'path', 'fs', 'http', 'https', 'nise'"
     Properties:
       CodeUri: ./
       Role: arn:aws:iam::777957353822:role/tricklercacheExecutionRole
