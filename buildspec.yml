@@ -3,14 +3,14 @@ phases:
   install:
     commands:
       # Install all dependencies (including dependencies for running tests)
-      - pwd
-      - ls -lh
+      # - pwd
+      # - ls -lh
       - npm remove node_modules --loglevel verbose
 
   pre_build:
     commands:
-      - pwd 
-      - ls -lh
+      # - pwd 
+      # - ls -lh
       # - rm -r .aws-sam
 
       # Discover and run unit tests in the '__tests__' directory
@@ -25,8 +25,8 @@ phases:
       - npm install --omit-dev --loglevel verbose
       # - codebuild-breakpoint
 
-      - pwd
-      - ls -lh
+      # - pwd
+      # - ls -lh
       
   build:
     commands: 
@@ -43,6 +43,7 @@ phases:
         # Use AWS SAM to package the application by using AWS CloudFormation
       # - aws cloudformation package --debug --template-file template.yml --s3-bucket $S3_BUCKET --output-template-file template-export.yml
       - aws cloudformation package --template-file template.yml --s3-bucket $S3_BUCKET --output-template-file template-export.yml
+      
       - pwd 
       - ls -lh
 
