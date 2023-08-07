@@ -16,6 +16,8 @@ phases:
       - pwd 
       - ls -lh
 
+      - tsc ./src/handlers/s3-json-logger.ts
+
       # Discover and run unit tests in the '__tests__' directory
       #- npm run test
 
