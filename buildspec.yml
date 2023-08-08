@@ -17,7 +17,7 @@ phases:
       - ls -lh
 
       - npm install -g typescript
-      - tsc ./src/handlers/s3-json-logger.ts
+      - tsc --noemit ./src/handlers/s3-json-logger.ts
 
       # Discover and run unit tests in the '__tests__' directory
       #- npm run test
