@@ -25,7 +25,7 @@ Resources:
         EntryPoints: 
           - ./src/handlers/s3-json-logger.ts
         External: 
-            - ./node_modules/*
+            - ./node_modules/aws-sdk/clients/s3.js
     Properties:
       # Code:
       #     S3Bucket: arn:aws:s3:::aws-us-east-1-777957353822-tricklercache-pipe
