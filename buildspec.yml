@@ -33,7 +33,7 @@ phases:
 
   build:
     commands:
-      - tsc --noemit ./src/handlers/s3-json-logger.ts --verbose
+      - tsc --build --noemit ./src/handlers/s3-json-logger.ts --verbose
       - pwd
       - ls -lh
 
