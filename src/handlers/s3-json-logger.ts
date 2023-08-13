@@ -1,8 +1,9 @@
 // import entire SDK
-import AWS from 'aws-sdk';
-// import individual service
-import S3 from 'aws-sdk/clients/s3.js';
-import lambda from 'aws-lambda';
+// import AWS from 'aws-sdk';
+// import * as AWS from "aws-sdk"
+import { config, S3, Lambda } from 'aws-sdk';
+// import * as S3 from 'aws-sdk/clients/s3.js';
+// import * as lambda from 'aws-lambda';
 
 import * as metrics_1 from '@aws-lambda-powertools/metrics';
 import * as logger_1 from '@aws-lambda-powertools/logger';
@@ -26,7 +27,7 @@ const logger = new logger_1.Logger();
 /**
   * A Lambda function that logs the payload received from S3.
   */
-export async function s3JsonLoggerHandler(event: lambda.S3Event, context: lambda.Context) {
+export async function s3JsonLoggerHandler(event: , context: Context) {
 
     let r: {}
 
