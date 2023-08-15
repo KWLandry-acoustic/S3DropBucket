@@ -1,21 +1,61 @@
 import { config, S3, Lambda, HttpRequest, HttpResponse, HTTPOptions, Endpoint } from  'aws-sdk' 
 import { S3Event, Context } from 'aws-lambda';
-import * as logger_1 from '@aws-lambda-powertools/logger';
+// import * as logger_1 from '@aws-lambda-powertools/logger';
 // import * as metrics_1 from '@aws-lambda-powertools/metrics';
 // import * as tracer_1 from '@aws-lambda-powertools/tracer';
 // import "source-map-support/register";
 
 //run it again and again and 9
 
-// Create a client to read objects from S3
+/**
+  * A Lambda function that logs the payload received from S3.
+  */
 
-// import pkg from 'aws-sdk';
-// const { S3 } = pkg
+
+import { Handler } from 'aws-lambda';
+
+export const s3JsonLoggerHandler: Handler = async (event, context) => {
+    console.log('EVENT: \n' + JSON.stringify(event, null, 2));
+    return context.logStreamName;
+};
+
+
+// exports.handler = async function s3JsonLoggerHandler(event: S3Event, context: Context) {
+
+//     console.log("Handler w/ event:\n", event.Records.map, "\n\n", context)
+
+//     console.log("ENVIRONMENT VARIABLES\n" + JSON.stringify(process.env, null, 2))
+//     console.info("EVENT\n" + JSON.stringify(event, null, 2))
+//     console.warn("Event not processed.")
+//     return context.logStreamName
+// }
+
+
+
+
+
+
+
+//     exports.handler = async (event, context) => new Promise(async (resolve, reject) => {
+
+//         const token = await post("/auth/login", { username: "test@test.com", password: "password" });
+
+// }
+
+
+
+
+
+
+
+
+
+// Create a client to read objects from S3
 const s3 = new S3({ httpOptions: { timeout: 900 } });
 
 
 // const metrics = new metrics_1.Metrics();
-const logger = new logger_1.Logger();
+// const logger = new logger_1.Logger();
 // const tracer = new tracer_1.Tracer();
 
 
@@ -47,28 +87,6 @@ httpRequest.body = JSON.stringify({a: " "})
 //     req.end();
 // })
 
-
-/**
-  * A Lambda function that logs the payload received from S3.
-  */
-exports.handler = async function s3JsonLoggerHandler(event: S3Event, context: Context) {
-
-    let r: {}
-
-
-//     exports.handler = async (event, context) => new Promise(async (resolve, reject) => {
-
-//         const token = await post("/auth/login", { username: "test@test.com", password: "password" });
-
-// }
-
-
-    console.log("Handler w/ event:\n", event.Records.map, "\n\n", context)
-
-    console.log("ENVIRONMENT VARIABLES\n" + JSON.stringify(process.env, null, 2))
-    console.info("EVENT\n" + JSON.stringify(event, null, 2))
-    console.warn("Event not processed.")
-    return context.logStreamName
 
 
 
@@ -164,7 +182,7 @@ exports.handler = async function s3JsonLoggerHandler(event: S3Event, context: Co
 
     // return response
 
-}
+// }
 
 
 
