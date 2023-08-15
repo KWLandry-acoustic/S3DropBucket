@@ -1,13 +1,14 @@
-// import entire SDK
-// import AWS from 'aws-sdk';
-// import * as AWS from "aws-sdk"
-import { config, S3, Lambda } from 'aws-sdk';
-// import * as S3 from 'aws-sdk/clients/s3.js';
-// import * as lambda from 'aws-lambda';
+
+import { config, S3, Lambda, HttpRequest, HttpResponse, HTTPOptions, Endpoint } from  'aws-sdk' 
+
 
 import * as metrics_1 from '@aws-lambda-powertools/metrics';
 import * as logger_1 from '@aws-lambda-powertools/logger';
 import * as tracer_1 from '@aws-lambda-powertools/tracer';
+import { S3Event, Context } from 'aws-lambda';
+import { UnknownFile } from 'list-open-files';
+
+
 // import "source-map-support/register";
 
 //run it again and again and 9
@@ -24,20 +25,59 @@ const logger = new logger_1.Logger();
 // const tracer = new tracer_1.Tracer();
 
 
+const path: string = "https://api-campaign-us-6.goacoustic.com/XMLAPI"
+
+const postOptions = {
+    host: path,
+    port: 443,
+    headers: {
+        'Content-Type': 'application/json',
+    }
+}
+
+const payload: string = "" 
+const ep = new Endpoint("https://api-campaign-us-6.goacoustic.com/XMLAPI")
+const httpRequest = new HttpRequest(ep, "us-east-1")
+httpRequest.method = "POST"
+httpRequest.body = JSON.stringify({a: " "})
+
+// const post = (path: string, payload: string) => new Promise((resolve, reject) => {
+//     const options = { ...postOptions, path, method: 'POST' };
+//     const req = HttpRequest.Request(options, res => {
+//         let buffer = "";
+//         res.on('data', chunk => buffer += chunk)
+//         res.on('end', () => resolve(JSON.parse(buffer)))
+//     });
+//     req.on('error', e => reject(e.message));
+//     req.write(JSON.stringify(payload));
+//     req.end();
+// })
+
+
 /**
   * A Lambda function that logs the payload received from S3.
   */
-export async function s3JsonLoggerHandler(event: , context: Context) {
+exports.handler = async function s3JsonLoggerHandler(event: S3Event, context: Context) {
 
     let r: {}
 
+
+//     exports.handler = async (event, context) => new Promise(async (resolve, reject) => {
+
+//         const token = await post("/auth/login", { username: "test@test.com", password: "password" });
+
+// }
+
+
+
+
     console.log("Handler w/ event:\n", event.Records.map, "\n\n", context)
 
-    // Log the incoming event
-    logger.info('Lambda invocation event', { event });
+    // // Log the incoming event
+    // logger.info('Lambda invocation event', { event });
 
-    // Append awsRequestId to each log statement
-    logger.appendKeys({awsRequestId: context.awsRequestId});
+    // // Append awsRequestId to each log statement
+    // logger.appendKeys({ awsRequestId: context.awsRequestId });
 
     // Get facade segment created by AWS Lambda
     // const segment = tracer.getSegment();
@@ -110,7 +150,7 @@ export async function s3JsonLoggerHandler(event: , context: Context) {
                 body: JSON.stringify(res)
             }
         })
-        
+
 
 
 
@@ -125,7 +165,7 @@ export async function s3JsonLoggerHandler(event: , context: Context) {
 
     // return response
 
-    }
+}
 
 
 
@@ -245,4 +285,3 @@ export async function s3JsonLoggerHandler(event: , context: Context) {
 // catch (e) {
 
 // }
-

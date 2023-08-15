@@ -3,26 +3,28 @@
   "description": "TricklerCache Lambda-S3 Project",
   "version": "0.0.1",
   "private": true,
-  "type": "module",
+  "type": "commonjs",
   "dependencies": {
     "@aws-lambda-powertools/logger": "^1.5.1",
     "@aws-lambda-powertools/metrics": "^1.5.1",
     "@aws-lambda-powertools/tracer": "^1.5.1",
-    "esbuild": "^0.17.19"
+    "esbuild": "^0.17.19",
+    "lodash.get": "^4.4.2"
   },
   "browser": {
     "crypto": false
   },
   "devDependencies": {
-    "aws-lambda": "^1.0.7",
     "@babel/core": "^7.22.9",
     "@babel/preset-env": "^7.22.9",
     "@babel/preset-typescript": "^7.22.5",
     "@types/aws-lambda": "^8.10.119",
     "@types/jest": "^29.4.0",
-    "@types/node": "^20.4.5",
+    "@types/lodash.get": "^4.4.7",
+    "@types/node": "^20.5.0",
     "@typescript-eslint/eslint-plugin": "^5.46.1",
     "@typescript-eslint/parser": "^5.46.1",
+    "aws-lambda": "^1.0.7",
     "aws-sdk": "^2.1425.0",
     "aws-sdk-mock": "^5.7.0",
     "babel-jest": "^29.6.1",
@@ -40,9 +42,12 @@
     "test": "jest",
     "unit": "jest",
     "lint": "eslint '*.ts' --quiet --fix",
-    "build": "esbuild ./src/handlers/s3-json-logger.ts --bundle --minify --sourcemap --platform=node --target=es2020  "
-
+    "build": "esbuild ./src/handlers/s3-json-logger.ts --bundle --minify --out-extension:.js=.mjs --sourcemap --platform=node --target=es2020 --outdir=dist",
+    "watch": "tsc -w"
   },
+  "files": [
+    "dist/"
+  ],
   "main": ".eslintrc.js",
   "repository": {
     "type": "git",
