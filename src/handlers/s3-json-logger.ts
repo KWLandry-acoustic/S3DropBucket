@@ -1,11 +1,8 @@
 import { config, S3, Lambda, HttpRequest, HttpResponse, HTTPOptions, Endpoint } from  'aws-sdk' 
-// import * as metrics_1 from '@aws-lambda-powertools/metrics';
-import * as logger_1 from '@aws-lambda-powertools/logger';
-// import * as tracer_1 from '@aws-lambda-powertools/tracer';
 import { S3Event, Context } from 'aws-lambda';
-// import { UnknownFile } from 'list-open-files';
-
-
+import * as logger_1 from '@aws-lambda-powertools/logger';
+// import * as metrics_1 from '@aws-lambda-powertools/metrics';
+// import * as tracer_1 from '@aws-lambda-powertools/tracer';
 // import "source-map-support/register";
 
 //run it again and again and 9
@@ -66,9 +63,14 @@ exports.handler = async function s3JsonLoggerHandler(event: S3Event, context: Co
 // }
 
 
-
-
     console.log("Handler w/ event:\n", event.Records.map, "\n\n", context)
+
+    console.log("ENVIRONMENT VARIABLES\n" + JSON.stringify(process.env, null, 2))
+    console.info("EVENT\n" + JSON.stringify(event, null, 2))
+    console.warn("Event not processed.")
+    return context.logStreamName
+
+
 
     // // Log the incoming event
     // logger.info('Lambda invocation event', { event });
@@ -105,48 +107,48 @@ exports.handler = async function s3JsonLoggerHandler(event: S3Event, context: Co
 
 
 
-    const getObjectRequest = event.Records.map(async (record) => {
-        // event.Records.map(async (record) => {
+    // const getObjectRequest = event.Records.map(async (record) => {
+    //     // event.Records.map(async (record) => {
 
-        const params = {
-            Bucket: record.s3.bucket.name,
-            Key: record.s3.object.key,
-        }
+    //     const params = {
+    //         Bucket: record.s3.bucket.name,
+    //         Key: record.s3.object.key,
+    //     }
 
-        const r = await s3.getObject(params).promise()
-            .catch(function (err) {
-                console.log("Promise Exception-Message: \n", err.message);
-                console.log("Promise Exception-Stack: \n", err.stack);
-            })
-            .then(function (d) {
-                console.log("await getObject:\n", d)
-            })
+    //     const r = await s3.getObject(params).promise()
+    //         .catch(function (err) {
+    //             console.log("Promise Exception-Message: \n", err.message);
+    //             console.log("Promise Exception-Stack: \n", err.stack);
+    //         })
+    //         .then(function (d) {
+    //             console.log("await getObject:\n", d)
+    //         })
 
-        // console.log("This is line 47 r: \n\n", r)
+    //     // console.log("This is line 47 r: \n\n", r)
 
-        return {
-            statusCode: 200,
-            body: JSON.stringify(r)
-        }
+    //     return {
+    //         statusCode: 200,
+    //         body: JSON.stringify(r)
+    //     }
 
-    })
+    // })
 
-    await Promise.all(getObjectRequest)
-        .catch(function (err) {
-            console.log("await Promise.all GetObjectRequests Promise Exception-Message: \n", err.message);
-            console.log("await Promise.all GetObjectRequests Promise Exception-Stack: \n", err.stack);
-            // tracer.addErrorAsMetadata(err as Error);
-            logger.error(`Error response from API endpoint: ${err}`)
-        })
-        .then(function (res) {
-            console.log("This is await Promise.all GetObjectRequests - res: \n", res)
-            logger.info(`Successful response from API endpoint: ${event.Records}`, JSON.stringify(res));
+    // await Promise.all(getObjectRequest)
+    //     .catch(function (err) {
+    //         console.log("await Promise.all GetObjectRequests Promise Exception-Message: \n", err.message);
+    //         console.log("await Promise.all GetObjectRequests Promise Exception-Stack: \n", err.stack);
+    //         // tracer.addErrorAsMetadata(err as Error);
+    //         logger.error(`Error response from API endpoint: ${err}`)
+    //     })
+    //     .then(function (res) {
+    //         console.log("This is await Promise.all GetObjectRequests - res: \n", res)
+    //         logger.info(`Successful response from API endpoint: ${event.Records}`, JSON.stringify(res));
 
-            return {
-                statusCode: 200,
-                body: JSON.stringify(res)
-            }
-        })
+    //         return {
+    //             statusCode: 200,
+    //             body: JSON.stringify(res)
+    //         }
+    //     })
 
 
 
