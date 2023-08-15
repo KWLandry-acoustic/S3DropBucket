@@ -16,7 +16,7 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     // "outDir": "dist",
-    "rootDir": "src",
+    "rootDir": "src/handlers",
     /* Visit https://aka.ms/tsconfig to read more about this file */
     /* Projects */
     // "incremental": true,                              /* Save .tsbuildinfo files to allow for incremental compilation of projects. */

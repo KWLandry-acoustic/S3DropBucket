@@ -49,7 +49,7 @@
     "watch": "tsc -w"
   },
   "files": [
-    "dist/"
+    ".aws-sam/"
   ],
   "main": ".eslintrc.js",
   "repository": {

@@ -43,9 +43,12 @@ phases:
       # - pwd
       # - ls -lh src/
 
-      - npm run build --debug --verbose
-      - pwd
-      - ls -lh
+      # - npm run build --debug --verbose
+      # - pwd
+      # - ls -lh
+
+      # sam build -m package.json
+      - sam build -m package.json
 
       # - pwd
       # - ls -lh
@@ -59,8 +62,8 @@ phases:
 
       # - cd src/handlers && zip -r s3-json-logger.zip s3-json-logger.js*
       # - cd ../../
-      
-      - npm pack
+
+      # - npm pack
 
       # - rm -r node_modules
 
@@ -77,6 +80,8 @@ phases:
 
       # - pwd
       # - ls -lh
+
+      - sam package
 
       # Use AWS SAM to package the application by using AWS CloudFormation
       # - aws cloudformation package --debug --template-file template.yml --s3-bucket $S3_BUCKET --output-template-file template-export.yml
