@@ -19,6 +19,14 @@ export const s3JsonLoggerHandler: Handler = async (event, context) => {
     return context.logStreamName;
 };
 
+export default s3JsonLoggerHandler
+
+
+
+
+
+
+
 
 // exports.handler = async function s3JsonLoggerHandler(event: S3Event, context: Context) {
 
