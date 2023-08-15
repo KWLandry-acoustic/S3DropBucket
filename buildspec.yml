@@ -3,8 +3,8 @@ phases:
   install:
     commands:
 
-      # - pwd
-      # - ls -lh 
+      - pwd
+      - ls -lh 
       # - if [ -z ".aws-sam/" ]; then rm -r .aws-sam; fi
 
       # - npm uninstall node_modules
