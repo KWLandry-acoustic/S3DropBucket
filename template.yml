@@ -23,7 +23,6 @@ Resources:
         Target: "es2020"
         Sourcemap: true
         EntryPoints: 
-          # - ./src/handlers/s3-json-logger.ts
           - ./src/handlers/s3-json-logger.ts
         External: 
             - ./node_modules/aws-sdk/clients/s3.js
@@ -43,17 +42,18 @@ Resources:
       Policies:
         - S3ReadPolicy:
             BucketName: !Sub ${BucketName} 
-      Events:
-        tricklercacheEvent:
-          Type: S3
-          Properties:
-            Bucket: !Sub ${BucketName} 
-            Events: s3:ObjectCreated:*
-            Filter:
-              S3Key:
-                Rules:
-                  - Name: suffix
-                    Value: .json
+      # Events:                 #Can only define a trigger on creation, existing buckets can only have a trigger added manually, 
+      #   tricklercacheEvent:
+      #     Type: S3
+      #     Properties:
+      #       # Bucket: !Sub ${BucketName}
+      #       Bucket: tricklercache 
+      #       Events: s3:ObjectCreated:*
+      #       Filter:
+      #         S3Key:
+      #           Rules:
+      #             - Name: suffix
+      #               Value: .json
       Layers:
         - arn:aws:lambda:us-east-1:777957353822:layer:dependencyLayer:1
 
