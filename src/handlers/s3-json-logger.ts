@@ -1,12 +1,9 @@
-
 import { config, S3, Lambda, HttpRequest, HttpResponse, HTTPOptions, Endpoint } from  'aws-sdk' 
-
-
-import * as metrics_1 from '@aws-lambda-powertools/metrics';
+// import * as metrics_1 from '@aws-lambda-powertools/metrics';
 import * as logger_1 from '@aws-lambda-powertools/logger';
-import * as tracer_1 from '@aws-lambda-powertools/tracer';
+// import * as tracer_1 from '@aws-lambda-powertools/tracer';
 import { S3Event, Context } from 'aws-lambda';
-import { UnknownFile } from 'list-open-files';
+// import { UnknownFile } from 'list-open-files';
 
 
 // import "source-map-support/register";
