@@ -44,7 +44,6 @@ Resources:
         - S3ReadPolicy:
             BucketName: !Sub ${BucketName} 
       Events:
-      #Needed on first definition, once S3 Bucket has the Trigger definition to trigger the Lambda function on 'All Create' Events then not needed anymore
         tricklercacheEvent:
           Type: S3
           Properties:
