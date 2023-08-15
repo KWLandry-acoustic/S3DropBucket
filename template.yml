@@ -13,7 +13,7 @@ Resources:
     Type: AWS::Serverless::Function      
     Metadata:    
       # CodeUri: arn:aws:s3:::aws-us-east-1-777957353822-tricklercache-pipe      
-      CodeUri: ./
+      CodeUri: ${codeuri}
       BuildMethod: esbuild
       BuildProperties:
         Format: esm
@@ -23,7 +23,7 @@ Resources:
         Target: "es2020"
         Sourcemap: true
         EntryPoints: 
-          - .aws-sam/build/s3-json-logger.mjs
+          - .aws-sam/build/s3JsonLoggerFunction/s3-json-logger.mjs
         External: 
             # - node_modules/aws-sdk/clients/s3.js
             - aws-sdk
