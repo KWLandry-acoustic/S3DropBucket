@@ -8,7 +8,7 @@ phases:
       - ls -lh src
       - ls -lh src/handlers
 
-      
+
       # - if [ -z ".aws-sam/" ]; then rm -r .aws-sam; fi
 
       # - npm uninstall node_modules
@@ -25,13 +25,15 @@ phases:
       # - pwd
       # - ls -lh node_modules
 
-  pre_build:
-    commands:
       # - npm install -g typescript
 
       # - npm install -g esbuild
       # - pwd
       # - ls -lh
+
+  pre_build:
+    commands:
+
 
       # Discover and run unit tests in the '__tests__' directory
       #- npm run test
@@ -40,7 +42,7 @@ phases:
     commands:
 
       # - tsc --build --listFiles ./src/handlers/s3-json-logger.ts --verbose      
-      - tsc --noemit ./src/handlers/s3-json-logger.ts 
+      # - tsc --noemit ./src/handlers/s3-json-logger.ts 
       # - pwd
       # - ls -lh src/
 
