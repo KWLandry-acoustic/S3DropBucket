@@ -42,8 +42,9 @@
     "test": "jest",
     "unit": "jest",
     "lint": "eslint '*.ts' --quiet --fix",
-    "build": "esbuild ./src/handlers/s3-json-logger.ts --bundle --minify --out-extension:.js=.mjs --platform=node --target=es2020 ",
-    "buildNot": "esbuild ./src/handlers/s3-json-logger.ts --bundle --minify --out-extension:.js=.mjs --sourcemap --platform=node --target=es2020 --outdir=src",
+    "build": "esbuild ./src/handlers/s3-json-logger.ts --bundle --minify --out-extension:.js=.mjs --platform=node --target=es2020 --outdir=src",
+    "build2": "esbuild ./src/handlers/s3-json-logger.ts --bundle --minify --out-extension:.js=.mjs --sourcemap --platform=node --target=es2020 --outdir=src",
+    "build3": "esbuild ./src/handlers/s3-json-logger.ts --bundle --minify --out-extension:.js=.mjs --sourcemap --platform=node --target=es2020 --outdir=src",
     "watch": "tsc -w"
   },
   "files": [

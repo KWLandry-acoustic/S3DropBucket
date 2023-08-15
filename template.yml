@@ -1,7 +1,7 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description: Lambda-S3 Logging Project
 Transform: AWS::Serverless-2016-10-31
-Globals:
+Globals: 
   Function:
     PermissionsBoundary: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:policy/${AppId}-${AWS::Region}-PermissionsBoundary
 Parameters:
@@ -23,7 +23,7 @@ Resources:
         Target: "es2020"
         Sourcemap: true
         EntryPoints: 
-          - ./src/handlers/s3-json-logger.ts
+          - ./src/handlers/s3-json-logger.mjs
         External: 
             - ./node_modules/aws-sdk/clients/s3.js
             - aws-sdk
