@@ -3,9 +3,9 @@
         "target": "es6",
         "module": "commonjs",
         "inlineSourceMap": false,
-        "outDir": "./.aws-sam/",
+        "outDir": ".aws-sam/",
         "rootDir": ".",
-        "sourceRoot": "src/handlers",
+        "sourceRoot": "src/handlers/",
         "typeRoots": [
             "node_modules/@types"
         ],
