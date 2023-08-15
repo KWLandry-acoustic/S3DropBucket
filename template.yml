@@ -45,16 +45,16 @@ Resources:
             BucketName: !Sub ${BucketName} 
       # Events:
       #Needed on first definition, once S3 Bucket has the Trigger definition to trigger the Lambda function on 'All Create' Events then not needed anymore
-      #   tricklercacheEvent:
-      #     Type: S3
-      #     Properties:
-      #       Bucket: !Sub ${BucketName} 
-      #       Events: s3:ObjectCreated:*
-      #       Filter:
-      #         S3Key:
-      #           Rules:
-      #             - Name: suffix
-      #               Value: .json
+        tricklercacheEvent:
+          Type: S3
+          Properties:
+            Bucket: !Sub ${BucketName} 
+            Events: s3:ObjectCreated:*
+            Filter:
+              S3Key:
+                Rules:
+                  - Name: suffix
+                    Value: .json
       Layers:
         - arn:aws:lambda:us-east-1:777957353822:layer:dependencyLayer:1
 
