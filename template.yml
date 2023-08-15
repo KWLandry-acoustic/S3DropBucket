@@ -13,7 +13,7 @@ Resources:
     Type: AWS::Serverless::Function      
     Metadata:    
       # CodeUri: arn:aws:s3:::aws-us-east-1-777957353822-tricklercache-pipe      
-      CodeUri: deploy
+      CodeUri: src
       BuildMethod: esbuild
       BuildProperties:
         Format: esm
