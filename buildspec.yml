@@ -81,7 +81,7 @@ phases:
       # - pwd
       # - ls -lh
 
-      - sam package --s3-bucket tricklercache-pipe 
+      - sam package --s3-bucket aws-us-east-1-777957353822-tricklercache-pipe
       # - sam package --resolve-s3 --s3-bucket deploy 
       # - sam package --resolve-s3 --s3-bucket deploy 
 
