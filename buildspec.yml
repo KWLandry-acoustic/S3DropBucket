@@ -48,7 +48,7 @@ phases:
       # - ls -lh
 
       # sam build -m package.json
-      - sam build -m package.json
+      - sam build
 
       # - pwd
       # - ls -lh
