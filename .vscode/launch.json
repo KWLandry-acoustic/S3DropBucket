@@ -10,7 +10,7 @@
             "name": "S3-JSON-Logger Lambda Handler",
             "invokeTarget": {
                 "target": "code",
-                "lambdaHandler": "./src/handlers/s3-json-logger.s3JsonLoggerHandler",
+                "lambdaHandler": "src/handlers/s3-json-logger.s3JsonLoggerHandler",
                 "projectRoot": "${workspaceFolder}"
             },
             "aws": {
