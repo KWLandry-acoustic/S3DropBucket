@@ -81,9 +81,9 @@ phases:
       # - pwd
       # - ls -lh
 
-      # - sam package --s3-bucket deploy 
+      - sam package --s3-bucket tricklercache-pipe 
       # - sam package --resolve-s3 --s3-bucket deploy 
-      - sam package --resolve-s3 --s3-bucket deploy 
+      # - sam package --resolve-s3 --s3-bucket deploy 
 
       # Use AWS SAM to package the application by using AWS CloudFormation
       # - aws cloudformation package --debug --template-file template.yml --s3-bucket $S3_BUCKET --output-template-file template-export.yml
