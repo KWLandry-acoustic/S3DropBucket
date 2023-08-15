@@ -23,7 +23,7 @@ Resources:
         Target: "es2020"
         Sourcemap: true
         EntryPoints: 
-          - ./src/handlers/s3-json-logger.mjs
+          - src/handlers/s3-json-logger.mjs
         External: 
             - ./node_modules/aws-sdk/clients/s3.js
             - aws-sdk
@@ -34,7 +34,7 @@ Resources:
       #     # S3Key: !Ref "LambdaS3Key"
       PackageType: "Zip"
       Role: arn:aws:iam::777957353822:role/tricklercacheExecutionRole
-      Handler: ./src/handlers/s3-json-logger.s3JsonLoggerHandler
+      Handler: src/handlers/s3-json-logger.s3JsonLoggerHandler
       Runtime: nodejs18.x
       Description: A Lambda function that logs a json file sent to S3 bucket.
       MemorySize: 512
