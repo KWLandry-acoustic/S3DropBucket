@@ -5,12 +5,8 @@
   "private": true,
   "type": "module",
   "dependencies": {
-    "@aws-lambda-powertools/logger": "^1.5.1",
-    "@aws-lambda-powertools/metrics": "^1.5.1",
-    "@aws-lambda-powertools/tracer": "^1.5.1",
     "esbuild": "^0.17.19",
-    "lodash.get": "^4.4.2",
-    "node-fetch": "^3.3.2"
+    "lodash.get": "^4.4.2"
   },
   "browser": {
     "crypto": false
@@ -24,7 +20,6 @@
     "@types/jest": "^29.4.0",
     "@types/lodash.get": "^4.4.7",
     "@types/node": "^20.5.0",
-    "@types/node-fetch": "^2.6.4",
     "@typescript-eslint/eslint-plugin": "^5.46.1",
     "@typescript-eslint/parser": "^5.46.1",
     "aws-lambda": "^1.0.7",

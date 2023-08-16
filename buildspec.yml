@@ -4,8 +4,8 @@ phases:
     commands:
 
       - pwd
-      - ls -lh 
-      - ls -lh src/handlers
+      - ls  -lha 
+      - ls  -lha src/handlers
 
 
       # - if [ -z ".aws-sam/" ]; then rm -r .aws-sam; fi
@@ -13,23 +13,23 @@ phases:
 
       # - npm uninstall node_modules
       # - pwd
-      # - ls -lh node_modules
+      # - ls  -lha node_modules
 
       # - if [ -z "node_modules" ]; then rm -r node_modules; fi
       # - pwd
-      # - ls -lh node_modules
+      # - ls  -lha node_modules
 
 
       # Install all dependencies (including dependencies for running tests)
       - npm install --omit=dev
       # - pwd
-      # - ls -lh node_modules
+      # - ls  -lha node_modules
 
       # - npm install -g typescript
 
       - npm install esbuild
       # - pwd
-      # - ls -lh
+      # - ls  -lha
 
   pre_build:
     commands:
@@ -42,24 +42,24 @@ phases:
       # - tsc --build --listFiles ./src/handlers/s3-json-logger.ts --verbose      
       # - tsc --noemit ./src/handlers/s3-json-logger.ts 
       # - pwd
-      # - ls -lh src/
+      # - ls  -lha src/
 
       # - npm run build --debug --verbose
       # - pwd
-      # - ls -lh
+      # - ls  -lha
 
       # sam build -m package.json
       - sam build --debug
 
       # - pwd
-      # - ls -lh
-      # - ls -lh .aws-sam
-      # - ls -lh .aws-sam/build
-      # - ls -lh .aws-sam/build/src
+      # - ls  -lha
+      # - ls  -lha .aws-sam
+      # - ls  -lha .aws-sam/build
+      # - ls  -lha .aws-sam/build/src
 
       # - sam build
       # - pwd
-      # - ls -lh
+      # - ls  -lha
 
       # - cd src/handlers && zip -r s3-json-logger.zip s3-json-logger.js*
       # - cd ../../
@@ -70,7 +70,7 @@ phases:
 
       - npm ci --omit=dev --loglevel verbose
       # - pwd
-      # - ls -lh node_modules
+      # - ls  -lha node_modules
 
       # Remove all dependencies not needed for the Lambda deployment package (the packages from devDependencies in package.json)
       # - npm prune --production --loglevel verbose
@@ -81,16 +81,16 @@ phases:
       # - codebuild-breakpoint
 
       - pwd
-      - ls -lh
+      - ls  -lha
       - if [ -z "nodejs/" ]; then rm -r nodejs/; fi
       - mkdir nodejs && cp -r node_modules nodejs/
-      - ls -lh
-      - ls -lh nodejs
-      - ls -lh nodejs/node_modules
+      - ls  -lha
+      - ls  -lha nodejs
+      - ls  -lha nodejs/node_modules
 
-      - ls -lh .aws-sam
-      - ls -lh .aws-sam/build
-      - ls -lh .aws-sam/build/s3JsonLoggerFunction
+      - ls  -lha .aws-sam
+      - ls  -lha .aws-sam/build
+      - ls  -lha .aws-sam/build/s3JsonLoggerFunction
 
 
       - sam package --s3-bucket aws-us-east-1-777957353822-tricklercache-pipe
@@ -103,12 +103,12 @@ phases:
       # - sam package --template-file template.yml --s3-bucket $S3_BUCKET --output-template-file template-export.yml
 
       # - pwd
-      # - ls -lh
+      # - ls  -lha
 
   post_build:
     commands:
       - pwd 
-      - ls -lh 
+      - ls  -lha 
 
 artifacts:
   files:
