@@ -88,7 +88,10 @@ phases:
       - ls -lh nodejs
       - ls -lh nodejs/node_modules
 
-      
+      - ls -lh .aws-sam
+      - ls -lh .aws-sam/build
+
+
       - sam package --s3-bucket aws-us-east-1-777957353822-tricklercache-pipe
       # - sam package --resolve-s3 --s3-bucket deploy 
       # - sam package --resolve-s3 --s3-bucket deploy 
