@@ -90,6 +90,7 @@ phases:
 
       - ls -lh .aws-sam
       - ls -lh .aws-sam/build
+      - ls -lh .aws-sam/build/s3JsonLoggerFunction
 
 
       - sam package --s3-bucket aws-us-east-1-777957353822-tricklercache-pipe
