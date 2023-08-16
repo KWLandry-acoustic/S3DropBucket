@@ -3,7 +3,7 @@
   "description": "TricklerCache Lambda-S3 Project",
   "version": "0.0.1",
   "private": true,
-  "type": "commonjs",
+  "type": "module",
   "dependencies": {
     "@aws-lambda-powertools/logger": "^1.5.1",
     "@aws-lambda-powertools/metrics": "^1.5.1",

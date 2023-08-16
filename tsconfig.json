@@ -1,11 +1,11 @@
 {
   "compilerOptions": {
     "lib": [
-      "es2020"
+      "es2023"
     ],
     "module": "commonjs",
     "moduleResolution": "Node16",
-    "target": "es2020",
+    "target": "es2023",
     "baseUrl": "./",
     "sourceMap": false,
     "noEmit": true,
