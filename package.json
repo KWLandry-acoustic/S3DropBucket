@@ -5,8 +5,11 @@
   "private": true,
   "type": "module",
   "dependencies": {
+    "@aws-sdk/fetch-http-handler": "^3.374.0",
+    "@aws-sdk/protocol-http": "^3.374.0",
     "esbuild": "^0.17.19",
-    "lodash.get": "^4.4.2"
+    "lodash.get": "^4.4.2",
+    "node-fetch": "^3.3.2"
   },
   "browser": {
     "crypto": false
@@ -20,6 +23,7 @@
     "@types/jest": "^29.4.0",
     "@types/lodash.get": "^4.4.7",
     "@types/node": "^20.5.0",
+    "@types/node-fetch": "^2.6.4",
     "@typescript-eslint/eslint-plugin": "^5.46.1",
     "@typescript-eslint/parser": "^5.46.1",
     "aws-lambda": "^1.0.7",

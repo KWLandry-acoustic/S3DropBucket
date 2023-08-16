@@ -1,7 +1,12 @@
 // // this imports a bare-bones version of S3 that exposes the .send operation
 import { S3Client, S3ClientConfig, GetObjectCommand, GetObjectCommandOutput } from "@aws-sdk/client-s3"
 import { Handler, S3Event, Context, S3ObjectACLUpdatedNotificationEvent } from 'aws-lambda';
-import fetch from "node-fetch"
+// import { HttpRequest } from '@aws-sdk/protocol-http';
+// import type { HttpHandlerOptions } from '@aws-sdk/types';
+import { FetchHttpHandler, FetchHttpHandlerOptions } from '@aws-sdk/fetch-http-handler'
+import { default as fetch, Request, Response } from 'node-fetch';
+import { HttpRequest } from "@aws-sdk/protocol-http";
+
 // import { Readable } from "stream";
 
 // // this imports just the getObject operation from S3
@@ -43,7 +48,8 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
 
     const a = await pullS3Object(params)
 
-    const b = postCampaign(a as string)
+    // const b = postCampaign(a as string)    
+    const b = fetchIt(a as string)
 
     console.log("Return from Post to Campaign: \n", b)
 
@@ -70,6 +76,22 @@ async function pullS3Object(params: S3Object) {
     }
 }
 
+export async function fetchIt(xmlCalls: string) {
+
+    const accessToken = "sfasdaasdasda"
+    
+    const r = await fetch('https://jsonplaceholder.typicode.com/todos', {
+        method: 'POST',
+        body: JSON.stringify(xmlCalls),
+        headers: {
+            'Authorization': `Bearer: ${accessToken}`,
+            'Content-Type': 'application/json'
+        },
+    }).then(res => res.json())
+      .then(json => console.log(json));
+
+
+}
 
 
 // async function getObjectS3(params: S3.GetObjectRequest) {
@@ -98,49 +120,112 @@ async function pullS3Object(params: S3Object) {
 
 // }
 
-export async function postCampaign(s3Object: string) {
+// export async function postCampaign(s3Object: string) {
 
-    // const req = new HttpRequest(ep, "us-east-1")
-    // req.host = "https://api-campaign-us-6.goacoustic.com/XMLAPI"
-    // req.method = "POST"
-    // req.port = 443
-    // req.headers = {
-    //     'Content-Type': 'application/xml',
-    // }
-    // req.body = JSON.stringify(s3Object)
+//     // const req = new HttpRequest(ep, "us-east-1")
+//     // req.host = "https://api-campaign-us-6.goacoustic.com/XMLAPI"
+//     // req.method = "POST"
+//     // req.port = 443
+//     // req.headers = {
+//     //     'Content-Type': 'application/xml',
+//     // }
+//     // req.body = JSON.stringify(s3Object)
 
-    // const post = (path: string, payload: string) => new Promise((resolve, reject) => {
-    //     const options = { ...postOptions, path, method: 'POST' };
-    //     const req = HttpRequest.Request(options, res => {
-    //         let buffer = "";
-    //         res.on('data', chunk => buffer += chunk)
-    //         res.on('end', () => resolve(JSON.parse(buffer)))
-    //     });
-    //     req.on('error', e => reject(e.message));
-    //     req.write(JSON.stringify(payload));
-    //     req.end();
-    // })
-
-
-    const res = await fetch('https://nodejs.org/api/documentation.json');
-    if (res.ok) {
-        const data = await res.json()
-        console.log(data);
-        return data
-    }
-
-    // const response = {
-    //     statusCode: 200,
-    //     body: JSON.stringify('Hello from Lambda!'),
-    // };
+//     // const post = (path: string, payload: string) => new Promise((resolve, reject) => {
+//     //     const options = { ...postOptions, path, method: 'POST' };
+//     //     const req = HttpRequest.Request(options, res => {
+//     //         let buffer = "";
+//     //         res.on('data', chunk => buffer += chunk)
+//     //         res.on('end', () => resolve(JSON.parse(buffer)))
+//     //     });
+//     //     req.on('error', e => reject(e.message));
+//     //     req.write(JSON.stringify(payload));
+//     //     req.end();
+//     // })
 
 
+//     const res = await fetch('https://nodejs.org/api/documentation.json');
+//     if (res.ok) {
+//         const data = await res.json()
+//         console.log(data);
+//         return data
+//     }
+
+//     // const response = {
+//     //     statusCode: 200,
+//     //     body: JSON.stringify('Hello from Lambda!'),
+//     // };
 
 
+
+
+
+// }
+
+
+export async function campaignPOST(xmlCalls: string) {
+
+    const endpoint = new URL("https://api-campaign-us-6.goacoustic.com/XMLAPI");
+
+    const postCampaign = new HttpRequest({
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/xml',
+            host: endpoint.host
+        },
+        hostname: endpoint.host,
+        body: JSON.stringify(xmlCalls),
+        path: endpoint.pathname
+    });
+
+    const res = await postCampaign;
 
 }
 
 
+export async function postCampaign(xmlCalls: string) {
+
+    const accessToken = "sdfsdasdas"
+
+    /** @type {import('node-fetch').RequestInit} */
+    const options = {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer: ${accessToken}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(xmlCalls)
+    };
+
+    const request = new Request("https://api-campaign-us-6.goacoustic.com/XMLAPI", options);
+
+    let statusCode = 200;
+    let body;
+    let response;
+
+    const req = new Request("https://api-campaign-us-6.goacoustic.com/XMLAPI", options)
+
+    try {
+        response = await fetch(req);
+        body = await response.json();
+        if (!body) statusCode = 400;
+    } catch (error) {
+        statusCode = 400;
+        body = {
+            errors: [
+                {
+                    status: response?.status,
+                    message: error
+                }
+            ]
+        };
+    }
+
+    return {
+        statusCode,
+        body: JSON.stringify(body)
+    };
+}
 
 // exports.handler = async function s3JsonLoggerHandler(event: S3Event, context: Context) {
 
