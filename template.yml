@@ -17,6 +17,7 @@ Resources:
       BuildMethod: esbuild
       BuildProperties:
         Format: esm
+        mainFields: ["browser", "module", "main"] # or ["module", "main"]
         Minify: true
         OutExtension:
           - .js=.mjs
