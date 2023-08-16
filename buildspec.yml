@@ -85,7 +85,10 @@ phases:
       - if [ -z "nodejs/" ]; then rm -r nodejs/; fi
       - mkdir nodejs && cp -r node_modules nodejs/
       - ls -lh
+      - ls -lh nodejs
+      - ls -lh nodejs/node_modules
 
+      
       - sam package --s3-bucket aws-us-east-1-777957353822-tricklercache-pipe
       # - sam package --resolve-s3 --s3-bucket deploy 
       # - sam package --resolve-s3 --s3-bucket deploy 
