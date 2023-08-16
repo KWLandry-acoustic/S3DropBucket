@@ -2,15 +2,15 @@ import { config, S3, Lambda, HttpRequest, HttpResponse, HTTPOptions, Endpoint } 
 import { Handler, S3Event, Context } from 'aws-lambda';
 import s3 from 'aws-sdk/clients/s3';
 
-// this imports a bare-bones version of S3 that exposes the .send operation
-import { S3Client } from "@aws-sdk/client-s3"
+// // this imports a bare-bones version of S3 that exposes the .send operation
+// import { S3Client } from "@aws-sdk/client-s3"
 
-// this imports just the getObject operation from S3
-import { GetObjectCommand } from "@aws-sdk/client-s3"
+// // this imports just the getObject operation from S3
+// import { GetObjectCommand } from "@aws-sdk/client-s3"
 
-//usage
-const bareBonesS3 = new S3Client({...});
-await bareBonesS3.send(new GetObjectCommand({...}));
+// //usage
+// const bareBonesS3 = new S3Client({...});
+// await bareBonesS3.send(new GetObjectCommand({...}));
 
 
 
