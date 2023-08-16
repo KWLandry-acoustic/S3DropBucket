@@ -1,20 +1,24 @@
 // // this imports a bare-bones version of S3 that exposes the .send operation
-import { S3Client, S3ClientConfig } from "@aws-sdk/client-s3"
-import { Handler, S3Event, Context } from 'aws-lambda';
-
+import { S3Client, S3ClientConfig, GetObjectCommand, GetObjectCommandOutput } from "@aws-sdk/client-s3"
+import { Handler, S3Event, Context, S3ObjectACLUpdatedNotificationEvent } from 'aws-lambda';
+import fetch from "node-fetch"
+// import { Readable } from "stream";
 
 // // this imports just the getObject operation from S3
-import { GetObjectCommand } from "@aws-sdk/client-s3"
-
-
+// import { GetObjectCommand } from "@aws-sdk/client-s3"
 
 
 /**
   * A Lambda function to process the Event payload received from S3.
   */
 
+
 // Create a client to read objects from S3
-const s3Client = new S3Client({ httpOptions: { timeout: 900 } });
+const s3Client = new S3Client({ region: "us-east-1", });
+export type S3Object = {
+    Bucket: string
+    Key: string
+}
 
 
 export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Context) => {
@@ -23,13 +27,13 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
     console.log('EVENT: \n' + JSON.stringify(event, null, 2));
     console.warn("What does 'Warn' look like ?")
 
-// // //usage
-// const s3Config: S3ClientConfig = "" 
-// const bareBonesS3 = new S3Client(s3Config.endpoint);
-// await bareBonesS3.send(new GetObjectCommand({...}));
+    // // //usage
+    // const s3Config: S3ClientConfig = "" 
+    // const bareBonesS3 = new S3Client(s3Config.endpoint);
+    // await bareBonesS3.send(new GetObjectCommand({...}));
 
 
-    const params: S3.GetObjectRequest = {
+    const params: S3Object = {
         Bucket: event.Records[0].s3.bucket.name,
         Key: event.Records[0].s3.object.key,
     }
@@ -37,10 +41,11 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
 
     // s3Client.getObject(params,)
 
-    const a = await getObjectS3(params) as unknown as string
+    const a = await pullS3Object(params)
 
-    postCampaign(a) 
+    const b = postCampaign(a as string)
 
+    console.log("Return from Post to Campaign: \n", b)
 
     return context.logStreamName;
 };
@@ -48,49 +53,61 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
 export default s3JsonLoggerHandler
 
 
-async function getObjectS3(params: S3.GetObjectRequest){
+async function pullS3Object(params: S3Object) {
     try {
+        console.log("Pulling S3 Object");
 
-        // const s3Object = {
-        //     Bucket: params.Bucket,
-        //     Key: params.Key
-        // }
+        const command = new GetObjectCommand({
+            Key: params.Key,
+            Bucket: params.Bucket,
+        });
 
-        // return s3Client.getObject(s3Object).Body
-
-        const data = await s3Client.getObject(params).promise()
-            .catch(function (err) {
-                console.log("Promise Exception-Message: \n", err.message);
-                console.log("Promise Exception-Stack: \n", err.stack);
-            })
-            .then(function (d) {
-                console.log("Then: getObjectS3: \n", d)
-                return d        //.toString('utf-8');
-            })
+        const s3Item: GetObjectCommandOutput = await s3Client.send(command);
+        return s3Item.Body?.transformToString();
 
     } catch (e) {
-        console.log(" GetObjectS3 Exception: \n", e);
+        console.log("PullS3Object Exception:", e);
     }
-
 }
 
-export async function postCampaign(apiCall: string) {
 
-    const path: string = "https://api-campaign-us-6.goacoustic.com/XMLAPI"
 
-    const postOptions = {
-        host: path,
-        port: 443,
-        headers: {
-            'Content-Type': 'application/xml',
-        }
-    }
+// async function getObjectS3(params: S3.GetObjectRequest) {
+//     try {
 
-    const payload: string = ""
-    const ep = new Endpoint("https://api-campaign-us-6.goacoustic.com/XMLAPI")
-    const httpRequest = new HttpRequest(ep, "us-east-1")
-    httpRequest.method = "POST"
-    httpRequest.body = JSON.stringify({ a: " " })
+//         // const s3Object = {
+//         //     Bucket: params.Bucket,
+//         //     Key: params.Key
+//         // }
+
+//         // return s3Client.getObject(s3Object).Body
+
+//         const data = await s3Client..getObject(params).promise()
+//             .catch(function (err) {
+//                 console.log("Promise Exception-Message: \n", err.message);
+//                 console.log("Promise Exception-Stack: \n", err.stack);
+//             })
+//             .then(function (d) {
+//                 console.log("Then: getObjectS3: \n", d)
+//                 return d        //.toString('utf-8');
+//             })
+
+//     } catch (e) {
+//         console.log(" GetObjectS3 Exception: \n", e);
+//     }
+
+// }
+
+export async function postCampaign(s3Object: string) {
+
+    // const req = new HttpRequest(ep, "us-east-1")
+    // req.host = "https://api-campaign-us-6.goacoustic.com/XMLAPI"
+    // req.method = "POST"
+    // req.port = 443
+    // req.headers = {
+    //     'Content-Type': 'application/xml',
+    // }
+    // req.body = JSON.stringify(s3Object)
 
     // const post = (path: string, payload: string) => new Promise((resolve, reject) => {
     //     const options = { ...postOptions, path, method: 'POST' };
@@ -103,6 +120,22 @@ export async function postCampaign(apiCall: string) {
     //     req.write(JSON.stringify(payload));
     //     req.end();
     // })
+
+
+    const res = await fetch('https://nodejs.org/api/documentation.json');
+    if (res.ok) {
+        const data = await res.json()
+        console.log(data);
+        return data
+    }
+
+    // const response = {
+    //     statusCode: 200,
+    //     body: JSON.stringify('Hello from Lambda!'),
+    // };
+
+
+
 
 
 }

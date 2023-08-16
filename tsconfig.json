@@ -5,7 +5,7 @@
     ],
     "module": "commonjs",
     "moduleResolution": "Node16",
-    "target": "es2023",
+    "target": "es2022",
     "baseUrl": "./",
     "sourceMap": false,
     "noEmit": true,
