@@ -59,7 +59,7 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
     }
 
     try {
-        const a = await pullS3Object(params)   
+        const a = await pullS3Object(params)
         const b = await postCampaign(a as string)
         console.log("Return from Post to Campaign: \n", b)
     } catch (e) {
@@ -94,6 +94,8 @@ export async function postCampaign(xmlCalls: string) {
     const accessToken = getAccessToken()
     console.log("Access Token: ", accessToken)
 
+
+
     try {
         const r = await fetch(`https://api-campaign-us-6.goacoustic.com/XMLAP`, {
             method: 'POST',
@@ -125,27 +127,33 @@ export async function getAccessToken() {
         refreshToken: "",
         refreshTokenUrl: ""
     }
+    
     ac.accessToken = ''
     ac.clientId = '1853dc2f-1a79-4219-b538-edb018be9d52'
     ac.clientSecret = '329f1765-0731-4c9e-a5da-0e8f48559f45'
     ac.refreshToken = 'r7nyDaWJ6GYdH5l6mlR9uqFqqrWZvwKD9RSq-hFgTMdMS1'
     ac.refreshTokenUrl = `https://api-campaign-${region}-${pod}.goacoustic.com/oauth/token`
 
-    const rat = await fetch(ac.refreshTokenUrl, {
-        method: 'POST',
-        body: new URLSearchParams({
-            refresh_token: ac.refreshToken,
-            client_id: ac.clientId,
-            client_secret: ac.clientSecret,
-            grant_type: 'refresh_token'
-        }),
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'User-Agent': 'S3 TricklerCache GetAccessToken'
-        }
-    })
-    const ratResp = (await rat.json()) as accessResp
-    ac.accessToken = ratResp.access_token
 
-    return { accessToken: ac.accessToken, refreshToken: ac.refreshToken }
+    try {
+        const rat = await fetch(ac.refreshTokenUrl, {
+            method: 'POST',
+            body: new URLSearchParams({
+                refresh_token: ac.refreshToken,
+                client_id: ac.clientId,
+                client_secret: ac.clientSecret,
+                grant_type: 'refresh_token'
+            }),
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'User-Agent': 'S3 TricklerCache GetAccessToken'
+            }
+        })
+        const ratResp = (await rat.json()) as accessResp
+        ac.accessToken = ratResp.access_token
+
+        return { accessToken: ac.accessToken, refreshToken: ac.refreshToken }
+    } catch (e) {
+        console.log("Exception in getAccessToken: \n", e)
+    }
 }
