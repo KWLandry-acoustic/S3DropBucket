@@ -58,14 +58,13 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
         Key: event.Records[0].s3.object.key,
     }
 
-    // s3Client.getObject(params,)
-
-    const a = await pullS3Object(params)
-
-    // const b = postCampaign(a as string)    
-    const b = await postCampaign(a as string)
-
-    console.log("Return from Post to Campaign: \n", b)
+    try {
+        const a = await pullS3Object(params)   
+        const b = await postCampaign(a as string)
+        console.log("Return from Post to Campaign: \n", b)
+    } catch (e) {
+        console.log("Exception during Pull or Post: /n", e)
+    }
 
     return context.logStreamName;
 };
@@ -93,6 +92,7 @@ async function pullS3Object(params: S3Object) {
 export async function postCampaign(xmlCalls: string) {
 
     const accessToken = getAccessToken()
+    console.log("Access Token: ", accessToken)
 
     try {
         const r = await fetch(`https://api-campaign-us-6.goacoustic.com/XMLAP`, {
@@ -106,7 +106,7 @@ export async function postCampaign(xmlCalls: string) {
         })
             .then(res => res.json())
             .then(json => {
-                console.log(json)
+                console.log("Return from POST Campaign: \n", json)
                 return JSON
             })
 
@@ -146,6 +146,6 @@ export async function getAccessToken() {
     })
     const ratResp = (await rat.json()) as accessResp
     ac.accessToken = ratResp.access_token
-  
-    return { accessToken: ac.accessToken, refreshToken: ac.refreshToken } 
+
+    return { accessToken: ac.accessToken, refreshToken: ac.refreshToken }
 }
