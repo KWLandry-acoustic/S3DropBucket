@@ -97,7 +97,7 @@ export async function postCampaign(xmlCalls: string) {
 
 
     try {
-        const r = await fetch(`https://api-campaign-us-6.goacoustic.com/XMLAP`, {
+        const r = await fetch('https://api-campaign-us-6.goacoustic.com/XMLAPI', {
             method: 'POST',
             // body: JSON.stringify(xmlCalls),
             body: xmlCalls,
@@ -127,13 +127,14 @@ export async function getAccessToken() {
         refreshToken: "",
         refreshTokenUrl: ""
     }
-    
+
     ac.accessToken = ''
     ac.clientId = '1853dc2f-1a79-4219-b538-edb018be9d52'
     ac.clientSecret = '329f1765-0731-4c9e-a5da-0e8f48559f45'
     ac.refreshToken = 'r7nyDaWJ6GYdH5l6mlR9uqFqqrWZvwKD9RSq-hFgTMdMS1'
-    ac.refreshTokenUrl = `https://api-campaign-${region}-${pod}.goacoustic.com/oauth/token`
-
+    // ac.refreshTokenUrl = `https://api-campaign-${region}-${pod}.goacoustic.com/oauth/token`
+    ac.refreshTokenUrl = `https://api-campaign-us-6.goacoustic.com/oauth/token`
+                        //https://api-campaign-us-6.goacoustic.com/XMLAPI
 
     try {
         const rat = await fetch(ac.refreshTokenUrl, {
