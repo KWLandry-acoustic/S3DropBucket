@@ -3,75 +3,82 @@ Description: Lambda-S3 Logging Project
 Transform: AWS::Serverless-2016-10-31
 Globals: 
   Function:
-    PermissionsBoundary: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:policy/${AppId}-${AWS::Region}-PermissionsBoundary
+    PermissionsBoundary: !Sub 'arn:${AWS::Partition}:iam::${AWS::AccountId}:policy/${AppId}-${AWS::Region}-PermissionsBoundary'
 Parameters:
   AppId:
     Type: String
 Resources:
   s3JsonLoggerFunction:
     # Type: "AWS::Lambda::Function"
-    Type: AWS::Serverless::Function      
-    Metadata:    
-      # CodeUri: arn:aws:s3:::aws-us-east-1-777957353822-tricklercache-pipe      
-      CodeUri: ${codeuri}
-      BuildMethod: esbuild
-      BuildProperties:
-        Format: esm
-        # mainFields: ["browser", "module", "main"] # or ["module", "main"]
-        mainFields: 
-          --main-fields=browser, module, main
-        Minify: true
-        OutExtension:
-          - .js=.mjs
-        Target: "es2020"
-        Sourcemap: false
-        EntryPoints: 
-          - src/handlers/s3-json-logger.ts
-        External: 
-            - aws-sdk
-            - '@aws-sdk/client-s3'
-            - node-fetch
-            - '@aws-sdk/protocol-http'
+    Type: AWS::Serverless::Function
     Properties:
-      # Code:
-      #     S3Bucket: arn:aws:s3:::aws-us-east-1-777957353822-tricklercache-pipe
-      #     S3Bucket: !Ref "LambdaS3Bucket"
-      #     # S3Key: !Ref "LambdaS3Key"
-      PackageType: "Zip"
-      Role: arn:aws:iam::777957353822:role/tricklercacheExecutionRole
-      Handler: .aws-sam/build/s3JsonLoggerFunction/s3-json-logger.s3JsonLoggerHandler
-      Runtime: nodejs18.x
       Environment:
-          Variables:
-            TEST_VAR1: testvar
-            STAGE: prod
-      Description: A Lambda function that logs a json file sent to S3 bucket.
+            Variables:
+              TEST_VAR1: testvar
+              STAGE: prod
+      Description: A Lambda function triggered on a file sent to an S3 bucket.
+      # CodeUri: arn:aws:s3:::aws-us-east-1-777957353822-tricklercache-pipe      
+      # CodeUri: ${codeuri}
+      CodeUri: .
+      Role: arn:aws:iam::777957353822:role/tricklercacheExecutionRole
+      Handler: s3-json-logger.s3JsonLoggerHandler
+      Runtime: nodejs18.x
+      Architectures: 
+        - x86_64
       MemorySize: 512
       Timeout: 899
       Policies:
         - S3ReadPolicy:
             BucketName: !Sub ${BucketName} 
-      # Events:                 #Can only define a trigger on creation, existing buckets can only have a trigger added manually, 
-      #   tricklercacheEvent:
-      #     Type: S3
-      #     Properties:
-      #       # Bucket: !Sub ${BucketName}
-      #       Bucket: tricklercache 
-      #       Events: s3:ObjectCreated:*
-      #       Filter:
-      #         S3Key:
-      #           Rules:
-      #             - Name: suffix
-      #               Value: .json
       Layers:
         - arn:aws:lambda:us-east-1:777957353822:layer:dependencyLayer:1
+    #Build Parameters
+    Metadata:    
+      BuildMethod: esbuild
+      Architecture: x86_64
+      BuildProperties:
+        Target: "es2020"
+        Format: esm
+        # mainFields: 
+        #   --main-fields=module, main
+        Minify: true
+        OutExtension:
+          - .js=.mjs
+        Sourcemap: false
+        EntryPoints: 
+          - src/handlers/s3-json-logger.ts
+        External: 
+            - '@aws-sdk/client-s3'
+        #     - 'node_modules'
+            - 'node-fetch'
+        #     - '@aws-sdk/protocol-http'
+            - '@aws-sdk/fetch-http-handlerdeps/node-fetch'
+  
+  
+  
+  #Can only define a new S3 Bucket on first run creation, and then an existing bucket can only have a trigger added manually, 
+  # tricklercache:
+  #   Type: AWS::S3::Bucket
+  #   Properties:
+  #     BucketName: tricklercache
+  #     BucketEncryption:
+  #       ServerSideEncryptionConfiguration:
+  #         - ServerSideEncryptionByDefault:
+  #             SSEAlgorithm: AES256
 
-  tricklercache:
-    Type: AWS::S3::Bucket
-    Properties:
-      BucketName: tricklercache
-      BucketEncryption:
-        ServerSideEncryptionConfiguration:
-          - ServerSideEncryptionByDefault:
-              SSEAlgorithm: AES256
+  #Can only define a trigger on creation, existing buckets can only have a trigger added manually, 
+  # Events:                 
+  #   tricklercacheEvent:
+  #     Type: S3
+  #     Properties:
+  #       # Bucket: !Sub ${BucketName}
+  #       Bucket: tricklercache 
+  #       Events: s3:ObjectCreated:*
+  #       Filter:
+  #         S3Key:
+  #           Rules:
+  #             - Name: suffix
+  #               Value: .json
+
+
 

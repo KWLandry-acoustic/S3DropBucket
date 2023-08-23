@@ -1,17 +1,21 @@
-// // this imports a bare-bones version of S3 that exposes the .send operation
+// Imports a bare-bones version of S3 that exposes the .send operation
 import { S3Client, S3ClientConfig, GetObjectCommand, GetObjectCommandOutput } from "@aws-sdk/client-s3"
-import { Handler, S3Event, Context, S3ObjectACLUpdatedNotificationEvent } from 'aws-lambda';
+import { Handler, S3Event, Context } from 'aws-lambda';
 // import { HttpRequest } from '@aws-sdk/protocol-http';
 // import type { HttpHandlerOptions } from '@aws-sdk/types';
-import { FetchHttpHandler, FetchHttpHandlerOptions } from '@aws-sdk/fetch-http-handler'
-import { default as fetch, Request, Response } from 'node-fetch';
-import { HttpRequest } from "@aws-sdk/protocol-http";
+// import { FetchHttpHandler, FetchHttpHandlerOptions } from '@aws-sdk/fetch-http-handler'
+// import { default as fetch } from '@aws-sdk/fetch-http-handler/node_modules/@smithy/fetch-http-handler'
+// import { FetchHttpHandler, FetchHttpHandlerOptions} from '@aws-sdk/client-s3/dist-types/'
+
+
 
 // import { Readable } from "stream";
 
 // // this imports just the getObject operation from S3
 // import { GetObjectCommand } from "@aws-sdk/client-s3"
 
+// const g: FetchHttpHandlerOptions = {}
+// const f = new FetchHttpHandler(g)
 
 /**
   * A Lambda function to process the Event payload received from S3.
@@ -95,7 +99,6 @@ export async function postCampaign(xmlCalls: string) {
     console.log("Access Token: ", accessToken)
 
 
-
     try {
         const r = await fetch('https://api-campaign-us-6.goacoustic.com/XMLAPI', {
             method: 'POST',
@@ -132,7 +135,6 @@ export async function getAccessToken() {
     ac.clientId = '1853dc2f-1a79-4219-b538-edb018be9d52'
     ac.clientSecret = '329f1765-0731-4c9e-a5da-0e8f48559f45'
     ac.refreshToken = 'r7nyDaWJ6GYdH5l6mlR9uqFqqrWZvwKD9RSq-hFgTMdMS1'
-    // ac.refreshTokenUrl = `https://api-campaign-${region}-${pod}.goacoustic.com/oauth/token`
     ac.refreshTokenUrl = `https://api-campaign-us-6.goacoustic.com/oauth/token`
                         //https://api-campaign-us-6.goacoustic.com/XMLAPI
 

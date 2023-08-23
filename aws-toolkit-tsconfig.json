@@ -3,9 +3,9 @@
         "target": "es6",
         "module": "commonjs",
         "inlineSourceMap": false,
-        "outDir": ".aws-sam/",
+        "outDir": "/Users/kwlandry/Dropbox/Documents/A.Campaign/CodeFolder/A.TricklerCache_codecommit/tricklerCache/.aws-sam",
         "rootDir": ".",
-        "sourceRoot": "src/handlers/",
+        "sourceRoot": "/Users/kwlandry/Dropbox/Documents/A.Campaign/CodeFolder/A.TricklerCache_codecommit/tricklerCache",
         "typeRoots": [
             "node_modules/@types"
         ],
