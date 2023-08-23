@@ -16,6 +16,7 @@ Resources:
             Variables:
               TEST_VAR1: testvar
               STAGE: prod
+              Last Modified:  
       Description: A Lambda function triggered on a file sent to an S3 bucket.
       # CodeUri: arn:aws:s3:::aws-us-east-1-777957353822-tricklercache-pipe      
       # CodeUri: ${codeuri}
