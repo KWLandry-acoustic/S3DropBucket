@@ -1,6 +1,9 @@
+debugger; 
 // Imports a bare-bones version of S3 that exposes the .send operation
 import { S3Client, S3ClientConfig, GetObjectCommand, GetObjectCommandOutput } from "@aws-sdk/client-s3"
 import { Handler, S3Event, Context } from 'aws-lambda';
+import fetch from "node-fetch"
+
 // import { HttpRequest } from '@aws-sdk/protocol-http';
 // import type { HttpHandlerOptions } from '@aws-sdk/types';
 // import { FetchHttpHandler, FetchHttpHandlerOptions } from '@aws-sdk/fetch-http-handler'
@@ -22,12 +25,18 @@ import { Handler, S3Event, Context } from 'aws-lambda';
   */
 
 
+
+
+
 // Create a client to read objects from S3
-const s3Client = new S3Client({ region: "us-east-1", });
+const s3 = new S3Client({ region: "us-east-1", });
+
 export type S3Object = {
     Bucket: string
     Key: string
+    Region: string
 }
+
 
 export interface accessResp {
     access_token: string
@@ -45,11 +54,52 @@ export interface authCreds {
 }
 
 
+
 export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Context) => {
 
     console.log("ENVIRONMENT VARIABLES\n" + JSON.stringify(process.env, null, 2))
     console.log('EVENT: \n' + JSON.stringify(event, null, 2));
     console.warn("What does 'Warn' look like ?")
+
+    console.log("Events to be processed: ", event.Records.length)
+
+    if (event.Records.length < 1) {
+        console.log(await lambdaWait(2000));
+    } else {
+        let processFilePromises: {}[] = []
+
+        event.Records.forEach(async r => {
+
+            const command = new GetObjectCommand({
+                Key: r.s3.object.key,
+                Bucket: r.s3.bucket.name
+            })
+
+            const s3O = {
+                Bucket: r.s3.bucket.name,
+                Key: r.s3.object.key,
+                Region: 'us-east-1'
+            }
+
+            const data = await s3.send(
+                // new GetObjectCommand({
+                //     Bucket: params.Bucket,
+                //     Key: params.Key,
+                //     Body: params.Body,
+                // })
+                new GetObjectCommand(s3O)
+            );
+
+
+
+
+
+
+            processFilePromises.push( s3.send(command))
+        })
+            
+        await Promise.all(processFilePromises);
+    }
 
     // // //usage
     // const s3Config: S3ClientConfig = "" 
@@ -57,23 +107,27 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
     // await bareBonesS3.send(new GetObjectCommand({...}));
 
 
-    const params: S3Object = {
-        Bucket: event.Records[0].s3.bucket.name,
-        Key: event.Records[0].s3.object.key,
-    }
 
-    try {
-        const a = await pullS3Object(params)
-        const b = await postCampaign(a as string)
-        console.log("Return from Post to Campaign: \n", b)
-    } catch (e) {
-        console.log("Exception during Pull or Post: /n", e)
-    }
 
-    return context.logStreamName;
+    // try {
+    //     const a = await pullS3Object(params)
+    //     const b = await postCampaign(a as string)
+    //     console.log("Return from Post to Campaign: \n", b)
+    // } catch (e) {
+    //     console.log("Exception during Pull or Post: /n", e)
+    // }
+
+    // return context.logStreamName;
 };
 
 export default s3JsonLoggerHandler
+
+
+function lambdaWait(n: number) {
+    return new Promise((resolve, reject) => {
+        setTimeout(() => resolve("hello"), n)
+    });
+}
 
 
 async function pullS3Object(params: S3Object) {
@@ -85,7 +139,7 @@ async function pullS3Object(params: S3Object) {
             Bucket: params.Bucket,
         });
 
-        const s3Item: GetObjectCommandOutput = await s3Client.send(command);
+        const s3Item: GetObjectCommandOutput = await s3.send(command);
         return s3Item.Body?.transformToString();
 
     } catch (e) {
@@ -136,7 +190,7 @@ export async function getAccessToken() {
     ac.clientSecret = '329f1765-0731-4c9e-a5da-0e8f48559f45'
     ac.refreshToken = 'r7nyDaWJ6GYdH5l6mlR9uqFqqrWZvwKD9RSq-hFgTMdMS1'
     ac.refreshTokenUrl = `https://api-campaign-us-6.goacoustic.com/oauth/token`
-                        //https://api-campaign-us-6.goacoustic.com/XMLAPI
+    //https://api-campaign-us-6.goacoustic.com/XMLAPI
 
     try {
         const rat = await fetch(ac.refreshTokenUrl, {

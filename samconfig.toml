@@ -20,6 +20,7 @@ lint = true
 capabilities = "CAPABILITY_IAM"
 region = "us-east-1"
 profile = "Acoustic-cis-dev-ecs-devteam-user"
+codeuri = './'
 parameter_overrides = "AppId=\"tricklercache\""
 image_repositories = []
 disable_rollback = false

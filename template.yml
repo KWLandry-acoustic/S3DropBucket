@@ -8,6 +8,20 @@ Parameters:
   AppId:
     Type: String
 Resources:
+  s3JsonLoggerDependenciesLayer:
+    # Type: AWS::Lambda::LayerVersion
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      # arn: arn:aws:lambda:us-east-1:777957353822:layer:dependencyLayer:1
+      LayerName: dependencyLayer
+      Description: s3JsonLoggerDependenciesLayer
+      ContentUri: nodejs.zip
+      # Content:
+      #   # S3Bucket: s3JsonLoggerDependenciesLayer
+      #   # S3Key: nodejs.zip
+      CompatibleRuntimes:
+        - nodejs18.x
+      RetentionPolicy: Retain
   s3JsonLoggerFunction:
     # Type: "AWS::Lambda::Function"
     Type: AWS::Serverless::Function
@@ -16,11 +30,11 @@ Resources:
             Variables:
               TEST_VAR1: testvar
               STAGE: prod
-              Last Modified:  
+              Last Modified:  08/24/2023
       Description: A Lambda function triggered on a file sent to an S3 bucket.
       # CodeUri: arn:aws:s3:::aws-us-east-1-777957353822-tricklercache-pipe      
       # CodeUri: ${codeuri}
-      CodeUri: .
+      CodeUri: ./
       Role: arn:aws:iam::777957353822:role/tricklercacheExecutionRole
       Handler: .aws-sam/build/s3-json-logger.s3JsonLoggerHandler
       Runtime: nodejs18.x
@@ -36,7 +50,7 @@ Resources:
     #Build Parameters
     Metadata:    
       BuildMethod: esbuild
-      Architecture: x86_64
+      Architecture: x86_64  ws
       BuildProperties:
         Target: "es2020"
         Format: esm
