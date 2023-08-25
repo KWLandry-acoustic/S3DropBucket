@@ -9,7 +9,8 @@
     "@aws-sdk/protocol-http": "^3.374.0",
     "esbuild": "^0.17.19",
     "lodash.get": "^4.4.2",
-    "node-fetch": "^3.3.2"
+    "node-fetch": "^3.3.2",
+    "smithy": "^0.6.3"
   },
   "browser": {
     "crypto": false
