@@ -11,7 +11,7 @@ resolve_s3 = false
 
 [default.build.parameters]
 cached = true
-parallel = true
+parallel = false
 
 [default.validate.parameters]
 lint = true
@@ -20,7 +20,8 @@ lint = true
 capabilities = "CAPABILITY_IAM"
 region = "us-east-1"
 profile = "Acoustic-cis-dev-ecs-devteam-user"
-codeuri = './'
+codeuri = '.'
+basedir = '.'
 parameter_overrides = "AppId=\"tricklercache\""
 image_repositories = []
 disable_rollback = false

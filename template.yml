@@ -46,13 +46,13 @@ Resources:
         - S3ReadPolicy:
             BucketName: !Sub ${BucketName} 
       Layers:
-        - arn:aws:lambda:us-east-1:777957353822:layer:dependencyLayer:1
+        - arn:aws:lambda:us-east-1:777957353822:layer:dependencyLayer
     #Build Parameters
     Metadata:    
       BuildMethod: esbuild
-      Architecture: x86_64  ws
+      Architecture: x86_64
       BuildProperties:
-        Target: "es2020"
+        Target: es2020
         Format: esm
         # mainFields: 
         #   --main-fields=module, main
