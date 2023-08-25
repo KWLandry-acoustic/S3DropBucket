@@ -1,4 +1,4 @@
-debugger; 
+debugger;
 // Imports a bare-bones version of S3 that exposes the .send operation
 import { S3Client, S3ClientConfig, GetObjectCommand, GetObjectCommandOutput } from "@aws-sdk/client-s3"
 import { Handler, S3Event, Context } from 'aws-lambda';
@@ -31,12 +31,18 @@ import fetch from "node-fetch"
 // Create a client to read objects from S3
 const s3 = new S3Client({ region: "us-east-1", });
 
-export type S3Object = {
+export interface S3Object {
     Bucket: string
     Key: string
     Region: string
 }
 
+export interface evRec {
+    s3: {
+        object: { key: any; };
+        bucket: { name: any; };
+    };
+}
 
 export interface accessResp {
     access_token: string
@@ -57,18 +63,18 @@ export interface authCreds {
 
 export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Context) => {
 
-    console.log("ENVIRONMENT VARIABLES\n" + JSON.stringify(process.env, null, 2))
+    console.log('AWS-SDK Version: ', S3Client.version)
+    console.log('ENVIRONMENT VARIABLES\n' + JSON.stringify(process.env, null, 2))
     console.log('EVENT: \n' + JSON.stringify(event, null, 2));
-    console.warn("What does 'Warn' look like ?")
-
-    console.log("Events to be processed: ", event.Records.length)
+    console.log("Num of Events to be processed: ", event.Records.length)
 
     if (event.Records.length < 1) {
         console.log(await lambdaWait(2000));
     } else {
         let processFilePromises: {}[] = []
 
-        event.Records.forEach(async r => {
+
+        event.Records.forEach(async (r: evRec) => {
 
             const command = new GetObjectCommand({
                 Key: r.s3.object.key,
@@ -88,16 +94,11 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
                 //     Body: params.Body,
                 // })
                 new GetObjectCommand(s3O)
-            );
+            )
 
-
-
-
-
-
-            processFilePromises.push( s3.send(command))
+            processFilePromises.push(s3.send(command))
         })
-            
+
         await Promise.all(processFilePromises);
     }
 
