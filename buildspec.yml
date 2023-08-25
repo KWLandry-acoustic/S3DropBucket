@@ -86,15 +86,15 @@ phases:
       # - mkdir nodejs && cp -r node_modules nodejs/
 
       - ls  -lha
-      - ls  -lha nodejs
-      - ls  -lha nodejs/node_modules
+      # - ls  -lha nodejs
+      # - ls  -lha nodejs/node_modules
 
       - ls  -lha .aws-sam
       - ls  -lha .aws-sam/build
       - ls  -lha .aws-sam/build/s3JsonLoggerFunction
 
 
-      - sam package --s3-bucket aws-us-east-1-777957353822-tricklercache-pipe
+      - sam package --s3-bucket aws-us-east-1-777957353822-tricklercache-pipe --debug
       # - sam package --resolve-s3 --s3-bucket deploy 
 
       # Use AWS SAM to package the application by using AWS CloudFormation
