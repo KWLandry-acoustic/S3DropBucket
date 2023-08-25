@@ -36,7 +36,7 @@ Resources:
       # CodeUri: ${codeuri}
       CodeUri: ./
       Role: arn:aws:iam::777957353822:role/tricklercacheExecutionRole
-      Handler: .aws-sam/build/s3-json-logger.s3JsonLoggerHandler
+      Handler: s3-json-logger.s3JsonLoggerHandler
       Runtime: nodejs18.x
       Architectures: 
         - x86_64
