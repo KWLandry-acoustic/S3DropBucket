@@ -22,7 +22,7 @@ region = "us-east-1"
 profile = "Acoustic-cis-dev-ecs-devteam-user"
 # codeuri = '.'
 # basedir = '.'
-parameter_overrides = "AppId=\"tricklercache\""
+# parameter_overrides = "AppId=\"tricklercache\""
 image_repositories = []
 disable_rollback = false
 confirm_changeset = false
