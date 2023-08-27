@@ -37,7 +37,7 @@ Resources:
       Description: A Lambda function triggered on a file sent to an S3 bucket.
       # CodeUri: arn:aws:s3:::aws-us-east-1-777957353822-tricklercache-pipe      
       # CodeUri: ${codeuri}
-      CodeUri: src/handlers
+      CodeUri: .
       Role: arn:aws:iam::777957353822:role/tricklercacheExecutionRole
       Handler: s3-json-logger.s3JsonLoggerHandler
       Runtime: nodejs18.x
@@ -64,7 +64,7 @@ Resources:
           - .js=.mjs
         Sourcemap: false
         EntryPoints: 
-          - s3-json-logger.ts
+          - src/handlers/s3-json-logger.ts
         External: 
             - '@aws-sdk/client-s3'
         #     - 'node_modules'
