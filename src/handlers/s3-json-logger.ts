@@ -1,8 +1,17 @@
-debugger;
+
+
+
 // Imports a bare-bones version of S3 that exposes the .send operation
 import { S3Client, S3ClientConfig, GetObjectCommand, GetObjectCommandOutput } from "@aws-sdk/client-s3"
 import { Handler, S3Event, Context } from 'aws-lambda';
 import fetch from "node-fetch"
+
+import nodejs from 'nodejs';
+// const path = require('path');
+// const util = require('util');
+
+const s3 = new AWS.S3();
+
 
 // import { HttpRequest } from '@aws-sdk/protocol-http';
 // import type { HttpHandlerOptions } from '@aws-sdk/types';
@@ -29,7 +38,7 @@ import fetch from "node-fetch"
 
 
 // Create a client to read objects from S3
-const s3 = new S3Client({ region: "us-east-1", });
+const s3Cl = new S3Client({ region: "us-east-1", });
 
 export interface S3Object {
     Bucket: string

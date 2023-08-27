@@ -19,8 +19,9 @@ Minify = true
 OutExtension = [".js=.mjs"]
 Target = "es2020"
 Sourcemap = false
-EntryPoints = [.aws-sam/build/s3JsonLoggerFunction/s3-json-logger.mjs"]
-External = ["aws-sdk", '@aws-sdk/client-s3', 'node-fetch', '@aws-sdk/protocol-http']
+EntryPoints = [".aws-sam/build/s3JsonLoggerFunction/s3-json-logger.mjs",]
+External = ['@aws-sdk/client-s3', 'node-fetch', '@aws-sdk/protocol-http']
 
 
 [layer_build_definitions]
+BuildMethod = "makefile"

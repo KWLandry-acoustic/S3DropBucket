@@ -1,3 +1,7 @@
 node_modules
 .aws-sam
 nodejs.zip
+*.txt
+*.tgz
+__tests__/*
+.ds*
