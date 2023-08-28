@@ -1,10 +1,10 @@
-
-import { S3, S3Client, S3ClientConfig, GetObjectCommand, GetObjectCommandOutput } from "@aws-sdk/client-s3"
-import { Handler, S3Event, Context } from 'aws-lambda';
+"use strict";
+import { S3, S3Client, S3ClientConfig } from "@aws-sdk/client-s3"
+import { Handler, S3Event, Context } from 'aws-lambda'
 import fetch from "node-fetch"
-import AWS from "@aws-sdk/client-s3"; 
-import packageJson from '@aws-sdk/client3/package.json';
-const version = packageJson.version;
+import { packageJson } from '@aws-sdk/client3/package.json'
+
+const version = packageJson.version
 
 // const path = require('path');
 // const util = require('util');
