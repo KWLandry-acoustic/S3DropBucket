@@ -3,7 +3,7 @@ import { S3, S3Client, S3ClientConfig, GetObjectCommand, GetObjectCommandOutput 
 import { Handler, S3Event, Context } from 'aws-lambda';
 import fetch from "node-fetch"
 import AWS from "@aws-sdk/client-s3"; 
-const packageJson = require('@aws-sdk/client3/package.json');
+import packageJson from '@aws-sdk/client3/package.json';
 const version = packageJson.version;
 
 // const path = require('path');
