@@ -2,6 +2,7 @@
     "compilerOptions": {
         "target": "es6",
         "module": "nodenext",
+        "resolveJsonModule": true, 
         "inlineSourceMap": false,
         "outDir": "tricklerCache/.aws-sam",
         "rootDir": ".",

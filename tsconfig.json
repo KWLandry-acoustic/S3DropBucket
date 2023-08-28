@@ -5,6 +5,7 @@
     ],
     "module": "nodenext",
     "moduleResolution": "Node16",
+    "resolveJsonModule": true,                        /* Enable importing .json files. */
     "target": "es2022",
     "baseUrl": ".",
     "sourceMap": false,
