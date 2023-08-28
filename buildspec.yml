@@ -30,6 +30,7 @@ phases:
 
       - cd ..
       - pwd
+      - zip -r nodejs/ nodejs.zip 
 
       # Install all dependencies (including dependencies for running tests)
       # - npm install --omit=dev
@@ -125,7 +126,8 @@ phases:
 
 artifacts:
   files:
-    - nodejs/**/*  
+    - nodejs/**/*
+    - nodejs.zip
     - package.json
     - node_modules/**/*
     - package-lock.json
