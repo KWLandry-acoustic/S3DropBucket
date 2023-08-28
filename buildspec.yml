@@ -24,7 +24,7 @@ phases:
 
       - mkdir nodejs
       - if [ ! -d "node-Modules" ]; then
-            '# cp package.json nodejs/;'
+            `# cp package.json nodejs/;`
             npm install --omit=dev; 
             fi
 
