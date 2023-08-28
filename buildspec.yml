@@ -12,6 +12,7 @@ phases:
       - ls -lha
       - cp -r node_modules nodejs
       - zip -r nodejs.zip nodejs
+      - rmdir nodejs
       
   build:
     commands:
@@ -20,7 +21,7 @@ phases:
 
       - sam package --s3-bucket aws-us-east-1-777957353822-tricklercache-pipe --debug
      
-      - aws cloudformation package --template-file template.yml --s3-bucket $S3_BUCKET --output-template-file template-export.yml --debug
+      - aws cloudformation package --template-file template.yml --s3-bucket $S3_BUCKET --output-template-file template-export.yml --stack-name tricklercache --debug
      
   post_build:
     commands:
@@ -34,5 +35,5 @@ artifacts:
     - package.json
     - node_modules/**/*
     - template-export.yml
-    - nodejs/**/*
-    - nodejs.zip
+    # - nodejs/**/*
+    # - nodejs.zip
