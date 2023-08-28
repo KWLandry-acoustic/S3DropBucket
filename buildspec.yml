@@ -9,7 +9,6 @@ phases:
       - ls  -lha 
       - ls  -lha src/handlers
 
-
       # - if [ -z ".aws-sam/" ]; then rm -r .aws-sam; fi
       # mkdir nodejs && cp -r node_modules nodejs/
 
@@ -24,7 +23,8 @@ phases:
       - mkdir nodejs
       - cd nodejs    
       - npm init -y
-      - npm install --omit=dev package.json
+      - npm install --omit=dev ../package.json
+      - pwd
       - ls -lha
 
       - cd ..
@@ -36,7 +36,6 @@ phases:
       # - ls  -lha node_modules
 
       # - npm install -g typescript
-
 
   pre_build:
     commands:
@@ -59,6 +58,9 @@ phases:
       # - ls  -lha
 
       # sam build -m package.json
+      - pwd
+      - ls -lha 
+
       - sam build --debug
 
       # - pwd
@@ -104,7 +106,7 @@ phases:
       - ls  -lha .aws-sam/build/s3JsonLoggerFunction
 
 
-      - sam package --s3-bucket aws-us-east-1-777957353822-tricklercache-pipe --debug
+      - sam package --s3-bucket aws-us-east-1-777957353822-tricklercache-pipe --force-upload --debug
       # - sam package --resolve-s3 --s3-bucket deploy 
 
       # Use AWS SAM to package the application by using AWS CloudFormation
