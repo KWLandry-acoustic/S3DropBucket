@@ -6,7 +6,7 @@ version = 0.1
 
 
 [default.global.parameters]
-stack_name = "tricklercache"
+stack_name = "tricklerCache"
 resolve_s3 = false
 
 [default.build.parameters]
@@ -20,8 +20,8 @@ lint = true
 capabilities = "CAPABILITY_IAM"
 region = "us-east-1"
 profile = "Acoustic-cis-dev-ecs-devteam-user"
-# codeuri = '.'
-# basedir = '.'
+codeuri = '.'
+basedir = '.'
 # parameter_overrides = "AppId=\"tricklercache\""
 image_repositories = []
 disable_rollback = false
