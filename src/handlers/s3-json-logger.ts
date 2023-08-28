@@ -1,10 +1,11 @@
+
 "use strict";
-import { S3, S3Client, S3ClientConfig } from "@aws-sdk/client-s3"
+import { S3, S3Client, S3ClientConfig, GetObjectCommand, GetObjectCommandOutput } from "@aws-sdk/client-s3"
 import { Handler, S3Event, Context } from 'aws-lambda'
 import fetch from "node-fetch"
-import { packageJson } from '@aws-sdk/client3/package.json'
 
-const version = packageJson.version
+// import { packageJson } from '@aws-sdk/client3/package.json'
+// const version = packageJson.version
 
 // const path = require('path');
 // const util = require('util');
@@ -31,7 +32,7 @@ const version = packageJson.version
 
 // Create a client to read objects from S3
 const s3 = new S3Client({ region: "us-east-1", });
-const aws = new AWS.S3()
+
 
 export interface S3Object {
     Bucket: string
@@ -62,10 +63,10 @@ export interface authCreds {
 }
 
 
+module.exports.Handler = async (event: S3Event, context: Context) => {
+// export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Context) => {
 
-export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Context) => {
-
-    console.log(`AWS-SDK Version: ${version}`)
+    // console.log(`AWS-SDK Version: ${version}`)
     console.log('ENVIRONMENT VARIABLES\n' + JSON.stringify(process.env, null, 2))
     console.log("Num of Events to be processed: ", event.Records.length)
     console.log('EVENT: \n' + JSON.stringify(event, null, 2));
@@ -123,7 +124,7 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
     // return context.logStreamName;
 };
 
-export default s3JsonLoggerHandler
+// export default s3JsonLoggerHandler
 
 
 function lambdaWait(n: number) {
