@@ -20,17 +20,22 @@ phases:
       # - pwd
       # - ls  -lha node_modules
 
+
+
       - mkdir nodejs
-      - cp package.json nodejs/
-      - cd nodejs
-      # - npm init -y
-      # - npm install --omit=dev
+      - if [ ! -d "node-Modules" ]; then
+            '# cp package.json nodejs/;'
+            npm install --omit=dev; 
+            fi
+
+      # - cd nodejs
+
       - cp -r node_modules nodejs
 
       - pwd
       - ls -lha
 
-      - cd ..
+      # - cd ..
       - pwd
       - zip -r nodejs.zip nodejs
       - pwd
