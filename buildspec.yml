@@ -31,7 +31,9 @@ phases:
       - cd ..
       - pwd
       - zip -r nodejs/ . -i nodejs.zip
-      
+      - pwd
+      - ls -lha
+
       # Install all dependencies (including dependencies for running tests)
       # - npm install --omit=dev
       # - pwd
