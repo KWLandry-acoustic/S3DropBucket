@@ -24,7 +24,7 @@ phases:
       - mkdir nodejs     
       - cd nodejs    
       - npm init -y
-      - npm i omit=dev
+      - npm install
       - cd ..
 
       # Install all dependencies (including dependencies for running tests)
