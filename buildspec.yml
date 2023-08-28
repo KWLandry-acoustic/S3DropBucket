@@ -1,9 +1,9 @@
 version: 0.2
 phases:
   install:
-  runtime-versions:
-    nodejs: 18.x
-  commands:
+    runtime-versions:
+      nodejs: 18.x
+    commands:
 
       - pwd
       - ls  -lha 
@@ -25,16 +25,7 @@ phases:
       - cd nodejs    
       - npm init -y
       - npm i omit=dev
-
-artifacts:
-  files:
-    - 'nodejs/**/*'    
-    - 'package.json'
-    - 'node_modules/**/*'
-    - 'package-lock.json'
-    - 'package.json'
-    
-
+      - cd ..
 
       # Install all dependencies (including dependencies for running tests)
       # - npm install --omit=dev
@@ -128,4 +119,9 @@ artifacts:
 
 artifacts:
   files:
+    - nodejs/**/*  
+    - package.json
+    - node_modules/**/*
+    - package-lock.json
+    - package.json
     - template-export.yml
