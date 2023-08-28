@@ -30,7 +30,7 @@ phases:
 
       - cd ..
       - pwd
-      - zip -r nodejs/ .
+      - zip -r nodejs/
       - pwd
       - ls -lha
 
