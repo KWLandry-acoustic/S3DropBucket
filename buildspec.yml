@@ -8,6 +8,7 @@ phases:
     commands:
        
       - mkdir nodejs
+      - npm i -omit=dev
       - ls -lha
       - cp -r node_modules nodejs
       - zip -r nodejs.zip nodejs
