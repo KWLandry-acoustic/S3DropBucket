@@ -62,9 +62,12 @@ export interface authCreds {
     refreshTokenUrl: string
 }
 
+// commonJS
+// module.exports.Handler = async (event: S3Event, context: Context) => {
 
-module.exports.Handler = async (event: S3Event, context: Context) => {
-// export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Context) => {
+//ESM  - es6 ecmascript
+ // export const handler = async (event) => {
+export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Context) => {
 
     // console.log(`AWS-SDK Version: ${version}`)
     console.log('ENVIRONMENT VARIABLES\n' + JSON.stringify(process.env, null, 2))
@@ -124,7 +127,7 @@ module.exports.Handler = async (event: S3Event, context: Context) => {
     // return context.logStreamName;
 };
 
-// export default s3JsonLoggerHandler
+export default s3JsonLoggerHandler
 
 
 function lambdaWait(n: number) {
