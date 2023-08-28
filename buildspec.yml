@@ -6,6 +6,7 @@ phases:
     commands:
   pre_build:
     commands:
+      - mkdir nodejs
       - cp -r node_modules nodejs
       - zip -r nodejs.zip nodejs
       
