@@ -1,7 +1,9 @@
 version: 0.2
 phases:
   install:
-    commands:
+  runtime-versions:
+    nodejs: 18.x
+  commands:
 
       - pwd
       - ls  -lha 
@@ -19,6 +21,20 @@ phases:
       # - pwd
       # - ls  -lha node_modules
 
+      - mkdir nodejs     
+      - cd nodejs    
+      - npm init -y
+      - npm i omit=dev
+
+artifacts:
+  files:
+    - 'nodejs/**/*'    
+    - 'package.json'
+    - 'node_modules/**/*'
+    - 'package-lock.json'
+    - 'package.json'
+    
+
 
       # Install all dependencies (including dependencies for running tests)
       # - npm install --omit=dev
@@ -27,14 +43,14 @@ phases:
 
       # - npm install -g typescript
 
-      - npm install esbuild
-      # - pwd
-      # - ls  -lha
 
   pre_build:
     commands:
       # Discover and run unit tests in the '__tests__' directory
       #- npm run test
+    - npm install esbuild
+      # - pwd
+      # - ls  -lha
 
   build:
     commands:
