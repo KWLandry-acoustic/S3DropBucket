@@ -71,6 +71,7 @@ Resources:
             - 'node-fetch'
             - 'nodejs'
             - '@aws-sdk/fetch-http-handlerdeps/node-fetch'
+            - '@aws-sdk/client3/package.json'
   
   
   
