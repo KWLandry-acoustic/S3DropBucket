@@ -4,7 +4,10 @@ phases:
     runtime-versions:
       nodejs: 18.x
     commands:
-
+  pre-build:
+    commands:
+      - cp -r node_modules nodejs
+      - zip -r nodejs.zip nodejs
       
   build:
     commands:
