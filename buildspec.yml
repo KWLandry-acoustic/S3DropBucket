@@ -24,7 +24,7 @@ phases:
 
       - sam package --s3-bucket aws-us-east-1-777957353822-tricklercache-pipe --debug
      
-      - aws cloudformation package --template-file template.yml --s3-bucket $S3_BUCKET --output-template-file template-export.yml --stack-name tricklercache --debug
+      - aws cloudformation package --template-file template.yml --s3-bucket $S3_BUCKET --output-template-file template-export.yml --debug
      
   post_build:
     commands:
