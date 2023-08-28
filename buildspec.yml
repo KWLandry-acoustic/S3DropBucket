@@ -23,7 +23,7 @@ phases:
       - mkdir nodejs
       - cd nodejs    
       - npm init -y
-      - npm install --omit=dev ../package.json
+      - npm install --omit=dev ../
       - pwd
       - ls -lha
 
