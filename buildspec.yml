@@ -21,11 +21,14 @@ phases:
       # - pwd
       # - ls  -lha node_modules
 
-      - mkdir nodejs     
+      - mkdir nodejs
       - cd nodejs    
       - npm init -y
-      - npm install
+      - npm install --omit=dev ../package.json
+      - ls -lha
+
       - cd ..
+      - pwd
 
       # Install all dependencies (including dependencies for running tests)
       # - npm install --omit=dev
