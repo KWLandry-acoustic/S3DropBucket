@@ -1,24 +1,19 @@
 
-
-
-// Imports a bare-bones version of S3 that exposes the .send operation
-import { S3Client, S3ClientConfig, GetObjectCommand, GetObjectCommandOutput } from "@aws-sdk/client-s3"
+import { S3, S3Client, S3ClientConfig, GetObjectCommand, GetObjectCommandOutput } from "@aws-sdk/client-s3"
 import { Handler, S3Event, Context } from 'aws-lambda';
 import fetch from "node-fetch"
+import AWS from "@aws-sdk/client-s3"; 
+const packageJson = require('@aws-sdk/client3/package.json');
+const version = packageJson.version;
 
-import nodejs from 'nodejs';
 // const path = require('path');
 // const util = require('util');
-
-const s3 = new AWS.S3();
-
 
 // import { HttpRequest } from '@aws-sdk/protocol-http';
 // import type { HttpHandlerOptions } from '@aws-sdk/types';
 // import { FetchHttpHandler, FetchHttpHandlerOptions } from '@aws-sdk/fetch-http-handler'
 // import { default as fetch } from '@aws-sdk/fetch-http-handler/node_modules/@smithy/fetch-http-handler'
 // import { FetchHttpHandler, FetchHttpHandlerOptions} from '@aws-sdk/client-s3/dist-types/'
-
 
 
 // import { Readable } from "stream";
@@ -34,11 +29,9 @@ const s3 = new AWS.S3();
   */
 
 
-
-
-
 // Create a client to read objects from S3
-const s3Cl = new S3Client({ region: "us-east-1", });
+const s3 = new S3Client({ region: "us-east-1", });
+const aws = new AWS.S3()
 
 export interface S3Object {
     Bucket: string
@@ -72,10 +65,10 @@ export interface authCreds {
 
 export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Context) => {
 
-    console.log('AWS-SDK Version: ', S3Client.version)
+    console.log(`AWS-SDK Version: ${version}`)
     console.log('ENVIRONMENT VARIABLES\n' + JSON.stringify(process.env, null, 2))
-    console.log('EVENT: \n' + JSON.stringify(event, null, 2));
     console.log("Num of Events to be processed: ", event.Records.length)
+    console.log('EVENT: \n' + JSON.stringify(event, null, 2));
 
     if (event.Records.length < 1) {
         console.log(await lambdaWait(2000));

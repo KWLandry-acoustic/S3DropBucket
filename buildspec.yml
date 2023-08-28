@@ -25,7 +25,7 @@ phases:
       - cd nodejs
       # - npm init -y
       # - npm install --omit=dev
-      - cp -r node_modules nodejs/
+      - cp -r node_modules nodejs
 
       - pwd
       - ls -lha
