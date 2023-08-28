@@ -36,7 +36,7 @@ Resources:
               Last Modified:  08/24/2023
       Description: A Lambda function triggered on a file sent to an S3 bucket.
       # CodeUri: arn:aws:s3:::aws-us-east-1-777957353822-tricklercache-pipe      
-      CodeUri: ${codeuri}
+      # CodeUri: ${codeuri}
       # CodeUri: .
       Role: arn:aws:iam::777957353822:role/tricklercacheExecutionRole
       Handler: s3-json-logger.s3JsonLoggerHandler
