@@ -3,7 +3,10 @@ phases:
   install:
     runtime-versions:
       nodejs: 18.x
-    commands:
+    commands: 
+      - pwd; ls -lha
+
+
   pre_build:
     commands:
        
@@ -12,7 +15,7 @@ phases:
       - ls -lha
       - cp -r node_modules nodejs
       - zip -r nodejs.zip nodejs
-      - rmdir nodejs
+      - rm -r nodejs
       
   build:
     commands:
