@@ -1,0 +1,142 @@
+version: 0.2
+phases:
+  install:
+    runtime-versions:
+      nodejs: 18.x
+    commands:
+
+      - pwd
+      - ls  -lha 
+      - ls  -lha src/handlers
+
+      # - if [ -z ".aws-sam/" ]; then rm -r .aws-sam; fi
+      # mkdir nodejs && cp -r node_modules nodejs/
+
+      # - npm uninstall node_modules
+      # - pwd
+      # - ls  -lha node_modules
+
+      # - if [ -z "node_modules" ]; then rm -r node_modules; fi
+      # - pwd
+      # - ls  -lha node_modules
+
+      - mkdir nodejs
+      - if [ ! -d "node-Modules" ]; then
+            `# cp package.json nodejs/;`
+            npm install --omit=dev; 
+            fi
+
+      # - cd nodejs
+
+      - cp -r node_modules nodejs
+
+      - pwd
+      - ls -lha
+
+      # - cd ..
+      - pwd
+      - zip -r nodejs.zip nodejs
+      - pwd
+      - ls -lha
+
+      # Install all dependencies (including dependencies for running tests)
+      # - npm install --omit=dev
+      # - pwd
+      # - ls  -lha node_modules
+
+      # - npm install -g typescript
+
+  pre_build:
+    commands:
+      # Discover and run unit tests in the '__tests__' directory
+      #- npm run test
+    - npm install esbuild
+      # - pwd
+      # - ls  -lha
+
+  build:
+    commands:
+
+      # - tsc --build --listFiles ./src/handlers/s3-json-logger.ts --verbose      
+      # - tsc --noemit ./src/handlers/s3-json-logger.ts 
+      # - pwd
+      # - ls  -lha src/
+
+      # - npm run build --debug --verbose
+      # - pwd
+      # - ls  -lha
+
+      # sam build -m package.json
+      - pwd
+      - ls -lha 
+
+      - sam build --debug
+
+      # - pwd
+      # - ls  -lha
+      # - ls  -lha .aws-sam
+      # - ls  -lha .aws-sam/build
+      # - ls  -lha .aws-sam/build/src
+
+      # - sam build
+      # - pwd
+      # - ls  -lha
+
+      # - cd src/handlers && zip -r s3-json-logger.zip s3-json-logger.js*
+      # - cd ../../
+
+      # - npm pack
+
+      # - rm -r node_modules
+
+      # - npm ci --omit=dev --loglevel verbose
+      # - pwd
+      # - ls  -lha node_modules
+
+      # Remove all dependencies not needed for the Lambda deployment package (the packages from devDependencies in package.json)
+      # - npm prune --production --loglevel verbose
+      # - npm prune --omit=dev --loglevel verbose
+
+      # a- npm install --omit=dev --loglevel verbose
+
+      # - codebuild-breakpoint
+
+      - pwd
+      # - ls  -lha
+      # - if [ -z "nodejs/" ]; then rm -r nodejs/; fi
+      # - mkdir nodejs && cp -r node_modules nodejs/
+
+      - ls  -lha
+      # - ls  -lha nodejs
+      # - ls  -lha nodejs/node_modules
+
+      - ls  -lha .aws-sam
+      - ls  -lha .aws-sam/build
+      - ls  -lha .aws-sam/build/s3JsonLoggerFunction
+
+
+      - sam package --s3-bucket aws-us-east-1-777957353822-tricklercache-pipe --force-upload --debug
+      # - sam package --resolve-s3 --s3-bucket deploy 
+
+      # Use AWS SAM to package the application by using AWS CloudFormation
+      # - aws cloudformation package --debug --template-file template.yml --s3-bucket $S3_BUCKET --output-template-file template-export.yml
+      - aws cloudformation package --template-file template.yml --s3-bucket $S3_BUCKET --output-template-file template-export.yml --debug
+      # - sam package --template-file template.yml --s3-bucket $S3_BUCKET --output-template-file template-export.yml
+
+      # - pwd
+      # - ls  -lha
+
+  post_build:
+    commands:
+      - pwd 
+      - ls  -lha 
+
+artifacts:
+  files:
+    - nodejs/**/*
+    - nodejs.zip
+    - .aws-sam/**/*
+    - package-lock.json
+    - package.json
+    - node_modules/**/*
+    - template-export.yml
