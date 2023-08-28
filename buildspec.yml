@@ -21,9 +21,10 @@ phases:
       # - ls  -lha node_modules
 
       - mkdir nodejs
-      - cd nodejs    
-      - npm init -y
-      - npm install --omit=dev ../
+      - cp package.json nodejs/
+      - cd nodejs
+      # - npm init -y
+      - npm install --omit=dev
       - pwd
       - ls -lha
 
