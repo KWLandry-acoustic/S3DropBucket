@@ -4,7 +4,7 @@ phases:
     runtime-versions:
       nodejs: 18.x
     commands:
-  pre-build:
+  pre_build:
     commands:
       - cp -r node_modules nodejs
       - zip -r nodejs.zip nodejs
@@ -25,10 +25,10 @@ phases:
 
 artifacts:
   files:
-    - nodejs/**/*
-    - nodejs.zip
     - .aws-sam/**/*
     - package-lock.json
     - package.json
     - node_modules/**/*
     - template-export.yml
+    - nodejs/**/*
+    - nodejs.zip
