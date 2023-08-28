@@ -3,9 +3,9 @@
         "target": "es6",
         "module": "nodenext",
         "inlineSourceMap": false,
-        "outDir": "/Users/kwlandry/Dropbox/Documents/A.Campaign/CodeFolder/A.TricklerCache_codecommit/tricklerCache/.aws-sam",
+        "outDir": "tricklerCache/.aws-sam",
         "rootDir": ".",
-        "sourceRoot": "/Users/kwlandry/Dropbox/Documents/A.Campaign/CodeFolder/A.TricklerCache_codecommit/tricklerCache",
+        "sourceRoot": "tricklerCache/",
         "typeRoots": [
             "node_modules/@types"
         ],

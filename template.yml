@@ -29,11 +29,11 @@ Resources:
     # Type: "AWS::Lambda::Function"
     Type: AWS::Serverless::Function
     Properties:
-      Environment:
-            Variables:
-              TEST_VAR1: testvar
-              STAGE: prod
-              Last Modified:  08/24/2023
+      # Environment:
+      #       Variables:
+      #         TEST_VAR1: testvar
+      #         STAGE: prod
+      #         Last Modified:  08/24/2023
       Description: A Lambda function triggered on a file sent to an S3 bucket.
       # CodeUri: arn:aws:s3:::aws-us-east-1-777957353822-tricklercache-pipe/${codeuri}      
       # CodeUri: ${codeuri}
