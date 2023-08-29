@@ -13,7 +13,7 @@ phases:
       # - mkdir nodejs
       # - npm i -omit=dev
       # - ls -lha
-      # - cp -r node_modules nodejs
+      # - cp -r layers/node_modules nodejs
       # - zip -r nodejs.zip nodejs
       # - rm -r nodejs
       
@@ -36,7 +36,7 @@ artifacts:
     - .aws-sam/**/*
     - package-lock.json
     - package.json
-    - node_modules/**/*
+    # - node_modules/**/*
     - template-export.yml
     # - nodejs/**/*
     # - nodejs.zip
