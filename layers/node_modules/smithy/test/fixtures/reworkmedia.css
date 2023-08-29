@@ -1,0 +1,6 @@
+@media handheld, only screen and (max-width: 767px) {
+  .box {
+    margin: 20px !important;
+    padding: 20px !important;
+  }
+}
