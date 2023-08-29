@@ -24,4 +24,4 @@ External = ['@aws-sdk/client-s3', 'node-fetch', '@aws-sdk/protocol-http']
 
 
 [layer_build_definitions]
-BuildMethod = "makefile"
+BuildMethod = "nodejs18.x"

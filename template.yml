@@ -15,15 +15,18 @@ Resources:
     #     BuildMethod: makefile
     Properties:
         # arn: arn:aws:lambda:us-east-1:777957353822:layer:dependencyLayer
+        # RetentionPolicy: Retain
         LayerName: dependencyLayer
-        Description:  Layer to Holds all Dependencies (reduce package size) 
-        ContentUri: nodejs.zip
+        Description:  Layer to Hold all Dependencies (reduce package size) 
+        # ContentUri: nodejs.zip
+        ContentUri: node_modules
         # Content:
         #   # S3Bucket: s3JsonLoggerDependenciesLayer
         #   # S3Key: nodejs.zip
         CompatibleRuntimes:
           - nodejs18.x
-        RetentionPolicy: Retain
+    Metadata:
+          BuildMethod: nodejs18.x
 
   s3JsonLoggerFunction:
     # Type: "AWS::Lambda::Function"

@@ -10,12 +10,12 @@ phases:
   pre_build:
     commands:
        
-      - mkdir nodejs
-      - npm i -omit=dev
-      - ls -lha
-      - cp -r node_modules nodejs
-      - zip -r nodejs.zip nodejs
-      - rm -r nodejs
+      # - mkdir nodejs
+      # - npm i -omit=dev
+      # - ls -lha
+      # - cp -r node_modules nodejs
+      # - zip -r nodejs.zip nodejs
+      # - rm -r nodejs
       
   build:
     commands:
