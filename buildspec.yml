@@ -9,7 +9,7 @@ phases:
 
   pre_build:
     commands:
-      - cp pckage.json layers
+      - cp package.json layers
       - cd layers
       - npm install --omit=dev
       - cd ..
