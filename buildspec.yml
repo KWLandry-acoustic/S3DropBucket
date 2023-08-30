@@ -9,13 +9,10 @@ phases:
 
   pre_build:
     commands:
-       
-      # - mkdir nodejs
-      # - npm i -omit=dev
-      # - ls -lha
-      # - cp -r layers/node_modules nodejs
-      # - zip -r nodejs.zip nodejs
-      # - rm -r nodejs
+      - cp pckage.json layers
+      - cd layers
+      - npm install --omit=dev
+      - cd ..
       
   build:
     commands:
