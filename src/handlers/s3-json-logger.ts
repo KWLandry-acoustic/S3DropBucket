@@ -1,8 +1,8 @@
-
 "use strict";
 import { S3, S3Client, S3ClientConfig, GetObjectCommand, GetObjectCommandOutput } from "@aws-sdk/client-s3"
-import { Handler, S3Event, Context } from 'aws-lambda'
+import { Handler, S3Event, Context } from "aws-lambda"
 import fetch from "node-fetch"
+
 
 // import { packageJson } from '@aws-sdk/client3/package.json'
 // const version = packageJson.version
@@ -19,7 +19,8 @@ import fetch from "node-fetch"
 
 // import { Readable } from "stream";
 
-// // this imports just the getObject operation from S3
+
+
 // import { GetObjectCommand } from "@aws-sdk/client-s3"
 
 // const g: FetchHttpHandlerOptions = {}

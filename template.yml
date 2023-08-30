@@ -27,7 +27,6 @@ Resources:
         CompatibleRuntimes:
           - nodejs18.x
 
-
   s3JsonLoggerFunction:
     # Type: "AWS::Lambda::Function"
     Type: AWS::Serverless::Function
