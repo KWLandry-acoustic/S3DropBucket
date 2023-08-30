@@ -10,6 +10,7 @@ phases:
   pre_build:
     commands:
       - cp package.json layers
+      - cp package-lock.json layers
       - cd layers
       - npm install --omit=dev
       - cd ..

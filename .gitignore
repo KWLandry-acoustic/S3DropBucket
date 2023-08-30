@@ -1,5 +1,5 @@
 node_modules
-!layers/**
+layers/node_modules/**
 *.txt
 scratch*.*
 .aws-sam
