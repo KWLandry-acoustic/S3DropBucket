@@ -34,7 +34,5 @@ artifacts:
     - .aws-sam/**/*
     - package-lock.json
     - package.json
-    # - node_modules/**/*
     - template-export.yml
-    # - nodejs/**/*
-    # - nodejs.zip
+
