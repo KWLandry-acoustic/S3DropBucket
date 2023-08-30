@@ -20,8 +20,7 @@ Resources:
         LayerName: dependencyLayer
         Description:  Layer to Hold all Dependencies (reduce package size) 
         # ContentUri: nodejs.zip
-        ContentUri: layers/node_modules
-        # Content:
+        ContentUri: layers
         #   # S3Bucket: s3JsonLoggerDependenciesLayer
         #   # S3Key: nodejs.zip
         CompatibleRuntimes:
