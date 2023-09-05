@@ -66,12 +66,13 @@ Resources:
         Packages: external
         # mainFields: 
         #   --main-fields=module, main
-        Minify: true
+        Minify: false
         OutExtension:
           - .js=.mjs
         Sourcemap: false
+        CodeURI: ../src/handlers/
         EntryPoints: 
-          - src/handlers/s3-json-logger.ts
+          - ../src/handlers/s3-json-logger.ts
           # - s3-json-logger.mjs
           # - .aws-sam/build/s3JsonLoggerFunction/s3-json-logger.mjs
         External: 
