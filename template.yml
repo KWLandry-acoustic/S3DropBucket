@@ -39,9 +39,21 @@ Resources:
       Description: A Lambda function triggered on a file sent to an S3 bucket.
       Role: arn:aws:iam::777957353822:role/tricklercacheExecutionRole 
       # CodeUri: arn:aws:s3:::aws-us-east-1-777957353822-tricklercache-pipe/${codeuri}      
-      CodeUri: ${CodeUri}
-      # CodeUri: ./      
-      # CodeUri: .aws-sam
+      # CodeUri: ${CodeUri}
+# CodeUri
+# The code for the function. Accepted values include: 
+# The function's Amazon S3 URI. For example, s3://bucket-123456789/sam-app/1234567890abcdefg.
+# The local path to the function. For example, hello_world/.
+# A FunctionCode object. If you provide a function's Amazon S3 URI or FunctionCode object, you must reference a valid 
+# Lambda deployment package.  If you provide a local file path, use the AWS SAM CLI to upload the local file at deployment. 
+# To learn more, see Using the AWS SAM CLI to upload local files at deployment.  
+# Type: [ String | FunctionCode ]  Required: Conditional. 
+# When PackageType is set to Zip, one of CodeUri or InlineCode is required.  
+# AWS CloudFormation compatibility: 
+# This property is similar to the [ Code](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-lambda-function.html#cfn-lambda-function-code) 
+# property of an AWS::Lambda::Function resource. The nested Amazon S3 properties are named differently.
+      # CodeUri: ./
+      CodeUri: s3JsonLoggerFunction/
       # Handler: s3-json-logger.s3JsonLoggerHandler 
       # Handler: .aws-sam/build/s3JsonLoggerFunction/s3-json-logger.s3JsonLoggerHandler      
       Handler: s3-json-logger.s3JsonLoggerHandler
