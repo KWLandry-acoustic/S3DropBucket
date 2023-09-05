@@ -36,7 +36,7 @@ Resources:
       #         Last Modified:  08/24/2023
       Description: A Lambda function triggered on a file sent to an S3 bucket.
       Role: arn:aws:iam::777957353822:role/tricklercacheExecutionRole 
-      CodeUri: ./           #---Gets reBuilt in SAM Package
+      # CodeUri:           #---Gets reBuilt in SAM Package
       # Handler: s3-json-logger.s3JsonLoggerHandler 
       # Handler: .aws-sam/build/s3JsonLoggerFunction/s3-json-logger.s3JsonLoggerHandler  
       Handler: s3-json-logger.s3JsonLoggerHandler
@@ -67,29 +67,7 @@ Resources:
           - .js=.mjs
         Sourcemap: false
         EntryPoints: 
-          # - src/handlers/s3-json-logger.ts
-          - s3://aws-us-east-1-777957353822-tricklercache-pipe/8c9dbf85b43c564e8ae403c9efdff0ed
-          # - !Sub ${CodeUri}
-          # - !GetAtt s3JsonLoggerFunction.CodeUri
-          # - !Sub ${s3JsonLoggerFunction.CodeUri}
-          # - s3-json-logger.mjs
-          # - .aws-sam/build/s3JsonLoggerFunction/s3-json-logger.mjs
-
-      # CodeUri: arn:aws:s3:::aws-us-east-1-777957353822-tricklercache-pipe/${codeuri}      
-      # CodeUri: ${CodeUri}
-# CodeUri
-# The code for the function. Accepted values include: 
-# The function's Amazon S3 URI. For example, s3://bucket-123456789/sam-app/1234567890abcdefg.
-# The local path to the function. For example, hello_world/.
-# A FunctionCode object. If you provide a function's Amazon S3 URI or FunctionCode object, you must reference a valid 
-# Lambda deployment package.  If you provide a local file path, use the AWS SAM CLI to upload the local file at deployment. 
-# To learn more, see Using the AWS SAM CLI to upload local files at deployment.  
-# Type: [ String | FunctionCode ]  Required: Conditional. 
-# When PackageType is set to Zip, one of CodeUri or InlineCode is required.  
-# AWS CloudFormation compatibility: 
-# This property is similar to the [ Code](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-lambda-function.html#cfn-lambda-function-code) 
-# property of an AWS::Lambda::Function resource. The nested Amazon S3 properties are named differently.
-      # CodeUri: ./
+          - src/handlers/s3-json-logger.ts
         External: 
             - '@aws-sdk/client-s3'
             - 'node-fetch'
