@@ -68,10 +68,10 @@ Resources:
           - .js=.mjs
         Sourcemap: false
         EntryPoints: 
+          # - src/handlers/s3-json-logger.ts
           # - !Sub ${CodeUri}
           # - !GetAtt s3JsonLoggerFunction.CodeUri
-          - !Ref s3JsonLoggerFunction.CodeUri
-          # - src/handlers/s3-json-logger.ts
+          - !Ref s3JsonLoggerFunction
           # - s3-json-logger.mjs
           # - .aws-sam/build/s3JsonLoggerFunction/s3-json-logger.mjs
 
