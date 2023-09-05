@@ -60,7 +60,7 @@ Resources:
       Architecture: x86_64
       BuildProperties:
         # Target: es2020
-        Target: node18.x
+        Target: node18.12
         Format: esm
         Platform: node
         Packages: external
