@@ -52,8 +52,7 @@ Resources:
 # AWS CloudFormation compatibility: 
 # This property is similar to the [ Code](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-lambda-function.html#cfn-lambda-function-code) 
 # property of an AWS::Lambda::Function resource. The nested Amazon S3 properties are named differently.
-      # CodeUri: ./
-      CodeUri: s3JsonLoggerFunction/
+      CodeUri: ./
       # Handler: s3-json-logger.s3JsonLoggerHandler 
       # Handler: .aws-sam/build/s3JsonLoggerFunction/s3-json-logger.s3JsonLoggerHandler      
       Handler: s3-json-logger.s3JsonLoggerHandler
