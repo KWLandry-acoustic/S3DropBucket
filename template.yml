@@ -39,11 +39,11 @@ Resources:
       # CodeUri: arn:aws:s3:::aws-us-east-1-777957353822-tricklercache-pipe/${codeuri}      
       # CodeUri: ${codeuri}
       # CodeUri: ./      
-      CodeUri: .aws-sam/build/s3JsonLoggerFunction
+      CodeUri: .aws-sam
       Role: arn:aws:iam::777957353822:role/tricklercacheExecutionRole
       # Handler: s3-json-logger.s3JsonLoggerHandler 
       # Handler: .aws-sam/build/s3JsonLoggerFunction/s3-json-logger.s3JsonLoggerHandler      
-      Handler: s3-json-logger.s3JsonLoggerHandler
+      Handler: build/s3JsonLoggerFunctions3-json-logger.s3JsonLoggerHandler
       Runtime: nodejs18.x
       Architectures: 
         - x86_64
