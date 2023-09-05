@@ -19,7 +19,6 @@ Resources:
         # RetentionPolicy: Retain
         LayerName: dependencyLayer
         Description:  Layer to Hold all Dependencies (reduce package size) 
-        # ContentUri: nodejs.zip
         ContentUri: layers
         #   # S3Bucket: s3JsonLoggerDependenciesLayer
         #   # S3Key: nodejs.zip
@@ -37,7 +36,7 @@ Resources:
       #         Last Modified:  08/24/2023
       Description: A Lambda function triggered on a file sent to an S3 bucket.
       Role: arn:aws:iam::777957353822:role/tricklercacheExecutionRole 
-      # CodeUri:           ---Gets Built in ES
+      CodeUri: ./           #---Gets reBuilt in SAM Package
       # Handler: s3-json-logger.s3JsonLoggerHandler 
       # Handler: .aws-sam/build/s3JsonLoggerFunction/s3-json-logger.s3JsonLoggerHandler  
       Handler: s3-json-logger.s3JsonLoggerHandler
@@ -68,10 +67,10 @@ Resources:
           - .js=.mjs
         Sourcemap: false
         EntryPoints: 
-          # - src/handlers/s3-json-logger.ts
+          - src/handlers/s3-json-logger.ts
           # - !Sub ${CodeUri}
           # - !GetAtt s3JsonLoggerFunction.CodeUri
-          - !Ref s3JsonLoggerFunction
+          # - !Sub ${s3JsonLoggerFunction.CodeUri}
           # - s3-json-logger.mjs
           # - .aws-sam/build/s3JsonLoggerFunction/s3-json-logger.mjs
 
