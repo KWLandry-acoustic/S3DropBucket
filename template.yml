@@ -70,9 +70,8 @@ Resources:
         OutExtension:
           - .js=.mjs
         Sourcemap: false
-        CodeURI: ../src/handlers/
         EntryPoints: 
-          - ../src/handlers/s3-json-logger.ts
+          - build/s3-json-logger.ts
           # - s3-json-logger.mjs
           # - .aws-sam/build/s3JsonLoggerFunction/s3-json-logger.mjs
         External: 
