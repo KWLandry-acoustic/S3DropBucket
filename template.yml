@@ -59,8 +59,11 @@ Resources:
       BuildMethod: esbuild
       Architecture: x86_64
       BuildProperties:
-        Target: es2020
+        # Target: es2020
+        Target: node18.x
         Format: esm
+        Platform: node
+        Packages: external
         # mainFields: 
         #   --main-fields=module, main
         Minify: true
@@ -68,8 +71,9 @@ Resources:
           - .js=.mjs
         Sourcemap: false
         EntryPoints: 
-          # - src/handlers/s3-json-logger.ts
-          - s3-json-logger.mjs
+          - src/handlers/s3-json-logger.ts
+          # - s3-json-logger.mjs
+          # - .aws-sam/build/s3JsonLoggerFunction/s3-json-logger.mjs
         External: 
             - '@aws-sdk/client-s3'
             - 'node-fetch'
