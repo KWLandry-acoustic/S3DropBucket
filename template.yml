@@ -68,7 +68,7 @@ Resources:
         Sourcemap: false
         EntryPoints: 
           # - src/handlers/s3-json-logger.ts
-          - CodeUri: s3://aws-us-east-1-777957353822-tricklercache-pipe/8c9dbf85b43c564e8ae403c9efdff0ed
+          - s3://aws-us-east-1-777957353822-tricklercache-pipe/8c9dbf85b43c564e8ae403c9efdff0ed
           # - !Sub ${CodeUri}
           # - !GetAtt s3JsonLoggerFunction.CodeUri
           # - !Sub ${s3JsonLoggerFunction.CodeUri}
