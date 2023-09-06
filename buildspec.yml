@@ -17,7 +17,8 @@ phases:
       
   build:
     commands:
-     
+      - npm i esbuild
+      
       - sam build --debug
 
       - sam package --s3-bucket aws-us-east-1-777957353822-tricklercache-pipe --force-upload --debug
