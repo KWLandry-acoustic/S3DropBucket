@@ -29,17 +29,15 @@ Resources:
     # Type: "AWS::Lambda::Function"
     Type: AWS::Serverless::Function
     Properties:
-      # Environment:
+      # Environment:sam pack
       #       Variables:
       #         TEST_VAR1: testvar
       #         STAGE: prod
       #         Last Modified:  08/24/2023
       Description: A Lambda function triggered on a file sent to an S3 bucket.
       Role: arn:aws:iam::777957353822:role/tricklercacheExecutionRole 
-      CodeUri: src/handlers/
-      # CodeUri: src/handlers/          #---Gets reBuilt in SAM Package
-      # Handler: s3-json-logger.s3JsonLoggerHandler 
-      # Handler: .aws-sam/build/s3JsonLoggerFunction/s3-json-logger.s3JsonLoggerHandler  
+      CodeUri: ./
+      # CodeUri: src/handlers/          #---Gets reBuilt in SAM Package 
       Handler: s3-json-logger.s3JsonLoggerHandler
       Runtime: nodejs18.x
       Architectures: 
@@ -68,7 +66,7 @@ Resources:
           - .js=.mjs
         Sourcemap: false
         EntryPoints: 
-          - s3-json-logger.ts
+          - src/handlers/s3-json-logger.ts
         External: 
             - '@aws-sdk/client-s3'
             - 'node-fetch'
