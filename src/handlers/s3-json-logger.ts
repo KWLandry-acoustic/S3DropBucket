@@ -112,7 +112,7 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
             })
             processFilePromises.push(s3.send(command))
         })
-
+        timerExpired = true
     }
     await Promise.all(processFilePromises);
 
