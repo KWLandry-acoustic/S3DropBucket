@@ -41,7 +41,7 @@ export interface S3Object {
     Region: string
 }
 
-export interface evRec {
+export interface s3Obj {
     s3: {
         object: { key: any; };
         bucket: { name: any; };
@@ -63,51 +63,59 @@ export interface authCreds {
     refreshTokenUrl: string
 }
 
-// commonJS
-// module.exports.Handler = async (event: S3Event, context: Context) => {
-
-//ESM  - es6 ecmascript
- // export const handler = async (event) => {
 export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Context) => {
 
     // console.log(`AWS-SDK Version: ${version}`)
     console.log('ENVIRONMENT VARIABLES\n' + JSON.stringify(process.env, null, 2))
     console.log("Num of Events to be processed: ", event.Records.length)
     console.log('EVENT: \n' + JSON.stringify(event, null, 2));
+    let processFilePromises: {}[] = []
+    let timerExpired = false
 
-    if (event.Records.length < 1) {
-        console.log(await lambdaWait(2000));
-    } else {
-        let processFilePromises: {}[] = []
+    //Wait for 99 or 1 minute more than last record received. 
+
+    // if (event.Records.length = 1) {
+    //     // console.log(await lambdaWait(2000));
+    // } else {
+
+    console.log("Processing Trigger from Event: ", event.Records[0].responseElements["x-amz-request-id"])
 
 
-        event.Records.forEach(async (r: evRec) => {
+    while (!timerExpired) {
+
+        event.Records.forEach(async (r: s3Obj) => {
+
+
+            // time = r.
+            // timerExpired = false
+
+
+
+            // const getsS3Obj = {
+            //     Bucket: r.s3.bucket.name,
+            //     Key: r.s3.object.key,
+            //     // Region: 'us-east-1'
+            // }
+
+            // const data = await s3.send(
+            //     new GetObjectCommand({
+            //         Key: r.s3.object.key,
+            //         Bucket: r.s3.bucket.name
+            //     })
+            //     // new GetObjectCommand(getsS3Obj)
+            // )
+
 
             const command = new GetObjectCommand({
                 Key: r.s3.object.key,
                 Bucket: r.s3.bucket.name
             })
-
-            const s3O = {
-                Bucket: r.s3.bucket.name,
-                Key: r.s3.object.key,
-                Region: 'us-east-1'
-            }
-
-            const data = await s3.send(
-                // new GetObjectCommand({
-                //     Bucket: params.Bucket,
-                //     Key: params.Key,
-                //     Body: params.Body,
-                // })
-                new GetObjectCommand(s3O)
-            )
-
             processFilePromises.push(s3.send(command))
         })
 
-        await Promise.all(processFilePromises);
     }
+    await Promise.all(processFilePromises);
+
 
     // // //usage
     // const s3Config: S3ClientConfig = "" 
