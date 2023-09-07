@@ -51,30 +51,30 @@ Resources:
             BucketName: !Sub ${BucketName} 
       Layers:
         - !Ref dependencyLayer
-    #Build Parameters
-    Metadata:    
-      BuildMethod: esbuild
-      Architecture: x86_64
-      BuildProperties:
-        # Target: es2020
-        Target: node18.12
-        Format: esm
-        Platform: node
-        Packages: external
-        # mainFields: 
-        #   --main-fields=module, main
-        Minify: false
-        OutExtension:
-          - .js=.mjs
-        Sourcemap: false
-        EntryPoints: 
-          - src/handlers/s3-json-logger.ts
-        External: 
-            - '@aws-sdk/client-s3'
-            - 'node-fetch'
-            - 'nodejs'
-            - '@aws-sdk/fetch-http-handlerdeps/node-fetch'
-            - '@aws-sdk/client3/package.json'
+    # #Build Parameters
+    # Metadata:    
+    #   BuildMethod: esbuild
+    #   Architecture: x86_64
+    #   BuildProperties:
+    #     # Target: es2020
+    #     Target: node18.12
+    #     Format: esm
+    #     Platform: node
+    #     Packages: external
+    #     # mainFields: 
+    #     #   --main-fields=module, main
+    #     Minify: false
+    #     OutExtension:
+    #       - .js=.mjs
+    #     Sourcemap: false
+    #     EntryPoints: 
+    #       - src/handlers/s3-json-logger.ts
+    #     External: 
+    #         - '@aws-sdk/client-s3'
+    #         - 'node-fetch'
+    #         - 'nodejs'
+    #         - '@aws-sdk/fetch-http-handlerdeps/node-fetch'
+    #         - '@aws-sdk/client3/package.json'
   
   
   
