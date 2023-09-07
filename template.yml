@@ -3,10 +3,11 @@ Description: Lambda-S3 Logging Project
 Transform: AWS::Serverless-2016-10-31
 Globals: 
   Function:
-    PermissionsBoundary: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:policy/${AppId}-${AWS::Region}-PermissionsBoundary
-Parameters:
-  AppId:
-    Type: String
+    PermissionsBoundary: arn:aws:iam::777957353822:policy/tricklercache-us-east-1-PermissionsBoundary
+    # !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:policy/${AppId}-${AWS::Region}-PermissionsBoundary
+# Parameters:
+#   AppId:
+#     Type: String
 Resources:
   dependencyLayer:
     # Type: AWS::Lambda::LayerVersion
@@ -42,7 +43,7 @@ Resources:
       Runtime: nodejs18.x
       Architectures: 
         - x86_64
-      MemorySize: 624
+      MemorySize: 752
       Timeout: 899
       Policies:
         - S3ReadPolicy:
