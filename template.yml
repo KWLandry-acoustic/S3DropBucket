@@ -68,7 +68,7 @@ Resources:
           - .js=.mjs
         Sourcemap: false
         EntryPoints: 
-          - s3-json-logger.ts
+          - src/handlers/s3-json-logger.ts
         External: 
             - '@aws-sdk/client-s3'
             - 'node-fetch'
