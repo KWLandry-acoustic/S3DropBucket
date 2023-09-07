@@ -22,9 +22,9 @@ phases:
       - sam build --debug
 
       # - sam package --s3-bucket aws-us-east-1-777957353822-tricklercache-pipe --force-upload --debug      
-      - sam package --s3-bucket aws-us-east-1-777957353822-tricklercache-pipe --debug
+      - sam package --s3-bucket aws-us-east-1-777957353822-tricklercache-pipe --output-template-file packaged.yaml --debug
      
-      - aws cloudformation package --template-file template.yml --s3-bucket $S3_BUCKET --output-template-file template-export.yml --debug
+      - aws cloudformation package --template-file packaged.yaml --s3-bucket $S3_BUCKET --output-template-file template-export.yml --debug
      
   post_build:
     commands:
