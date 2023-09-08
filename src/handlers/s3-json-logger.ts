@@ -82,6 +82,8 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
         )
 
         // console.log("Received the following Object: \n", data.Body?.toString());
+        debugger; 
+
         console.log("Received the following Object: \n", JSON.stringify(data.Body,null,2));
 
         console.log('Processed Event: \n' + JSON.stringify(event, null, 2));
