@@ -5,10 +5,6 @@ Globals:
   Function:
     PermissionsBoundary: arn:aws:iam::777957353822:policy/tricklercache-us-east-1-PermissionsBoundary
     # !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:policy/${AppId}-${AWS::Region}-PermissionsBoundary
-
-    Environment:
-        Variables:
-          NODE_OPTIONS: '--enable-source-maps'
           
 # Parameters:
 #   AppId:
