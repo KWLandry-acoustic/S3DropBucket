@@ -7,9 +7,9 @@ Globals:
     # Environment:
     #   Variables:
     #     NODE_OPTIONS: '--enable-source-maps'
-  # Parameters:
-  #   AppId:
-  #   Type: String
+Parameters:
+  AppId:
+    Type: String
 Resources:
   dependencyLayer:
     # Type: AWS::Lambda::LayerVersion
@@ -67,7 +67,7 @@ Resources:
         Minify: false
         OutExtension:
           - .js=.mjs
-        Sourcemap: false
+        Sourcemap: true
         EntryPoints: 
           - src/handlers/s3-json-logger.ts
         External: 
