@@ -1,5 +1,5 @@
 "use strict";
-import { S3, S3Client, S3ClientConfig, GetObjectCommand, GetObjectCommandOutput } from "@aws-sdk/client-s3"
+import { S3, S3Client, S3ClientConfig, GetObjectCommand, GetObjectCommandOutput, DeleteObjectCommand, DeleteObjectCommandInput, DeleteObjectCommandOutput, DeleteObjectOutput, DeleteObjectRequest } from "@aws-sdk/client-s3"
 import { Handler, S3Event, Context } from "aws-lambda"
 import fetch from "node-fetch"
 
@@ -26,6 +26,16 @@ import fetch from "node-fetch"
 // const g: FetchHttpHandlerOptions = {}
 // const f = new FetchHttpHandler(g)
 
+
+
+
+export interface S3Object {
+    Bucket: string
+    Key: string
+    Region: string
+}
+
+
 /**
   * A Lambda function to process the Event payload received from S3.
   */
@@ -35,18 +45,6 @@ import fetch from "node-fetch"
 const s3 = new S3Client({ region: "us-east-1", });
 
 
-export interface S3Object {
-    Bucket: string
-    Key: string
-    Region: string
-}
-
-export interface s3Obj {
-    s3: {
-        object: { key: any; };
-        bucket: { name: any; };
-    };
-}
 
 export interface accessResp {
     access_token: string
@@ -67,54 +65,41 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
 
     // console.log(`AWS-SDK Version: ${version}`)
     console.log('ENVIRONMENT VARIABLES\n' + JSON.stringify(process.env, null, 2))
-    console.log("Num of Events to be processed: ", event.Records.length)
-    console.log('EVENT: \n' + JSON.stringify(event, null, 2));
-    let processFilePromises: {}[] = []
-    let timerExpired = false
-
-    //Wait for 99 or 1 minute more than last record received. 
-
-    // if (event.Records.length = 1) {
-    //     // console.log(await lambdaWait(2000));
-    // } else {
 
     console.log("Processing Trigger from Event: ", event.Records[0].responseElements["x-amz-request-id"])
 
 
-    while (!timerExpired) {
+    if  ( event.Records.length > 1)    throw new Error(`Expecting only a single S3 Object from a Triggered S3 write of a new Object, received ${event.Records.length} Objects`)
+    else console.log("Num of Events to be processed: ", event.Records.length)
+    
+    
+    
+    const getS3Obj = async () => {
 
-        event.Records.forEach(async (r: s3Obj) => {
-
-
-            // time = r.
-            // timerExpired = false
-
-
-
-            // const getsS3Obj = {
-            //     Bucket: r.s3.bucket.name,
-            //     Key: r.s3.object.key,
-            //     // Region: 'us-east-1'
-            // }
-
-            // const data = await s3.send(
-            //     new GetObjectCommand({
-            //         Key: r.s3.object.key,
-            //         Bucket: r.s3.bucket.name
-            //     })
-            //     // new GetObjectCommand(getsS3Obj)
-            // )
-
-
-            const command = new GetObjectCommand({
-                Key: r.s3.object.key,
-                Bucket: r.s3.bucket.name
+        const data = await s3.send(
+            new GetObjectCommand({
+                Key: event.Records[0].s3.object.key,
+                Bucket: event.Records[0].s3.bucket.name
             })
-            processFilePromises.push(s3.send(command))
-        })
-        timerExpired = true
-    }
-    await Promise.all(processFilePromises);
+        )
+
+        console.log("Received the following Object: \n", data.Body?.toString());
+
+
+        const del = await s3.send(
+            new DeleteObjectCommand({
+                Key: event.Records[0].s3.object.key,
+                Bucket: event.Records[0].s3.bucket.name
+            })
+        )
+
+        console.log(`Response from deleteing Object ${event.Records[0].responseElements["x-amz-request-id"]} \n ${del.$metadata.toString()}`);
+
+    };
+
+    getS3Obj();
+
+
 
 
     // // //usage
@@ -139,11 +124,6 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
 export default s3JsonLoggerHandler
 
 
-function lambdaWait(n: number) {
-    return new Promise((resolve, reject) => {
-        setTimeout(() => resolve("hello"), n)
-    });
-}
 
 
 async function pullS3Object(params: S3Object) {
