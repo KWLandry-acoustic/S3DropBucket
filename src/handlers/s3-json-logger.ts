@@ -64,14 +64,12 @@ export interface authCreds {
 export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Context) => {
 
     // console.log(`AWS-SDK Version: ${version}`)
-    console.log('ENVIRONMENT VARIABLES\n' + JSON.stringify(process.env, null, 2))
+    // console.log('ENVIRONMENT VARIABLES\n' + JSON.stringify(process.env, null, 2))
 
-    console.log("Processing Trigger from Event: ", event.Records[0].responseElements["x-amz-request-id"])
+    console.log("Processing Object from S3 Trigger, Event RequestId: ", event.Records[0].responseElements["x-amz-request-id"], "\n\nNum of Events to be processed: ", event.Records.length)
 
 
     if  ( event.Records.length > 1)    throw new Error(`Expecting only a single S3 Object from a Triggered S3 write of a new Object, received ${event.Records.length} Objects`)
-    else console.log("Num of Events to be processed: ", event.Records.length)
-    
     
     
     const getS3Obj = async () => {
@@ -83,7 +81,10 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
             })
         )
 
-        console.log("Received the following Object: \n", data.Body?.toString());
+        // console.log("Received the following Object: \n", data.Body?.toString());
+        console.log("Received the following Object: \n", JSON.stringify(data.Body,null,2));
+
+        console.log('Processed Event: \n' + JSON.stringify(event, null, 2));
 
 
         const del = await s3.send(
