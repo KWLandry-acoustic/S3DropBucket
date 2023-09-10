@@ -4,7 +4,7 @@
         "module": "nodenext",
         "resolveJsonModule": true,
         "inlineSourceMap": false,
-        "outDir": "/Users/kwlandry/Dropbox/Documents/A.Campaign/CodeFolder/A.TricklerCache_codecommit/tricklerCache/tricklerCache/.aws-sam",
+        "outDir": "/Users/kwlandry/Dropbox/Documents/A.Campaign/CodeFolder/A.TricklerCache_codecommit/tricklerCache/.aws-sam",
         "rootDir": ".",
         "sourceRoot": "/Users/kwlandry/Dropbox/Documents/A.Campaign/CodeFolder/A.TricklerCache_codecommit/tricklerCache",
         "typeRoots": [

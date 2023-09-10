@@ -3,7 +3,6 @@
   "description": "TricklerCache Lambda-S3 Project",
   "version": "0.0.1",
   "private": true,
-  "type2": "commonjs",
   "type": "module",
   "dependencies": {
     "@aws-sdk/fetch-http-handler": "^3.374.0",
@@ -38,11 +37,18 @@
     "eslint-plugin-prettier": "^4.0.0",
     "jest": "^29.5.0",
     "prettier": "^2.5.1",
+    "serverless": "1.12.1",
+		"serverless-offline": "^3.13.5",
+		"serverless-plugin-browserify": "1.1.2",
     "ts-jest": "^29.0.5",
     "ts-node": "^10.9.1",
     "typescript": "^5.1.6"
   },
   "scripts": {
+    "start": "./node_modules/.bin/serverless offline -s dev",
+ 
+    "debug": "export SLS_DEBUG=* && node --inspect-brk aws sls invoke local -s dev",
+
     "usefulCommands": "'{ \n      \"compile\": \"tsc\",\n      \"test\": \"jest\",\n      \"unit\": \"jest\",\n      \"lint\": \"eslint '*.ts' --quiet --fix\",\n      \"build\": \"esbuild src/handlers/s3-json-logger.ts --bundle --minify --out-extension:.js=.mjs --external: 'aws-sdk, @aws-sdk/client-s3, node-fetch, @aws-sdk/protocol-http' --platform=node --target=es2020 --outdir=.aws-sam/build/\",\n      \"build2\": \"esbuild src/handlers/s3-json-logger.ts --bundle --minify --out-extension:.js=.mjs --sourcemap --platform=node --target=es2020 --outdir=src/handlers/\",\n      \"build3\": \"esbuild src/handlers/s3-json-logger.ts --bundle --minify --out-extension:.js=.mjs --sourcemap --platform=node --target=es2020 --outdir=src/handlers/\",\n      \"build4\": \"esbuild ./src/handlers/s3-json-logger.ts --out-extension:.js=.mjs --external:'node_modules/aws-sdk/clients/s3.js' --bundle --minify --platform=node --target=es2020 --outfile=./src/handlers/s3-json-logger.mjs\",\n      \"watch\": \"tsc -w\"\n    }'"
   },
   "main": ".eslintrc.js",

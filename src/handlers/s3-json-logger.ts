@@ -61,6 +61,8 @@ export interface authCreds {
     refreshTokenUrl: string
 }
 
+debugger; 
+
 export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Context) => {
 
     // console.log(`AWS-SDK Version: ${version}`)
@@ -69,7 +71,7 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
     console.log("Processing Object from S3 Trigger, Event RequestId: ", event.Records[0].responseElements["x-amz-request-id"], "\n\nNum of Events to be processed: ", event.Records.length)
 
 
-    if  ( event.Records.length > 1)    throw new Error(`Expecting only a single S3 Object from a Triggered S3 write of a new Object, received ${event.Records.length} Objects`)
+    if  ( event.Records.length > 1) throw new Error(`Expecting only a single S3 Object from a Triggered S3 write of a new Object, received ${event.Records.length} Objects`)
     
     
     const getS3Obj = async () => {
