@@ -22,7 +22,7 @@ Resources:
         # RetentionPolicy: Retain
         LayerName: dependencyLayer
         Description:  Layer to Hold all Dependencies (reduce package size) 
-        ContentUri: layers
+        ContentUri: layers/
         #   # S3Bucket: s3JsonLoggerDependenciesLayer
         #   # S3Key: nodejs.zip
         CompatibleRuntimes:

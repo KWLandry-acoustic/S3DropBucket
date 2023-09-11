@@ -3,10 +3,10 @@
         "target": "es6",
         "module": "nodenext",
         "resolveJsonModule": true,
-        "inlineSourceMap": false,
-        "outDir": "/Users/kwlandry/Dropbox/Documents/A.Campaign/CodeFolder/A.TricklerCache_codecommit/tricklerCache/.aws-sam",
+        "inlineSourceMap": true,
+        "outDir": "tricklerCache/.aws-sam",
         "rootDir": ".",
-        "sourceRoot": "/Users/kwlandry/Dropbox/Documents/A.Campaign/CodeFolder/A.TricklerCache_codecommit/tricklerCache",
+        "sourceRoot": "tricklerCache/src/handlers",
         "typeRoots": [
             "node_modules/@types"
         ],

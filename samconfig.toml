@@ -12,6 +12,8 @@ resolve_s3 = false
 [default.build.parameters]
 cached = true
 parallel = false
+sourcemap = true
+inlinesourcemap = true
 
 [default.validate.parameters]
 lint = true

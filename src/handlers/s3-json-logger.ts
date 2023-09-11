@@ -2,6 +2,7 @@
 import { S3, S3Client, S3ClientConfig, GetObjectCommand, GetObjectCommandOutput, DeleteObjectCommand, DeleteObjectCommandInput, DeleteObjectCommandOutput, DeleteObjectOutput, DeleteObjectRequest } from "@aws-sdk/client-s3"
 import { Handler, S3Event, Context } from "aws-lambda"
 import fetch from "node-fetch"
+import { Body } from "node-fetch";
 
 
 // import { packageJson } from '@aws-sdk/client3/package.json'
@@ -42,7 +43,7 @@ export interface S3Object {
 
 
 // Create a client to read objects from S3
-const s3 = new S3Client({ region: "us-east-1", });
+const s3 = new S3Client({ region: "us-east-1" });
 
 
 
@@ -61,7 +62,7 @@ export interface authCreds {
     refreshTokenUrl: string
 }
 
-debugger; 
+debugger;
 
 export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Context) => {
 
@@ -71,38 +72,56 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
     console.log("Processing Object from S3 Trigger, Event RequestId: ", event.Records[0].responseElements["x-amz-request-id"], "\n\nNum of Events to be processed: ", event.Records.length)
 
 
-    if  ( event.Records.length > 1) throw new Error(`Expecting only a single S3 Object from a Triggered S3 write of a new Object, received ${event.Records.length} Objects`)
-    
-    
-    const getS3Obj = async () => {
+    if (event.Records.length > 1) throw new Error(`Expecting only a single S3 Object from a Triggered S3 write
+     of a new Object, received ${event.Records.length} Objects`)
 
-        const data = await s3.send(
-            new GetObjectCommand({
-                Key: event.Records[0].s3.object.key,
-                Bucket: event.Records[0].s3.bucket.name
+
+    const processS3Obj = async () => {
+        try {
+            await s3.send(
+                new GetObjectCommand({
+                    Key: event.Records[0].s3.object.key,
+                    Bucket: event.Records[0].s3.bucket.name
+                })
+            ).then(async (s3Result: GetObjectCommandOutput) => {
+
+                // console.log("Received the following Object: \n", data.Body?.toString());
+                debugger;
+                const d = s3Result.Body?.transformToString
+
+                // console.log("Received the following Object: \n", JSON.stringify(data.Body, null, 2));
+                console.log(`Result from Get: ${d}`)
             })
-        )
+        } catch (e) {
+            console.log("Exception Processing S3 Get Command: \n", e, '\n\n')
+        }
 
-        // console.log("Received the following Object: \n", data.Body?.toString());
-        debugger; 
+        try {
+            console.log('Processed Event: \n' + JSON.stringify(event, null, 2));
 
-        console.log("Received the following Object: \n", JSON.stringify(data.Body,null,2));
+            await s3.send(
+                new DeleteObjectCommand({
+                    Key: event.Records[0].s3.object.key,
+                    Bucket: event.Records[0].s3.bucket.name
+                })
+            ).then(async (s3Result: GetObjectCommandOutput) => {
 
-        console.log('Processed Event: \n' + JSON.stringify(event, null, 2));
+                // console.log("Received the following Object: \n", data.Body?.toString());
+                debugger;
+                const d = s3Result.Body?.transformToString
 
+                // console.log("Received the following Object: \n", JSON.stringify(data.Body, null, 2));
+                console.log(`Result from Delete: ${d}`)
 
-        const del = await s3.send(
-            new DeleteObjectCommand({
-                Key: event.Records[0].s3.object.key,
-                Bucket: event.Records[0].s3.bucket.name
+            // console.log(`Response from deleteing Object ${event.Records[0].responseElements["x-amz-request-id"]} \n ${del.$metadata.toString()}`);
+
             })
-        )
+        } catch (e) {
+            console.log("Exception Processing S3 Delete Command: \n", e, '\n\n')
+        }
+    }
 
-        console.log(`Response from deleteing Object ${event.Records[0].responseElements["x-amz-request-id"]} \n ${del.$metadata.toString()}`);
-
-    };
-
-    getS3Obj();
+await processS3Obj();
 
 
 
