@@ -12,7 +12,7 @@ resolve_s3 = false
 [default.build.parameters]
 cached = true
 parallel = false
-sourcemap = true
+# sourcemap = true
 inlinesourcemap = true
 
 [default.validate.parameters]
@@ -22,7 +22,7 @@ lint = true
 capabilities = "CAPABILITY_IAM"
 region = "us-east-1"
 profile = "Acoustic-cis-dev-ecs-devteam-user"
-codeuri = 'src/handlers/'
+codeuri = "src/handlers/"
 # basedir = './'
 # parameter_overrides = "AppId=\"tricklercache\""
 image_repositories = []

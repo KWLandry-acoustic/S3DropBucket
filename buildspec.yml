@@ -5,7 +5,7 @@ phases:
       nodejs: 18.x
     commands: 
       - pwd; ls -lha
-
+      - SAM_CLI_TELEMETRY=0
 
   pre_build:
     commands:
