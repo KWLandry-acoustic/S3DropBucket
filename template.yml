@@ -4,9 +4,6 @@ Transform: AWS::Serverless-2016-10-31
 Globals: 
   Function:
     PermissionsBoundary: arn:aws:iam::777957353822:policy/tricklercache-us-east-1-PermissionsBoundary
-    Environment:
-      Variables:
-        NODE_OPTIONS: '--enable-source-maps'
 Parameters:
   AppId: 
     Type: String
