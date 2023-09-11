@@ -108,7 +108,7 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
 
                 // console.log("Received the following Object: \n", data.Body?.toString());
                 debugger;
-                const d = s3Result.Body?.transformToString
+                const d = s3Result.Body?.transformToString  
 
                 // console.log("Received the following Object: \n", JSON.stringify(data.Body, null, 2));
                 console.log(`Result from Delete: ${d}`)
