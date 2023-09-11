@@ -29,11 +29,7 @@ Resources:
     # Type: "AWS::Lambda::Function"
     Type: AWS::Serverless::Function
     Properties:
-      Environment:
-            Variables:
-              TEST_VAR1: !Ref AppId 
-              STAGE: prod
-              Last Modified:  08/24/2023
+
       Description: A Lambda function triggered on a file sent to an S3 bucket.
       Role: arn:aws:iam::777957353822:role/tricklercacheExecutionRole 
       CodeUri: ./
