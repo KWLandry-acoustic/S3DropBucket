@@ -156,8 +156,7 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
             await s3.send(
                 new DeleteObjectCommand({
                     Key: event.Records[0].s3.object.key,
-                    Bucket: event.Records[0].s3.bucket.name,
-                    BypassGovernanceRetention: true
+                    Bucket: event.Records[0].s3.bucket.name
                 })
             ).then(async (s3Result: DeleteObjectCommandOutput) => {
 
