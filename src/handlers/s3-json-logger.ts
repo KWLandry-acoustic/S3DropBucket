@@ -1,5 +1,5 @@
 "use strict";
-import { S3, S3Client, S3ClientConfig, GetObjectCommand, GetObjectCommandOutput, DeleteObjectCommand, DeleteObjectCommandInput, DeleteObjectCommandOutput, DeleteObjectOutput, DeleteObjectRequest } from "@aws-sdk/client-s3"
+import { S3, S3Client, S3ClientConfig, GetObjectCommand, GetObjectCommandOutput, DeleteObjectCommand, DeleteObjectCommandInput, DeleteObjectCommandOutput, DeleteObjectOutput, DeleteObjectRequest, ListObjectsCommand, ListObjectsCommandInput, ListObjectsCommandOutput } from "@aws-sdk/client-s3"
 import { Handler, S3Event, Context } from "aws-lambda"
 import fetch from "node-fetch"
 import { Body } from "node-fetch";
@@ -79,6 +79,49 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
 
 
     const processS3Obj = async () => {
+
+
+//Local Testing - pull an S3 Object and so avoid the not-found error
+
+const listReq = { // ListObjectsRequest
+    Bucket: event.Records[0].s3.bucket.name, // required
+    // Delimiter: ";",
+    // EncodingType: "url",
+    MaxKeys: 10,
+    // Prefix: "tricklercache",
+    // Marker: "STRING_VALUE",
+    // RequestPayer: "requester",
+    // ExpectedBucketOwner: "STRING_VALUE",
+    // OptionalObjectAttributes: [ // OptionalObjectAttributesList
+    //   "RestoreStatus",
+    // ],
+  } as ListObjectsCommandInput
+
+  try {
+    await s3.send(
+        new ListObjectsCommand(listReq)
+    ).then(async (s3Result: ListObjectsCommandOutput) => {
+
+        // console.log("Received the following Object: \n", data.Body?.toString());
+        debugger;
+        // const d = JSON.stringify(s3Result.Body, null, 2)
+
+        const list = s3Result.Contents?.values
+
+        // console.log("Received the following Object: \n", JSON.stringify(data.Body, null, 2));
+
+        console.log(`Result from List: ${list} \n..\n..\n..`)
+    })
+} catch (e) {
+    console.log("Exception Processing S3 List Command: \n..", e, '\n..\n..\n..')
+}
+
+
+
+
+
+
+
         try {
             await s3.send(
                 new GetObjectCommand({
