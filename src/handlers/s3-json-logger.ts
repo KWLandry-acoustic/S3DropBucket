@@ -1,5 +1,5 @@
 "use strict";
-import { S3, S3Client, S3ClientConfig, GetObjectCommand, GetObjectCommandOutput, DeleteObjectCommand, DeleteObjectCommandInput, DeleteObjectCommandOutput, DeleteObjectOutput, DeleteObjectRequest, ListObjectsCommand, ListObjectsCommandInput, ListObjectsCommandOutput } from "@aws-sdk/client-s3"
+import { S3, S3Client, S3ClientConfig, GetObjectCommand, GetObjectCommandOutput, DeleteObjectCommand, DeleteObjectCommandInput, DeleteObjectCommandOutput, DeleteObjectOutput, DeleteObjectRequest, ListObjectsV2Command, ListObjectsV2CommandInput, ListObjectsV2CommandOutput } from "@aws-sdk/client-s3"
 import { Handler, S3Event, Context } from "aws-lambda"
 import fetch from "node-fetch"
 import { Body } from "node-fetch";
@@ -46,7 +46,7 @@ export interface S3Object {
 
 // Create a client to read objects from S3
 const s3 = new S3Client({ region: "us-east-1" });
-
+let s3Data = ""
 
 
 export interface accessResp {
@@ -64,7 +64,7 @@ export interface authCreds {
     refreshTokenUrl: string
 }
 
-debugger;
+
 
 export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Context) => {
 
@@ -81,66 +81,70 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
     const processS3Obj = async () => {
 
 
-//Local Testing - pull an S3 Object and so avoid the not-found error
+        //Local Testing - pull an S3 Object and so avoid the not-found error
 
-const listReq = { // ListObjectsRequest
-    Bucket: event.Records[0].s3.bucket.name, // required
-    // Delimiter: ";",
-    // EncodingType: "url",
-    MaxKeys: 10,
-    // Prefix: "tricklercache",
-    // Marker: "STRING_VALUE",
-    // RequestPayer: "requester",
-    // ExpectedBucketOwner: "STRING_VALUE",
-    // OptionalObjectAttributes: [ // OptionalObjectAttributesList
-    //   "RestoreStatus",
-    // ],
-  } as ListObjectsCommandInput
+        const listReq = { // ListObjectsRequest
+            Bucket: event.Records[0].s3.bucket.name, // required
+            // Delimiter: ";",
+            // EncodingType: "url",
+            MaxKeys: 10
+            // Prefix: "tricklercache",
+            // Marker: "STRING_VALUE",
+            // RequestPayer: "requester",
+            // ExpectedBucketOwner: "STRING_VALUE",
+            // OptionalObjectAttributes: [ // OptionalObjectAttributesList
+            //   "RestoreStatus",
+            // ],
+        } as ListObjectsV2CommandInput
 
-  try {
-    await s3.send(
-        new ListObjectsCommand(listReq)
-    ).then(async (s3Result: ListObjectsCommandOutput) => {
+        let s3Key: string = ""
 
-        // console.log("Received the following Object: \n", data.Body?.toString());
-        debugger;
-        // const d = JSON.stringify(s3Result.Body, null, 2)
+        try {
+            await s3.send(new ListObjectsV2Command(listReq))
+                .then(async (s3Result: ListObjectsV2CommandOutput) => {
+                    // debugger;
+                    // const d = JSON.stringify(s3Result.Body, null, 2)
 
-        const list = s3Result.Contents?.values
+                    s3Key = s3Result.Contents?.at(1)?.Key as string
 
-        // console.log("Received the following Object: \n", JSON.stringify(data.Body, null, 2));
+                    // event.Records[0].s3.object.key  = s3Result.Contents?.at(0)?.Key as string
 
-        console.log(`Result from List: ${list} \n..\n..\n..`)
-    })
-} catch (e) {
-    console.log("Exception Processing S3 List Command: \n..", e, '\n..\n..\n..')
-}
+                    // console.log("Received the following Object: \n", JSON.stringify(data.Body, null, 2));
 
-
-
-
-
-
+                    console.log("Result from List: ", s3Key, "\n..\n..\n..")
+                })
+        } catch (e) {
+            console.log("Exception Processing S3 List Command: \n..", e, '\n..\n..\n..')
+        }
 
         try {
             await s3.send(
                 new GetObjectCommand({
-                    Key: event.Records[0].s3.object.key,
+                    // Key: event.Records[0].s3.object.key,
+                    Key: s3Key,
                     Bucket: event.Records[0].s3.bucket.name
                 })
             ).then(async (s3Result: GetObjectCommandOutput) => {
 
                 // console.log("Received the following Object: \n", data.Body?.toString());
-                debugger;
+
                 // const d = JSON.stringify(s3Result.Body, null, 2)
 
                 const stream = s3Result.Body as Readable
+                const s = []
 
-                const d = Buffer.concat(await stream.toArray())
+                for await (const cc of stream) {
+                    s.push(cc)
+                }
 
+                const s3d = Buffer.concat(s)
+                debugger;
+                // const s3Data = JSON.parse(s3d.toString())
+                s3Data = s3d.toString()
 
                 // console.log("Received the following Object: \n", JSON.stringify(data.Body, null, 2));
-                console.log(`Result from Get: ${d} \n..\n..\n..`)
+                console.log(`Result from Get: ${s3Data} \n..\n..\n..`)
+
             })
         } catch (e) {
             console.log("Exception Processing S3 Get Command: \n..", e, '\n..\n..\n..')
@@ -152,13 +156,14 @@ const listReq = { // ListObjectsRequest
             await s3.send(
                 new DeleteObjectCommand({
                     Key: event.Records[0].s3.object.key,
-                    Bucket: event.Records[0].s3.bucket.name
+                    Bucket: event.Records[0].s3.bucket.name,
+                    BypassGovernanceRetention: true
                 })
-            ).then(async (s3Result: GetObjectCommandOutput) => {
+            ).then(async (s3Result: DeleteObjectCommandOutput) => {
 
                 // console.log("Received the following Object: \n", data.Body?.toString());
                 debugger;
-                const d = JSON.stringify(s3Result.Body, null, 2)
+                const d = JSON.stringify(s3Result.$metadata.httpStatusCode, null, 2)
 
                 // console.log("Received the following Object: \n", JSON.stringify(data.Body, null, 2));
                 console.log(`Result from Delete: ${d} ` + "\n..\n..\n..")
@@ -169,9 +174,20 @@ const listReq = { // ListObjectsRequest
         } catch (e) {
             console.log("Exception Processing S3 Delete Command: \n", e, '\n..\n..\n..')
         }
+
+        return s3Data
+
+
     }
 
-    await processS3Obj();
+    const updData = await processS3Obj();
+
+    const xmlRows: string = parseCSVtoXML(updData)
+
+
+    postCampaign(xmlRows)
+
+
     return "Processed All Events.... \n..\n..\n.."
 
 
@@ -198,7 +214,21 @@ const listReq = { // ListObjectsRequest
 export default s3JsonLoggerHandler
 
 
+export function parseCSVtoXML(file: string) {
+    let xmlRows = '' as string
 
+    xmlRows += `  
+    <ROW>
+    <COLUMN name="EMAIL">           <![CDATA[${email}]]></COLUMN>
+    <COLUMN name="EventSource">     <![CDATA[${eventSource}]]></COLUMN>  
+    <COLUMN name="EventName">       <![CDATA[${eventName}]]></COLUMN>
+    <COLUMN name="EventValue">      <![CDATA[${eventValue}]]></COLUMN>
+    <COLUMN name="Event Timestamp"> <![CDATA[${timestamp}]]></COLUMN>
+    </ROW>`
+
+    return xmlRows
+
+}
 
 async function pullS3Object(params: S3Object) {
     try {

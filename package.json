@@ -46,7 +46,8 @@
   },
   "scripts": {
     "start": "./node_modules/.bin/aws sls offline -s dev",
-    "debug": "export SLS_DEBUG=* && node --inspect-brk aws sls invoke local -s dev",
+    "debug_Old": "export SLS_DEBUG=* && node --inspect-brk aws sls invoke local -s dev",    
+    "debug": "export SLS_DEBUG=* && node --inspect aws sls invoke local -s dev",
     "usefulCommands": "'{ \n      \"compile\": \"tsc\",\n      \"test\": \"jest\",\n      \"unit\": \"jest\",\n      \"lint\": \"eslint '*.ts' --quiet --fix\",\n      \"build\": \"esbuild src/handlers/s3-json-logger.ts --bundle --minify --out-extension:.js=.mjs --external: 'aws-sdk, @aws-sdk/client-s3, node-fetch, @aws-sdk/protocol-http' --platform=node --target=es2020 --outdir=.aws-sam/build/\",\n      \"build2\": \"esbuild src/handlers/s3-json-logger.ts --bundle --minify --out-extension:.js=.mjs --sourcemap --platform=node --target=es2020 --outdir=src/handlers/\",\n      \"build3\": \"esbuild src/handlers/s3-json-logger.ts --bundle --minify --out-extension:.js=.mjs --sourcemap --platform=node --target=es2020 --outdir=src/handlers/\",\n      \"build4\": \"esbuild ./src/handlers/s3-json-logger.ts --out-extension:.js=.mjs --external:'node_modules/aws-sdk/clients/s3.js' --bundle --minify --platform=node --target=es2020 --outfile=./src/handlers/s3-json-logger.mjs\",\n      \"watch\": \"tsc -w\"\n    }'"
   },
   "main": ".eslintrc.js",
