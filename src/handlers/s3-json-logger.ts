@@ -3,6 +3,7 @@ import { S3, S3Client, S3ClientConfig, GetObjectCommand, GetObjectCommandOutput,
 import { Handler, S3Event, Context } from "aws-lambda"
 import fetch from "node-fetch"
 import { Body } from "node-fetch";
+import { Readable } from "stream";
 
 
 // import { packageJson } from '@aws-sdk/client3/package.json'
@@ -87,7 +88,13 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
 
                 // console.log("Received the following Object: \n", data.Body?.toString());
                 debugger;
-                const d = JSON.stringify(s3Result.Body, null, 2)
+                // const d = JSON.stringify(s3Result.Body, null, 2)
+
+
+                const stream = s3Result.Body as Readable
+
+                const d = Buffer.concat(await stream.read())     //.toArray())
+
 
                 // console.log("Received the following Object: \n", JSON.stringify(data.Body, null, 2));
                 console.log(`Result from Get: ${d} \n..\n..\n..`)
@@ -108,12 +115,12 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
 
                 // console.log("Received the following Object: \n", data.Body?.toString());
                 debugger;
-                const d = JSON.stringify(s3Result.Body, null, 2) 
+                const d = JSON.stringify(s3Result.Body, null, 2)
 
                 // console.log("Received the following Object: \n", JSON.stringify(data.Body, null, 2));
                 console.log(`Result from Delete: ${d} ` + "\n..\n..\n..")
 
-            // console.log(`Response from deleteing Object ${event.Records[0].responseElements["x-amz-request-id"]} \n ${del.$metadata.toString()}`);
+                // console.log(`Response from deleteing Object ${event.Records[0].responseElements["x-amz-request-id"]} \n ${del.$metadata.toString()}`);
 
             })
         } catch (e) {
@@ -121,8 +128,8 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
         }
     }
 
-await processS3Obj();
-return "Processed All Events.... \n..\n..\n.."
+    await processS3Obj();
+    return "Processed All Events.... \n..\n..\n.."
 
 
 
