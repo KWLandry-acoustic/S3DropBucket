@@ -87,17 +87,17 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
 
                 // console.log("Received the following Object: \n", data.Body?.toString());
                 debugger;
-                const d = s3Result.Body?.transformToString
+                const d = JSON.stringify(s3Result.Body, null, 2)
 
                 // console.log("Received the following Object: \n", JSON.stringify(data.Body, null, 2));
-                console.log(`Result from Get: ${d}`)
+                console.log(`Result from Get: ${d} \n..\n..\n..`)
             })
         } catch (e) {
-            console.log("Exception Processing S3 Get Command: \n", e, '\n\n')
+            console.log("Exception Processing S3 Get Command: \n..", e, '\n..\n..\n..')
         }
 
         try {
-            console.log('Processed Event: \n' + JSON.stringify(event, null, 2));
+            console.log('Processed Event: \n' + JSON.stringify(event, null, 2) + "\n..\n..\n..");
 
             await s3.send(
                 new DeleteObjectCommand({
@@ -108,21 +108,21 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
 
                 // console.log("Received the following Object: \n", data.Body?.toString());
                 debugger;
-                const d = s3Result.Body?.transformToString  
+                const d = JSON.stringify(s3Result.Body, null, 2) 
 
                 // console.log("Received the following Object: \n", JSON.stringify(data.Body, null, 2));
-                console.log(`Result from Delete: ${d}`)
+                console.log(`Result from Delete: ${d} ` + "\n..\n..\n..")
 
             // console.log(`Response from deleteing Object ${event.Records[0].responseElements["x-amz-request-id"]} \n ${del.$metadata.toString()}`);
 
             })
         } catch (e) {
-            console.log("Exception Processing S3 Delete Command: \n", e, '\n\n')
+            console.log("Exception Processing S3 Delete Command: \n", e, '\n..\n..\n..')
         }
     }
 
 await processS3Obj();
-
+return "Processed All Events.... \n..\n..\n.."
 
 
 

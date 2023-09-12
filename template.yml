@@ -29,8 +29,10 @@ Resources:
     # Type: "AWS::Lambda::Function"
     Type: AWS::Serverless::Function
     Properties:
-
       Description: A Lambda function triggered on a file sent to an S3 bucket.
+      Environment:
+        Variables:
+          Version: !Ref AppId 
       Role: arn:aws:iam::777957353822:role/tricklercacheExecutionRole 
       CodeUri: ./
       # CodeUri: src/handlers/          #---Gets reBuilt in SAM Package 
