@@ -4,6 +4,7 @@ import { Handler, S3Event, Context } from "aws-lambda"
 import fetch from "node-fetch"
 import { Body } from "node-fetch";
 import { Readable } from "stream";
+// import 'source-map-support/register'
 
 
 // import { packageJson } from '@aws-sdk/client3/package.json'
@@ -90,10 +91,9 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
                 debugger;
                 // const d = JSON.stringify(s3Result.Body, null, 2)
 
-
                 const stream = s3Result.Body as Readable
 
-                const d = Buffer.concat(await stream.read())     //.toArray())
+                const d = Buffer.concat(await stream.toArray())
 
 
                 // console.log("Received the following Object: \n", JSON.stringify(data.Body, null, 2));
