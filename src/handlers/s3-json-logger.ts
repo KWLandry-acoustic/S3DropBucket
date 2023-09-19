@@ -4,6 +4,10 @@ import { Handler, S3Event, Context } from "aws-lambda"
 import fetch from "node-fetch"
 import { Body } from "node-fetch";
 import { Readable } from "stream";
+import csv from 'csvtojson';
+
+
+
 // import 'source-map-support/register'
 
 
@@ -18,9 +22,6 @@ import { Readable } from "stream";
 // import { FetchHttpHandler, FetchHttpHandlerOptions } from '@aws-sdk/fetch-http-handler'
 // import { default as fetch } from '@aws-sdk/fetch-http-handler/node_modules/@smithy/fetch-http-handler'
 // import { FetchHttpHandler, FetchHttpHandlerOptions} from '@aws-sdk/client-s3/dist-types/'
-
-
-// import { Readable } from "stream";
 
 
 
@@ -73,177 +74,113 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
 
     console.log("Processing Object from S3 Trigger, Event RequestId: ", event.Records[0].responseElements["x-amz-request-id"], "\n\nNum of Events to be processed: ", event.Records.length)
 
-
     if (event.Records.length > 1) throw new Error(`Expecting only a single S3 Object from a Triggered S3 write
      of a new Object, received ${event.Records.length} Objects`)
 
 
-    const processS3Obj = async () => {
+    //Local Testing - pull an S3 Object and so avoid the not-found error
+    let s3Key: string = await getAnS3ObjectforTesting(event);
+    //Local Testing - pull an S3 Object and so avoid the not-found error
 
 
-        //Local Testing - pull an S3 Object and so avoid the not-found error
+    const s3Data = await getS3Object(s3Key, event) as unknown as string[]
 
-        const listReq = { // ListObjectsRequest
-            Bucket: event.Records[0].s3.bucket.name, // required
-            // Delimiter: ";",
-            // EncodingType: "url",
-            MaxKeys: 10
-            // Prefix: "tricklercache",
-            // Marker: "STRING_VALUE",
-            // RequestPayer: "requester",
-            // ExpectedBucketOwner: "STRING_VALUE",
-            // OptionalObjectAttributes: [ // OptionalObjectAttributesList
-            //   "RestoreStatus",
-            // ],
-        } as ListObjectsV2CommandInput
+    console.log("Returned from getS3Object: ", s3Data)
 
-        let s3Key: string = ""
+    debugger; 
+    const xmlRows = parseCSVtoXML(s3Data)
 
-        try {
-            await s3.send(new ListObjectsV2Command(listReq))
-                .then(async (s3Result: ListObjectsV2CommandOutput) => {
-                    // debugger;
-                    // const d = JSON.stringify(s3Result.Body, null, 2)
-
-                    s3Key = s3Result.Contents?.at(1)?.Key as string
-
-                    // event.Records[0].s3.object.key  = s3Result.Contents?.at(0)?.Key as string
-
-                    // console.log("Received the following Object: \n", JSON.stringify(data.Body, null, 2));
-
-                    console.log("Result from List: ", s3Key, "\n..\n..\n..")
-                })
-        } catch (e) {
-            console.log("Exception Processing S3 List Command: \n..", e, '\n..\n..\n..')
-        }
-
-        try {
-            await s3.send(
-                new GetObjectCommand({
-                    // Key: event.Records[0].s3.object.key,
-                    Key: s3Key,
-                    Bucket: event.Records[0].s3.bucket.name
-                })
-            ).then(async (s3Result: GetObjectCommandOutput) => {
-
-                // console.log("Received the following Object: \n", data.Body?.toString());
-
-                // const d = JSON.stringify(s3Result.Body, null, 2)
-
-                const stream = s3Result.Body as Readable
-                const s = []
-
-                for await (const cc of stream) {
-                    s.push(cc)
-                }
-
-                const s3d = Buffer.concat(s)
-                debugger;
-                // const s3Data = JSON.parse(s3d.toString())
-                s3Data = s3d.toString()
-
-                // console.log("Received the following Object: \n", JSON.stringify(data.Body, null, 2));
-                console.log(`Result from Get: ${s3Data} \n..\n..\n..`)
-
-            })
-        } catch (e) {
-            console.log("Exception Processing S3 Get Command: \n..", e, '\n..\n..\n..')
-        }
-
-        try {
-            console.log('Processed Event: \n' + JSON.stringify(event, null, 2) + "\n..\n..\n..");
-
-            await s3.send(
-                new DeleteObjectCommand({
-                    Key: event.Records[0].s3.object.key,
-                    Bucket: event.Records[0].s3.bucket.name
-                })
-            ).then(async (s3Result: DeleteObjectCommandOutput) => {
-
-                // console.log("Received the following Object: \n", data.Body?.toString());
-                debugger;
-                const d = JSON.stringify(s3Result.$metadata.httpStatusCode, null, 2)
-
-                // console.log("Received the following Object: \n", JSON.stringify(data.Body, null, 2));
-                console.log(`Result from Delete: ${d} ` + "\n..\n..\n..")
-
-                // console.log(`Response from deleteing Object ${event.Records[0].responseElements["x-amz-request-id"]} \n ${del.$metadata.toString()}`);
-
-            })
-        } catch (e) {
-            console.log("Exception Processing S3 Delete Command: \n", e, '\n..\n..\n..')
-        }
-
-        return s3Data
-
-
-    }
-
-    const updData = await processS3Obj();
-
-    const xmlRows: string = parseCSVtoXML(updData)
-
-
-    postCampaign(xmlRows)
-
-
-    return "Processed All Events.... \n..\n..\n.."
+    const updateResult = postCampaign(xmlRows)
 
 
 
-    // // //usage
-    // const s3Config: S3ClientConfig = "" 
-    // const bareBonesS3 = new S3Client(s3Config.endpoint);
-    // await bareBonesS3.send(new GetObjectCommand({...}));
+    //Once successful delete the original S3 Object
+    const delResultCode = await deleteS3Object(event);
+    console.log(`Result from Delete: ${s3Key}: ${delResultCode} ` + "\\n..\\n..\\n..");
 
+    return `Event Process Result:     ${updateResult}      for Request Id:     ${event.Records[0].responseElements["x-amz-request-id"]}  \\n..\\n..\\n..`
 
-
-
-    // try {
-    //     const a = await pullS3Object(params)
-    //     const b = await postCampaign(a as string)
-    //     console.log("Return from Post to Campaign: \n", b)
-    // } catch (e) {
-    //     console.log("Exception during Pull or Post: /n", e)
-    // }
-
-    // return context.logStreamName;
 };
 
 export default s3JsonLoggerHandler
 
+async function getS3Object(s3Key: string, event: S3Event) {
+    let s3D: string[] = []
 
-export function parseCSVtoXML(file: string) {
-    let xmlRows = '' as string
+    try {
+        await s3.send(
+            new GetObjectCommand({
+                // Key: event.Records[0].s3.object.key,
+                Key: s3Key,
+                Bucket: event.Records[0].s3.bucket.name
+            })
+        ).then(async (s3Result: GetObjectCommandOutput) => {
+            // console.log("Received the following Object: \n", data.Body?.toString());
 
-    xmlRows += `  
-    <ROW>
-    <COLUMN name="EMAIL">           <![CDATA[${email}]]></COLUMN>
-    <COLUMN name="EventSource">     <![CDATA[${eventSource}]]></COLUMN>  
-    <COLUMN name="EventName">       <![CDATA[${eventName}]]></COLUMN>
-    <COLUMN name="EventValue">      <![CDATA[${eventValue}]]></COLUMN>
-    <COLUMN name="Event Timestamp"> <![CDATA[${timestamp}]]></COLUMN>
-    </ROW>`
+            // const d = JSON.stringify(s3Result.Body, null, 2)
+            const stream = s3Result.Body as Readable;
+            debugger;
+            csv({
+                noheader: false,
+                trim: true,
+                flatKeys: true,
+                needEmitAll: true,
+                downstreamFormat: "line"
+            })
+                .fromStream(stream)
+                .then((rows) => {
+                    console.log("Output from csvtojson: ", rows)
+                    s3D = rows
+                })
 
-    return xmlRows
+            // for await (const cc of stream) {
+            //     s3D.push(cc);
+            // }
+
+            // // s3Data = Buffer.concat(s);
+
+            // // const s3Data = JSON.parse(s3d.toString())
+            // // s3Data = s3d.map.toString();
+
+            // // console.log("Received the following Object: \n", JSON.stringify(data.Body, null, 2));
+            // console.log(`Result from Get: ${s3Data} \n..\n..\n..`);
+
+        });
+        
+        return s3D
+
+    } catch (e) {
+        console.log("Exception Processing S3 Get Command: \n..", e, '\\n..\\n..\\n..');
+    }
 
 }
 
-async function pullS3Object(params: S3Object) {
-    try {
-        console.log("Pulling S3 Object\n", params.Bucket, '\n', params.Key);
+export function parseCSVtoXML(csvIn: string[]) {
+    let xmlRows = '' as string
+    debugger;
 
-        const command = new GetObjectCommand({
-            Key: params.Key,
-            Bucket: params.Bucket,
-        });
+    // csv({
+    //     noheader: false,
+    //     trim: true,
+    // })
+    //     .fromString(csvIn.forEach())
+    //     .then((csvRow) => {
 
-        const s3Item: GetObjectCommandOutput = await s3.send(command);
-        return s3Item.Body?.transformToString();
+    //         for (const c in csvJson) {
 
-    } catch (e) {
-        console.log("Pull S3Object Exception:", e);
-    }
+    //             xmlRows += `  
+    //                 <ROW>
+    //                 <COLUMN name="EMAIL">           <![CDATA[${csvRow.email}]]></COLUMN>
+    //                 <COLUMN name="EventSource">     <![CDATA[${csvRow.eventSource}]]></COLUMN>  
+    //                 <COLUMN name="EventName">       <![CDATA[${csvRow.eventName}]]></COLUMN>
+    //                 <COLUMN name="EventValue">      <![CDATA[${csvRow.eventValue}]]></COLUMN>
+    //                 <COLUMN name="Event Timestamp"> <![CDATA[${csvRow.timestamp}]]></COLUMN>
+    //                 </ROW>`
+    //         }
+
+
+    //     })
+    return xmlRows
 }
 
 export async function postCampaign(xmlCalls: string) {
@@ -272,7 +209,6 @@ export async function postCampaign(xmlCalls: string) {
         console.log("Exception during POST to Campaign: \n", e)
     }
 }
-
 
 export async function getAccessToken() {
 
@@ -313,3 +249,64 @@ export async function getAccessToken() {
         console.log("Exception in getAccessToken: \n", e)
     }
 }
+
+async function deleteS3Object(event: S3Event) {
+    try {
+        console.log('Processed Event: \n' + JSON.stringify(event, null, 2) + "\n..\n..\n..");
+
+        await s3.send(
+            new DeleteObjectCommand({
+                Key: event.Records[0].s3.object.key,
+                Bucket: event.Records[0].s3.bucket.name
+            })
+        ).then(async (s3Result: DeleteObjectCommandOutput) => {
+            // console.log("Received the following Object: \n", data.Body?.toString());
+
+            const d = JSON.stringify(s3Result.$metadata.httpStatusCode, null, 2);
+
+            // console.log("Received the following Object: \n", JSON.stringify(data.Body, null, 2));
+            console.log(`Result from Delete of ${event.Records[0].s3.object.key}: ${d} ` + "\n..\n..\n..");
+
+            return d
+
+            // console.log(`Response from deleteing Object ${event.Records[0].responseElements["x-amz-request-id"]} \n ${del.$metadata.toString()}`);
+
+        });
+    } catch (e) {
+        console.log(`Exception Processing S3 Delete Command for ${event.Records[0].s3.object.key}: \n ${e}` + "\n..\n..\n..");
+    }
+}
+
+
+
+
+
+
+async function getAnS3ObjectforTesting(event: S3Event) {
+    const listReq = {
+        Bucket: event.Records[0].s3.bucket.name,
+        MaxKeys: 10
+    } as ListObjectsV2CommandInput;
+
+    let s3Key: string = "";
+
+    try {
+        await s3.send(new ListObjectsV2Command(listReq))
+            .then(async (s3Result: ListObjectsV2CommandOutput) => {
+                // const d = JSON.stringify(s3Result.Body, null, 2)
+
+                s3Key = s3Result.Contents?.at(1)?.Key as string;
+
+                // event.Records[0].s3.object.key  = s3Result.Contents?.at(0)?.Key as string
+                // console.log("Received the following Object: \n", JSON.stringify(data.Body, null, 2));
+                console.log("Result from List: ", s3Key, "\n..\n..\n..");
+            });
+    } catch (e) {
+        console.log("Exception Processing S3 List Command: \n..", e, '\n..\n..\n..');
+    }
+    return s3Key;
+}
+
+
+
+
