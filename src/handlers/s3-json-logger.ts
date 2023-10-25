@@ -85,7 +85,7 @@ export interface accessResp {
 }
 
 export interface tcQueueMessage {
-    s3Key: string,
+    work: string,
     config: tricklerConfig
 }
 
@@ -151,8 +151,8 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
 
     try
     {
-        const work = await getS3Work(qc.s3Key, qc.config)
-        if(!work) throw new Error(`Work was not retrieved from Queue: ${}`)
+        const work = await getS3Work(qc.work, qc.config)
+        if(!work) throw new Error(`Work was not retrieved from Queue: ${qc.work}`)
 
         postSuccess = postToCampaign(work, qc.config)
         if (!postSuccess)
