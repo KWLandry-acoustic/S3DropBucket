@@ -144,7 +144,7 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
     console.log(`TricklerQueueProcessor - Body: ${b}`)
     console.log(`TricklerQueueProcessor - Attributes: ${c}`)
 
-    const qc = event.Records[0].body as unknown as tcQueueMessage
+    const qc:tcQueueMessage = JSON.parse(event.Records[0].body)
     console.log("tcQueueMessage: ", qc)
     console.log(`tcQueueMessage work: : ${qc.work}`)
 
