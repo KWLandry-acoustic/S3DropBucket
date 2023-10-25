@@ -145,11 +145,24 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
     console.log(`TricklerQueueProcessor - Attributes: ${c}`)
 
     const qc = event.Records[0].body as unknown as tcQueueMessage
+    console.log("tcQueueMessage: ", qc)
 
-    const work = await getS3Work(qc.s3Key, qc.config)
+    let postSuccess
 
-    const postSuccess = postToCampaign(work, qc.config)
+    try
+    {
+        const work = await getS3Work(qc.s3Key, qc.config)
+        if(!work) throw new Error(`Work was not retrieved from Queue: ${}`)
 
+        postSuccess = postToCampaign(work, qc.config)
+        if (!postSuccess)
+        {
+            queueForRetry(work) 
+        }
+    } catch (e)
+    {
+        console.log(`${e}`)
+    }
     console.log(`POST Success: ${postSuccess}`)
 
  return true
@@ -217,10 +230,6 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
 };
 
 export default s3JsonLoggerHandler
-
-
-
-
 
 async function getCustomerConfig(event: S3Event) {
 
@@ -413,8 +422,6 @@ function convertToXML(rows: string[], config: tricklerConfig) {
     return xmlRows
 }
 
-
-
 async function queueWork(queueContent: string, event: S3Event) {
 
     console.log(`Process Queue:  ${queueContent} rows `)
@@ -487,6 +494,16 @@ let qAdd
     return qAdd
 
 }
+
+async function queueForRetry(update: string) {
+    console.log(`Queuing For Retry: ${update.length}`)
+}
+
+
+
+
+
+
 
 export async function getAccessToken(config: tricklerConfig) {
 
@@ -605,10 +622,6 @@ export async function postToCampaign(xmlCalls: string, config: tricklerConfig) {
     //     debugger;
     //     console.log(`Exception during POST to Campaign (AccessToken ${accessToken}) Result: ${e}`)
     // })
-}
-
-async function queueForRetry(update: string) {
-    console.log(`Queuing For Retry: ${update.length}`)
 }
 
 
