@@ -73,6 +73,54 @@ Resources:
             - '@aws-sdk/fetch-http-handlerdeps/node-fetch'
             - '@aws-sdk/client3/package.json'
   
+  tricklerQueueProcessorFunction:
+    # Type: "AWS::Lambda::Function"
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: A Lambda function triggered on a file sent to an S3 bucket.
+      Environment:
+        Variables:
+          Version: !Ref AppId 
+          NODE_OPTIONS: enable-source-maps
+      Role: arn:aws:iam::777957353822:role/tricklercacheExecutionRole 
+      CodeUri: ./
+      # CodeUri: src/handlers/          #---Gets reBuilt in SAM Package 
+      Handler: s3-json-logger.tricklerQueueProcessorHandler
+      Runtime: nodejs18.x
+      Architectures: 
+        - x86_64
+      MemorySize: 752
+      Timeout: 899
+      Policies:
+        - S3ReadPolicy:
+            BucketName: !Sub ${BucketName} 
+      Layers:
+        - !Ref dependencyLayer
+    # #Build Parameters
+    Metadata:    
+      BuildMethod: esbuild
+      Architecture: x86_64
+      BuildProperties:
+        # Target: es2020
+        Target: node18.12
+        Format: esm
+        Platform: node
+        Packages: external
+        # mainFields: 
+        #   --main-fields=module, main
+        Minify: false
+        OutExtension:
+          - .js=.mjs
+        Sourcemap: true
+        EntryPoints: 
+          - src/handlers/s3-json-logger.ts
+        External: 
+            - '@aws-sdk/client-s3'
+            - 'node-fetch'
+            - 'nodejs'
+            - '@aws-sdk/fetch-http-handlerdeps/node-fetch'
+            - '@aws-sdk/client3/package.json'
+  
   
   
   #Can only define a new S3 Bucket on creation (first run), and then an existing bucket can only have a trigger added manually, 

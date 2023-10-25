@@ -218,3 +218,7 @@ $RECYCLE.BIN/
 
 # End of https://www.toptal.com/developers/gitignore/api/osx,node,linux,windows,sam
 
+lambda_caching_example.ts
+pura_config.json_bak
+.gitignore
+pura_config.json_bak2

@@ -5,3 +5,6 @@ nodejs.zip
 *.tgz
 __tests__/**
 .ds*
+scratch*
+
+

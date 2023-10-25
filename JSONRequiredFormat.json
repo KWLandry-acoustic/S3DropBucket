@@ -1,0 +1,25 @@
+{
+      "addupdate": [
+            {
+                  "email": "bob@dickens.com",
+                  "firstname": "Bob",
+                  "lastname": "Cratchett"
+            },
+            {
+                  "email": "bob@dickens.com",
+                  "firstname": ""
+            },
+            {
+                  "email": "bob@dickens.com"
+            },
+            {
+                  "firstname": "Bob",
+                  "lastname": "Cratchett"
+            },
+            {
+                  "email": "bob@dickens.com",
+                  "firstname": "Bob",
+                  "lastname": "Cratchett"
+            }
+      ]
+}

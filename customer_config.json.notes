@@ -1,0 +1,25 @@
+customer_config.json.notes
+
+{
+        "format": "csv",
+        "listId": "3055683",
+        "listName": "S3TC-SegmentEvents-1",
+        "pod": "6",
+        "region": "us",
+        "refreshToken": "rD-7E2r8BynGDaapr13oJV9BxQr20lsYGN9RPkbrtPtAS1",
+        "clientId": "1d99f8d8-0897-4090-983a-c517cc54032e",
+        "clientSecret": "124bd238-0987-40a2-b8fb-879ddd4d3241",
+
+        AddUpdate{
+                "syncfields": "EMAIL, city, state",
+                "Col_1": "string",
+                "Col_2": "number",
+                "Col_3": "email",
+                "Col_4": "datetime"
+        }
+}
+//  AddUpdate covers DB Update and RT InsertUpdate, 
+// When DB is non-keyed, need syncfield
+// Syncfield is ignored when DB is keyed, so, can static include and it will be ignored,
+// Apparently, EMAIL is always a syncfield 
+//for SyncFields - what's needed 
