@@ -145,9 +145,9 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
     const b = JSON.stringify(event.Records[0].body)
     const c = JSON.stringify(event.Records[0].attributes)
     
-    console.log(`TricklerQueueProcessor: ${a}`)
-    console.log(`TricklerQueueProcessor: ${b}`)
-    console.log(`TricklerQueueProcessor: ${c}`)
+    console.log(`TricklerQueueProcessor - MessageAttributes: ${a}`)
+    console.log(`TricklerQueueProcessor - Body: ${b}`)
+    console.log(`TricklerQueueProcessor - Attributes: ${c}`)
 
 
  return true
@@ -360,7 +360,7 @@ async function processS3ObjectContent(event: S3Event) {
                                 if (chunks.length == 25) {
                                     console.log(`s3ContentStream onData has processed ${recs} chunks: `, jsonChunk)
                                     xmlRows = package99(chunks, custConfig)
-                                    let queueUp = await processQueue(xmlRows, event.Records[0].s3.object.key)
+                                    let queueUp = await processQueue(xmlRows, event)
                                     chunks.length = 0
                                 }
                             })
@@ -368,7 +368,7 @@ async function processS3ObjectContent(event: S3Event) {
                             .on('end', async function (msg: string) {
                                 console.log(`S3ContentStream OnEnd (${msg}), processed  (${recs}) records from ${event.Records[0].s3.object.key}.`)
                                 xmlRows = package99(chunks, custConfig)
-                                let queueToProcess = await processQueue(xmlRows, event.Records[0].s3.object.key)
+                                let queueToProcess = await processQueue(xmlRows, event)
                                 chunks.length = 0
                                 resolve('s3Content End')
                             })
@@ -422,10 +422,6 @@ function package99(rows: string[], config: tricklerConfig) {
     //Tidy up the XML 
     xmlRows += `</ROWS></InsertUpdateRelationalTable></Body></Envelope>`
 
-
-    // const postResult = await postCampaign(xmlRows, config)
-    // return postResult
-
     return xmlRows
 }
 
@@ -463,9 +459,17 @@ async function updateDatabase () {
     </Envelope>`
 }
 
-async function processQueue(queueContent: string, s3Key: string) {
+async function processQueue(queueContent: string, event: S3Event) {
 
     console.log(`Process Queue:  ${queueContent} rows `)
+
+    const s3Key = event.Records[0].s3.object.key
+    const qs3 = await qS3Content(queueContent, s3Key)
+    const qAdd = await addToProcessQueue(queueContent, s3Key) 
+
+}
+
+async function qS3Content(queueContent: string, s3Key: string) {
 
     //write to the S3 Process Bucket
     const s3PutInput = {
@@ -473,17 +477,13 @@ async function processQueue(queueContent: string, s3Key: string) {
         "Bucket": "tricklercache-process",
         "Key": `process_${s3Key}`
     };
-
-    debugger;
-
-    // const s3PutCommand = new PutObjectCommand(s3PutInput);
-
-    // const s3Response = await s3.send(s3PutCommand)
+    
+    let qs3
 
     try {
         console.log(`ProcessQueue - Write to S3 Process Bucket: ", process_${s3Key}`);
 
-        await s3.send(new PutObjectCommand(s3PutInput))
+        qs3 = await s3.send(new PutObjectCommand(s3PutInput))
             .then(async (s3PutResult: PutObjectCommandOutput) => {
                 const d = JSON.stringify(s3PutResult, null, 2)
                 // const r = s3PutResult.VersionId
@@ -492,11 +492,11 @@ async function processQueue(queueContent: string, s3Key: string) {
     } catch (e) {
         console.log(`Exception - ProcessingQueue - S3 Put Command (process_${s3Key}): ${e}`)
     }
+return qs3
 
+}
 
-
-
-
+async function addToProcessQueue(queueContent: string, s3Key: string) {
 
     const writeSQSCommand = new SendMessageCommand({
         QueueUrl: sqsParams.QueueUrl,
@@ -507,28 +507,25 @@ async function processQueue(queueContent: string, s3Key: string) {
                 StringValue: "process",
             },
         },
-        MessageBody: queueContent,
+        MessageBody: s3Key,
     });
 
-    // const response = await sqsClient.send(writeSQSCommand);
-
-let sqsWrite = ''
+let qAdd
 
     try {
-        await sqsClient.send(writeSQSCommand)
+        qAdd = await sqsClient.send(writeSQSCommand)
             .then(async (sqsWriteResult: SendMessageCommandOutput) => {
                 const wr = JSON.stringify(sqsWriteResult, null, 2)
                 console.log(`Process Queue - Writing SQS Queue for process_${s3Key} - Result: ${wr} `);
-                sqsWrite = JSON.stringify(sqsWriteResult)
+                qAdd = JSON.stringify(sqsWriteResult)
             });
     } catch (e) {
         console.log(`Exception - Processing Queue - SQS Write: ${e}`)
     }
 
-    return sqsWrite
+    return qAdd
 
 }
-
 
 export async function getAccessToken(config: tricklerConfig) {
 
