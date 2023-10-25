@@ -146,6 +146,7 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
 
     const qc = event.Records[0].body as unknown as tcQueueMessage
     console.log("tcQueueMessage: ", qc)
+    console.log(`tcQueueMessage work: : ${qc.work}`)
 
     let postSuccess
 
@@ -655,6 +656,8 @@ async function deleteS3Object(event: S3Event) {
 
 async function getS3Work(s3Key: string, config: tricklerConfig){
     
+    console.log(`GetS3Work key provided: ${s3Key}`)
+
     const getObjectCmd = {
         Bucket: "tricklercache-process",
         Key: s3Key
