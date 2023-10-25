@@ -139,7 +139,17 @@ const csvParseStream = Papa.parse(Papa.NODE_STREAM_INPUT, {
 //          Row updates would be duplicated but would that matter?  
 //
 export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, context: Context) => {
-    console.log(`TricklerQueueProcessor: ${event.Records[0].messageAttributes}`)
+    
+
+    const a = JSON.stringify(event.Records[0].messageAttributes)
+    const b = JSON.stringify(event.Records[0].body)
+    const c = JSON.stringify(event.Records[0].attributes)
+    
+    console.log(`TricklerQueueProcessor: ${a}`)
+    console.log(`TricklerQueueProcessor: ${b}`)
+    console.log(`TricklerQueueProcessor: ${c}`)
+
+
  return true
 }
 
