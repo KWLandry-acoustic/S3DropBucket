@@ -144,17 +144,13 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
     console.log(`TricklerQueueProcessor - Body: ${b}`)
     console.log(`TricklerQueueProcessor - Attributes: ${c}`)
 
-    const qc = event.Records[0].messageAttributes as unknown as tcQueueMessage
+    const qc = event.Records[0].body as unknown as tcQueueMessage
 
     const work = await getS3Work(qc.s3Key, qc.config)
 
     const postSuccess = postToCampaign(work, qc.config)
 
     console.log(`POST Success: ${postSuccess}`)
-
-
-
-
 
  return true
 
