@@ -146,7 +146,7 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
 
     const qc = event.Records[0].messageAttributes as unknown as tcQueueMessage
 
-    const work = await getS3Work(qc.s3Key, qc.config) as string
+    const work = await getS3Work(qc.s3Key, qc.config)
 
     const postSuccess = postToCampaign(work, qc.config)
 
@@ -644,27 +644,26 @@ async function deleteS3Object(event: S3Event) {
 }
 
 
-async function getS3Work(s3Key: string, config: tricklerConfig) {
+async function getS3Work(s3Key: string, config: tricklerConfig){
     
     const getObjectCmd = {
         Bucket: "tricklercache-process",
         Key: s3Key
     } as GetObjectCommandInput
 
-    let work
+    let work: string = ''
     try
     {
-        work = await s3.send(new GetObjectCommand(getObjectCmd))
+        await s3.send(new GetObjectCommand(getObjectCmd))
             .then(async (s3Result: GetObjectCommandOutput) => {
-                // const d = JSON.stringify(s3ListResult.Body, null, 2)
+                work = JSON.stringify(s3Result.Body, null, 2)
                 console.log(`Work Pulled: ", ${s3Key}`)
-                return s3Result
             });
     } catch (e)
     {
         console.log(`ProcessQueue - Get Work - Exception ${e}`)
     }
-
+return work
 }
 
 async function getAnS3ObjectforTesting(event: S3Event) {
