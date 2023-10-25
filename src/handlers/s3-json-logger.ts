@@ -1,17 +1,15 @@
 "use strict";
 
-import { PutObjectAclCommandOutput, PutObjectCommand, PutObjectCommandOutput, S3, S3Client, S3ClientConfig } from "@aws-sdk/client-s3"
+import { PutObjectCommand, PutObjectCommandOutput, S3, S3Client, S3ClientConfig } from "@aws-sdk/client-s3"
 import { GetObjectCommand, GetObjectCommandOutput, GetObjectCommandInput } from "@aws-sdk/client-s3"
 import { DeleteObjectCommand, DeleteObjectCommandInput, DeleteObjectCommandOutput, DeleteObjectOutput, DeleteObjectRequest } from "@aws-sdk/client-s3"
 import { ListObjectsV2Command, ListObjectsV2CommandInput, ListObjectsV2CommandOutput } from "@aws-sdk/client-s3"
 import { Handler, S3Event, Context, SQSEvent } from "aws-lambda"
 import fetch, { Headers, RequestInit, Response } from "node-fetch"
-import { Writable, Readable, Stream, Duplex } from "node:stream";
+// import { Writable, Readable, Stream, Duplex } from "node:stream";
 import Papa from 'papaparse';
 
 import { SQSClient, ReceiveMessageCommand, DeleteMessageBatchCommand, ReceiveMessageCommandOutput, Message, paginateListQueues, SendMessageCommand, SendMessageCommandOutput } from "@aws-sdk/client-sqs";
-import { write } from "node:fs";
-import { MetadataBearer } from "@smithy/types";
 
 // import 'source-map-support/register'
 
@@ -22,13 +20,14 @@ import { MetadataBearer } from "@smithy/types";
 process.env.AWS_REGION = "us-east-1"
 process.env.accessToken = ''
 
+
 //SQS
 process.env.SQS_QUEUE_URL = "https://sqs.us-east-1.amazonaws.com/777957353822/tricklercacheQueue";
 const sqsClient = new SQSClient({});
 const sqsParams = {
     MaxNumberOfMessages: 1,
     QueueUrl: process.env.SQS_QUEUE_URL,
-    VisibilityTimeout: 20,
+    VisibilityTimeout: 30,
     WaitTimeSeconds: 10
 };
 
@@ -37,8 +36,7 @@ export type sqsObject = {
     objectKey: string;
 };
 
-
-//SQS
+//-----------SQS
 
 
 /**
@@ -86,13 +84,10 @@ export interface accessResp {
     expires_in: number
 }
 
-// export interface oldCSVStruct {
-//     EMAIL: string,
-//     EventSource: string,
-//     EventName: string,
-//     EventValue: string,
-//     EventTimestamp: string
-// }
+export interface tcQueueMessage {
+    s3Key: string,
+    config: tricklerConfig
+}
 
 //Simply pipe the Readable Stream to the stream returned from
 const csvParseStream = Papa.parse(Papa.NODE_STREAM_INPUT, {
@@ -149,8 +144,20 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
     console.log(`TricklerQueueProcessor - Body: ${b}`)
     console.log(`TricklerQueueProcessor - Attributes: ${c}`)
 
+    const qc = event.Records[0].messageAttributes as unknown as tcQueueMessage
+
+    const work = await getS3Work(qc.s3Key, qc.config) as string
+
+    const postSuccess = postToCampaign(work, qc.config)
+
+    console.log(`POST Success: ${postSuccess}`)
+
+
+
+
 
  return true
+
 }
 
 export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Context) => {
@@ -161,25 +168,6 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
 
     console.log("Processing Object from S3 Trigger, Event RequestId: ", event.Records[0].responseElements["x-amz-request-id"])
     console.log("Num of Events to be processed: ", event.Records.length)
-
-
-    // if(event.Records[0].eventSource === 'aws:s3') debugger;
-    // if(event.Records[0].eventSource === 'aws:sqs') debugger;
-
-    // //If this is an SQS Event - Process SQS Event data for s3 key and bucket   
-    // if (event.Records[0].eventSource.includes("sqs")) {
-    //     console.log(`SQS Event detected: ${event.Records[0].s3.object.key}`)
-    //     sqsCount(event)
-    //     sqsMessage(event)
-    // }
-
-
-
-    // //Skip S3 Trigger when it's a config file 
-    // if (event.Records[0].s3.object.key.includes("config")) {
-    //     console.log(`Config file update detected: ${event.Records[0].s3.object.key}`)
-    //     return
-    // }
 
     //Just in case we start getting multiple file triggers for whatever reason
     if (event.Records.length > 1) throw new Error(`Expecting only a single S3 Object from a Triggered S3 write of a new Object, received ${event.Records.length} Objects`)
@@ -202,7 +190,7 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
 
     }
 
-    const s3ObjectContentResult = await processS3ObjectContent(event)
+    const s3ObjectContentResult = await processS3ObjectContentStream(event)
 
     // if (!s3ObjectContent || s3ObjectContent.length < 1) {
     //     throw new Error(`Exception retrieving S3 Object (Get content returns null or empty) for ${event.Records[0].s3.object.key}`)
@@ -233,6 +221,10 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
 };
 
 export default s3JsonLoggerHandler
+
+
+
+
 
 async function getCustomerConfig(event: S3Event) {
 
@@ -322,7 +314,7 @@ async function validateConfig(config: tricklerConfig) {
     return config as tricklerConfig
 }
 
-async function processS3ObjectContent(event: S3Event) {
+async function processS3ObjectContentStream(event: S3Event) {
 
     let chunks: string[] = new Array();
     let s3ContentResults = ''
@@ -359,16 +351,16 @@ async function processS3ObjectContent(event: S3Event) {
                                 chunks.push(jsonChunk)
                                 if (chunks.length == 25) {
                                     console.log(`s3ContentStream onData has processed ${recs} chunks: `, jsonChunk)
-                                    xmlRows = package99(chunks, custConfig)
-                                    let queueUp = await processQueue(xmlRows, event)
+                                    xmlRows = convertToXML(chunks, custConfig)
+                                    let queueUp = await queueWork(xmlRows, event)
                                     chunks.length = 0
                                 }
                             })
 
                             .on('end', async function (msg: string) {
                                 console.log(`S3ContentStream OnEnd (${msg}), processed  (${recs}) records from ${event.Records[0].s3.object.key}.`)
-                                xmlRows = package99(chunks, custConfig)
-                                let queueToProcess = await processQueue(xmlRows, event)
+                                xmlRows = convertToXML(chunks, custConfig)
+                                let queueToProcess = await queueWork(xmlRows, event)
                                 chunks.length = 0
                                 resolve('s3Content End')
                             })
@@ -401,7 +393,7 @@ async function processS3ObjectContent(event: S3Event) {
 }
 
 
-function package99(rows: string[], config: tricklerConfig) {
+function convertToXML(rows: string[], config: tricklerConfig) {
 
     console.log(`Package99: packaging ${rows.length} rows`)
 
@@ -425,51 +417,19 @@ function package99(rows: string[], config: tricklerConfig) {
     return xmlRows
 }
 
-async function updateDatabase () {
-    const update = `<Envelope>
-          <Body>
-                <AddRecipient>
-                      <LIST_ID>13097633</LIST_ID>
-                      <CREATED_FROM>2</CREATED_FROM>
-                      <UPDATE_IF_FOUND>true</UPDATE_IF_FOUND>
-                      <!-- <SYNC_FIELDS>
-                        <SYNC_FIELD> 
-                            <NAME>EMAIL</NAME>
-                            <VALUE>a.bundy@555shoe.com</VALUE> 
-                         </SYNC_FIELD>
-                        </SYNC_FIELDS> -->
-                      <COLUMN>
-                            <NAME>EMAIL</NAME>
-                            <VALUE>a.bundy@555shoe.com</VALUE>
-                      </COLUMN>
-                      <COLUMN>
-                            <NAME>city</NAME>
-                            <VALUE>Dallas</VALUE>
-                      </COLUMN>
-                      <COLUMN>
-                            <NAME>Column_Nonexistent</NAME>
-                            <VALUE>123-45-6789</VALUE>
-                      </COLUMN>
-                      <COLUMN>
-                            <NAME>Street_Address</NAME>
-                            <VALUE>123 New Street</VALUE>
-                      </COLUMN>
-                </AddRecipient>
-          </Body>
-    </Envelope>`
-}
 
-async function processQueue(queueContent: string, event: S3Event) {
+
+async function queueWork(queueContent: string, event: S3Event) {
 
     console.log(`Process Queue:  ${queueContent} rows `)
 
     const s3Key = event.Records[0].s3.object.key
-    const qs3 = await qS3Content(queueContent, s3Key)
-    const qAdd = await addToProcessQueue(queueContent, s3Key) 
+    const qs3 = await storeS3Work(queueContent, s3Key)
+    const qAdd = await addToProcessQueue(custConfig, s3Key) 
 
 }
 
-async function qS3Content(queueContent: string, s3Key: string) {
+async function storeS3Work(queueContent: string, s3Key: string) {
 
     //write to the S3 Process Bucket
     const s3PutInput = {
@@ -496,18 +456,23 @@ return qs3
 
 }
 
-async function addToProcessQueue(queueContent: string, s3Key: string) {
+async function addToProcessQueue (custConfig: tricklerConfig, s3Key: string) {
 
+    const qc = JSON.stringify({
+        "work": `"process_${s3Key}"`,
+        "custconfig": custConfig
+    })
+    
     const writeSQSCommand = new SendMessageCommand({
         QueueUrl: sqsParams.QueueUrl,
         DelaySeconds: 1,
         MessageAttributes: {
-            tricklerQueue: {
+            tricklerProcessQueue: {
                 DataType: "String",
-                StringValue: "process",
+                StringValue: `process_${s3Key}`,
             },
         },
-        MessageBody: s3Key,
+        MessageBody: qc
     });
 
 let qAdd
@@ -556,9 +521,43 @@ export async function getAccessToken(config: tricklerConfig) {
     }
 }
 
-export async function postCampaign(xmlCalls: string, config: tricklerConfig) {
 
-    //todo - add Queing/Retry 
+async function updateDatabase() {
+    const update = `<Envelope>
+          <Body>
+                <AddRecipient>
+                      <LIST_ID>13097633</LIST_ID>
+                      <CREATED_FROM>2</CREATED_FROM>
+                      <UPDATE_IF_FOUND>true</UPDATE_IF_FOUND>
+                      <!-- <SYNC_FIELDS>
+                        <SYNC_FIELD> 
+                            <NAME>EMAIL</NAME>
+                            <VALUE>a.bundy@555shoe.com</VALUE> 
+                         </SYNC_FIELD>
+                        </SYNC_FIELDS> -->
+                      <COLUMN>
+                            <NAME>EMAIL</NAME>
+                            <VALUE>a.bundy@555shoe.com</VALUE>
+                      </COLUMN>
+                      <COLUMN>
+                            <NAME>city</NAME>
+                            <VALUE>Dallas</VALUE>
+                      </COLUMN>
+                      <COLUMN>
+                            <NAME>Column_Nonexistent</NAME>
+                            <VALUE>123-45-6789</VALUE>
+                      </COLUMN>
+                      <COLUMN>
+                            <NAME>Street_Address</NAME>
+                            <VALUE>123 New Street</VALUE>
+                      </COLUMN>
+                </AddRecipient>
+          </Body>
+    </Envelope>`
+}
+
+
+export async function postToCampaign(xmlCalls: string, config: tricklerConfig) {
 
     if (process.env.accessToken !== '') {
         process.env.accessToken = await getAccessToken(config) as string
@@ -645,6 +644,29 @@ async function deleteS3Object(event: S3Event) {
 }
 
 
+async function getS3Work(s3Key: string, config: tricklerConfig) {
+    
+    const getObjectCmd = {
+        Bucket: "tricklercache-process",
+        Key: s3Key
+    } as GetObjectCommandInput
+
+    let work
+    try
+    {
+        work = await s3.send(new GetObjectCommand(getObjectCmd))
+            .then(async (s3Result: GetObjectCommandOutput) => {
+                // const d = JSON.stringify(s3ListResult.Body, null, 2)
+                console.log(`Work Pulled: ", ${s3Key}`)
+                return s3Result
+            });
+    } catch (e)
+    {
+        console.log(`ProcessQueue - Get Work - Exception ${e}`)
+    }
+
+}
+
 async function getAnS3ObjectforTesting(event: S3Event) {
     const listReq = {
         Bucket: event.Records[0].s3.bucket.name,
@@ -653,7 +675,8 @@ async function getAnS3ObjectforTesting(event: S3Event) {
 
     let s3Key: string = "";
 
-    try {
+    try
+    {
         await s3.send(new ListObjectsV2Command(listReq))
             .then(async (s3ListResult: ListObjectsV2CommandOutput) => {
                 // const d = JSON.stringify(s3ListResult.Body, null, 2)
@@ -664,7 +687,8 @@ async function getAnS3ObjectforTesting(event: S3Event) {
                 // console.log("Received the following Object: \n", JSON.stringify(data.Body, null, 2));
                 console.log("TestRun: Retrieved ", s3Key, " for this Test Run \n..\n..\n..");
             });
-    } catch (e) {
+    } catch (e)
+    {
         console.log("Exception Processing S3 List Command: \n..", e, '\n..\n..\n..');
     }
     return s3Key;
