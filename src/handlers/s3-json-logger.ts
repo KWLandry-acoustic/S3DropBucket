@@ -672,7 +672,8 @@ async function getS3Work(s3Key: string, config: tricklerConfig){
     {
         await s3.send(new GetObjectCommand(getObjectCmd))
             .then(async (s3Result: GetObjectCommandOutput) => {
-                work = JSON.stringify(s3Result.Body, null, 2)
+                // work = JSON.stringify(b, null, 2)
+                work = await s3Result.Body?.transformToString('utf8') as string
                 console.log(`Work Pulled: ", ${s3Key}`)
             });
     } catch (e)
