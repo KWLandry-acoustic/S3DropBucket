@@ -156,14 +156,14 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
         if(!work) throw new Error(`Work was not retrieved from Queue: ${qc.work}`)
 
         postSuccess = await postToCampaign(work, qc.config)
-        
+
         if (!postSuccess)
         {
             queueForRetry(work) 
         }
     } catch (e)
     {
-        console.log(`${e}`)
+        console.log(`TricklerQueueProcessing - Exception: ${e}`)
     }
     console.log(`POST Success: ${postSuccess}`)
 
@@ -610,10 +610,11 @@ export async function postToCampaign(xmlCalls: string, config: tricklerConfig) {
     };
 
     const host = `https://api-campaign-${config.region}-${config.pod}.goacoustic.com/XMLAPI`
+    
+    let postRes
 
-    // try {
-    const postRes = await fetch(host, requestOptions
-    )
+    try {
+        postRes = await fetch(host, requestOptions)
         .then((response) => response.text())
         .then((result) => {
             // console.log("POST Update Result: ", result)
@@ -633,10 +634,9 @@ export async function postToCampaign(xmlCalls: string, config: tricklerConfig) {
             console.log(`Exception during POST to Campaign (AccessToken ${process.env.accessToken}) Result: ${e}`)
         })
 
-    // } catch(e) {
-    //     debugger;
-    //     console.log(`Exception during POST to Campaign (AccessToken ${accessToken}) Result: ${e}`)
-    // })
+    } catch(e) {
+        console.log(`Exception during POST to Campaign (AccessToken ${process.env.accessToken}) Result: ${e}`)
+    }
     return postRes
 }
 
