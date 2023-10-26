@@ -324,7 +324,7 @@ async function processS3ObjectContentStream(event: S3Event) {
 
     let chunks: string[] = new Array();
     let s3ContentResults = ''
-
+    let batchCount = 0
     try {
         await s3.send(
             new GetObjectCommand({
@@ -355,19 +355,23 @@ async function processS3ObjectContentStream(event: S3Event) {
                                 recs++
                                 // console.log(`Another chunk (${recs}): ${jsonChunk}, chunks length is ${chunks.length}`)
                                 chunks.push(jsonChunk)
-                                if (chunks.length == 25) {
+                                if (chunks.length == 25)
+                                {
+                                    batchCount++
                                     console.log(`s3ContentStream onData has processed ${recs} chunks: `, jsonChunk)
                                     xmlRows = convertToXML(chunks, custConfig)
-                                    let queueUp = await queueWork(xmlRows, event)
+                                    let queueUp = await queueWork(xmlRows, event, batchCount.toString())
                                     chunks.length = 0
                                 }
                             })
 
                             .on('end', async function (msg: string) {
+                                batchCount++
                                 console.log(`S3ContentStream OnEnd (${msg}), processed  (${recs}) records from ${event.Records[0].s3.object.key}.`)
                                 xmlRows = convertToXML(chunks, custConfig)
-                                let queueToProcess = await queueWork(xmlRows, event)
+                                let queueToProcess = await queueWork(xmlRows, event, batchCount.toString())
                                 chunks.length = 0
+                                batchCount = 0
                                 resolve('s3Content End')
                             })
 
@@ -423,23 +427,23 @@ function convertToXML(rows: string[], config: tricklerConfig) {
     return xmlRows
 }
 
-async function queueWork(queueContent: string, event: S3Event) {
+async function queueWork(queueContent: string, event: S3Event, batch: string) {
 
     console.log(`Process Queue:  ${queueContent} rows `)
 
     const s3Key = event.Records[0].s3.object.key
-    const qs3 = await storeS3Work(queueContent, s3Key)
-    const qAdd = await addToProcessQueue(custConfig, s3Key) 
+    const qs3 = await storeS3Work(queueContent, s3Key, batch)
+    const qAdd = await addToProcessQueue(custConfig, s3Key, batch) 
 
 }
 
-async function storeS3Work(queueContent: string, s3Key: string) {
+async function storeS3Work(queueContent: string, s3Key: string, batch: string) {
 
     //write to the S3 Process Bucket
     const s3PutInput = {
         "Body": queueContent,
         "Bucket": "tricklercache-process",
-        "Key": `process_${s3Key}`
+        "Key": `process_${batch}_${s3Key}`
     };
     
     let qs3
@@ -460,10 +464,10 @@ return qs3
 
 }
 
-async function addToProcessQueue (custConfig: tricklerConfig, s3Key: string) {
+async function addToProcessQueue (custConfig: tricklerConfig, s3Key: string, batch: string) {
 
     const qc = JSON.stringify({
-        "work": `"process_${s3Key}"`,
+        "work": `process_${batch}_${s3Key}`,
         "custconfig": custConfig
     })
     
@@ -473,7 +477,7 @@ async function addToProcessQueue (custConfig: tricklerConfig, s3Key: string) {
         MessageAttributes: {
             tricklerProcessQueue: {
                 DataType: "String",
-                StringValue: `process_${s3Key}`,
+                StringValue: `process_${batch}_${s3Key}`,
             },
         },
         MessageBody: qc
