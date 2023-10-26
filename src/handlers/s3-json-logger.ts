@@ -510,34 +510,6 @@ async function queueForRetry(update: string) {
 
 
 
-export async function getAccessToken(config: tricklerConfig) {
-
-    try {
-        const rat = await fetch(`https://api-campaign-${config.region}-${config.pod}.goacoustic.com/oauth/token`, {
-            method: 'POST',
-            body: new URLSearchParams({
-                refresh_token: config.refreshToken,
-                client_id: config.clientId,
-                client_secret: config.clientSecret,
-                grant_type: 'refresh_token'
-            }),
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'User-Agent': 'S3 TricklerCache GetAccessToken'
-            }
-        })
-
-        const ratResp = (await rat.json()) as accessResp
-        if (rat.status != 200) {
-            throw new Error(`Exception retrieving Access Token:   ${rat.status} - ${rat.statusText}`)
-        }
-        const accessToken = ratResp.access_token
-        return { accessToken }.accessToken
-
-    } catch (e) {
-        console.log("Exception in getAccessToken: \n", e)
-    }
-}
 
 
 async function updateDatabase() {
@@ -574,10 +546,54 @@ async function updateDatabase() {
     </Envelope>`
 }
 
+export async function getAccessToken(config: tricklerConfig) {
+
+    console.log(`GetAccessToken - Region: ${config.region}`)
+    console.log(`GetAccessToken - Pod: ${config.pod}`)
+    console.log(`GetAccessToken - AccessToken: ${process.env.accessToken}`)
+    // console.log(`${config.region}`)
+    // console.log(`${config.region}`)
+    // console.log(`${config.region}`)
+    // console.log(`${config.region}`)
+    
+    try {
+        const rat = await fetch(`https://api-campaign-${config.region}-${config.pod}.goacoustic.com/oauth/token`, {
+            method: 'POST',
+            body: new URLSearchParams({
+                refresh_token: config.refreshToken,
+                client_id: config.clientId,
+                client_secret: config.clientSecret,
+                grant_type: 'refresh_token'
+            }),
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'User-Agent': 'S3 TricklerCache GetAccessToken'
+            }
+        })
+
+        const ratResp = (await rat.json()) as accessResp
+        if (rat.status != 200) {
+            throw new Error(`Exception retrieving Access Token:   ${rat.status} - ${rat.statusText}`)
+        }
+        const accessToken = ratResp.access_token
+        return { accessToken }.accessToken
+
+    } catch (e) {
+        console.log("Exception in getAccessToken: \n", e)
+    }
+}
 
 export async function postToCampaign(xmlCalls: string, config: tricklerConfig) {
 
-    if (process.env.accessToken !== '') {
+    console.log(`Region: ${config.region}`)
+    console.log(`Pod: ${config.pod}`)
+    console.log(`AccessToken: ${process.env.accessToken}`)
+    // console.log(`${config.region}`)
+    // console.log(`${config.region}`)
+    // console.log(`${config.region}`)
+    // console.log(`${config.region}`)
+    
+    if (process.env.accessToken != null) {
         process.env.accessToken = await getAccessToken(config) as string
     }
     else console.log(`Access Token already present: ${process.env.accessToken} ...`)
@@ -600,13 +616,7 @@ export async function postToCampaign(xmlCalls: string, config: tricklerConfig) {
 
     const host = `https://api-campaign-${config.region}-${config.pod}.goacoustic.com/XMLAPI`
 
-console.log(`Region: ${config.region}`)
-console.log(`Pod: ${config.pod}`)
-console.log(`AccessToken: ${process.env.accessToken}`)
-// console.log(`${config.region}`)
-// console.log(`${config.region}`)
-// console.log(`${config.region}`)
-// console.log(`${config.region}`)
+
 
     // try {
     await fetch(host, requestOptions
