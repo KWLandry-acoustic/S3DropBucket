@@ -541,6 +541,31 @@ async function updateDatabase() {
     </Envelope>`
 }
 
+async function getS3Work(s3Key: string, config: tricklerConfig){
+    
+    console.log(`GetS3Work key provided: ${s3Key}`)
+
+    const getObjectCmd = {
+        Bucket: "tricklercache-process",
+        Key: s3Key
+    } as GetObjectCommandInput
+
+    let work: string = ''
+    try
+    {
+        await s3.send(new GetObjectCommand(getObjectCmd))
+            .then(async (s3Result: GetObjectCommandOutput) => {
+                // work = JSON.stringify(b, null, 2)
+                work = await s3Result.Body?.transformToString('utf8') as string
+                console.log(`Work Pulled: ${s3Key}`) // - ${work}`)
+            });
+    } catch (e)
+    {
+        console.log(`ProcessQueue - Get Work - Exception ${e}`)
+    }
+return work
+}
+
 export async function getAccessToken(config: tricklerConfig) {
 
     console.log(`GetAccessToken - Region: ${config.region}`)
@@ -580,19 +605,26 @@ export async function getAccessToken(config: tricklerConfig) {
 
 export async function postToCampaign(xmlCalls: string, config: tricklerConfig) {
     
-    console.log(`${config}`)
-    console.log(`Region: ${config.region}`)
-    console.log(`Pod: ${config.pod}`)
-    console.log(`AccessToken: ${process.env.accessToken}`)
+    try
+    {
+        console.log(`${config}`)
+        console.log(`Region: ${config.region}`)
+        console.log(`Pod: ${config.pod}`)
+        console.log(`AccessToken: ${process.env.accessToken}`)
 
-    // console.log(`${config.region}`)
-    // console.log(`${config.region}`)
-    // console.log(`${config.region}`)
+        // console.log(`${config.region}`)
+        // console.log(`${config.region}`)
+        // console.log(`${config.region}`)
+    } catch (e)
+    {
+        console.log(`PostToCampaign Config Reference Exception: ${e}`)
+    }
     
     if (process.env.accessToken == null)
     {
         console.log(`Need AccessToken...`)
         process.env.accessToken = await getAccessToken(config) as string
+        console.log(`Retrieved AccessToken: ${process.env.accessToken}`)
     }
     else console.log(`Access Token already present: ${process.env.accessToken} ...`)
 
@@ -672,30 +704,7 @@ async function deleteS3Object(event: S3Event) {
 }
 
 
-async function getS3Work(s3Key: string, config: tricklerConfig){
-    
-    console.log(`GetS3Work key provided: ${s3Key}`)
 
-    const getObjectCmd = {
-        Bucket: "tricklercache-process",
-        Key: s3Key
-    } as GetObjectCommandInput
-
-    let work: string = ''
-    try
-    {
-        await s3.send(new GetObjectCommand(getObjectCmd))
-            .then(async (s3Result: GetObjectCommandOutput) => {
-                // work = JSON.stringify(b, null, 2)
-                work = await s3Result.Body?.transformToString('utf8') as string
-                console.log(`Work Pulled: ${s3Key} - ${work}`)
-            });
-    } catch (e)
-    {
-        console.log(`ProcessQueue - Get Work - Exception ${e}`)
-    }
-return work
-}
 
 async function getAnS3ObjectforTesting(event: S3Event) {
     const listReq = {
