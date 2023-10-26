@@ -579,16 +579,19 @@ export async function getAccessToken(config: tricklerConfig) {
 }
 
 export async function postToCampaign(xmlCalls: string, config: tricklerConfig) {
-
+    
+    console.log(`${config}`)
     console.log(`Region: ${config.region}`)
     console.log(`Pod: ${config.pod}`)
     console.log(`AccessToken: ${process.env.accessToken}`)
-    // console.log(`${config.region}`)
+
     // console.log(`${config.region}`)
     // console.log(`${config.region}`)
     // console.log(`${config.region}`)
     
-    if (process.env.accessToken != null) {
+    if (process.env.accessToken == null)
+    {
+        console.log(`Need AccessToken...`)
         process.env.accessToken = await getAccessToken(config) as string
     }
     else console.log(`Access Token already present: ${process.env.accessToken} ...`)
