@@ -580,7 +580,7 @@ export async function postToCampaign(xmlCalls: string, config: tricklerConfig) {
     if (process.env.accessToken !== '') {
         process.env.accessToken = await getAccessToken(config) as string
     }
-    else console.log("Access Token already present: ", process.env.accessToken)
+    else console.log(`Access Token already present: ${process.env.accessToken} ...`)
 
 
     const myHeaders = new Headers();
@@ -599,6 +599,14 @@ export async function postToCampaign(xmlCalls: string, config: tricklerConfig) {
     };
 
     const host = `https://api-campaign-${config.region}-${config.pod}.goacoustic.com/XMLAPI`
+
+console.log(`Region: ${config.region}`)
+console.log(`Pod: ${config.pod}`)
+console.log(`AccessToken: ${process.env.accessToken}`)
+// console.log(`${config.region}`)
+// console.log(`${config.region}`)
+// console.log(`${config.region}`)
+// console.log(`${config.region}`)
 
     // try {
     await fetch(host, requestOptions
