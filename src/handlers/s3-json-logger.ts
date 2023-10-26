@@ -155,7 +155,8 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
         const work = await getS3Work(qc.work, qc.config)
         if(!work) throw new Error(`Work was not retrieved from Queue: ${qc.work}`)
 
-        postSuccess = postToCampaign(work, qc.config)
+        postSuccess = await postToCampaign(work, qc.config)
+        
         if (!postSuccess)
         {
             queueForRetry(work) 
@@ -500,16 +501,10 @@ let qAdd
 
 }
 
+
 async function queueForRetry(update: string) {
     console.log(`Queuing For Retry: ${update.length}`)
 }
-
-
-
-
-
-
-
 
 
 async function updateDatabase() {
@@ -616,15 +611,12 @@ export async function postToCampaign(xmlCalls: string, config: tricklerConfig) {
 
     const host = `https://api-campaign-${config.region}-${config.pod}.goacoustic.com/XMLAPI`
 
-
-
     // try {
-    await fetch(host, requestOptions
+    const postRes = await fetch(host, requestOptions
     )
         .then((response) => response.text())
         .then((result) => {
             // console.log("POST Update Result: ", result)
-            debugger;
             if (result.toLowerCase().indexOf('false</success>') > 0) {
                 // "<Envelope><Body><RESULT><SUCCESS>false</SUCCESS></RESULT><Fault><Request/>
                 //   <FaultCode/><FaultString>Invalid XML Request</FaultString><detail><error>
@@ -645,6 +637,7 @@ export async function postToCampaign(xmlCalls: string, config: tricklerConfig) {
     //     debugger;
     //     console.log(`Exception during POST to Campaign (AccessToken ${accessToken}) Result: ${e}`)
     // })
+    return postRes
 }
 
 
