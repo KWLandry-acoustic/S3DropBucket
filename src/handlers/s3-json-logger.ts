@@ -139,10 +139,13 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
     const a = JSON.stringify(event.Records[0].messageAttributes)
     const b = JSON.stringify(event.Records[0].body)
     const c = JSON.stringify(event.Records[0].attributes)
+    const dd = JSON.stringify(event.Records[0])
+    
     
     console.log(`TricklerQueueProcessor - MessageAttributes: ${a}`)
     console.log(`TricklerQueueProcessor - Body: ${b}`)
     console.log(`TricklerQueueProcessor - Attributes: ${c}`)
+    console.log(`TricklerQueueProcessor - Event: ${dd}`)
 
     const qc:tcQueueMessage = JSON.parse(event.Records[0].body)
     console.log("tcQueueMessage: ", qc)
@@ -557,7 +560,7 @@ async function getS3Work(s3Key: string, config: tricklerConfig){
             .then(async (s3Result: GetObjectCommandOutput) => {
                 // work = JSON.stringify(b, null, 2)
                 work = await s3Result.Body?.transformToString('utf8') as string
-                console.log(`Work Pulled: ${s3Key}`) // - ${work}`)
+                console.log(`Work Pulled (${work.length} chars): ${s3Key}`)
             });
     } catch (e)
     {
@@ -619,8 +622,11 @@ export async function postToCampaign(xmlCalls: string, config: tricklerConfig) {
     {
         console.log(`PostToCampaign Config Reference Exception: ${e}`)
     }
+
+    debugger;
     
-    if (process.env.accessToken == null)
+    const at = '' ? process.env.accessToken : ''
+    if ((at === null))
     {
         console.log(`Need AccessToken...`)
         process.env.accessToken = await getAccessToken(config) as string
