@@ -650,10 +650,11 @@ export async function postToCampaign(xmlCalls: string, config: tricklerConfig, c
             }
 
             updateSuccess = true
+            result = result.replace('\n', ' ')
             return `Processed ${count} Updates - Result: ${result}`
         })
         .catch((e) => {
-            console.log(`Exception during POST to Campaign (AccessToken ${process.env.accessToken}) Result: ${e}`)
+            console.log(`Exception on POST to Campaign: ${e}`)
         })
 
     } catch(e) {
