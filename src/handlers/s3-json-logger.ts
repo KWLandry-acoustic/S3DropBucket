@@ -86,6 +86,7 @@ export interface accessResp {
 
 export interface tcQueueMessage {
     work: string,
+    updates: string, 
     custconfig: tricklerConfig
 }
 
@@ -134,23 +135,9 @@ const csvParseStream = Papa.parse(Papa.NODE_STREAM_INPUT, {
 //          Row updates would be duplicated but would that matter?  
 //
 export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, context: Context) => {
-    
-
-    // const a = JSON.stringify(event.Records[0].messageAttributes)
-    // const b = JSON.stringify(event.Records[0].body)
-    // const c = JSON.stringify(event.Records[0].attributes)
-    // const dd = JSON.stringify(event.Records[0])
-    
-    // console.log(`TricklerQueueProcessor - MessageAttributes: ${a}`)
-    // console.log(`TricklerQueueProcessor - Body: ${b}`)
-    // console.log(`TricklerQueueProcessor - Attributes: ${c}`)
-    // console.log(`TricklerQueueProcessor - Event: ${dd}`)
-    // console.log(`TricklerQueueProcessor - Raw Event: ${event.Records[0]}`)
-
-    // console.log(`Config from Work File: ${JSON.stringify(event.Records[0].body)}`)
 
     const qc: tcQueueMessage = JSON.parse(event.Records[0].body)
-    console.log(`Processing work from Queue (${qc.work}) Config from Work File: ${JSON.stringify(qc)}`)
+    console.log(`Processing work from Queue - Work File: ${JSON.stringify(qc)}`)
 
     let postSuccess
 
@@ -159,7 +146,7 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
         const work = await getS3Work(qc.work, qc.custconfig)
         if(!work) throw new Error(`Work was not retrieved from Queue: ${qc.work}`)
 
-        postSuccess = await postToCampaign(work, qc.custconfig)
+        postSuccess = await postToCampaign(work, qc.custconfig, qc.updates)
 
         if (!postSuccess)
         {
@@ -343,7 +330,7 @@ async function processS3ObjectContentStream(event: S3Event) {
                 }
 
                 let recs = 0
-                let queueToProcess
+                // let queueToProcess
 
                 s3ContentResults = await new Promise<string>(async (resolve, reject) => {
 
@@ -364,7 +351,7 @@ async function processS3ObjectContentStream(event: S3Event) {
                                     batchCount++
                                     console.log(`s3ContentStream onData has processed ${recs} chunks: `, jsonChunk)
                                     xmlRows = convertToXML(chunks, config)
-                                    let queueUp = await queueWork(xmlRows, event, batchCount.toString())
+                                    await queueWork(xmlRows, event, batchCount.toString(), chunks.length.toString())
                                     chunks.length = 0
                                 }
                             })
@@ -373,7 +360,7 @@ async function processS3ObjectContentStream(event: S3Event) {
                                 batchCount++
                                 console.log(`S3ContentStream OnEnd (${msg}), processed  (${recs}) records from ${event.Records[0].s3.object.key}.`)
                                 xmlRows = convertToXML(chunks, config)
-                                let queueToProcess = await queueWork(xmlRows, event, batchCount.toString())
+                                let queueToProcess = await queueWork(xmlRows, event, batchCount.toString(), chunks.length.toString())
                                 chunks.length = 0
                                 batchCount = 0
                                 resolve('s3Content End')
@@ -409,7 +396,7 @@ async function processS3ObjectContentStream(event: S3Event) {
 
 function convertToXML(rows: string[], config: tricklerConfig) {
 
-    console.log(`Package99: packaging ${rows.length} rows`)
+    console.log(`Packaging Updates - ${rows.length} rows`)
 
     xmlRows = `<Envelope><Body><InsertUpdateRelationalTable><TABLE_ID>${config.listId}</TABLE_ID><ROWS>`
     let r = 0
@@ -431,13 +418,13 @@ function convertToXML(rows: string[], config: tricklerConfig) {
     return xmlRows
 }
 
-async function queueWork(queueContent: string, event: S3Event, batch: string) {
+async function queueWork(queueContent: string, event: S3Event, batchNum: string, count: string) {
 
     console.log(`Process Queue:  ${queueContent} rows `)
 
     const s3Key = event.Records[0].s3.object.key
-    const qs3 = await storeS3Work(queueContent, s3Key, batch)
-    const qAdd = await addToProcessQueue(config, s3Key, batch) 
+    await storeS3Work(queueContent, s3Key, batchNum)
+    await addToProcessQueue(config, s3Key, batchNum, count) 
 
 }
 
@@ -468,12 +455,19 @@ return qs3
 
 }
 
-async function addToProcessQueue (custConfig: tricklerConfig, s3Key: string, batch: string) {
+async function addToProcessQueue (custConfig: tricklerConfig, s3Key: string, batch: string, count: string) {
 
-    const qc = JSON.stringify({
-        "work": `process_${batch}_${s3Key}`,
-        "custconfig": config
-    })
+    const qb = {} as tcQueueMessage
+    qb.work = `process_${batch}_${s3Key}`
+    qb.updates = count
+    qb.custconfig = config
+    const qc = JSON.stringify(qb) 
+
+    // const qc = JSON.stringify({
+    //     "work": `process_${batch}_${s3Key}`,
+    //     "updates": count,
+    //     "custconfig": config
+    // })
     
     const writeSQSCommand = new SendMessageCommand({
         QueueUrl: sqsParams.QueueUrl,
@@ -598,11 +592,19 @@ export async function getAccessToken(config: tricklerConfig) {
     }
 }
 
-export async function postToCampaign(xmlCalls: string, config: tricklerConfig) {
+export async function postToCampaign(xmlCalls: string, config: tricklerConfig, count: string) {
     
+    //
+    //For Testing only
+    //
     config.pod = '2'
     config.listId = '12663209'
     xmlCalls = xmlCalls.replace('3055683', '12663209')
+    //
+    //For Testing only
+    //
+
+
 
     if ((process.env.accessToken === null)||process.env.accessToken == '')
     {
@@ -647,7 +649,7 @@ export async function postToCampaign(xmlCalls: string, config: tricklerConfig) {
             }
 
             updateSuccess = true
-            return result
+            return `Processed ${count} Updates - Result: ${result}`
         })
         .catch((e) => {
             console.log(`Exception during POST to Campaign (AccessToken ${process.env.accessToken}) Result: ${e}`)
