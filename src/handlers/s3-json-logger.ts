@@ -74,7 +74,7 @@ interface tricklerConfig {
 }
 
 
-let custConfig = {} as tricklerConfig
+let config = {} as tricklerConfig
 
 
 export interface accessResp {
@@ -86,7 +86,7 @@ export interface accessResp {
 
 export interface tcQueueMessage {
     work: string,
-    config: tricklerConfig
+    custconfig: tricklerConfig
 }
 
 //Simply pipe the Readable Stream to the stream returned from
@@ -136,29 +136,30 @@ const csvParseStream = Papa.parse(Papa.NODE_STREAM_INPUT, {
 export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, context: Context) => {
     
 
-    const a = JSON.stringify(event.Records[0].messageAttributes)
-    const b = JSON.stringify(event.Records[0].body)
-    const c = JSON.stringify(event.Records[0].attributes)
-    const dd = JSON.stringify(event.Records[0])
+    // const a = JSON.stringify(event.Records[0].messageAttributes)
+    // const b = JSON.stringify(event.Records[0].body)
+    // const c = JSON.stringify(event.Records[0].attributes)
+    // const dd = JSON.stringify(event.Records[0])
     
-    
-    console.log(`TricklerQueueProcessor - MessageAttributes: ${a}`)
-    console.log(`TricklerQueueProcessor - Body: ${b}`)
-    console.log(`TricklerQueueProcessor - Attributes: ${c}`)
-    console.log(`TricklerQueueProcessor - Event: ${dd}`)
+    // console.log(`TricklerQueueProcessor - MessageAttributes: ${a}`)
+    // console.log(`TricklerQueueProcessor - Body: ${b}`)
+    // console.log(`TricklerQueueProcessor - Attributes: ${c}`)
+    // console.log(`TricklerQueueProcessor - Event: ${dd}`)
+    // console.log(`TricklerQueueProcessor - Raw Event: ${event.Records[0]}`)
 
-    const qc:tcQueueMessage = JSON.parse(event.Records[0].body)
-    console.log("tcQueueMessage: ", qc)
-    console.log(`tcQueueMessage work: : ${qc.work}`)
+    // console.log(`Config from Work File: ${JSON.stringify(event.Records[0].body)}`)
+
+    const qc: tcQueueMessage = JSON.parse(event.Records[0].body)
+    console.log(`Processing work from Queue (${qc.work}) Config from Work File: ${JSON.stringify(qc)}`)
 
     let postSuccess
 
     try
     {
-        const work = await getS3Work(qc.work, qc.config)
+        const work = await getS3Work(qc.work, qc.custconfig)
         if(!work) throw new Error(`Work was not retrieved from Queue: ${qc.work}`)
 
-        postSuccess = await postToCampaign(work, qc.config)
+        postSuccess = await postToCampaign(work, qc.custconfig)
 
         if (!postSuccess)
         {
@@ -168,7 +169,7 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
     {
         console.log(`TricklerQueueProcessing - Exception: ${e}`)
     }
-    console.log(`POST Success: ${postSuccess}`)
+    console.log(`Work Processed - Result: ${postSuccess}`)
 
  return true
 
@@ -192,13 +193,13 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
     }
 
     try {
-        custConfig = await getCustomerConfig(event) as tricklerConfig
+        config = await getCustomerConfig(event) as tricklerConfig
     } catch (e) {
         throw new Error(`Exception Retrieving Config: \n ${e}`)
 
     }
     try {
-        custConfig = await validateConfig(custConfig)
+        config = await validateConfig(config)
     } catch (e) {
         throw new Error(`Exception Validating Config ${e}`)
 
@@ -216,7 +217,6 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
                           Pulled S3 Object Content: - ${s3ObjectContentResult}  /
                           Packaged and Queued S3 Object Content - ${packageAndQueuedSuccess}
                           Event Process Result: ${updateSuccess} /
-
         for ${event.Records[0].s3.object.key} /
     } `
 
@@ -350,7 +350,7 @@ async function processS3ObjectContentStream(event: S3Event) {
                     try {
                         let s3ContentStream = s3Result.Body as NodeJS.ReadableStream
 
-                        if (custConfig.format.toLowerCase() === 'csv') {
+                        if (config.format.toLowerCase() === 'csv') {
                             s3ContentStream = s3ContentStream.pipe(csvParseStream)
                         }
 
@@ -363,7 +363,7 @@ async function processS3ObjectContentStream(event: S3Event) {
                                 {
                                     batchCount++
                                     console.log(`s3ContentStream onData has processed ${recs} chunks: `, jsonChunk)
-                                    xmlRows = convertToXML(chunks, custConfig)
+                                    xmlRows = convertToXML(chunks, config)
                                     let queueUp = await queueWork(xmlRows, event, batchCount.toString())
                                     chunks.length = 0
                                 }
@@ -372,7 +372,7 @@ async function processS3ObjectContentStream(event: S3Event) {
                             .on('end', async function (msg: string) {
                                 batchCount++
                                 console.log(`S3ContentStream OnEnd (${msg}), processed  (${recs}) records from ${event.Records[0].s3.object.key}.`)
-                                xmlRows = convertToXML(chunks, custConfig)
+                                xmlRows = convertToXML(chunks, config)
                                 let queueToProcess = await queueWork(xmlRows, event, batchCount.toString())
                                 chunks.length = 0
                                 batchCount = 0
@@ -437,7 +437,7 @@ async function queueWork(queueContent: string, event: S3Event, batch: string) {
 
     const s3Key = event.Records[0].s3.object.key
     const qs3 = await storeS3Work(queueContent, s3Key, batch)
-    const qAdd = await addToProcessQueue(custConfig, s3Key, batch) 
+    const qAdd = await addToProcessQueue(config, s3Key, batch) 
 
 }
 
@@ -472,7 +472,7 @@ async function addToProcessQueue (custConfig: tricklerConfig, s3Key: string, bat
 
     const qc = JSON.stringify({
         "work": `process_${batch}_${s3Key}`,
-        "custconfig": custConfig
+        "custconfig": config
     })
     
     const writeSQSCommand = new SendMessageCommand({
@@ -546,7 +546,7 @@ async function updateDatabase() {
 
 async function getS3Work(s3Key: string, config: tricklerConfig){
     
-    console.log(`GetS3Work key provided: ${s3Key}`)
+    // console.log(`GetS3Work Key: ${s3Key}`)
 
     const getObjectCmd = {
         Bucket: "tricklercache-process",
@@ -571,14 +571,6 @@ return work
 
 export async function getAccessToken(config: tricklerConfig) {
 
-    console.log(`GetAccessToken - Region: ${config.region}`)
-    console.log(`GetAccessToken - Pod: ${config.pod}`)
-    console.log(`GetAccessToken - AccessToken: ${process.env.accessToken}`)
-    // console.log(`${config.region}`)
-    // console.log(`${config.region}`)
-    // console.log(`${config.region}`)
-    // console.log(`${config.region}`)
-    
     try {
         const rat = await fetch(`https://api-campaign-${config.region}-${config.pod}.goacoustic.com/oauth/token`, {
             method: 'POST',
@@ -608,25 +600,11 @@ export async function getAccessToken(config: tricklerConfig) {
 
 export async function postToCampaign(xmlCalls: string, config: tricklerConfig) {
     
-    try
-    {
-        console.log(`${config}`)
-        console.log(`Region: ${config.region}`)
-        console.log(`Pod: ${config.pod}`)
-        console.log(`AccessToken: ${process.env.accessToken}`)
+    config.pod = '2'
+    config.listId = '12663209'
+    xmlCalls = xmlCalls.replace('3055683', '12663209')
 
-        // console.log(`${config.region}`)
-        // console.log(`${config.region}`)
-        // console.log(`${config.region}`)
-    } catch (e)
-    {
-        console.log(`PostToCampaign Config Reference Exception: ${e}`)
-    }
-
-    debugger;
-    
-    const at = '' ? process.env.accessToken : ''
-    if ((at === null))
+    if ((process.env.accessToken === null)||process.env.accessToken == '')
     {
         console.log(`Need AccessToken...`)
         process.env.accessToken = await getAccessToken(config) as string
@@ -665,7 +643,7 @@ export async function postToCampaign(xmlCalls: string, config: tricklerConfig) {
                 //   <errorid>51</errorid><module/><class>SP.API</class><method/></error></detail>
                 //    </Fault></Body></Envelope>\r\n"
                 queueForRetry(xmlRows)
-                throw new Error(`Unsuccessful POST of Update (AccessToken ${process.env.accessToken}) result: ${result}`)
+                throw new Error(`Unsuccessful POST of Update - ${result}`)
             }
 
             updateSuccess = true
@@ -709,7 +687,12 @@ async function deleteS3Object(event: S3Event) {
     }
 }
 
-
+function checkMetadata () {
+    
+    //Pull metadata for table/db defined in config
+    // confirm updates match Columns
+    // Log where Columns are not matching 
+}
 
 
 async function getAnS3ObjectforTesting(event: S3Event) {

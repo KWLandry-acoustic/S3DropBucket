@@ -1,9 +1,9 @@
 {
         "customer": "pura_",
         "format": "csv",
-        "listId": "3055683",
-        "listName": "S3TC-SegmentEvents-1",
-        "pod": "6",
+        "listId": "12663209",
+        "listName": "Segment Events Table",
+        "pod": "2",
         "region": "us",
         "refreshToken": "rD-7E2r8BynGDaapr13oJV9BxQr20lsYGN9RPkbrtPtAS1",
         "clientId": "1d99f8d8-0897-4090-983a-c517cc54032e",
