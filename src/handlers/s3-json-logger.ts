@@ -136,6 +136,13 @@ const csvParseStream = Papa.parse(Papa.NODE_STREAM_INPUT, {
 //
 export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, context: Context) => {
 
+
+    //ToDo: Confirm SQS Queue deletes queued work
+    //Interface to View and Edit Customer Configs
+    //Interface to view Logs/Errors (echo cloudwatch logs?) 
+    //
+
+
     const qc: tcQueueMessage = JSON.parse(event.Records[0].body)
     console.log(`Processing work from Queue - Work File: ${JSON.stringify(qc)}`)
 
@@ -346,7 +353,7 @@ async function processS3ObjectContentStream(event: S3Event) {
                                 recs++
                                 // console.log(`Another chunk (${recs}): ${jsonChunk}, chunks length is ${chunks.length}`)
                                 chunks.push(jsonChunk)
-                                if (chunks.length == 25)
+                                if (chunks.length == 99)
                                 {
                                     batchCount++
                                     console.log(`s3ContentStream onData has processed ${recs} chunks: `, jsonChunk)
@@ -358,7 +365,7 @@ async function processS3ObjectContentStream(event: S3Event) {
 
                             .on('end', async function (msg: string) {
                                 batchCount++
-                                console.log(`S3ContentStream OnEnd (${msg}), processed  (${recs}) records from ${event.Records[0].s3.object.key}.`)
+                                console.log(`S3 Content Stream Ended for ${event.Records[0].s3.object.key}  (Processed ${recs} records`)
                                 xmlRows = convertToXML(chunks, config)
                                 let queueToProcess = await queueWork(xmlRows, event, batchCount.toString(), chunks.length.toString())
                                 chunks.length = 0
@@ -396,7 +403,7 @@ async function processS3ObjectContentStream(event: S3Event) {
 
 function convertToXML(rows: string[], config: tricklerConfig) {
 
-    console.log(`Packaging Updates - ${rows.length} rows`)
+    console.log(`Packaged ${rows.length} rows as updates to ${config.listName}`)
 
     xmlRows = `<Envelope><Body><InsertUpdateRelationalTable><TABLE_ID>${config.listId}</TABLE_ID><ROWS>`
     let r = 0
@@ -420,15 +427,15 @@ function convertToXML(rows: string[], config: tricklerConfig) {
 
 async function queueWork(queueContent: string, event: S3Event, batchNum: string, count: string) {
 
-    console.log(`Process Queue:  ${queueContent} rows `)
+    // console.log(`Process Queue:  ${queueContent} rows `)
 
     const s3Key = event.Records[0].s3.object.key
-    await storeS3Work(queueContent, s3Key, batchNum)
-    await addToProcessQueue(config, s3Key, batchNum, count) 
+    await storeWorkToS3(queueContent, s3Key, batchNum)
+    await addWorkToProcessQueue(config, s3Key, batchNum, count) 
 
 }
 
-async function storeS3Work(queueContent: string, s3Key: string, batch: string) {
+async function storeWorkToS3(queueContent: string, s3Key: string, batch: string) {
 
     //write to the S3 Process Bucket
     const s3PutInput = {
@@ -436,38 +443,32 @@ async function storeS3Work(queueContent: string, s3Key: string, batch: string) {
         "Bucket": "tricklercache-process",
         "Key": `process_${batch}_${s3Key}`
     };
-    
+
+    console.log(`Process Queue - Write to S3 Process Bucket (process_${s3Key})`);
+
     let qs3
 
     try {
-        console.log(`ProcessQueue - Write to S3 Process Bucket: ", process_${s3Key}`);
-
         qs3 = await s3.send(new PutObjectCommand(s3PutInput))
             .then(async (s3PutResult: PutObjectCommandOutput) => {
-                const d = JSON.stringify(s3PutResult, null, 2)
-                // const r = s3PutResult.VersionId
-                console.log(`ProcessQueue - Write to Process Bucket Result: ${d}`);
+                const d = JSON.stringify(s3PutResult.$metadata.httpStatusCode, null, 2)
+                qs3 = d
+                console.log(`Process Queue - Write work (process_${batch}_${s3Key} to S3 Process Bucket - ${d}`);
             });
     } catch (e) {
-        console.log(`Exception - ProcessingQueue - S3 Put Command (process_${s3Key}): ${e}`)
+        console.log(`Exception writing work(process_${batch}_${s3Key} to S3 Processing bucket: ${e}`)
     }
 return qs3
 
 }
 
-async function addToProcessQueue (custConfig: tricklerConfig, s3Key: string, batch: string, count: string) {
+async function addWorkToProcessQueue (config: tricklerConfig, s3Key: string, batch: string, count: string) {
 
     const qb = {} as tcQueueMessage
     qb.work = `process_${batch}_${s3Key}`
     qb.updates = count
     qb.custconfig = config
     const qc = JSON.stringify(qb) 
-
-    // const qc = JSON.stringify({
-    //     "work": `process_${batch}_${s3Key}`,
-    //     "updates": count,
-    //     "custconfig": config
-    // })
     
     const writeSQSCommand = new SendMessageCommand({
         QueueUrl: sqsParams.QueueUrl,
@@ -486,12 +487,12 @@ let qAdd
     try {
         qAdd = await sqsClient.send(writeSQSCommand)
             .then(async (sqsWriteResult: SendMessageCommandOutput) => {
-                const wr = JSON.stringify(sqsWriteResult, null, 2)
-                console.log(`Process Queue - Writing SQS Queue for process_${s3Key} - Result: ${wr} `);
+                const wr = JSON.stringify(sqsWriteResult.$metadata.httpStatusCode, null, 2)
+                console.log(`Process Queue - Wrote Work to SQS Queue (process_${s3Key}) - Result: ${wr} `);
                 qAdd = JSON.stringify(sqsWriteResult)
             });
     } catch (e) {
-        console.log(`Exception - Processing Queue - SQS Write: ${e}`)
+        console.log(`Exception - Writing SQS Queue (tricklercache-process): ${e}`)
     }
 
     return qAdd
@@ -597,9 +598,9 @@ export async function postToCampaign(xmlCalls: string, config: tricklerConfig, c
     //
     //For Testing only
     //
-    config.pod = '2'
-    config.listId = '12663209'
-    xmlCalls = xmlCalls.replace('3055683', '12663209')
+    // config.pod = '2'
+    // config.listId = '12663209'
+    // xmlCalls = xmlCalls.replace('3055683', '12663209')
     //
     //For Testing only
     //
