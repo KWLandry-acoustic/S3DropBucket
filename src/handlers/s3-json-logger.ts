@@ -178,7 +178,9 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
     debugger;
 
     const qc: tcQueueMessage = JSON.parse(event.Records[0].body)
-    console.log(`Processing Work Queue - Work File: ${JSON.stringify(qc)}`)
+
+    console.log(`Processing Work Queue for ${JSON.stringify(qc.work)}`)
+    console.log(`Debug-Processing Work Queue - Work File: \n ${JSON.stringify(qc)}`)
 
     let postSuccess
 
@@ -202,7 +204,8 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
     }
     debugger;
 
-    console.log(`Processing Work Queue - Work (${qc.work}) Processed - Success(${postSuccess?.POSTSuccess})  ${postSuccess?.postRes}`)
+    console.log(`Debug-Processing Work Queue - Work (${qc.work})\n ${postSuccess?.postRes}`)
+    console.log(`Processing Work Queue - Work (${qc.work}) \n Success(${postSuccess?.POSTSuccess})`)
 
  return postSuccess?.POSTSuccess
 
@@ -734,16 +737,22 @@ export async function postToCampaign(xmlCalls: string, config: tricklerConfig, c
 
     debugger;
 
-    if ((process.env.accessToken === null)||process.env.accessToken == '')
+    if ((process.env.accessToken === null) || process.env.accessToken == '')
     {
         console.log(`Need AccessToken...`)
         process.env.accessToken = await getAccessToken(config) as string
+
         const l = process.env.accessToken.length
-        const at = "......." + process.env.accessToken.substring(l-8, l)
+        const at = "......." + process.env.accessToken.substring(l - 8, l)
         console.log(`Requested a new AccessToken: ${at}`)
     }
-    else console.log(`Access Token already present: ${process.env.accessToken} ...`)
-
+    else
+    {
+        const l = process.env.accessToken?.length ?? 0
+        const at = "......." + process.env.accessToken?.substring(l - 8, l)
+        console.log(`Requested a new AccessToken: ${at}`)
+        console.log(`Access Token already present: ${at}`)
+    }
     debugger;
     const myHeaders = new Headers();
     myHeaders.append("Content-Type", "text/xml");
