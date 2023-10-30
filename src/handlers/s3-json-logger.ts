@@ -743,14 +743,13 @@ export async function postToCampaign(xmlCalls: string, config: tricklerConfig, c
         process.env.accessToken = await getAccessToken(config) as string
 
         const l = process.env.accessToken.length
-        const at = "......." + process.env.accessToken.substring(l - 8, l)
-        console.log(`Requested a new AccessToken: ${at}`)
+        const at = "......." + process.env.accessToken.substring(l - 10, l)
+        console.log(`Generated a new AccessToken: ${at}`)
     }
     else
     {
         const l = process.env.accessToken?.length ?? 0
         const at = "......." + process.env.accessToken?.substring(l - 8, l)
-        console.log(`Requested a new AccessToken: ${at}`)
         console.log(`Access Token already present: ${at}`)
     }
     debugger;
