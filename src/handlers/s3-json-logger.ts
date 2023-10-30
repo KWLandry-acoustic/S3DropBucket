@@ -151,21 +151,20 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
     try
     {
         const work = await getS3Work(qc.work, qc.custconfig)
-        if(!work) throw new Error(`Work was not retrieved from Queue: ${qc.work}`)
+        if(!work) throw new Error(`Failed to retrieve work (${qc.work}) from Queue: `)
 
         postSuccess = await postToCampaign(work, qc.custconfig, qc.updates)
+        
+        if (postSuccess === 'retry') reQueue(qc.work)
 
-        if (!postSuccess)
-        {
-            queueForRetry(work) 
-        }
     } catch (e)
     {
-        console.log(`TricklerQueueProcessing - Exception: ${e}`)
+        console.log(`Trickler Work Queue Processing Exception: ${e}`)
     }
+
     console.log(`Work Processed - Result: ${postSuccess}`)
 
- return true
+ return postSuccess
 
 }
 
@@ -474,9 +473,13 @@ async function addWorkToProcessQueue (config: tricklerConfig, s3Key: string, bat
         QueueUrl: sqsParams.QueueUrl,
         DelaySeconds: 1,
         MessageAttributes: {
-            tricklerProcessQueue: {
+            FirstQueued: {
                 DataType: "String",
-                StringValue: `process_${batch}_${s3Key}`,
+                StringValue: `${Date.now().toString()}`
+        },
+            Retry: {
+                DataType: "Number",
+                StringValue: '0',
             },
         },
         MessageBody: qc
@@ -499,10 +502,58 @@ let qAdd
 
 }
 
+async function reQueue (work: string) {
 
-async function queueForRetry(update: string) {
-    console.log(`Queuing For Retry: ${update.length}`)
+    // const rw = {} as tcQueueMessage
+    // rw.work = `process_${batch}_${s3Key}`
+    // rw.updates = count
+    // rw.custconfig = config
+    // const qc = JSON.stringify(rw)
+    
+    const rw = JSON.parse(work)
+
+    let n = parseInt(rw.Retry)
+    n++
+    const r: string = n.toString()
+
+    const writeSQSCommand = new SendMessageCommand({
+        QueueUrl: sqsParams.QueueUrl,
+        DelaySeconds: 10,
+        MessageAttributes: {
+            FirstQueued: {
+                DataType: "String",
+                StringValue: rw.FirstQueued
+        },
+            Retry: {
+                DataType: "Number",
+                StringValue: r,
+            },
+        },
+        MessageBody: work
+    });
+
+let qAdd
+
+    try {
+        qAdd = await sqsClient.send(writeSQSCommand)
+            .then(async (sqsWriteResult: SendMessageCommandOutput) => {
+                const rr = JSON.stringify(sqsWriteResult.$metadata.httpStatusCode, null, 2)
+                console.log(`Process Queue - Wrote Retry Work to SQS Queue (process_${rw.work}) - Result: ${rr} `);
+                qAdd = JSON.stringify(sqsWriteResult)
+            });
+    } catch (e) {
+        console.log(`ReQueue Work Exception - Writing Retry Work to SQS Queue: ${e}`)
+    }
+
+    return qAdd
+
 }
+
+// async function queueForRetry(update: string) {
+//     console.log(`Queuing For Retry: ${update.length}`)
+//     addWorkToProcessQueue(config, s3Key, batch, count)
+//     return ''
+// }
 
 
 async function updateDatabase() {
@@ -605,8 +656,6 @@ export async function postToCampaign(xmlCalls: string, config: tricklerConfig, c
     //For Testing only
     //
 
-
-
     if ((process.env.accessToken === null)||process.env.accessToken == '')
     {
         console.log(`Need AccessToken...`)
@@ -640,18 +689,23 @@ export async function postToCampaign(xmlCalls: string, config: tricklerConfig, c
         .then((response) => response.text())
         .then((result) => {
             // console.log("POST Update Result: ", result)
-            if (result.toLowerCase().indexOf('false</success>') > 0) {
+
+            if (result.indexOf('max number of concurrent') > -1)
+                return 'retry'
+   
+            if (result.toLowerCase().indexOf('false</success>') > -1)
+            {
                 // "<Envelope><Body><RESULT><SUCCESS>false</SUCCESS></RESULT><Fault><Request/>
                 //   <FaultCode/><FaultString>Invalid XML Request</FaultString><detail><error>
                 //   <errorid>51</errorid><module/><class>SP.API</class><method/></error></detail>
                 //    </Fault></Body></Envelope>\r\n"
-                queueForRetry(xmlRows)
-                throw new Error(`Unsuccessful POST of Update - ${result}`)
+                
+                return `Unsuccessful POST of Update - ${result}`
             }
 
             updateSuccess = true
             result = result.replace('\n', ' ')
-            return `Processed ${count} Updates - Result: ${result}`
+            postRes = `Processed ${count} Updates - Result: ${result}`
         })
         .catch((e) => {
             console.log(`Exception on POST to Campaign: ${e}`)
