@@ -117,11 +117,12 @@ export interface tcConfig {
 
 let tc = {} as tcConfig
 
-//Simply pipe the Readable Stream to the stream returned from
+// description="There is no column __parsed_extra">
+// Pipes the S3 Read Stream, converting csv to json. 
 const csvParseStream = Papa.parse(Papa.NODE_STREAM_INPUT, {
     header: true,
     comments: '#',
-    fastMode: true,
+    // fastMode: true,
     skipEmptyLines: true,
     // step: function (results, parser) {               //Cannot use Step when using Streams
     //     console.log("Row data: ", results.data);
@@ -430,6 +431,7 @@ async function processS3ObjectContentStream(event: S3Event) {
                                 recs++
                                 // console.log(`Another chunk (${recs}): ${jsonChunk}, chunks length is ${chunks.length}`)
                                 chunks.push(jsonChunk)
+
                                 if (chunks.length > 98)
                                 {
                                     batchCount++
@@ -480,7 +482,7 @@ async function processS3ObjectContentStream(event: S3Event) {
 function convertToXML(rows: string[], config: tricklerConfig) {
 
     console.log(`Packaged ${rows.length} rows as updates to ${config.customer}'s ${config.listName}`)
-
+    
     xmlRows = `<Envelope><Body><InsertUpdateRelationalTable><TABLE_ID>${config.listId}</TABLE_ID><ROWS>`
     let r = 0
 
@@ -736,7 +738,9 @@ export async function postToCampaign(xmlCalls: string, config: tricklerConfig, c
     {
         console.log(`Need AccessToken...`)
         process.env.accessToken = await getAccessToken(config) as string
-        console.log(`Retrieved AccessToken: ${process.env.accessToken}`)
+        const l = process.env.accessToken.length
+        const at = "......." + process.env.accessToken.substring(l-8, l)
+        console.log(`Requested a new AccessToken: ${at}`)
     }
     else console.log(`Access Token already present: ${process.env.accessToken} ...`)
 
