@@ -58,12 +58,10 @@ export type sqsObject = {
   */
 
 const s3 = new S3Client({ region: "us-east-1" })
+ 
 
-let configSuccess = false
-let getContentSuccess = false
-let updateSuccess = false
-let processSuccess = false
-let packageAndQueuedSuccess = false
+let workQueuedSuccess = false
+let POSTSuccess = false;
 
 
 let xmlRows: string = ''
@@ -104,6 +102,21 @@ export interface tcQueueMessage {
     custconfig: tricklerConfig
 }
 
+
+export interface tcConfig {
+    "AWS_REGION": string,
+    "SQS_QUEUE_URL": string,
+    "xmlapiurl": string,
+    "restapiurl": string,
+    "authapiurl": string,
+    "ProcessQueueVisibilityTimeout": number,
+    "ProcessQueueWaitTimeSeconds": number,
+    "RetryQueueVisibilityTimeout": number,
+    "RetryQueueInitialWaitTimeSeconds": number
+}
+
+let tc = {} as tcConfig
+
 //Simply pipe the Readable Stream to the stream returned from
 const csvParseStream = Papa.parse(Papa.NODE_STREAM_INPUT, {
     header: true,
@@ -127,17 +140,6 @@ const csvParseStream = Papa.parse(Papa.NODE_STREAM_INPUT, {
     }
 })
 
-let tcConfig: {
-    "AWS_REGION": string,
-    "SQS_QUEUE_URL": string,
-    "xmlapiurl": string,
-    "restapiurl": string,
-    "authapiurl": string,
-    "ProcessQueueVisibilityTimeout": number,
-    "ProcessQueueWaitTimeSeconds": number,
-    "RetryQueueVisibilityTimeout": number,
-    "RetryQueueInitialWaitTimeSeconds": number
-}
 
 //Of concern, very large data sets
 // - as of 10/2023 CSV handled as the papaparse engine handles the record boundary, 
@@ -167,34 +169,41 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
     //Interface to view Logs/Errors (echo cloudwatch logs?)
     //
 
-    if (process.env.AWS_REGION === '' || process.env.AWS_REGION === null) getTricklerConfig()
+    if (process.env.AWS_REGION === '' || process.env.AWS_REGION === null)
+    {
+        tc = await getTricklerConfig()
+    }
 
     debugger;
 
     const qc: tcQueueMessage = JSON.parse(event.Records[0].body)
-    console.log(`Processing work from Queue - Work File: ${JSON.stringify(qc)}`)
+    console.log(`Processing Work Queue - Work File: ${JSON.stringify(qc)}`)
 
     let postSuccess
 
     try
     {
-        debugger
         const work = await getS3Work(qc.work, qc.custconfig)
         if(!work) throw new Error(`Failed to retrieve work (${qc.work}) from Queue: `)
 
         postSuccess = await postToCampaign(work, qc.custconfig, qc.updates)
-        
-        if (postSuccess === 'retry') reQueue(event, qc)
+        if (postSuccess.postRes === 'retry')
+        {
+            await reQueue(event, qc)
+            return postSuccess?.POSTSuccess
+        }
 
+        if (!postSuccess.POSTSuccess) throw new Error(`Failed to process work ${qc.work} - ${postSuccess.postRes} `)
+            
     } catch (e)
     {
-        console.log(`Trickler Work Queue Processing Exception: ${e}`)
+        console.log(`Processing Work Queue Exception: ${e}`)
     }
     debugger;
 
-    console.log(`Work Processed - Result: ${postSuccess}`)
+    console.log(`Processing Work Queue - Work (${qc.work}) Processed - Success(${postSuccess?.POSTSuccess})  ${postSuccess?.postRes}`)
 
- return postSuccess
+ return postSuccess?.POSTSuccess
 
 }
 
@@ -204,8 +213,11 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
     // console.log(`AWS-SDK Version: ${version}`)
     // console.log('ENVIRONMENT VARIABLES\n' + JSON.stringify(process.env, null, 2))
 
-    if (process.env.AWS_REGION === '' || process.env.AWS_REGION === null) getTricklerConfig()
 
+    if (process.env.AWS_REGION === '' || process.env.AWS_REGION === null)
+    {
+        tc = await getTricklerConfig()
+    }
     debugger;
 
     console.log("Processing Object from S3 Trigger, Event RequestId: ", event.Records[0].responseElements["x-amz-request-id"])
@@ -232,18 +244,18 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
 
     }
 
-    const s3ContentProcessingResult = await processS3ObjectContentStream(event)
+    const s3Result = await processS3ObjectContentStream(event)
 
     // if (!s3ObjectContent || s3ObjectContent.length < 1) {
     //     throw new Error(`Exception retrieving S3 Object (Get content returns null or empty) for ${event.Records[0].s3.object.key}`)
     // }
 
-    const finalStatus = `${s3ContentProcessingResult} for ${event.Records[0].s3.object.key}`
+    const finalStatus = `${s3Result} for ${event.Records[0].s3.object.key}`
 
-    console.log(`UpdateSuccess is ${updateSuccess}  \n Final Status is : ${finalStatus}`)
+    // console.log(`UpdateSuccess is ${updateSuccess}  \n Final Status is : ${finalStatus}`)
 
     //Once successful delete the original S3 Object
-    if (updateSuccess) {
+    if (workQueuedSuccess) {
         const delResultCode = await deleteS3Object(event);
         console.log(`Result from Delete of ${event.Records[0].s3.object.key}: ${delResultCode} `);
     }
@@ -268,7 +280,7 @@ async function getTricklerConfig() {
         Key: 'tricklercache_config.json'
     }
 
-    let tc = {} as tricklerConfig
+    // let tc = {} as tricklerConfig
     try
     {
         await s3.send(new GetObjectCommand(getObjectCmd))
@@ -342,12 +354,11 @@ async function getCustomerConfig(event: S3Event) {
                     })
                 }
             }).catch((e) => {
-                configSuccess = false
-                throw new Error(`Promise Exception when retrieving Customer Config ${customer}config.json \n${e}`)
+                throw new Error(`Exception retrieving Customer Config ${customer}config.json \n${e}`)
             })
         })
     } catch (e) {
-        throw new Error(`S3 Command Exception retrieving Customer Config ${customer}config.json: \n ${e}`);
+        throw new Error(`Exception retrieving Customer Config ${customer}config.json: \n ${e}`);
     }
 
     return configJSON
@@ -376,10 +387,6 @@ async function validateConfig(config: tricklerConfig) {
     if (!config.region.toLowerCase().match(/^(?:us|eu|ap|ca)$/igm)) {
         throw new Error("Invalid Config - Region is not 'US', 'EU', CA' or 'AP'. ")
     }
-
-    // console.log("ValidateCutomerConfig succeeded: ", config)
-
-    configSuccess = true
 
     return config as tricklerConfig
 }
@@ -437,7 +444,7 @@ async function processS3ObjectContentStream(event: S3Event) {
                                 batchCount++
                                 console.log(`S3 Content Stream Ended for ${event.Records[0].s3.object.key}  (Processed ${recs} records)`)
                                 xmlRows = convertToXML(chunks, config)
-                                let queueToProcess = await queueWork(xmlRows, event, batchCount.toString(), chunks.length.toString())
+                                await queueWork(xmlRows, event, batchCount.toString(), chunks.length.toString())
                                 chunks.length = 0
                                 batchCount = 0
                                 resolve('S3 Content parsing Successful End')
@@ -466,7 +473,6 @@ async function processS3ObjectContentStream(event: S3Event) {
         throw new Error(`Exception during Processing of S3 Object for ${event.Records[0].s3.object.key}: \n ${e}`);
     }
 
-    processSuccess = true
     return s3ContentResults
 }
 
@@ -521,12 +527,14 @@ async function storeWorkToS3(queueContent: string, s3Key: string, batch: string)
     try {
         qs3 = await s3.send(new PutObjectCommand(s3PutInput))
             .then(async (s3PutResult: PutObjectCommandOutput) => {
-                const d = JSON.stringify(s3PutResult.$metadata.httpStatusCode, null, 2)
-                qs3 = d
-                console.log(`Process Queue - Write work (process_${batch}_${s3Key} to S3 Process Bucket - ${d}`);
-            });
+                qs3 = JSON.stringify(s3PutResult.$metadata.httpStatusCode, null, 2)
+                console.log(`Queue Work - Write work (process_${batch}_${s3Key} to S3 Process Bucket - ${qs3}`);
+            })
+            .catch((err) => {
+                throw new Error(`Failed writing work(process_${ batch }_${ s3Key } to S3 Processing bucket: ${ err }`)
+        })
     } catch (e) {
-        console.log(`Exception writing work(process_${batch}_${s3Key} to S3 Processing bucket: ${e}`)
+        throw new Error(`Exception writing work(process_${batch}_${s3Key} to S3 Processing bucket: ${e}`)
     }
 return qs3
 
@@ -563,6 +571,8 @@ let qAdd
                 const wr = JSON.stringify(sqsWriteResult.$metadata.httpStatusCode, null, 2)
                 console.log(`Wrote Work to Process Queue (process_${s3Key}) - Result: ${wr} `);
                 qAdd = JSON.stringify(sqsWriteResult)
+                workQueuedSuccess = true
+                //Now Delete S3 File
             })
             .catch((err) => {
             console.log(`Failed writing to Process Queue -(process_${s3Key}) - Error: ${err} `)
@@ -571,20 +581,11 @@ let qAdd
         console.log(`Exception writing to Process Queue -(process_${s3Key}) - Error: ${e}`)
     }
 
-    return qAdd
+    return { qAdd, workQueuedSuccess }
 
 }
 
 async function reQueue (sqsevent: SQSEvent , queued: tcQueueMessage) {
-
-    // const rw = {} as tcQueueMessage
-    // rw.work = `process_${batch}_${s3Key}`
-    // rw.updates = count
-    // rw.custconfig = config
-    // const qc = JSON.stringify(rw)
-    
-    // const q = queued as JSON
-    // const rw = JSON.parse(queued)
 
     let mar = sqsevent.Records[0].messageAttributes.Retry.stringValue as string
     let n = parseInt(mar)
@@ -608,23 +609,6 @@ async function reQueue (sqsevent: SQSEvent , queued: tcQueueMessage) {
     sp.MessageBody = sqsevent.Records[0].body
 
     const writeSQSCommand = new SendMessageCommand(sp)
-        
-    //     {
-    //     QueueUrl: sqsParams.QueueUrl,
-    //     DelaySeconds: 10,
-    //     MessageAttributes: {  },
-    //     //     FirstQueued: {
-    //     //         DataType: "String",
-    //     //         StringValue: rw.FirstQueued
-    //     // },
-    //     //     Retry: {
-    //     //         DataType: "Number",
-    //     //         StringValue: r,
-    //     //     },
-    //     // },
-    //     MessageBody: sqsevent.Records[0].body
-    // });
-
 
     let qAdd
 
@@ -636,7 +620,7 @@ async function reQueue (sqsevent: SQSEvent , queued: tcQueueMessage) {
                 return JSON.stringify(sqsWriteResult)
             });
     } catch (e) {
-        console.log(`ReQueue Work Exception - Writing Retry Work to SQS Queue: ${e}`)
+        throw new Error(`ReQueue Work Exception - Writing Retry Work to SQS Queue: ${e}`)
     }
     debugger;
 
@@ -644,11 +628,6 @@ async function reQueue (sqsevent: SQSEvent , queued: tcQueueMessage) {
 
 }
 
-// async function queueForRetry(update: string) {
-//     console.log(`Queuing For Retry: ${update.length}`)
-//     addWorkToProcessQueue(config, s3Key, batch, count)
-//     return ''
-// }
 
 
 async function updateDatabase() {
@@ -801,7 +780,9 @@ export async function postToCampaign(xmlCalls: string, config: tricklerConfig, c
                 return `Unsuccessful POST of Update - ${result}`
             }
 
-            updateSuccess = true
+            POSTSuccess = true
+            //now delete S3 Work File
+
             result = result.replace('\n', ' ')
             return `Processed ${count} Updates - Result: ${result}`
         })
@@ -814,7 +795,7 @@ export async function postToCampaign(xmlCalls: string, config: tricklerConfig, c
     }
     debugger;
 
-    return postRes
+    return { postRes, POSTSuccess } 
 }
 
 
