@@ -21,14 +21,28 @@ process.env.AWS_REGION = "us-east-1"
 process.env.accessToken = ''
 
 
-//SQS
+//SQS 
+//ToDo: pickup config from tricklercache config
 process.env.SQS_QUEUE_URL = "https://sqs.us-east-1.amazonaws.com/777957353822/tricklercacheQueue";
+
 const sqsClient = new SQSClient({});
+
 const sqsParams = {
     MaxNumberOfMessages: 1,
     QueueUrl: process.env.SQS_QUEUE_URL,
     VisibilityTimeout: 30,
-    WaitTimeSeconds: 10
+    WaitTimeSeconds: 10,
+     MessageAttributes: {
+            FirstQueued: {
+                DataType: "String",
+                StringValue: ''
+        },
+            Retry: {
+                DataType: "Number",
+                StringValue: '0',
+            },
+        },
+    MessageBody: ''
 };
 
 export type sqsObject = {
@@ -150,17 +164,19 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
 
     try
     {
+        debugger
         const work = await getS3Work(qc.work, qc.custconfig)
         if(!work) throw new Error(`Failed to retrieve work (${qc.work}) from Queue: `)
 
         postSuccess = await postToCampaign(work, qc.custconfig, qc.updates)
         
-        if (postSuccess === 'retry') reQueue(qc.work)
+        if (postSuccess === 'retry') reQueue(event, qc)
 
     } catch (e)
     {
         console.log(`Trickler Work Queue Processing Exception: ${e}`)
     }
+    debugger;
 
     console.log(`Work Processed - Result: ${postSuccess}`)
 
@@ -264,9 +280,9 @@ async function getCustomerConfig(event: S3Event) {
                     s3Body.on("end", () => {
                         let cj = {} as tricklerConfig
                         let cf = Buffer.concat(configObjs).toString("utf8")
-                        console.log(`Parsing Config File: ${customer}config.json \n ${cf}`)
                         try {
                             cj = JSON.parse(cf)
+                            console.log(`Parsing Config File: ${cj.customer}, Format: ${cj.format}, Region: ${cj.region}, Pod: ${cj.pod}, List Name: ${cj.listName},List  Id: ${cj.listId}, `)
                         } catch (e) {
                             throw new Error(`Exception Parsing Config ${customer}config.json: ${e}`)
                         }
@@ -310,7 +326,7 @@ async function validateConfig(config: tricklerConfig) {
         throw new Error("Invalid Config - Region is not 'US', 'EU', CA' or 'AP'. ")
     }
 
-    console.log("ValidateCutomerConfig succeeded: ", config)
+    // console.log("ValidateCutomerConfig succeeded: ", config)
 
     configSuccess = true
 
@@ -322,6 +338,10 @@ async function processS3ObjectContentStream(event: S3Event) {
     let chunks: string[] = new Array();
     let s3ContentResults = ''
     let batchCount = 0
+
+    console.log(`Pulling S3 Content for ${event.Records[0].s3.object.key}`)
+                                
+
     try {
         await s3.send(
             new GetObjectCommand({
@@ -352,10 +372,10 @@ async function processS3ObjectContentStream(event: S3Event) {
                                 recs++
                                 // console.log(`Another chunk (${recs}): ${jsonChunk}, chunks length is ${chunks.length}`)
                                 chunks.push(jsonChunk)
-                                if (chunks.length == 99)
+                                if (chunks.length > 98)
                                 {
                                     batchCount++
-                                    console.log(`s3ContentStream onData has processed ${recs} chunks: `, jsonChunk)
+                                    console.log(`Parsing S3 Content Stream processed ${recs} chunks: `, jsonChunk)
                                     xmlRows = convertToXML(chunks, config)
                                     await queueWork(xmlRows, event, batchCount.toString(), chunks.length.toString())
                                     chunks.length = 0
@@ -364,25 +384,25 @@ async function processS3ObjectContentStream(event: S3Event) {
 
                             .on('end', async function (msg: string) {
                                 batchCount++
-                                console.log(`S3 Content Stream Ended for ${event.Records[0].s3.object.key}  (Processed ${recs} records`)
+                                console.log(`S3 Content Stream Ended for ${event.Records[0].s3.object.key}  (Processed ${recs} records)`)
                                 xmlRows = convertToXML(chunks, config)
                                 let queueToProcess = await queueWork(xmlRows, event, batchCount.toString(), chunks.length.toString())
                                 chunks.length = 0
                                 batchCount = 0
-                                resolve('s3Content End')
+                                resolve('S3 Content parsing Successful End')
                             })
 
                             .on('error', async function (err: string) {
-                                console.log("csvParseStream Error", err)
+                                console.log("Failed Parsing S3 Content - Error: ", err)
                                 reject(`An error has stopped Content Parsing at record ${recs} for s3 object ${event.Records[0].s3.object.key}. ${err}`)
                             })
 
                             .on('close', function (msg: string) {
-                                console.log(`csvParseStream Closed (${msg}), processed ${recs} records from ${event.Records[0].s3.object.key}`)
+                                console.log(`Completed Parsing S3 Content, processed ${recs} records from ${event.Records[0].s3.object.key}`)
                             })
 
                     } catch (e) {
-                        throw new Error(`Exception processing S3 Object Content for ${event.Records[0].s3.object.key}, \n${e}`)
+                        throw new Error(`Exception parsing S3 Content for ${event.Records[0].s3.object.key}, \n${e}`)
                     }
 
                 })
@@ -392,7 +412,7 @@ async function processS3ObjectContentStream(event: S3Event) {
 
             })
     } catch (e) {
-        throw new Error(`Exception Processing S3 Get Object for ${event.Records[0].s3.object.key}: \n ${e}`);
+        throw new Error(`Exception during Processing of S3 Object for ${event.Records[0].s3.object.key}: \n ${e}`);
     }
 
     processSuccess = true
@@ -402,7 +422,7 @@ async function processS3ObjectContentStream(event: S3Event) {
 
 function convertToXML(rows: string[], config: tricklerConfig) {
 
-    console.log(`Packaged ${rows.length} rows as updates to ${config.listName}`)
+    console.log(`Packaged ${rows.length} rows as updates to ${config.customer}'s ${config.listName}`)
 
     xmlRows = `<Envelope><Body><InsertUpdateRelationalTable><TABLE_ID>${config.listId}</TABLE_ID><ROWS>`
     let r = 0
@@ -443,7 +463,7 @@ async function storeWorkToS3(queueContent: string, s3Key: string, batch: string)
         "Key": `process_${batch}_${s3Key}`
     };
 
-    console.log(`Process Queue - Write to S3 Process Bucket (process_${s3Key})`);
+    console.log(`Queuing Work (process_${batch}_${s3Key}) to Process Queue`);
 
     let qs3
 
@@ -462,7 +482,6 @@ return qs3
 }
 
 async function addWorkToProcessQueue (config: tricklerConfig, s3Key: string, batch: string, count: string) {
-
     const qb = {} as tcQueueMessage
     qb.work = `process_${batch}_${s3Key}`
     qb.updates = count
@@ -491,18 +510,21 @@ let qAdd
         qAdd = await sqsClient.send(writeSQSCommand)
             .then(async (sqsWriteResult: SendMessageCommandOutput) => {
                 const wr = JSON.stringify(sqsWriteResult.$metadata.httpStatusCode, null, 2)
-                console.log(`Process Queue - Wrote Work to SQS Queue (process_${s3Key}) - Result: ${wr} `);
+                console.log(`Wrote Work to Process Queue (process_${s3Key}) - Result: ${wr} `);
                 qAdd = JSON.stringify(sqsWriteResult)
-            });
+            })
+            .catch((err) => {
+            console.log(`Failed writing to Process Queue -(process_${s3Key}) - Error: ${err} `)
+        })
     } catch (e) {
-        console.log(`Exception - Writing SQS Queue (tricklercache-process): ${e}`)
+        console.log(`Exception writing to Process Queue -(process_${s3Key}) - Error: ${e}`)
     }
 
     return qAdd
 
 }
 
-async function reQueue (work: string) {
+async function reQueue (sqsevent: SQSEvent , queued: tcQueueMessage) {
 
     // const rw = {} as tcQueueMessage
     // rw.work = `process_${batch}_${s3Key}`
@@ -510,40 +532,62 @@ async function reQueue (work: string) {
     // rw.custconfig = config
     // const qc = JSON.stringify(rw)
     
-    const rw = JSON.parse(work)
+    // const q = queued as JSON
+    // const rw = JSON.parse(queued)
 
-    let n = parseInt(rw.Retry)
+    let mar = sqsevent.Records[0].messageAttributes.Retry.stringValue as string
+    let n = parseInt(mar)
     n++
     const r: string = n.toString()
+    
+    debugger;
 
-    const writeSQSCommand = new SendMessageCommand({
-        QueueUrl: sqsParams.QueueUrl,
-        DelaySeconds: 10,
-        MessageAttributes: {
-            FirstQueued: {
-                DataType: "String",
-                StringValue: rw.FirstQueued
-        },
-            Retry: {
+    const w = JSON.parse(sqsevent.Records[0].body).work
+    
+    const sp = sqsParams
+    sp.VisibilityTimeout = 10
+
+    //ToDo: create random waittime, based on retry count. 
+    sp.WaitTimeSeconds = 10 
+    
+    sp.MessageAttributes.Retry = {
                 DataType: "Number",
                 StringValue: r,
-            },
-        },
-        MessageBody: work
-    });
+    }
+    sp.MessageBody = sqsevent.Records[0].body
 
-let qAdd
+    const writeSQSCommand = new SendMessageCommand(sp)
+        
+    //     {
+    //     QueueUrl: sqsParams.QueueUrl,
+    //     DelaySeconds: 10,
+    //     MessageAttributes: {  },
+    //     //     FirstQueued: {
+    //     //         DataType: "String",
+    //     //         StringValue: rw.FirstQueued
+    //     // },
+    //     //     Retry: {
+    //     //         DataType: "Number",
+    //     //         StringValue: r,
+    //     //     },
+    //     // },
+    //     MessageBody: sqsevent.Records[0].body
+    // });
+
+
+    let qAdd
 
     try {
         qAdd = await sqsClient.send(writeSQSCommand)
             .then(async (sqsWriteResult: SendMessageCommandOutput) => {
                 const rr = JSON.stringify(sqsWriteResult.$metadata.httpStatusCode, null, 2)
-                console.log(`Process Queue - Wrote Retry Work to SQS Queue (process_${rw.work}) - Result: ${rr} `);
-                qAdd = JSON.stringify(sqsWriteResult)
+                console.log(`Process Queue - Wrote Retry Work to SQS Queue (process_${w} - Result: ${rr} `);
+                return JSON.stringify(sqsWriteResult)
             });
     } catch (e) {
         console.log(`ReQueue Work Exception - Writing Retry Work to SQS Queue: ${e}`)
     }
+    debugger;
 
     return qAdd
 
@@ -649,12 +693,14 @@ export async function postToCampaign(xmlCalls: string, config: tricklerConfig, c
     //
     //For Testing only
     //
-    // config.pod = '2'
-    // config.listId = '12663209'
-    // xmlCalls = xmlCalls.replace('3055683', '12663209')
+            config.pod = '2'
+            config.listId = '12663209'
+            xmlCalls = xmlCalls.replace('3055683', '12663209')
     //
     //For Testing only
     //
+
+    debugger;
 
     if ((process.env.accessToken === null)||process.env.accessToken == '')
     {
@@ -664,7 +710,7 @@ export async function postToCampaign(xmlCalls: string, config: tricklerConfig, c
     }
     else console.log(`Access Token already present: ${process.env.accessToken} ...`)
 
-
+    debugger;
     const myHeaders = new Headers();
     myHeaders.append("Content-Type", "text/xml");
     myHeaders.append("Authorization", "Bearer " + process.env.accessToken)
@@ -689,6 +735,7 @@ export async function postToCampaign(xmlCalls: string, config: tricklerConfig, c
         .then((response) => response.text())
         .then((result) => {
             // console.log("POST Update Result: ", result)
+            debugger; 
 
             if (result.indexOf('max number of concurrent') > -1)
                 return 'retry'
@@ -705,7 +752,7 @@ export async function postToCampaign(xmlCalls: string, config: tricklerConfig, c
 
             updateSuccess = true
             result = result.replace('\n', ' ')
-            postRes = `Processed ${count} Updates - Result: ${result}`
+            return `Processed ${count} Updates - Result: ${result}`
         })
         .catch((e) => {
             console.log(`Exception on POST to Campaign: ${e}`)
@@ -714,6 +761,8 @@ export async function postToCampaign(xmlCalls: string, config: tricklerConfig, c
     } catch(e) {
         console.log(`Exception during POST to Campaign (AccessToken ${process.env.accessToken}) Result: ${e}`)
     }
+    debugger;
+
     return postRes
 }
 

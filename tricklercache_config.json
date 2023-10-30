@@ -3,5 +3,9 @@
       "SQS_QUEUE_URL": "https://sqs.us-east-1.amazonaws.com/777957353822/tricklercacheQueue",
       "xmlapiurl": "https://api-campaign-${config.region}-${config.pod}.goacoustic.com/XMLAPI",
       "restapiurl": "https://api-campaign-us-2.goacoustic.com:443/rest",
-      "authapiurl": "https://api-campaign-${config.region}-${config.pod}.goacoustic.com/oauth/token"
+      "authapiurl": "https://api-campaign-${config.region}-${config.pod}.goacoustic.com/oauth/token",
+      "ProcessQueueVisibilityTimeout": 15,
+      "ProcessQueueWaitTimeSeconds": 5,
+      "RetryQueueVisibilityTimeout": 30,
+      "RetryQueueInitialWaitTimeSeconds": 3
 }
