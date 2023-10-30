@@ -127,6 +127,17 @@ const csvParseStream = Papa.parse(Papa.NODE_STREAM_INPUT, {
     }
 })
 
+let tcConfig: {
+    "AWS_REGION": string,
+    "SQS_QUEUE_URL": string,
+    "xmlapiurl": string,
+    "restapiurl": string,
+    "authapiurl": string,
+    "ProcessQueueVisibilityTimeout": number,
+    "ProcessQueueWaitTimeSeconds": number,
+    "RetryQueueVisibilityTimeout": number,
+    "RetryQueueInitialWaitTimeSeconds": number
+}
 
 //Of concern, very large data sets
 // - as of 10/2023 CSV handled as the papaparse engine handles the record boundary, 
@@ -153,9 +164,12 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
 
     //ToDo: Confirm SQS Queue deletes queued work
     //Interface to View and Edit Customer Configs
-    //Interface to view Logs/Errors (echo cloudwatch logs?) 
+    //Interface to view Logs/Errors (echo cloudwatch logs?)
     //
 
+    if (process.env.AWS_REGION === '' || process.env.AWS_REGION === null) getTricklerConfig()
+
+    debugger;
 
     const qc: tcQueueMessage = JSON.parse(event.Records[0].body)
     console.log(`Processing work from Queue - Work File: ${JSON.stringify(qc)}`)
@@ -190,6 +204,10 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
     // console.log(`AWS-SDK Version: ${version}`)
     // console.log('ENVIRONMENT VARIABLES\n' + JSON.stringify(process.env, null, 2))
 
+    if (process.env.AWS_REGION === '' || process.env.AWS_REGION === null) getTricklerConfig()
+
+    debugger;
+
     console.log("Processing Object from S3 Trigger, Event RequestId: ", event.Records[0].responseElements["x-amz-request-id"])
     console.log("Num of Events to be processed: ", event.Records.length)
 
@@ -214,22 +232,15 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
 
     }
 
-    const s3ObjectContentResult = await processS3ObjectContentStream(event)
+    const s3ContentProcessingResult = await processS3ObjectContentStream(event)
 
     // if (!s3ObjectContent || s3ObjectContent.length < 1) {
     //     throw new Error(`Exception retrieving S3 Object (Get content returns null or empty) for ${event.Records[0].s3.object.key}`)
     // }
 
+    const finalStatus = `${s3ContentProcessingResult} for ${event.Records[0].s3.object.key}`
 
-    const finalStatus = ` Pulled Config Success - ${configSuccess}    /
-                          Valid Config - ${configSuccess}   /
-                          Pulled S3 Object Content: - ${s3ObjectContentResult}  /
-                          Packaged and Queued S3 Object Content - ${packageAndQueuedSuccess}
-                          Event Process Result: ${updateSuccess} /
-        for ${event.Records[0].s3.object.key} /
-    } `
-
-    console.log(`Final Status is : ${finalStatus}`)
+    console.log(`UpdateSuccess is ${updateSuccess}  \n Final Status is : ${finalStatus}`)
 
     //Once successful delete the original S3 Object
     if (updateSuccess) {
@@ -239,11 +250,51 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
     else
         throw new Error(`Deletion of Object ${event.Records[0].s3.object.key} skipped as previous processing failed`)
 
-    return "TricklerCache Complete. Final Status is " + finalStatus
+    
+    
+    return "TricklerCache Processing of ${event.Records[0].s3.object.key} Successfully Completed. \nFinal Status is " + finalStatus
 
 };
 
 export default s3JsonLoggerHandler
+
+
+async function getTricklerConfig() {
+    //populate env vars with tricklercache config 
+
+
+    const getObjectCmd = {
+        Bucket: "tricklercache-config",
+        Key: 'tricklercache_config.json'
+    }
+
+    let tc = {} as tricklerConfig
+    try
+    {
+        await s3.send(new GetObjectCommand(getObjectCmd))
+            .then(async (s3Result: GetObjectCommandOutput) => {
+                const cr = await s3Result.Body?.transformToString('utf8') as string
+                tc = JSON.parse(cr)
+                console.log(`Tricklercache Config: \n`)
+            })
+    } catch (e)
+    {
+        console.log(`Pulling TricklerConfig Exception \n ${e}`)
+    }
+
+    //   "AWS_REGION": "us-east-1",
+    //   "SQS_QUEUE_URL": "https://sqs.us-east-1.amazonaws.com/777957353822/tricklercacheQueue",
+    //   "xmlapiurl": "https://api-campaign-${config.region}-${config.pod}.goacoustic.com/XMLAPI",
+    //   "restapiurl": "https://api-campaign-us-2.goacoustic.com:443/rest",
+    //   "authapiurl": "https://api-campaign-${config.region}-${config.pod}.goacoustic.com/oauth/token",
+    //   "ProcessQueueVisibilityTimeout": 15,
+    //   "ProcessQueueWaitTimeSeconds": 5,
+    //   "RetryQueueVisibilityTimeout": 30,
+    //   "RetryQueueInitialWaitTimeSeconds": 3
+    return tc
+}
+
+
 
 async function getCustomerConfig(event: S3Event) {
 
