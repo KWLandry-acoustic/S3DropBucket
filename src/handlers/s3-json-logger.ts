@@ -230,7 +230,7 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
     debugger;
 
     const customer = (event.Records[0].s3.object.key.split("_")[0] + "_")
-    console.log("GetCustomerConfig: Customer string is ", customer)
+    // console.log("GetCustomerConfig: Customer string is ", customer)
 
     console.log(`Processing Object from S3 Trigger, Event RequestId: ", ${event.Records[0].responseElements["x-amz-request-id"]}. Customer is ${customer}, Num of Events to be processed: ${event.Records.length}`)
 
@@ -533,7 +533,7 @@ async function storeWorkToS3(queueContent: string, s3Key: string, batch: string)
         qs3 = await s3.send(new PutObjectCommand(s3PutInput))
             .then(async (s3PutResult: PutObjectCommandOutput) => {
                 qs3 = JSON.stringify(s3PutResult.$metadata.httpStatusCode, null, 2)
-                console.log(`Queue Work - Write work (process_${batch}_${s3Key} to S3 Process Bucket - ${qs3}`);
+                console.log(`Queue Work - Write work (process_${batch}_${s3Key} to Processing Queue - ${qs3}`);
             })
             .catch((err) => {
                 throw new Error(`Failed writing work(process_${ batch }_${ s3Key } to S3 Processing bucket: ${ err }`)
