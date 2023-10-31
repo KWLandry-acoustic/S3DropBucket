@@ -122,7 +122,7 @@ let tc = {} as tcConfig
 const csvParseStream = Papa.parse(Papa.NODE_STREAM_INPUT, {
     header: true,
     comments: '#',
-    // fastMode: true,
+    // fastMode: true,  //ToDo: can use as long as no "Quoted" strings as values, commas skew results, need to escape commas in values. 
     skipEmptyLines: true,
     // step: function (results, parser) {               //Cannot use Step when using Streams
     //     console.log("Row data: ", results.data);
@@ -224,8 +224,10 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
     }
     debugger;
 
-    console.log("Processing Object from S3 Trigger, Event RequestId: ", event.Records[0].responseElements["x-amz-request-id"])
-    console.log("Num of Events to be processed: ", event.Records.length)
+    const customer = (event.Records[0].s3.object.key.split("_")[0] + "_")
+    console.log("GetCustomerConfig: Customer string is ", customer)
+
+    console.log(`Processing Object from S3 Trigger, Event RequestId: ", ${event.Records[0].responseElements["x-amz-request-id"]}. Customer is ${customer}, Num of Events to be processed: ${event.Records.length}`)
 
     //Just in case we start getting multiple file triggers for whatever reason
     if (event.Records.length > 1) throw new Error(`Expecting only a single S3 Object from a Triggered S3 write of a new Object, received ${event.Records.length} Objects`)
@@ -236,7 +238,7 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
     }
 
     try {
-        config = await getCustomerConfig(event) as tricklerConfig
+        config = await getCustomerConfig(customer) as tricklerConfig
     } catch (e) {
         throw new Error(`Exception Retrieving Config: \n ${e}`)
 
@@ -312,12 +314,9 @@ async function getTricklerConfig() {
 
 
 
-async function getCustomerConfig(event: S3Event) {
+async function getCustomerConfig(customer: string) {
 
     // ToDo: Once retrieved need to validate all fields 
-    const customer = (event.Records[0].s3.object.key.split("_")[0] + "_")
-
-    console.log("GetCustomerConfig: Customer string is ", customer)
 
     let configJSON = {}
     const configObjs = [new Uint8Array()];

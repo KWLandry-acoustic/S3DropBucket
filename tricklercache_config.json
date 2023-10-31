@@ -1,7 +1,8 @@
 {
+      "LOGLEVEL": "info, debug",
       "AWS_REGION": "us-east-1",
       "SQS_QUEUE_URL": "https://sqs.us-east-1.amazonaws.com/777957353822/tricklercacheQueue",
-      "S3_CACHE_URL": "",
+      "S3_CACHE_URL": "s3://arn:aws:s3:us-east-1:777957353822:accesspoint/tricklercache-access",
       "xmlapiurl": "https://api-campaign-${config.region}-${config.pod}.goacoustic.com/XMLAPI",
       "restapiurl": "https://api-campaign-us-2.goacoustic.com:443/rest",
       "authapiurl": "https://api-campaign-${config.region}-${config.pod}.goacoustic.com/oauth/token",
