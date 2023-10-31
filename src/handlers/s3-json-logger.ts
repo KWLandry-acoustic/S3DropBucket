@@ -17,13 +17,13 @@ import { SQSClient, ReceiveMessageCommand, DeleteMessageBatchCommand, ReceiveMes
 // const version = packageJson.version
 
 
-process.env.AWS_REGION = "us-east-1"
-process.env.accessToken = ''
+// process.env.AWS_REGION = "us-east-1"
+// process.env.accessToken = ''
 
 
 //SQS 
 //ToDo: pickup config from tricklercache config
-process.env.SQS_QUEUE_URL = "https://sqs.us-east-1.amazonaws.com/777957353822/tricklercacheQueue";
+// process.env.SQS_QUEUE_URL = "https://sqs.us-east-1.amazonaws.com/777957353822/tricklercacheQueue";
 
 const sqsClient = new SQSClient({});
 
@@ -71,7 +71,7 @@ interface S3Object {
     Key: string
 }
 
-interface tricklerConfig {
+interface customerConfig {
     customer: string
     format: string          // csv (w/ Headers), json (as idx'd), jsonFixed (fixed Columns), csvFixed (fixed Columns)
     listId: string
@@ -86,7 +86,7 @@ interface tricklerConfig {
 }
 
 
-let config = {} as tricklerConfig
+let config = {} as customerConfig
 
 
 export interface accessResp {
@@ -99,7 +99,7 @@ export interface accessResp {
 export interface tcQueueMessage {
     work: string,
     updates: string, 
-    custconfig: tricklerConfig
+    custconfig: customerConfig
 }
 
 
@@ -169,13 +169,14 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
     //Interface to View and Edit Customer Configs
     //Interface to view Logs/Errors (echo cloudwatch logs?)
     //
-
-    if (process.env.AWS_REGION === '' || process.env.AWS_REGION === null)
+    
+    if (process.env.ProcessQueueVisibilityTimeout === undefined || process.env.ProcessQueueVisibilityTimeout === '' || process.env.ProcessQueueVisibilityTimeout === null)
     {
+        console.log('Debug-Process Env not populated: ${process.env')
         tc = await getTricklerConfig()
     }
+    else console.log('Debug-Process Env already populated: ${process.env')
 
-    debugger;
 
     const qc: tcQueueMessage = JSON.parse(event.Records[0].body)
 
@@ -222,12 +223,16 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
     // console.log(`AWS-SDK Version: ${version}`)
     // console.log('ENVIRONMENT VARIABLES\n' + JSON.stringify(process.env, null, 2))
 
-
-    if (process.env.AWS_REGION === '' || process.env.AWS_REGION === null)
-    {
+    //When Local Testing - pull an S3 Object and so avoid the not-found error
+    if (!event.Records[0].s3.object.key || event.Records[0].s3.object.key === "devtest.csv") {
+        event.Records[0].s3.object.key = await getAnS3ObjectforTesting(event) as string
+    }
+    
+    if (process.env.ProcessQueueVisibilityTimeout === undefined || process.env.ProcessQueueVisibilityTimeout === '' || process.env.ProcessQueueVisibilityTimeout === null)
+     {
         tc = await getTricklerConfig()
     }
-    debugger;
+
 
     const customer = (event.Records[0].s3.object.key.split("_")[0] + "_")
     // console.log("GetCustomerConfig: Customer string is ", customer)
@@ -237,13 +242,8 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
     //Just in case we start getting multiple file triggers for whatever reason
     if (event.Records.length > 1) throw new Error(`Expecting only a single S3 Object from a Triggered S3 write of a new Object, received ${event.Records.length} Objects`)
 
-    //When Local Testing - pull an S3 Object and so avoid the not-found error
-    if (!event.Records[0].s3.object.key || event.Records[0].s3.object.key === "devtest.csv") {
-        event.Records[0].s3.object.key = await getAnS3ObjectforTesting(event) as string
-    }
-
     try {
-        config = await getCustomerConfig(customer) as tricklerConfig
+        config = await getCustomerConfig(customer) as customerConfig
     } catch (e) {
         throw new Error(`Exception Retrieving Config: \n ${e}`)
 
@@ -277,35 +277,37 @@ export default s3JsonLoggerHandler
 async function getTricklerConfig() {
     //populate env vars with tricklercache config 
 
-
+    debugger;
     const getObjectCmd = {
-        Bucket: "tricklercache-config",
+        Bucket: "tricklercache-configs",
         Key: 'tricklercache_config.json'
     }
 
-    // let tc = {} as tricklerConfig
+    let tc = {} as tcConfig
     try
     {
-        await s3.send(new GetObjectCommand(getObjectCmd))
+        tc = await s3.send(new GetObjectCommand(getObjectCmd))
             .then(async (s3Result: GetObjectCommandOutput) => {
                 const cr = await s3Result.Body?.transformToString('utf8') as string
+                debugger;
                 tc = JSON.parse(cr)
-                console.log(`Tricklercache Config: \n`)
+                console.log(`Tricklercache Config: \n ${cr}`)
+                return tc
             })
     } catch (e)
     {
         console.log(`Pulling TricklerConfig Exception \n ${e}`)
     }
 
-    //   "AWS_REGION": "us-east-1",
-    //   "SQS_QUEUE_URL": "https://sqs.us-east-1.amazonaws.com/777957353822/tricklercacheQueue",
-    //   "xmlapiurl": "https://api-campaign-${config.region}-${config.pod}.goacoustic.com/XMLAPI",
-    //   "restapiurl": "https://api-campaign-us-2.goacoustic.com:443/rest",
-    //   "authapiurl": "https://api-campaign-${config.region}-${config.pod}.goacoustic.com/oauth/token",
-    //   "ProcessQueueVisibilityTimeout": 15,
-    //   "ProcessQueueWaitTimeSeconds": 5,
-    //   "RetryQueueVisibilityTimeout": 30,
-    //   "RetryQueueInitialWaitTimeSeconds": 3
+      process.env.SQS_QUEUE_URL = tc.xmlapiurl
+      process.env.xmlapiurl = tc.xmlapiurl
+      process.env.restapiurl = tc.restapiurl
+      process.env.authapiurl = tc.authapiurl
+      process.env.ProcessQueueVisibilityTimeout = tc.ProcessQueueVisibilityTimeout.toFixed()
+      process.env.ProcessQueueWaitTimeSeconds = tc.ProcessQueueWaitTimeSeconds.toFixed()
+      process.env.RetryQueueVisibilityTimeout = tc.ProcessQueueWaitTimeSeconds.toFixed()
+      process.env.RetryQueueInitialWaitTimeSeconds = tc.RetryQueueInitialWaitTimeSeconds.toFixed()
+
     return tc
 }
 
@@ -331,7 +333,7 @@ async function getCustomerConfig(customer: string) {
             }
             const s3Body = s3Result.Body as NodeJS.ReadableStream
 
-            configJSON = new Promise<tricklerConfig>(async (resolve, reject) => {
+            configJSON = new Promise<customerConfig>(async (resolve, reject) => {
                 if (s3Body !== undefined) {
 
                     s3Body.on("data", (chunk: Uint8Array) => {
@@ -341,7 +343,7 @@ async function getCustomerConfig(customer: string) {
                         reject;
                     })
                     s3Body.on("end", () => {
-                        let cj = {} as tricklerConfig
+                        let cj = {} as customerConfig
                         let cf = Buffer.concat(configObjs).toString("utf8")
                         try {
                             cj = JSON.parse(cf)
@@ -364,7 +366,7 @@ async function getCustomerConfig(customer: string) {
     return configJSON
 }
 
-async function validateConfig(config: tricklerConfig) {
+async function validateConfig(config: customerConfig) {
     if (!config || config === null) { throw new Error("Invalid Config Content - is not defined (empty or null config)") }
     if (!config.customer) { throw new Error("Invalid Config Content - Customer is not defined") }
     if (!config.clientId) { throw new Error("Invalid Config Content - ClientId is not defined") }
@@ -388,7 +390,7 @@ async function validateConfig(config: tricklerConfig) {
         throw new Error("Invalid Config - Region is not 'US', 'EU', CA' or 'AP'. ")
     }
 
-    return config as tricklerConfig
+    return config as customerConfig
 }
 
 async function processS3ObjectContentStream(event: S3Event) {
@@ -417,7 +419,7 @@ async function processS3ObjectContentStream(event: S3Event) {
                 // let queueToProcess
 
                 s3ContentResults = await new Promise<string>(async (resolve, reject) => {
-
+                    console.log(`1.Keep an eye on Batch count:   ${batchCount}`)
                     try {
                         let s3ContentStream = s3Result.Body as NodeJS.ReadableStream
 
@@ -434,6 +436,7 @@ async function processS3ObjectContentStream(event: S3Event) {
                                 if (chunks.length > 98)
                                 {
                                     batchCount++
+                                    console.log(`2.Keep an eye on Batch count:   ${batchCount}`)
                                     console.log(`Parsing S3 Content Stream processed ${recs} chunks: `, jsonChunk)
                                     xmlRows = convertToXML(chunks, config)
                                     await queueWork(xmlRows, event, batchCount.toString(), chunks.length.toString())
@@ -443,6 +446,7 @@ async function processS3ObjectContentStream(event: S3Event) {
 
                             .on('end', async function (msg: string) {
                                 batchCount++
+                                console.log(`3.Keep an eye on Batch count:   ${batchCount}`)
                                 console.log(`S3 Content Stream Ended for ${event.Records[0].s3.object.key}  (Processed ${recs} records)`)
                                 xmlRows = convertToXML(chunks, config)
                                 await queueWork(xmlRows, event, batchCount.toString(), chunks.length.toString())
@@ -482,7 +486,7 @@ async function processS3ObjectContentStream(event: S3Event) {
 }
 
 
-function convertToXML(rows: string[], config: tricklerConfig) {
+function convertToXML(rows: string[], config: customerConfig) {
 
     console.log(`Packaged ${rows.length} rows as updates to ${config.customer}'s ${config.listName}`)
     
@@ -545,7 +549,7 @@ return qs3
 
 }
 
-async function addWorkToProcessQueue (config: tricklerConfig, s3Key: string, batch: string, count: string) {
+async function addWorkToProcessQueue (config: customerConfig, s3Key: string, batch: string, count: string) {
     const qb = {} as tcQueueMessage
     qb.work = `process_${batch}_${s3Key}`
     qb.updates = count
@@ -670,7 +674,7 @@ async function updateDatabase() {
     </Envelope>`
 }
 
-async function getS3Work(s3Key: string, config: tricklerConfig){
+async function getS3Work(s3Key: string, config: customerConfig){
     
     // console.log(`GetS3Work Key: ${s3Key}`)
 
@@ -690,12 +694,12 @@ async function getS3Work(s3Key: string, config: tricklerConfig){
             });
     } catch (e)
     {
-        console.log(`ProcessQueue - Get Work - Exception ${e}`)
+        throw new Error(`ProcessQueue - Get Work S3 Object (${s3Key}) Exception ${e}`)
     }
 return work
 }
 
-export async function getAccessToken(config: tricklerConfig) {
+export async function getAccessToken(config: customerConfig) {
 
     try {
         const rat = await fetch(`https://api-campaign-${config.region}-${config.pod}.goacoustic.com/oauth/token`, {
@@ -724,7 +728,7 @@ export async function getAccessToken(config: tricklerConfig) {
     }
 }
 
-export async function postToCampaign(xmlCalls: string, config: tricklerConfig, count: string) {
+export async function postToCampaign(xmlCalls: string, config: customerConfig, count: string) {
     
     //
     //For Testing only
