@@ -97,7 +97,7 @@ export interface accessResp {
 }
 
 export interface tcQueueMessage {
-    work: string,
+    workKey: string,
     updates: string, 
     custconfig: customerConfig
 }
@@ -180,15 +180,15 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
 
     const qc: tcQueueMessage = JSON.parse(event.Records[0].body)
 
-    console.log(`Processing Work Queue for ${JSON.stringify(qc.work)}`)
+    console.log(`Processing Work Queue for ${JSON.stringify(qc.workKey)}`)
     console.log(`Debug-Processing Work Queue - Work File: \n ${JSON.stringify(qc)}`)
 
     let postResult
 
     try
     {
-        const work = await getS3Work(qc.work, qc.custconfig)
-        if(!work) throw new Error(`Failed to retrieve work (${qc.work}) from Queue: `)
+        const work = await getS3Work(qc.workKey, qc.custconfig)
+        if(!work) throw new Error(`Failed to retrieve work (${qc.workKey}) from Queue: `)
 
         postResult = await postToCampaign(work, qc.custconfig, qc.updates)
         if (postResult.postRes === 'retry')
@@ -197,11 +197,11 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
             return postResult?.POSTSuccess
         }
 
-        if (!postResult.POSTSuccess) throw new Error(`Failed to process work ${qc.work} - ${postResult.postRes} `)
+        if (!postResult.POSTSuccess) throw new Error(`Failed to process work ${qc.workKey} - ${postResult.postRes} `)
             
         if (postResult.POSTSuccess)
         {
-            deleteS3Object(work, 'trickler-process')
+            deleteS3Object(qc.workKey, 'trickler-process')
         }
             
     } catch (e)
@@ -210,8 +210,8 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
     }
     debugger;
 
-    console.log(`Debug-Processing Work Queue - Work (${qc.work})\n ${postResult?.postRes}`)
-    console.log(`Processing Work Queue - Work (${qc.work}) \n Success(${postResult?.POSTSuccess})`)
+    console.log(`Debug-Processing Work Queue - Work (${qc.workKey})\n ${postResult?.postRes}`)
+    console.log(`Processing Work Queue - Work (${qc.workKey}) \n Success(${postResult?.POSTSuccess})`)
 
  return postResult?.POSTSuccess
 
@@ -551,7 +551,7 @@ return qs3
 
 async function addWorkToProcessQueue (config: customerConfig, s3Key: string, batch: string, count: string) {
     const qb = {} as tcQueueMessage
-    qb.work = `process_${batch}_${s3Key}`
+    qb.workKey = `process_${batch}_${s3Key}`
     qb.updates = count
     qb.custconfig = config
     const qc = JSON.stringify(qb) 
@@ -814,13 +814,13 @@ export async function postToCampaign(xmlCalls: string, config: customerConfig, c
 }
 
 
-async function deleteS3Object(s3Obj: string, bucket: string) {
+async function deleteS3Object(s3ObjKey: string, bucket: string) {
     try {
-        console.log(`DeleteS3Object : \n'  ${s3Obj}`)
+        console.log(`DeleteS3Object : \n'  ${s3ObjKey}`)
 
         await s3.send(
             new DeleteObjectCommand({
-                Key: s3Obj,        
+                Key: s3ObjKey,        
                 Bucket: bucket
             })
         ).then(async (s3DelResult: DeleteObjectCommandOutput) => {
@@ -829,12 +829,12 @@ async function deleteS3Object(s3Obj: string, bucket: string) {
             const delRes = JSON.stringify(s3DelResult.$metadata.httpStatusCode, null, 2);
 
             // console.log("Received the following Object: \n", JSON.stringify(data.Body, null, 2));
-            console.log(`Result from Delete of ${s3Obj}: ${delRes} `);
+            console.log(`Result from Delete of ${s3ObjKey}: ${delRes} `);
 
             return delRes
         });
     } catch (e) {
-        console.log(`Exception Processing S3 Delete Command for ${s3Obj}: \n ${e}`);
+        console.log(`Exception Processing S3 Delete Command for ${s3ObjKey}: \n ${e}`);
     }
 }
 
