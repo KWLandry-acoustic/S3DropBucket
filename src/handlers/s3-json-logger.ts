@@ -172,14 +172,15 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
     
     if (process.env.ProcessQueueVisibilityTimeout === undefined || process.env.ProcessQueueVisibilityTimeout === '' || process.env.ProcessQueueVisibilityTimeout === null)
     {
-        console.log('Debug-Process Env not populated: ${process.env')
+        console.log(`Debug-Process Env not populated: ${process.env}`)
         tc = await getTricklerConfig()
     }
-    else console.log('Debug-Process Env already populated: ${process.env')
+    else console.log(`Debug-Process Env already populated: ${process.env}`)
 
 
     const tqm: tcQueueMessage = JSON.parse(event.Records[0].body)
-
+    debugger;
+    
     console.log(`Processing Work Queue for ${JSON.stringify(tqm.workKey)}`)
     console.log(`Debug-Processing Work Queue - Work File: \n ${JSON.stringify(tqm)}`)
 
@@ -229,10 +230,13 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
     }
     
     if (process.env.ProcessQueueVisibilityTimeout === undefined || process.env.ProcessQueueVisibilityTimeout === '' || process.env.ProcessQueueVisibilityTimeout === null)
-     {
+    {
+        console.log(`Debug-Process Env not populated: ${process.env}`)
         tc = await getTricklerConfig()
     }
+    else console.log(`Debug-Process Env already populated: ${process.env}`)
 
+    
 
     const customer = (event.Records[0].s3.object.key.split("_")[0] + "_")
     // console.log("GetCustomerConfig: Customer string is ", customer)
@@ -274,10 +278,9 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
 export default s3JsonLoggerHandler
 
 
-async function getTricklerConfig() {
+async function getTricklerConfig () {
+    
     //populate env vars with tricklercache config 
-
-    debugger;
     const getObjectCmd = {
         Bucket: "tricklercache-configs",
         Key: 'tricklercache_config.json'
@@ -299,15 +302,21 @@ async function getTricklerConfig() {
         console.log(`Pulling TricklerConfig Exception \n ${e}`)
     }
 
-      process.env.SQS_QUEUE_URL = tc.xmlapiurl
-      process.env.xmlapiurl = tc.xmlapiurl
-      process.env.restapiurl = tc.restapiurl
-      process.env.authapiurl = tc.authapiurl
-      process.env.ProcessQueueVisibilityTimeout = tc.ProcessQueueVisibilityTimeout.toFixed()
-      process.env.ProcessQueueWaitTimeSeconds = tc.ProcessQueueWaitTimeSeconds.toFixed()
-      process.env.RetryQueueVisibilityTimeout = tc.ProcessQueueWaitTimeSeconds.toFixed()
-      process.env.RetryQueueInitialWaitTimeSeconds = tc.RetryQueueInitialWaitTimeSeconds.toFixed()
-
+    try
+    {
+        //ToDo: Need validation of Config 
+        process.env.SQS_QUEUE_URL = tc.xmlapiurl
+        process.env.xmlapiurl = tc.xmlapiurl
+        process.env.restapiurl = tc.restapiurl
+        process.env.authapiurl = tc.authapiurl
+        process.env.ProcessQueueVisibilityTimeout = tc.ProcessQueueVisibilityTimeout.toFixed()
+        process.env.ProcessQueueWaitTimeSeconds = tc.ProcessQueueWaitTimeSeconds.toFixed()
+        process.env.RetryQueueVisibilityTimeout = tc.ProcessQueueWaitTimeSeconds.toFixed()
+        process.env.RetryQueueInitialWaitTimeSeconds = tc.RetryQueueInitialWaitTimeSeconds.toFixed()
+    } catch (e)
+    {
+        throw new Error(`Exception parsing TricklerCache Config File ${e}`)
+    }
     return tc
 }
 
@@ -512,7 +521,7 @@ function convertToXML(rows: string[], config: customerConfig) {
 
 async function queueWork(queueContent: string, event: S3Event, batchNum: string, count: string) {
 
-    // console.log(`Process Queue:  ${queueContent} rows `)
+    console.log(`Debug-QueueWork:  Batch - ${batchNum}  Count - ${count} `)
 
     const s3Key = event.Records[0].s3.object.key
     await storeWorkToS3(queueContent, s3Key, batchNum)
@@ -817,7 +826,7 @@ export async function postToCampaign(xmlCalls: string, config: customerConfig, c
 async function deleteS3Object(s3ObjKey: string, bucket: string) {
     try {
         console.log(`DeleteS3Object : \n'  ${s3ObjKey}`)
-
+        debugger;
         await s3.send(
             new DeleteObjectCommand({
                 Key: s3ObjKey,        
