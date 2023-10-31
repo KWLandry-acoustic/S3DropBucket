@@ -178,30 +178,30 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
     else console.log('Debug-Process Env already populated: ${process.env')
 
 
-    const qc: tcQueueMessage = JSON.parse(event.Records[0].body)
+    const tqm: tcQueueMessage = JSON.parse(event.Records[0].body)
 
-    console.log(`Processing Work Queue for ${JSON.stringify(qc.workKey)}`)
-    console.log(`Debug-Processing Work Queue - Work File: \n ${JSON.stringify(qc)}`)
+    console.log(`Processing Work Queue for ${JSON.stringify(tqm.workKey)}`)
+    console.log(`Debug-Processing Work Queue - Work File: \n ${JSON.stringify(tqm)}`)
 
     let postResult
 
     try
     {
-        const work = await getS3Work(qc.workKey, qc.custconfig)
-        if(!work) throw new Error(`Failed to retrieve work (${qc.workKey}) from Queue: `)
+        const work = await getS3Work(tqm.workKey, tqm.custconfig)
+        if(!work) throw new Error(`Failed to retrieve work (${tqm.workKey}) from Queue: `)
 
-        postResult = await postToCampaign(work, qc.custconfig, qc.updates)
+        postResult = await postToCampaign(work, tqm.custconfig, tqm.updates)
         if (postResult.postRes === 'retry')
         {
-            await reQueue(event, qc)
+            await reQueue(event, tqm)
             return postResult?.POSTSuccess
         }
 
-        if (!postResult.POSTSuccess) throw new Error(`Failed to process work ${qc.workKey} - ${postResult.postRes} `)
+        if (!postResult.POSTSuccess) throw new Error(`Failed to process work ${tqm.workKey} - ${postResult.postRes} `)
             
         if (postResult.POSTSuccess)
         {
-            deleteS3Object(qc.workKey, 'trickler-process')
+            deleteS3Object(tqm.workKey, 'trickler-process')
         }
             
     } catch (e)
@@ -210,8 +210,8 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
     }
     debugger;
 
-    console.log(`Debug-Processing Work Queue - Work (${qc.workKey})\n ${postResult?.postRes}`)
-    console.log(`Processing Work Queue - Work (${qc.workKey}) \n Success(${postResult?.POSTSuccess})`)
+    console.log(`Debug-Processing Work Queue - Work (${tqm.workKey})\n ${postResult?.postRes}`)
+    console.log(`Processing Work Queue - Work (${tqm.workKey}), Success(${postResult?.POSTSuccess})`)
 
  return postResult?.POSTSuccess
 
