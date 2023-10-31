@@ -257,25 +257,17 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
 
     const s3Result = await processS3ObjectContentStream(event)
 
-    // if (!s3ObjectContent || s3ObjectContent.length < 1) {
-    //     throw new Error(`Exception retrieving S3 Object (Get content returns null or empty) for ${event.Records[0].s3.object.key}`)
-    // }
-
-    const finalStatus = `${s3Result} for ${event.Records[0].s3.object.key}`
-
-    // console.log(`UpdateSuccess is ${updateSuccess}  \n Final Status is : ${finalStatus}`)
+    console.log(`Processing of ${ event.Records[0].s3.object.key } Completed (${ s3Result.workQueuedSuccess }), \n${ s3Result.s3ContentResults }`)
 
     //Once successful delete the original S3 Object
-    if (workQueuedSuccess) {
+    if (s3Result.workQueuedSuccess) {
         const delResultCode = await deleteS3Object(event.Records[0].s3.object.key, event.Records[0].s3.bucket.name);
         console.log(`Result from Delete of ${event.Records[0].s3.object.key}: ${delResultCode} `);
     }
     else
         throw new Error(`Deletion of Object ${event.Records[0].s3.object.key} skipped as previous processing failed`)
 
-    
-    
-    return "TricklerCache Processing of ${event.Records[0].s3.object.key} Successfully Completed. \nFinal Status is " + finalStatus
+    return `TricklerCache Processing of ${event.Records[0].s3.object.key} Successfully Completed.  ${s3Result.workQueuedSuccess}, ${s3Result.s3ContentResults}`
 
 };
 
