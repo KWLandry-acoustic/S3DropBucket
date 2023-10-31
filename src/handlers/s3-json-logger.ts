@@ -182,21 +182,26 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
     console.log(`Processing Work Queue for ${JSON.stringify(qc.work)}`)
     console.log(`Debug-Processing Work Queue - Work File: \n ${JSON.stringify(qc)}`)
 
-    let postSuccess
+    let postResult
 
     try
     {
         const work = await getS3Work(qc.work, qc.custconfig)
         if(!work) throw new Error(`Failed to retrieve work (${qc.work}) from Queue: `)
 
-        postSuccess = await postToCampaign(work, qc.custconfig, qc.updates)
-        if (postSuccess.postRes === 'retry')
+        postResult = await postToCampaign(work, qc.custconfig, qc.updates)
+        if (postResult.postRes === 'retry')
         {
             await reQueue(event, qc)
-            return postSuccess?.POSTSuccess
+            return postResult?.POSTSuccess
         }
 
-        if (!postSuccess.POSTSuccess) throw new Error(`Failed to process work ${qc.work} - ${postSuccess.postRes} `)
+        if (!postResult.POSTSuccess) throw new Error(`Failed to process work ${qc.work} - ${postResult.postRes} `)
+            
+        if (postResult.POSTSuccess)
+        {
+            deleteS3Object(work, 'trickler-process')
+        }
             
     } catch (e)
     {
@@ -204,10 +209,10 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
     }
     debugger;
 
-    console.log(`Debug-Processing Work Queue - Work (${qc.work})\n ${postSuccess?.postRes}`)
-    console.log(`Processing Work Queue - Work (${qc.work}) \n Success(${postSuccess?.POSTSuccess})`)
+    console.log(`Debug-Processing Work Queue - Work (${qc.work})\n ${postResult?.postRes}`)
+    console.log(`Processing Work Queue - Work (${qc.work}) \n Success(${postResult?.POSTSuccess})`)
 
- return postSuccess?.POSTSuccess
+ return postResult?.POSTSuccess
 
 }
 
@@ -262,7 +267,7 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
 
     //Once successful delete the original S3 Object
     if (workQueuedSuccess) {
-        const delResultCode = await deleteS3Object(event);
+        const delResultCode = await deleteS3Object(event.Records[0].s3.object.key, event.Records[0].s3.bucket.name);
         console.log(`Result from Delete of ${event.Records[0].s3.object.key}: ${delResultCode} `);
     }
     else
@@ -451,11 +456,13 @@ async function processS3ObjectContentStream(event: S3Event) {
                                 await queueWork(xmlRows, event, batchCount.toString(), chunks.length.toString())
                                 chunks.length = 0
                                 batchCount = 0
+                                workQueuedSuccess = true
                                 resolve('S3 Content parsing Successful End')
                             })
 
                             .on('error', async function (err: string) {
                                 console.log("Failed Parsing S3 Content - Error: ", err)
+                                workQueuedSuccess = false
                                 reject(`An error has stopped Content Parsing at record ${recs} for s3 object ${event.Records[0].s3.object.key}. ${err}`)
                             })
 
@@ -463,7 +470,9 @@ async function processS3ObjectContentStream(event: S3Event) {
                                 console.log(`Completed Parsing S3 Content, processed ${recs} records from ${event.Records[0].s3.object.key}`)
                             })
 
-                    } catch (e) {
+                    } catch (e)
+                    {
+                        workQueuedSuccess = false
                         throw new Error(`Exception parsing S3 Content for ${event.Records[0].s3.object.key}, \n${e}`)
                     }
 
@@ -477,7 +486,7 @@ async function processS3ObjectContentStream(event: S3Event) {
         throw new Error(`Exception during Processing of S3 Object for ${event.Records[0].s3.object.key}: \n ${e}`);
     }
 
-    return s3ContentResults
+    return { s3ContentResults, workQueuedSuccess }
 }
 
 
@@ -574,6 +583,7 @@ let qAdd
             .then(async (sqsWriteResult: SendMessageCommandOutput) => {
                 const wr = JSON.stringify(sqsWriteResult.$metadata.httpStatusCode, null, 2)
                 console.log(`Wrote Work to Process Queue (process_${s3Key}) - Result: ${wr} `);
+                if (wr !== '200') throw new Error(`Failed writing to Process Queue - (process_${ s3Key }`)
                 qAdd = JSON.stringify(sqsWriteResult)
                 workQueuedSuccess = true
                 //Now Delete S3 File
@@ -779,7 +789,7 @@ export async function postToCampaign(xmlCalls: string, config: tricklerConfig, c
             debugger; 
 
             if (result.indexOf('max number of concurrent') > -1)
-                return 'retry'
+                return "retry" 
    
             if (result.toLowerCase().indexOf('false</success>') > -1)
             {
@@ -788,12 +798,10 @@ export async function postToCampaign(xmlCalls: string, config: tricklerConfig, c
                 //   <errorid>51</errorid><module/><class>SP.API</class><method/></error></detail>
                 //    </Fault></Body></Envelope>\r\n"
                 
-                return `Unsuccessful POST of Update - ${result}`
+                throw new Error(`Unsuccessful POST of Update - ${result}`)
             }
 
             POSTSuccess = true
-            //now delete S3 Work File
-
             result = result.replace('\n', ' ')
             return `Processed ${count} Updates - Result: ${result}`
         })
@@ -810,14 +818,14 @@ export async function postToCampaign(xmlCalls: string, config: tricklerConfig, c
 }
 
 
-async function deleteS3Object(event: S3Event) {
+async function deleteS3Object(s3Obj: string, bucket: string) {
     try {
-        console.log(`DeleteS3Object : \n'  ${event.Records[0].s3.object.key}`);
+        console.log(`DeleteS3Object : \n'  ${s3Obj}`)
 
         await s3.send(
             new DeleteObjectCommand({
-                Key: event.Records[0].s3.object.key,
-                Bucket: event.Records[0].s3.bucket.name
+                Key: s3Obj,        
+                Bucket: bucket
             })
         ).then(async (s3DelResult: DeleteObjectCommandOutput) => {
             // console.log("Received the following Object: \n", data.Body?.toString());
@@ -825,15 +833,12 @@ async function deleteS3Object(event: S3Event) {
             const delRes = JSON.stringify(s3DelResult.$metadata.httpStatusCode, null, 2);
 
             // console.log("Received the following Object: \n", JSON.stringify(data.Body, null, 2));
-            console.log(`Result from Delete of ${event.Records[0].s3.object.key}: ${delRes} `);
+            console.log(`Result from Delete of ${s3Obj}: ${delRes} `);
 
             return delRes
-
-            // console.log(`Response from deleteing Object ${event.Records[0].responseElements["x-amz-request-id"]} \n ${del.$metadata.toString()}`);
-
         });
     } catch (e) {
-        console.log(`Exception Processing S3 Delete Command for ${event.Records[0].s3.object.key}: \n ${e}`);
+        console.log(`Exception Processing S3 Delete Command for ${s3Obj}: \n ${e}`);
     }
 }
 
