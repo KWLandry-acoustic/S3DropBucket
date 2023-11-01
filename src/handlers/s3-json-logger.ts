@@ -602,16 +602,16 @@ let qAdd
             .then(async (sqsWriteResult: SendMessageCommandOutput) => {
                 const wr = JSON.stringify(sqsWriteResult.$metadata.httpStatusCode, null, 2)
                 console.log(`Wrote Work to Process Queue (process_${s3Key}) - Result: ${wr} `);
-                if (wr !== '200') throw new Error(`Failed writing to Process Queue(${sqsParams}, ${sqsParams.QueueUrl}) - (process_${ qb.workKey }`)
+                if (wr !== '200') throw new Error(`Failed writing to Process Queue(queue URL${sqsParams.QueueUrl}), process_${qb.workKey}, SQS Params${sqsParams})`)
                 qAdd = JSON.stringify(sqsWriteResult)
                 workQueuedSuccess = true
                 //Now Delete S3 File
             })
             .catch((err) => {
-            console.log(`Failed writing to Process Queue -(process_${s3Key}) - Error: ${err} `)
+                console.log(`Failed writing to Process Queue - (queue URL${sqsParams.QueueUrl}), process_${qb.workKey}, SQS Params${sqsParams}) - Error: ${err} `)
         })
     } catch (e) {
-        console.log(`Exception writing to Process Queue -(process_${s3Key}) - Error: ${e}`)
+        console.log(`Exception writing to Process Queue - (queue URL${sqsParams.QueueUrl}), process_${qb.workKey}, SQS Params${sqsParams}) - Error: ${e}`)
     }
 
     return { qAdd, workQueuedSuccess }
