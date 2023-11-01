@@ -112,7 +112,8 @@ export interface tcConfig {
     "ProcessQueueVisibilityTimeout": number,
     "ProcessQueueWaitTimeSeconds": number,
     "RetryQueueVisibilityTimeout": number,
-    "RetryQueueInitialWaitTimeSeconds": number
+    "RetryQueueInitialWaitTimeSeconds": number,
+    "EventEmitterMaxListeners": number
 }
 
 let tc = {} as tcConfig
@@ -122,7 +123,8 @@ let tc = {} as tcConfig
 const csvParseStream = Papa.parse(Papa.NODE_STREAM_INPUT, {
     header: true,
     comments: '#',
-    // fastMode: true,  //ToDo: can use as long as no "Quoted" strings as values, commas skew results, need to escape commas in values. 
+    fastMode: true,  //ToDo: can use as long as no "Quoted" strings as values, commas skew results, need to escape commas in values. 
+                        //Apparently needed in order to get record by record results instead of chunks....
     skipEmptyLines: true,
     // step: function (results, parser) {               //Cannot use Step when using Streams
     //     console.log("Row data: ", results.data);
@@ -438,6 +440,8 @@ async function processS3ObjectContentStream(event: S3Event) {
                         }
 
                         console.log(`establish stream`)
+
+                        s3ContentStream.setMaxListeners(tc.EventEmitterMaxListeners)
 
                         s3ContentStream
                             .on('data', async function (jsonChunk: string) {
