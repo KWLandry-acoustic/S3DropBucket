@@ -10,5 +10,5 @@
       "ProcessQueueWaitTimeSeconds": 5,
       "RetryQueueVisibilityTimeout": 30,
       "RetryQueueInitialWaitTimeSeconds": 3,
-      "EventEmitterMaxListeners": 100
+      "EventEmitterMaxListeners": 20
 }
