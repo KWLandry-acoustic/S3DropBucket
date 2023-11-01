@@ -181,7 +181,9 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
     const tqm: tcQueueMessage = JSON.parse(event.Records[0].body)
     debugger;
     
-    console.log(`Processing Work Queue for ${JSON.stringify(tqm.workKey)}`)
+    tqm.workKey = JSON.parse(event.Records[0].body).work
+    
+    console.log(`Processing Work Queue for ${tqm.workKey}`)
     console.log(`Debug-Processing Work Queue - Work File: \n ${JSON.stringify(tqm)}`)
 
     let postResult
@@ -431,6 +433,7 @@ async function processS3ObjectContentStream(event: S3Event) {
                     try {
                         let s3ContentStream = s3Result.Body as NodeJS.ReadableStream
 
+
                         if (config.format.toLowerCase() === 'csv') {
                             s3ContentStream = s3ContentStream.pipe(csvParseStream)
                         }
@@ -438,6 +441,9 @@ async function processS3ObjectContentStream(event: S3Event) {
                         s3ContentStream
                             .on('data', async function (jsonChunk: string) {
                                 recs++
+                                console.log(`Debug Event Emitter warnings Listeners: ${s3ContentStream.listenerCount}, MaxListeners: ${s3ContentStream.getMaxListeners}`)
+
+                                
                                 // console.log(`Another chunk (${recs}): ${jsonChunk}, chunks length is ${chunks.length}`)
                                 chunks.push(jsonChunk)
 
@@ -572,6 +578,7 @@ async function addWorkToProcessQueue (config: customerConfig, s3Key: string, bat
     qb.updates = count
     qb.custconfig = config
     const qc = JSON.stringify(qb) 
+    debugger; 
     
     const writeSQSCommand = new SendMessageCommand({
         QueueUrl: sqsParams.QueueUrl,
@@ -621,7 +628,7 @@ async function reQueue (sqsevent: SQSEvent , queued: tcQueueMessage) {
     
     debugger;
 
-    const w = JSON.parse(sqsevent.Records[0].body).work
+    const workKey = JSON.parse(sqsevent.Records[0].body).workKey
     
     const sp = sqsParams
     sp.VisibilityTimeout = 10
@@ -643,7 +650,7 @@ async function reQueue (sqsevent: SQSEvent , queued: tcQueueMessage) {
         qAdd = await sqsClient.send(writeSQSCommand)
             .then(async (sqsWriteResult: SendMessageCommandOutput) => {
                 const rr = JSON.stringify(sqsWriteResult.$metadata.httpStatusCode, null, 2)
-                console.log(`Process Queue - Wrote Retry Work to SQS Queue (process_${w} - Result: ${rr} `);
+                console.log(`Process Queue - Wrote Retry Work to SQS Queue (process_${workKey} - Result: ${rr} `);
                 return JSON.stringify(sqsWriteResult)
             });
     } catch (e) {
