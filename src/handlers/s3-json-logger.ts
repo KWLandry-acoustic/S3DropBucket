@@ -175,7 +175,7 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
         console.log(`Debug-Process Env not populated: ${process.env}`)
         tc = await getTricklerConfig()
     }
-    else console.log(`Debug-Process Env already populated: ${process.env}`)
+    else console.log(`Debug-Process Env already populated: ${JSON.stringify(process.env)}`)
 
 
     const tqm: tcQueueMessage = JSON.parse(event.Records[0].body)
@@ -188,7 +188,7 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
 
     try
     {
-        const work = await getS3Work(tqm.workKey, tqm.custconfig)
+        const work = await getS3Work(tqm.workKey)
         if(!work) throw new Error(`Failed to retrieve work (${tqm.workKey}) from Queue: `)
 
         postResult = await postToCampaign(work, tqm.custconfig, tqm.updates)
@@ -231,7 +231,7 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
     
     if (process.env.ProcessQueueVisibilityTimeout === undefined || process.env.ProcessQueueVisibilityTimeout === '' || process.env.ProcessQueueVisibilityTimeout === null)
     {
-        console.log(`Debug-Process Env not populated: ${process.env}`)
+        console.log(`Debug-Process Env not populated: ${JSON.stringify(process.env)}`)
         tc = await getTricklerConfig()
     }
     else console.log(`Debug-Process Env already populated: ${process.env}`)
@@ -446,7 +446,7 @@ async function processS3ObjectContentStream(event: S3Event) {
                                 {
                                     batchCount++
                                     console.log(`2.Keep an eye on Batch count:   ${batchCount}`)
-                                    console.log(`Parsing S3 Content Stream processed ${recs} chunks: `, jsonChunk)
+                                    console.log(`Parsing S3 Content Stream (batch ${batchCount}) processed ${recs} chunks: `, jsonChunk)
                                     xmlRows = convertToXML(chunks, config)
                                     await queueWork(xmlRows, event, batchCount.toString(), chunks.length.toString())
                                     chunks.length = 0
@@ -456,7 +456,7 @@ async function processS3ObjectContentStream(event: S3Event) {
                             .on('end', async function (msg: string) {
                                 batchCount++
                                 console.log(`3.Keep an eye on Batch count:   ${batchCount}`)
-                                console.log(`S3 Content Stream Ended for ${event.Records[0].s3.object.key}  (Processed ${recs} records)`)
+                                console.log(`S3 Content Stream Ended for ${event.Records[0].s3.object.key}  (${batchCount} Batches - Processed ${recs} records)`)
                                 xmlRows = convertToXML(chunks, config)
                                 await queueWork(xmlRows, event, batchCount.toString(), chunks.length.toString())
                                 chunks.length = 0
@@ -683,7 +683,7 @@ async function updateDatabase() {
     </Envelope>`
 }
 
-async function getS3Work(s3Key: string, config: customerConfig){
+async function getS3Work(s3Key: string){
     
     // console.log(`GetS3Work Key: ${s3Key}`)
 
