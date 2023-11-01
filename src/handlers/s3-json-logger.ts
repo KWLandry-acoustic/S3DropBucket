@@ -305,17 +305,34 @@ async function getTricklerConfig () {
         console.log(`Pulling TricklerConfig Exception \n ${e}`)
     }
 
+    console.log(`Debug-Pulling tricklercache_config.json: ${tc}`)
     try
     {
         //ToDo: Need validation of Config 
-        process.env.SQS_QUEUE_URL = tc.xmlapiurl
-        process.env.xmlapiurl = tc.xmlapiurl
-        process.env.restapiurl = tc.restapiurl
-        process.env.authapiurl = tc.authapiurl
-        process.env.ProcessQueueVisibilityTimeout = tc.ProcessQueueVisibilityTimeout.toFixed()
-        process.env.ProcessQueueWaitTimeSeconds = tc.ProcessQueueWaitTimeSeconds.toFixed()
-        process.env.RetryQueueVisibilityTimeout = tc.ProcessQueueWaitTimeSeconds.toFixed()
-        process.env.RetryQueueInitialWaitTimeSeconds = tc.RetryQueueInitialWaitTimeSeconds.toFixed()
+        if (tc.SQS_QUEUE_URL !== undefined) process.env.SQS_QUEUE_URL = tc.SQS_QUEUE_URL
+        else throw new Error(`Tricklercache Config invalid definition: SQS_QUEUE_URL - ${tc.SQS_QUEUE_URL}`)
+        
+        if (tc.xmlapiurl != undefined) process.env.xmlapiurl = tc.xmlapiurl
+        else throw new Error(`Tricklercache Config invalid definition: xmlapiurl - ${tc.xmlapiurl}`)
+
+        if (tc.restapiurl !== undefined) process.env.restapiurl = tc.restapiurl
+        else throw new Error(`Tricklercache Config invalid definition: restapiurl - ${tc.restapiurl}`)
+
+        if (tc.authapiurl !== undefined) process.env.authapiurl = tc.authapiurl
+        else throw new Error(`Tricklercache Config invalid definition: authapiurl - ${tc.authapiurl}`)
+
+        if (tc.ProcessQueueVisibilityTimeout !== undefined) process.env.ProcessQueueVisibilityTimeout = tc.ProcessQueueVisibilityTimeout.toFixed()
+        else throw new Error(`Tricklercache Config invalid definition: ProcessQueueVisibilityTimeout - ${tc.ProcessQueueVisibilityTimeout}`)
+
+        if (tc.ProcessQueueWaitTimeSeconds !== undefined) process.env.ProcessQueueWaitTimeSeconds = tc.ProcessQueueWaitTimeSeconds.toFixed()
+        else throw new Error(`Tricklercache Config invalid definition: ProcessQueueWaitTimeSeconds - ${tc.ProcessQueueWaitTimeSeconds}`)
+
+        if (tc.RetryQueueVisibilityTimeout !== undefined) process.env.RetryQueueVisibilityTimeout = tc.ProcessQueueWaitTimeSeconds.toFixed()
+        else throw new Error(`Tricklercache Config invalid definition: RetryQueueVisibilityTimeout - ${tc.RetryQueueVisibilityTimeout}`)
+
+        if (tc.RetryQueueInitialWaitTimeSeconds !== undefined) process.env.RetryQueueInitialWaitTimeSeconds = tc.RetryQueueInitialWaitTimeSeconds.toFixed()
+        else throw new Error(`Tricklercache Config invalid definition: RetryQueueInitialWaitTimeSeconds - ${tc.RetryQueueInitialWaitTimeSeconds}`)
+
     } catch (e)
     {
         throw new Error(`Exception parsing TricklerCache Config File ${e}`)
@@ -584,7 +601,33 @@ async function addWorkToProcessQueue (config: customerConfig, s3Key: string, bat
     qb.custconfig = config
     const qc = JSON.stringify(qb) 
     debugger; 
+
+    sqsParams.MaxNumberOfMessages = 1
+    sqsParams.MessageAttributes.FirstQueued.StringValue = Date.now().toString()
+    sqsParams.MessageBody = ''
+    sqsParams.QueueUrl = process.env.SQS_QUEUE_URL
+    sqsParams.VisibilityTimeout = parseInt(process.env.ProcessQueueVisibilityTimeout!)
+    sqsParams.WaitTimeSeconds = parseInt(process.env.ProcessQueueWaitTimeSeconds!)
     
+
+    const sqsParamsa = {
+        MaxNumberOfMessages: 1,
+        QueueUrl: process.env.SQS_QUEUE_URL,
+        VisibilityTimeout: 30,
+        WaitTimeSeconds: 10,
+        MessageAttributes: {
+            FirstQueued: {
+                DataType: "String",
+                StringValue: ''
+            },
+            Retry: {
+                DataType: "Number",
+                StringValue: '0',
+            },
+        },
+        MessageBody: ''
+    };
+
     const writeSQSCommand = new SendMessageCommand({
         QueueUrl: sqsParams.QueueUrl,
         DelaySeconds: 1,
