@@ -456,7 +456,7 @@ async function processS3ObjectContentStream(event: S3Event) {
                             s3ContentStream = s3ContentStream.pipe(csvParseStream)
                         }
 
-                        console.log(`Establish stream , Paused? ${s3ContentStream.isPaused.toString()}`)
+                        console.log(`Establish stream , Paused? ${s3ContentStream.isPaused().toString()}`)
 
                         s3ContentStream.setMaxListeners(tc.EventEmitterMaxListeners)
                         
