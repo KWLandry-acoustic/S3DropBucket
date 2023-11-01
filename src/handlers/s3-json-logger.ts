@@ -134,7 +134,7 @@ const csvParseStream = Papa.parse(Papa.NODE_STREAM_INPUT, {
     //     return results
     // },
     transform: function (value, field) {
-        // console.log(`ParseCSVStream - Row Field: ${field}, Row Value: ${value}`)
+        console.log(`csvParseStream - Row Field: ${field}, Row Value: ${value}`)
         return value.trim()
     },
     transformHeader: function (header, index) {
