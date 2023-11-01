@@ -294,7 +294,6 @@ async function getTricklerConfig () {
         tc = await s3.send(new GetObjectCommand(getObjectCmd))
             .then(async (s3Result: GetObjectCommandOutput) => {
                 const cr = await s3Result.Body?.transformToString('utf8') as string
-                debugger;
                 tc = JSON.parse(cr)
                 console.log(`Tricklercache Config: \n ${cr}`)
                 return tc
@@ -441,8 +440,8 @@ async function processS3ObjectContentStream(event: S3Event) {
                         s3ContentStream
                             .on('data', async function (jsonChunk: string) {
                                 recs++
-                                console.log(`Debug Event Emitter warnings Listeners - MaxListeners: ${s3ContentStream.getMaxListeners()}`)
-
+                                console.log(`Debug Event Emitter warnings Listeners - Listeners-Data: ${s3ContentStream.listenerCount('data')},  MaxListeners: ${s3ContentStream.getMaxListeners()}`)
+                                    
                                 
                                 // console.log(`Another chunk (${recs}): ${jsonChunk}, chunks length is ${chunks.length}`)
                                 chunks.push(jsonChunk)
