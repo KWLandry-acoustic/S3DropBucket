@@ -33,7 +33,7 @@ Resources:
       Environment:
         Variables:
           Version: !Ref AppId 
-          NODE_OPTIONS: enable-source-maps, trace-warnings
+          NODE_OPTIONS: "--enable-source-maps --trace-warnings"
       Role: arn:aws:iam::777957353822:role/tricklercacheExecutionRole 
       CodeUri: ./
       # CodeUri: src/handlers/          #---Gets reBuilt in SAM Package 
@@ -81,7 +81,7 @@ Resources:
       Environment:
         Variables:
           Version: !Ref AppId 
-          NODE_OPTIONS: enable-source-maps, trace-warnings
+          NODE_OPTIONS: "--enable-source-maps --trace-warnings"
       Role: arn:aws:iam::777957353822:role/tricklercacheExecutionRole 
       CodeUri: ./
       # CodeUri: src/handlers/          #---Gets reBuilt in SAM Package 
