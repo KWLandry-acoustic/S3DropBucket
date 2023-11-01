@@ -437,11 +437,13 @@ async function processS3ObjectContentStream(event: S3Event) {
                             s3ContentStream = s3ContentStream.pipe(csvParseStream)
                         }
 
+                        console.log(`establish stream`)
+
                         s3ContentStream
                             .on('data', async function (jsonChunk: string) {
                                 recs++
                                 console.log(`Debug Event Emitter warnings Listeners - Listeners-Data: ${s3ContentStream.listenerCount('data')},  MaxListeners: ${s3ContentStream.getMaxListeners()}`)
-                                    
+                                console.log(`2.Keep an eye on Batch count:   ${batchCount}`)
                                 
                                 // console.log(`Another chunk (${recs}): ${jsonChunk}, chunks length is ${chunks.length}`)
                                 chunks.push(jsonChunk)
@@ -449,7 +451,7 @@ async function processS3ObjectContentStream(event: S3Event) {
                                 if (chunks.length > 98)
                                 {
                                     batchCount++
-                                    console.log(`2.Keep an eye on Batch count:   ${batchCount}`)
+                                    console.log(`3.Keep an eye on Batch count:   ${batchCount}`)
                                     console.log(`Parsing S3 Content Stream (batch ${batchCount}) processed ${recs} chunks: `, jsonChunk)
                                     xmlRows = convertToXML(chunks, config)
                                     await queueWork(xmlRows, event, batchCount.toString(), chunks.length.toString())
@@ -459,7 +461,7 @@ async function processS3ObjectContentStream(event: S3Event) {
 
                             .on('end', async function (msg: string) {
                                 batchCount++
-                                console.log(`3.Keep an eye on Batch count:   ${batchCount}`)
+                                console.log(`4.Keep an eye on Batch count:   ${batchCount}`)
                                 console.log(`S3 Content Stream Ended for ${event.Records[0].s3.object.key}  (${batchCount} Batches - Processed ${recs} records)`)
                                 xmlRows = convertToXML(chunks, config)
                                 await queueWork(xmlRows, event, batchCount.toString(), chunks.length.toString())
