@@ -445,7 +445,7 @@ async function processS3ObjectContentStream(event: S3Event) {
                                 console.log(`Debug Event Emitter warnings Listeners - Listeners-Data: ${s3ContentStream.listenerCount('data')},  MaxListeners: ${s3ContentStream.getMaxListeners()}`)
                                 console.log(`2.Keep an eye on Batch count:   ${batchCount}`)
                                 
-                                // console.log(`Another chunk (${recs}): ${jsonChunk}, chunks length is ${chunks.length}`)
+                                console.log(`Another chunk (${recs}): ${jsonChunk}, chunks length is ${chunks.length}`)
                                 chunks.push(jsonChunk)
 
                                 if (chunks.length > 98)
