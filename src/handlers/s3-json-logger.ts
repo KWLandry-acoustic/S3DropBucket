@@ -425,7 +425,6 @@ async function processS3ObjectContentStream(event: S3Event) {
                 }
 
                 let recs = 0
-                // let queueToProcess
 
                 s3ContentResults = await new Promise<string>(async (resolve, reject) => {
                     console.log(`1.Keep an eye on Batch count:   ${batchCount}`)
@@ -462,22 +461,28 @@ async function processS3ObjectContentStream(event: S3Event) {
                                 chunks.length = 0
                                 batchCount = 0
                                 workQueuedSuccess = true
-                                resolve('S3 Content parsing Successful End')
+                                return('S3 Content parsing Successful End')
                             })
 
                             .on('error', async function (err: string) {
+                                chunks.length = 0
+                                batchCount = 0
                                 console.log("Failed Parsing S3 Content - Error: ", err)
                                 workQueuedSuccess = false
-                                reject(`An error has stopped Content Parsing at record ${recs} for s3 object ${event.Records[0].s3.object.key}. ${err}`)
+                                throw new Error(`An error has stopped Content Parsing at record ${recs} for s3 object ${event.Records[0].s3.object.key}. ${err}`)
                             })
 
                             .on('close', function (msg: string) {
+                                chunks.length = 0
+                                batchCount = 0
                                 console.log(`Completed Parsing S3 Content, processed ${recs} records from ${event.Records[0].s3.object.key}`)
                             })
 
                     } catch (e)
                     {
                         workQueuedSuccess = false
+                        chunks.length = 0
+                        batchCount = 0
                         throw new Error(`Exception parsing S3 Content for ${event.Records[0].s3.object.key}, \n${e}`)
                     }
 
@@ -487,7 +492,10 @@ async function processS3ObjectContentStream(event: S3Event) {
                 //     })
 
             })
-    } catch (e) {
+    } catch (e)
+    {
+        chunks.length = 0
+        batchCount = 0
         throw new Error(`Exception during Processing of S3 Object for ${event.Records[0].s3.object.key}: \n ${e}`);
     }
 
