@@ -456,11 +456,12 @@ async function processS3ObjectContentStream(event: S3Event) {
                             s3ContentStream = s3ContentStream.pipe(csvParseStream)
                         }
 
-                        console.log(`establish stream`)
+                        console.log(`Establish stream , Paused? ${s3ContentStream.isPaused.toString()}`)
 
                         s3ContentStream.setMaxListeners(tc.EventEmitterMaxListeners)
+                        
 
-                        s3ContentStream.
+                        s3ContentStream
                             .on('data', async function (jsonChunk: string) {
                                 recs++
                                 console.log(`Debug Event Emitter warnings Listeners - Listeners-Data: ${s3ContentStream.listenerCount('data')},  MaxListeners: ${s3ContentStream.getMaxListeners()}`)
