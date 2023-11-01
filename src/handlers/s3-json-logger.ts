@@ -172,7 +172,7 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
     
     if (process.env.ProcessQueueVisibilityTimeout === undefined || process.env.ProcessQueueVisibilityTimeout === '' || process.env.ProcessQueueVisibilityTimeout === null)
     {
-        console.log(`Debug-Process Env not populated: ${process.env}`)
+        console.log(`Debug-Process Env not populated: ${JSON.stringify(process.env)}`)
         tc = await getTricklerConfig()
     }
     else console.log(`Debug-Process Env already populated: ${JSON.stringify(process.env)}`)
@@ -234,7 +234,7 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
         console.log(`Debug-Process Env not populated: ${JSON.stringify(process.env)}`)
         tc = await getTricklerConfig()
     }
-    else console.log(`Debug-Process Env already populated: ${process.env}`)
+    else console.log(`Debug-Process Env already populated: ${JSON.stringify(process.env)}`)
 
     
 
