@@ -441,7 +441,7 @@ async function processS3ObjectContentStream(event: S3Event) {
                         s3ContentStream
                             .on('data', async function (jsonChunk: string) {
                                 recs++
-                                console.log(`Debug Event Emitter warnings Listeners: ${s3ContentStream.listenerCount}, MaxListeners: ${s3ContentStream.getMaxListeners}`)
+                                console.log(`Debug Event Emitter warnings Listeners - MaxListeners: ${s3ContentStream.getMaxListeners()}`)
 
                                 
                                 // console.log(`Another chunk (${recs}): ${jsonChunk}, chunks length is ${chunks.length}`)
