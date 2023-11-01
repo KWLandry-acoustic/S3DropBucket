@@ -305,7 +305,7 @@ async function getTricklerConfig () {
         console.log(`Pulling TricklerConfig Exception \n ${e}`)
     }
 
-    console.log(`Debug-Pulling tricklercache_config.json: ${tc}`)
+    console.log(`Debug-Pulling tricklercache_config.json: ${JSON.stringify(tc)}`)
     try
     {
         //ToDo: Need validation of Config 
@@ -460,7 +460,7 @@ async function processS3ObjectContentStream(event: S3Event) {
 
                         s3ContentStream.setMaxListeners(tc.EventEmitterMaxListeners)
 
-                        s3ContentStream
+                        s3ContentStream.
                             .on('data', async function (jsonChunk: string) {
                                 recs++
                                 console.log(`Debug Event Emitter warnings Listeners - Listeners-Data: ${s3ContentStream.listenerCount('data')},  MaxListeners: ${s3ContentStream.getMaxListeners()}`)
@@ -534,7 +534,7 @@ async function processS3ObjectContentStream(event: S3Event) {
 function convertToXML(rows: string[], config: customerConfig) {
 
     console.log(`Packaged ${rows.length} rows as updates to ${config.customer}'s ${config.listName}`)
-    console.log(`Rows - First: ${JSON.stringify(rows[0])} , \nLast: ${JSON.stringify(rows[rows.length-1])}`)
+    console.log(`ConvertToXML - Rows - First: ${JSON.stringify(rows[0])} , \nLast: ${JSON.stringify(rows[rows.length-1])}`)
     
     xmlRows = `<Envelope><Body><InsertUpdateRelationalTable><TABLE_ID>${config.listId}</TABLE_ID><ROWS>`
     let r = 0
