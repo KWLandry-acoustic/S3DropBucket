@@ -534,6 +534,7 @@ async function processS3ObjectContentStream(event: S3Event) {
 function convertToXML(rows: string[], config: customerConfig) {
 
     console.log(`Packaged ${rows.length} rows as updates to ${config.customer}'s ${config.listName}`)
+    console.log(`Rows - First: ${rows[0]} , \nLast: ${rows[rows.length]}`)
     
     xmlRows = `<Envelope><Body><InsertUpdateRelationalTable><TABLE_ID>${config.listId}</TABLE_ID><ROWS>`
     let r = 0
