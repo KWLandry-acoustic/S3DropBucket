@@ -450,16 +450,13 @@ async function processS3ObjectContentStream(event: S3Event) {
                     console.log(`1.Keep an eye on Batch count:   ${batchCount}`)
                     try {
                         let s3ContentStream = s3Result.Body as NodeJS.ReadableStream
-
+                        s3ContentStream.setMaxListeners(tc.EventEmitterMaxListeners)
 
                         if (config.format.toLowerCase() === 'csv') {
                             s3ContentStream = s3ContentStream.pipe(csvParseStream)
                         }
 
                         console.log(`Establish stream , Paused? ${s3ContentStream.isPaused().toString()}`)
-
-                        s3ContentStream.setMaxListeners(tc.EventEmitterMaxListeners)
-                        
 
                         s3ContentStream
                             .on('data', async function (jsonChunk: string) {
@@ -490,7 +487,8 @@ async function processS3ObjectContentStream(event: S3Event) {
                                 chunks.length = 0
                                 batchCount = 0
                                 workQueuedSuccess = true
-                                return('S3 Content parsing Successful End')
+                                
+                                resolve('S3 Content parsing Successful End')
                             })
 
                             .on('error', async function (err: string) {
