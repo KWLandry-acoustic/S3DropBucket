@@ -1,68 +1,78 @@
-"use strict";
+'use strict'
 
-import { PutObjectCommand, PutObjectCommandOutput, S3, S3Client, S3ClientConfig } from "@aws-sdk/client-s3"
-import { GetObjectCommand, GetObjectCommandOutput, GetObjectCommandInput } from "@aws-sdk/client-s3"
-import { DeleteObjectCommand, DeleteObjectCommandInput, DeleteObjectCommandOutput, DeleteObjectOutput, DeleteObjectRequest } from "@aws-sdk/client-s3"
-import { ListObjectsV2Command, ListObjectsV2CommandInput, ListObjectsV2CommandOutput } from "@aws-sdk/client-s3"
-import { Handler, S3Event, Context, SQSEvent } from "aws-lambda"
-import fetch, { Headers, RequestInit, Response } from "node-fetch"
+import { PutObjectCommand, PutObjectCommandOutput, S3, S3Client, S3ClientConfig } from '@aws-sdk/client-s3'
+import { GetObjectCommand, GetObjectCommandOutput, GetObjectCommandInput } from '@aws-sdk/client-s3'
+import {
+    DeleteObjectCommand,
+    DeleteObjectCommandInput,
+    DeleteObjectCommandOutput,
+    DeleteObjectOutput,
+    DeleteObjectRequest,
+} from '@aws-sdk/client-s3'
+import { ListObjectsV2Command, ListObjectsV2CommandInput, ListObjectsV2CommandOutput } from '@aws-sdk/client-s3'
+import { Handler, S3Event, Context, SQSEvent } from 'aws-lambda'
+import fetch, { Headers, RequestInit, Response } from 'node-fetch'
 // import { Writable, Readable, Stream, Duplex } from "node:stream";
-import Papa from 'papaparse';
+import Papa from 'papaparse'
 
-import { SQSClient, ReceiveMessageCommand, DeleteMessageBatchCommand, ReceiveMessageCommandOutput, Message, paginateListQueues, SendMessageCommand, SendMessageCommandOutput } from "@aws-sdk/client-sqs";
+import {
+    SQSClient,
+    ReceiveMessageCommand,
+    DeleteMessageBatchCommand,
+    ReceiveMessageCommandOutput,
+    Message,
+    paginateListQueues,
+    SendMessageCommand,
+    SendMessageCommandOutput,
+} from '@aws-sdk/client-sqs'
 
 // import 'source-map-support/register'
 
 // import { packageJson } from '@aws-sdk/client3/package.json'
 // const version = packageJson.version
 
-
 // process.env.AWS_REGION = "us-east-1"
 // process.env.accessToken = ''
 
-
-//SQS 
+//SQS
 //ToDo: pickup config from tricklercache config
 // process.env.SQS_QUEUE_URL = "https://sqs.us-east-1.amazonaws.com/777957353822/tricklercacheQueue";
 
-const sqsClient = new SQSClient({});
+const sqsClient = new SQSClient({})
 
 const sqsParams = {
     MaxNumberOfMessages: 1,
     QueueUrl: process.env.SQS_QUEUE_URL,
     VisibilityTimeout: 30,
     WaitTimeSeconds: 10,
-     MessageAttributes: {
-            FirstQueued: {
-                DataType: "String",
-                StringValue: ''
+    MessageAttributes: {
+        FirstQueued: {
+            DataType: 'String',
+            StringValue: '',
         },
-            Retry: {
-                DataType: "Number",
-                StringValue: '0',
-            },
+        Retry: {
+            DataType: 'Number',
+            StringValue: '0',
         },
-    MessageBody: ''
-};
+    },
+    MessageBody: '',
+}
 
 export type sqsObject = {
-    bucketName: string;
-    objectKey: string;
-};
+    bucketName: string
+    objectKey: string
+}
 
 //-----------SQS
 
-
 /**
-  * A Lambda function to process the Event payload received from S3.
-  */
+ * A Lambda function to process the Event payload received from S3.
+ */
 
-const s3 = new S3Client({ region: "us-east-1" })
- 
+const s3 = new S3Client({ region: 'us-east-1' })
 
 let workQueuedSuccess = false
-let POSTSuccess = false;
-
+let POSTSuccess = false
 
 let xmlRows: string = ''
 
@@ -73,21 +83,19 @@ interface S3Object {
 
 interface customerConfig {
     customer: string
-    format: string          // csv (w/ Headers), json (as idx'd), jsonFixed (fixed Columns), csvFixed (fixed Columns)
+    format: string // csv (w/ Headers), json (as idx'd), jsonFixed (fixed Columns), csvFixed (fixed Columns)
     listId: string
     listName: string
     colVals: { [idx: string]: string }
     columns: string[]
-    pod: string                // 1,2,3,4,5,6,7
-    region: string             // US, EU, AP
-    refreshToken: string       // API Access
-    clientId: string           // API Access
-    clientSecret: string       // API Access
+    pod: string // 1,2,3,4,5,6,7
+    region: string // US, EU, AP
+    refreshToken: string // API Access
+    clientId: string // API Access
+    clientSecret: string // API Access
 }
 
-
 let config = {} as customerConfig
-
 
 export interface accessResp {
     access_token: string
@@ -97,34 +105,33 @@ export interface accessResp {
 }
 
 export interface tcQueueMessage {
-    workKey: string,
-    updates: string, 
+    workKey: string
+    updates: string
     custconfig: customerConfig
 }
 
-
 export interface tcConfig {
-    "AWS_REGION": string,
-    "SQS_QUEUE_URL": string,
-    "xmlapiurl": string,
-    "restapiurl": string,
-    "authapiurl": string,
-    "ProcessQueueVisibilityTimeout": number,
-    "ProcessQueueWaitTimeSeconds": number,
-    "RetryQueueVisibilityTimeout": number,
-    "RetryQueueInitialWaitTimeSeconds": number,
-    "EventEmitterMaxListeners": number
+    AWS_REGION: string
+    SQS_QUEUE_URL: string
+    xmlapiurl: string
+    restapiurl: string
+    authapiurl: string
+    ProcessQueueVisibilityTimeout: number
+    ProcessQueueWaitTimeSeconds: number
+    RetryQueueVisibilityTimeout: number
+    RetryQueueInitialWaitTimeSeconds: number
+    EventEmitterMaxListeners: number
 }
 
 let tc = {} as tcConfig
 
 // description="There is no column __parsed_extra">
-// Pipes the S3 Read Stream, converting csv to json. 
+// Pipes the S3 Read Stream, converting csv to json.
 const csvParseStream = Papa.parse(Papa.NODE_STREAM_INPUT, {
     header: true,
     comments: '#',
-    // fastMode: true,  //ToDo: can use as long as no "Quoted" strings as values, commas skew results, need to escape commas in values. 
-                        //Apparently needed in order to get record by record results instead of chunks....
+    // fastMode: true,  //ToDo: can use as long as no "Quoted" strings as values, commas skew results, need to escape commas in values.
+    //Apparently needed in order to get record by record results instead of chunks....
     skipEmptyLines: true,
     // step: function (results, parser) {               //Cannot use Step when using Streams
     //     console.log("Row data: ", results.data);
@@ -135,57 +142,56 @@ const csvParseStream = Papa.parse(Papa.NODE_STREAM_INPUT, {
     // },
     transform: function (value, field) {
         console.log(`csvParseStream - Row Field: ${field}, Row Value: ${value}`)
-        if(field === "__parsed_extra") debugger; 
+        // if(field === "__parsed_extra") debugger;
         return value.trim()
     },
     transformHeader: function (header, index) {
         index
         return header.trim()
-    }
+    },
 })
 
-
 //Of concern, very large data sets
-// - as of 10/2023 CSV handled as the papaparse engine handles the record boundary, 
+// - as of 10/2023 CSV handled as the papaparse engine handles the record boundary,
 //  Now need to solve for JSON content
 //
 // But how to parse each chunk for JSON content as each chunk is a
-// network chunk that can land on any or no record boundary. 
-//      Use a JSON Parser that handles record boundary just like the CSV parser? 
-//      Parse out individual Updates from the JSON in the Read Stream using start/stop index 
-//          of the stream/content? 
+// network chunk that can land on any or no record boundary.
+//      Use a JSON Parser that handles record boundary just like the CSV parser?
+//      Parse out individual Updates from the JSON in the Read Stream using start/stop index
+//          of the stream/content?
 //
 // As of 10/2023 implemented an sqs Queue and deadletter queue,
-//      Multi-GB files are parsed into "99 row updates", written to an S3 "Process" bucket and 
-//      an entry added to the sqs Queue that will trigger a 2nd Lambda to process each 'chunk' of 99 
-//  
-// If there is an exception processing an S3 file 
+//      Multi-GB files are parsed into "99 row updates", written to an S3 "Process" bucket and
+//      an entry added to the sqs Queue that will trigger a 2nd Lambda to process each 'chunk' of 99
+//
+// If there is an exception processing an S3 file
 // Write what data can be processed as 99 updates, and simply throw the exception which will not
-// delete the S3 file for later inspection and re-processing 
-//      Can the same file simply be reprocessed/requeued without issue? 
-//          Row updates would be duplicated but would that matter?  
+// delete the S3 file for later inspection and re-processing
+//      Can the same file simply be reprocessed/requeued without issue?
+//          Row updates would be duplicated but would that matter?
 //
 export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, context: Context) => {
-
-
     //ToDo: Confirm SQS Queue deletes queued work
     //Interface to View and Edit Customer Configs
     //Interface to view Logs/Errors (echo cloudwatch logs?)
     //
-    
-    if (process.env.ProcessQueueVisibilityTimeout === undefined || process.env.ProcessQueueVisibilityTimeout === '' || process.env.ProcessQueueVisibilityTimeout === null)
+
+    if (
+        process.env.ProcessQueueVisibilityTimeout === undefined ||
+        process.env.ProcessQueueVisibilityTimeout === '' ||
+        process.env.ProcessQueueVisibilityTimeout === null
+    )
     {
-        console.log(`Debug-Process Env not populated: ${JSON.stringify(process.env)}`)
+        // console.log(`Debug-Process Env not populated: ${JSON.stringify(process.env)}`)
         tc = await getTricklerConfig()
     }
-    else console.log(`Debug-Process Env already populated: ${JSON.stringify(process.env)}`)
-
+    // else console.log(`Debug-Process Env already populated: ${JSON.stringify(process.env)}`)
 
     const tqm: tcQueueMessage = JSON.parse(event.Records[0].body)
-    debugger;
-    
+
     tqm.workKey = JSON.parse(event.Records[0].body).work
-    
+
     console.log(`Processing Work Queue for ${tqm.workKey}`)
     console.log(`Debug-Processing Work Queue - Work File: \n ${JSON.stringify(tqm)}`)
 
@@ -194,7 +200,7 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
     try
     {
         const work = await getS3Work(tqm.workKey)
-        if(!work) throw new Error(`Failed to retrieve work (${tqm.workKey}) from Queue: `)
+        if (!work) throw new Error(`Failed to retrieve work (${tqm.workKey}) from Queue: `)
 
         postResult = await postToCampaign(work, tqm.custconfig, tqm.updates)
         if (postResult.postRes === 'retry')
@@ -204,115 +210,166 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
         }
 
         if (!postResult.POSTSuccess) throw new Error(`Failed to process work ${tqm.workKey} - ${postResult.postRes} `)
-            
+
         if (postResult.POSTSuccess)
         {
             deleteS3Object(tqm.workKey, 'trickler-process')
         }
-            
     } catch (e)
     {
         console.log(`Processing Work Queue Exception: ${e}`)
     }
-    debugger;
 
     console.log(`Debug-Processing Work Queue - Work (${tqm.workKey})\n ${postResult?.postRes}`)
     console.log(`Processing Work Queue - Work (${tqm.workKey}), Success(${postResult?.POSTSuccess})`)
 
- return postResult?.POSTSuccess
-
+    return postResult?.POSTSuccess
 }
 
 export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Context) => {
-
-
     // console.log(`AWS-SDK Version: ${version}`)
     // console.log('ENVIRONMENT VARIABLES\n' + JSON.stringify(process.env, null, 2))
 
     //When Local Testing - pull an S3 Object and so avoid the not-found error
-    if (!event.Records[0].s3.object.key || event.Records[0].s3.object.key === "devtest.csv") {
-        event.Records[0].s3.object.key = await getAnS3ObjectforTesting(event) as string
+    if (!event.Records[0].s3.object.key || event.Records[0].s3.object.key === 'devtest.csv')
+    {
+        event.Records[0].s3.object.key = (await getAnS3ObjectforTesting(event)) as string
     }
-    
-    if (process.env.ProcessQueueVisibilityTimeout === undefined || process.env.ProcessQueueVisibilityTimeout === '' || process.env.ProcessQueueVisibilityTimeout === null)
+
+    if (
+        process.env.ProcessQueueVisibilityTimeout === undefined ||
+        process.env.ProcessQueueVisibilityTimeout === '' ||
+        process.env.ProcessQueueVisibilityTimeout === null
+    )
     {
         console.log(`Debug-Process Env not populated: ${JSON.stringify(process.env)}`)
         tc = await getTricklerConfig()
-    }
-    else console.log(`Debug-Process Env already populated: ${JSON.stringify(process.env)}`)
+    } else console.log(`Debug-Process Env already populated: ${JSON.stringify(process.env)}`)
 
-    
-
-    const customer = (event.Records[0].s3.object.key.split("_")[0] + "_")
+    const customer = event.Records[0].s3.object.key.split('_')[0] + '_'
     // console.log("GetCustomerConfig: Customer string is ", customer)
 
-    console.log(`Processing Object from S3 Trigger, Event RequestId: ", ${event.Records[0].responseElements["x-amz-request-id"]}. Customer is ${customer}, Num of Events to be processed: ${event.Records.length}`)
+    console.log(
+        `Processing Object from S3 Trigger, Event RequestId: ", ${event.Records[0].responseElements['x-amz-request-id']}. Customer is ${customer}, Num of Events to be processed: ${event.Records.length}`,
+    )
 
     //Just in case we start getting multiple file triggers for whatever reason
-    if (event.Records.length > 1) throw new Error(`Expecting only a single S3 Object from a Triggered S3 write of a new Object, received ${event.Records.length} Objects`)
+    if (event.Records.length > 1)
+        throw new Error(
+            `Expecting only a single S3 Object from a Triggered S3 write of a new Object, received ${event.Records.length} Objects`,
+        )
 
-    try {
-        config = await getCustomerConfig(customer) as customerConfig
-    } catch (e) {
+    try
+    {
+        config = (await getCustomerConfig(customer)) as customerConfig
+    } catch (e)
+    {
         throw new Error(`Exception Retrieving Config: \n ${e}`)
-
     }
-    try {
+    try
+    {
         config = await validateConfig(config)
-    } catch (e) {
+    } catch (e)
+    {
         throw new Error(`Exception Validating Config ${e}`)
-
     }
+
+    console.log(`Round 1 - Processing of ${event.Records[0].s3.object.key} `)
 
     const s3Result = await processS3ObjectContentStream(event)
 
-    console.log(`Processing of ${ event.Records[0].s3.object.key } Completed (${ s3Result.workQueuedSuccess }), \n${ s3Result.s3ContentResults }`)
+    console.log(
+        `Round 1 - Processing of ${event.Records[0].s3.object.key} Completed (${s3Result.workQueuedSuccess}), \n${s3Result.s3ContentResults}`,
+    )
+
+
+
+
+
+    // //resolve streaming stopping
+    // //resolve streaming stopping
+    // //resolve streaming stopping
+
+    // //When Local Testing - pull an S3 Object and so avoid the not-found error
+
+    // event.Records[0].s3.object.key = (await getAnS3ObjectforTesting(event)) as string
+
+    // console.log(`Round 2 - Processing of ${event.Records[0].s3.object.key} `)
+
+    // debugger
+    // const s3Result2 = await processS3ObjectContentStream(event)
+
+    // console.log(
+    //     `Round 2 - Processing of ${event.Records[0].s3.object.key} Completed (${s3Result2.workQueuedSuccess}), \n${s3Result2.s3ContentResults}`,
+    // )
+
+
+
+
+
+    // //When Local Testing - pull an S3 Object and so avoid the not-found error
+
+    // event.Records[0].s3.object.key = (await getAnS3ObjectforTesting(event)) as string
+
+    // console.log(`Round 3 - Processing of ${event.Records[0].s3.object.key} `)
+    // debugger
+    // const s3Result3 = await processS3ObjectContentStream(event)
+
+    // console.log(
+    //     `Round 3 - Processing of ${event.Records[0].s3.object.key} Completed (${s3Result3.workQueuedSuccess}), \n${s3Result3.s3ContentResults}`,
+    // )
+
+    // //resolve streaming stopping
+    // //resolve streaming stopping
+    // //resolve streaming stopping
+
+
+
+
+
 
     //Once successful delete the original S3 Object
-    if (s3Result.workQueuedSuccess) {
-        const delResultCode = await deleteS3Object(event.Records[0].s3.object.key, event.Records[0].s3.bucket.name);
-        console.log(`Result from Delete of ${event.Records[0].s3.object.key}: ${delResultCode} `);
-    }
-    else
+    if (s3Result.workQueuedSuccess)
+    {
+        const delResultCode = await deleteS3Object(event.Records[0].s3.object.key, event.Records[0].s3.bucket.name)
+        console.log(`Result from Delete of ${event.Records[0].s3.object.key}: ${delResultCode} `)
+    } else
         throw new Error(`Deletion of Object ${event.Records[0].s3.object.key} skipped as previous processing failed`)
 
     return `TricklerCache Processing of ${event.Records[0].s3.object.key} Successfully Completed.  ${s3Result.workQueuedSuccess}, ${s3Result.s3ContentResults}`
-
-};
+}
 
 export default s3JsonLoggerHandler
 
-
 async function getTricklerConfig () {
-    
-    //populate env vars with tricklercache config 
+    //populate env vars with tricklercache config
     const getObjectCmd = {
-        Bucket: "tricklercache-configs",
-        Key: 'tricklercache_config.json'
+        Bucket: 'tricklercache-configs',
+        Key: 'tricklercache_config.json',
     }
 
     let tc = {} as tcConfig
     try
     {
-        tc = await s3.send(new GetObjectCommand(getObjectCmd))
-            .then(async (s3Result: GetObjectCommandOutput) => {
-                const cr = await s3Result.Body?.transformToString('utf8') as string
-                tc = JSON.parse(cr)
-                console.log(`Tricklercache Config: \n ${cr}`)
-                return tc
-            })
+        tc = await s3.send(new GetObjectCommand(getObjectCmd)).then(async (s3Result: GetObjectCommandOutput) => {
+            const cr = (await s3Result.Body?.transformToString('utf8')) as string
+            tc = JSON.parse(cr)
+            // console.log(`Tricklercache Config: \n ${cr}`)
+            return tc
+        })
     } catch (e)
     {
         console.log(`Pulling TricklerConfig Exception \n ${e}`)
     }
 
     console.log(`Debug-Pulling tricklercache_config.json: ${JSON.stringify(tc)}`)
+
     try
     {
-        //ToDo: Need validation of Config 
+        //ToDo: Need validation of Config
         if (tc.SQS_QUEUE_URL !== undefined) process.env.SQS_QUEUE_URL = tc.SQS_QUEUE_URL
         else throw new Error(`Tricklercache Config invalid definition: SQS_QUEUE_URL - ${tc.SQS_QUEUE_URL}`)
-        
+
         if (tc.xmlapiurl != undefined) process.env.xmlapiurl = tc.xmlapiurl
         else throw new Error(`Tricklercache Config invalid definition: xmlapiurl - ${tc.xmlapiurl}`)
 
@@ -322,18 +379,33 @@ async function getTricklerConfig () {
         if (tc.authapiurl !== undefined) process.env.authapiurl = tc.authapiurl
         else throw new Error(`Tricklercache Config invalid definition: authapiurl - ${tc.authapiurl}`)
 
-        if (tc.ProcessQueueVisibilityTimeout !== undefined) process.env.ProcessQueueVisibilityTimeout = tc.ProcessQueueVisibilityTimeout.toFixed()
-        else throw new Error(`Tricklercache Config invalid definition: ProcessQueueVisibilityTimeout - ${tc.ProcessQueueVisibilityTimeout}`)
+        if (tc.ProcessQueueVisibilityTimeout !== undefined)
+            process.env.ProcessQueueVisibilityTimeout = tc.ProcessQueueVisibilityTimeout.toFixed()
+        else
+            throw new Error(
+                `Tricklercache Config invalid definition: ProcessQueueVisibilityTimeout - ${tc.ProcessQueueVisibilityTimeout}`,
+            )
 
-        if (tc.ProcessQueueWaitTimeSeconds !== undefined) process.env.ProcessQueueWaitTimeSeconds = tc.ProcessQueueWaitTimeSeconds.toFixed()
-        else throw new Error(`Tricklercache Config invalid definition: ProcessQueueWaitTimeSeconds - ${tc.ProcessQueueWaitTimeSeconds}`)
+        if (tc.ProcessQueueWaitTimeSeconds !== undefined)
+            process.env.ProcessQueueWaitTimeSeconds = tc.ProcessQueueWaitTimeSeconds.toFixed()
+        else
+            throw new Error(
+                `Tricklercache Config invalid definition: ProcessQueueWaitTimeSeconds - ${tc.ProcessQueueWaitTimeSeconds}`,
+            )
 
-        if (tc.RetryQueueVisibilityTimeout !== undefined) process.env.RetryQueueVisibilityTimeout = tc.ProcessQueueWaitTimeSeconds.toFixed()
-        else throw new Error(`Tricklercache Config invalid definition: RetryQueueVisibilityTimeout - ${tc.RetryQueueVisibilityTimeout}`)
+        if (tc.RetryQueueVisibilityTimeout !== undefined)
+            process.env.RetryQueueVisibilityTimeout = tc.ProcessQueueWaitTimeSeconds.toFixed()
+        else
+            throw new Error(
+                `Tricklercache Config invalid definition: RetryQueueVisibilityTimeout - ${tc.RetryQueueVisibilityTimeout}`,
+            )
 
-        if (tc.RetryQueueInitialWaitTimeSeconds !== undefined) process.env.RetryQueueInitialWaitTimeSeconds = tc.RetryQueueInitialWaitTimeSeconds.toFixed()
-        else throw new Error(`Tricklercache Config invalid definition: RetryQueueInitialWaitTimeSeconds - ${tc.RetryQueueInitialWaitTimeSeconds}`)
-
+        if (tc.RetryQueueInitialWaitTimeSeconds !== undefined)
+            process.env.RetryQueueInitialWaitTimeSeconds = tc.RetryQueueInitialWaitTimeSeconds.toFixed()
+        else
+            throw new Error(
+                `Tricklercache Config invalid definition: RetryQueueInitialWaitTimeSeconds - ${tc.RetryQueueInitialWaitTimeSeconds}`,
+            )
     } catch (e)
     {
         throw new Error(`Exception parsing TricklerCache Config File ${e}`)
@@ -341,258 +413,333 @@ async function getTricklerConfig () {
     return tc
 }
 
-
-
-async function getCustomerConfig(customer: string) {
-
-    // ToDo: Once retrieved need to validate all fields 
+async function getCustomerConfig (customer: string) {
+    // ToDo: Once retrieved need to validate all fields
 
     let configJSON = {}
-    const configObjs = [new Uint8Array()];
+    const configObjs = [new Uint8Array()]
 
-    try {
-        await s3.send(
-            new GetObjectCommand({
-                Key: `${customer}config.json`,
-                Bucket: `tricklercache-configs`
-            })
-        ).then(async (s3Result: GetObjectCommandOutput) => {
-            if (s3Result.$metadata.httpStatusCode != 200) {
-                let errMsg = JSON.stringify(s3Result.$metadata);
-                throw new Error(`Get S3 Object Command failed for ${customer}config.json \n${errMsg}`);
-            }
-            const s3Body = s3Result.Body as NodeJS.ReadableStream
-
-            configJSON = new Promise<customerConfig>(async (resolve, reject) => {
-                if (s3Body !== undefined) {
-
-                    s3Body.on("data", (chunk: Uint8Array) => {
-                        configObjs.push(chunk)
-                    })
-                    s3Body.on("error", () => {
-                        reject;
-                    })
-                    s3Body.on("end", () => {
-                        let cj = {} as customerConfig
-                        let cf = Buffer.concat(configObjs).toString("utf8")
-                        try {
-                            cj = JSON.parse(cf)
-                            console.log(`Parsing Config File: ${cj.customer}, Format: ${cj.format}, Region: ${cj.region}, Pod: ${cj.pod}, List Name: ${cj.listName},List  Id: ${cj.listId}, `)
-                        } catch (e) {
-                            throw new Error(`Exception Parsing Config ${customer}config.json: ${e}`)
-                        }
-
-                        resolve(cj)
-                    })
+    try
+    {
+        await s3
+            .send(
+                new GetObjectCommand({
+                    Key: `${customer}config.json`,
+                    Bucket: `tricklercache-configs`,
+                }),
+            )
+            .then(async (s3Result: GetObjectCommandOutput) => {
+                if (s3Result.$metadata.httpStatusCode != 200)
+                {
+                    let errMsg = JSON.stringify(s3Result.$metadata)
+                    throw new Error(`Get S3 Object Command failed for ${customer}config.json \n${errMsg}`)
                 }
-            }).catch((e) => {
-                throw new Error(`Exception retrieving Customer Config ${customer}config.json \n${e}`)
+                const s3Body = s3Result.Body as NodeJS.ReadableStream
+
+                configJSON = new Promise<customerConfig>(async (resolve, reject) => {
+                    if (s3Body !== undefined)
+                    {
+                        s3Body.on('data', (chunk: Uint8Array) => {
+                            configObjs.push(chunk)
+                        })
+                        s3Body.on('error', () => {
+                            reject
+                        })
+                        s3Body.on('end', () => {
+                            let cj = {} as customerConfig
+                            let cf = Buffer.concat(configObjs).toString('utf8')
+                            try
+                            {
+                                cj = JSON.parse(cf)
+                                console.log(
+                                    `Parsing Config File: ${cj.customer}, Format: ${cj.format}, Region: ${cj.region}, Pod: ${cj.pod}, List Name: ${cj.listName},List  Id: ${cj.listId}, `,
+                                )
+                            } catch (e)
+                            {
+                                throw new Error(`Exception Parsing Config ${customer}config.json: ${e}`)
+                            }
+
+                            resolve(cj)
+                        })
+                    }
+                }).catch(e => {
+                    throw new Error(`Exception retrieving Customer Config ${customer}config.json \n${e}`)
+                })
             })
-        })
-    } catch (e) {
-        throw new Error(`Exception retrieving Customer Config ${customer}config.json: \n ${e}`);
+    } catch (e)
+    {
+        throw new Error(`Exception retrieving Customer Config ${customer}config.json: \n ${e}`)
     }
 
     return configJSON
 }
 
-async function validateConfig(config: customerConfig) {
-    if (!config || config === null) { throw new Error("Invalid Config Content - is not defined (empty or null config)") }
-    if (!config.customer) { throw new Error("Invalid Config Content - Customer is not defined") }
-    if (!config.clientId) { throw new Error("Invalid Config Content - ClientId is not defined") }
-    if (!config.clientSecret) { throw new Error("Invalid Config Content - ClientSecret is not defined") }
-    if (!config.format) { throw new Error("Invalid Config Content - Format is not defined") }
-    if (!config.listId) { throw new Error("Invalid Config Content - ListName is not defined") }
-    if (!config.listName) { throw new Error("Invalid Config Content - ListName is not defined") }
-    if (!config.pod) { throw new Error("Invalid Config Content - Pod is not defined") }
-    if (!config.region) { throw new Error("Invalid Config Content - Region is not defined") }
-    if (!config.refreshToken) { throw new Error("Invalid Config Content - RefreshToken is not defined") }
+async function validateConfig (config: customerConfig) {
+    if (!config || config === null)
+    {
+        throw new Error('Invalid Config Content - is not defined (empty or null config)')
+    }
+    if (!config.customer)
+    {
+        throw new Error('Invalid Config Content - Customer is not defined')
+    }
+    if (!config.clientId)
+    {
+        throw new Error('Invalid Config Content - ClientId is not defined')
+    }
+    if (!config.clientSecret)
+    {
+        throw new Error('Invalid Config Content - ClientSecret is not defined')
+    }
+    if (!config.format)
+    {
+        throw new Error('Invalid Config Content - Format is not defined')
+    }
+    if (!config.listId)
+    {
+        throw new Error('Invalid Config Content - ListName is not defined')
+    }
+    if (!config.listName)
+    {
+        throw new Error('Invalid Config Content - ListName is not defined')
+    }
+    if (!config.pod)
+    {
+        throw new Error('Invalid Config Content - Pod is not defined')
+    }
+    if (!config.region)
+    {
+        throw new Error('Invalid Config Content - Region is not defined')
+    }
+    if (!config.refreshToken)
+    {
+        throw new Error('Invalid Config Content - RefreshToken is not defined')
+    }
 
-    if (!config.format.toLowerCase().match(/^(?:csv|json)$/igm)) {
+    if (!config.format.toLowerCase().match(/^(?:csv|json)$/gim))
+    {
         throw new Error("Invalid Config - Format is not 'CSV' or 'JSON' ")
     }
 
-    if (!config.pod.match(/^(?:0|1|2|3|4|5|6|7|8|9|a|b)$/igm)) {
-        throw new Error("Invalid Config - Pod is not 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, A, or B. ")
+    if (!config.pod.match(/^(?:0|1|2|3|4|5|6|7|8|9|a|b)$/gim))
+    {
+        throw new Error('Invalid Config - Pod is not 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, A, or B. ')
     }
 
-    if (!config.region.toLowerCase().match(/^(?:us|eu|ap|ca)$/igm)) {
+    if (!config.region.toLowerCase().match(/^(?:us|eu|ap|ca)$/gim))
+    {
         throw new Error("Invalid Config - Region is not 'US', 'EU', CA' or 'AP'. ")
     }
 
     return config as customerConfig
 }
 
-async function processS3ObjectContentStream(event: S3Event) {
-
-    let chunks: string[] = new Array();
-    let s3ContentResults = ''
+async function processS3ObjectContentStream (event: S3Event) {
+    let chunks: string[] = new Array()
+    let s3ContentResults: string = ''
     let batchCount = 0
 
     console.log(`Pulling S3 Content for ${event.Records[0].s3.object.key}`)
-                                
 
-    try {
-        await s3.send(
-            new GetObjectCommand({
-                Key: event.Records[0].s3.object.key,
-                Bucket: event.Records[0].s3.bucket.name
-            })
-        )
+    try
+    {
+        await s3
+            .send(
+                new GetObjectCommand({
+                    Key: event.Records[0].s3.object.key,
+                    Bucket: event.Records[0].s3.bucket.name,
+                }),
+            )
             .then(async (s3Result: GetObjectCommandOutput) => {
-                if (s3Result.$metadata.httpStatusCode != 200) {
-                    let errMsg = JSON.stringify(s3Result.$metadata);
-                    throw new Error(`Get S3 Object Command failed for ${event.Records[0].s3.object.key}. Result is ${errMsg}`);
+                if (s3Result.$metadata.httpStatusCode != 200)
+                {
+                    let errMsg = JSON.stringify(s3Result.$metadata)
+                    console.log(
+                        `Get S3 Object Command failed for ${event.Records[0].s3.object.key}. Result is ${errMsg}`,
+                    )
                 }
 
                 let recs = 0
 
-                s3ContentResults = await new Promise<string>(async (resolve, reject) => {
-                    console.log(`1.Keep an eye on Batch count:   ${batchCount}`)
-                    try {
-                        let s3ContentStream = s3Result.Body as NodeJS.ReadableStream
-                        s3ContentStream.setMaxListeners(tc.EventEmitterMaxListeners)
+                // await s3Result.Body
 
-                        if (config.format.toLowerCase() === 'csv') {
-                            s3ContentStream = s3ContentStream.pipe(csvParseStream)
-                        }
+                await new Promise<string>(async (resolve, reject) => {
+                    console.log(`1.Keep an eye on Batch count: ${batchCount}`)
 
-                        console.log(`Establish stream , Paused? ${s3ContentStream.isPaused().toString()}`)
+                    let s3ContentStream = s3Result.Body as NodeJS.ReadableStream
 
-                        s3ContentStream
-                            .on('data', async function (jsonChunk: string) {
-                                recs++
-                                console.log(`Debug Event Emitter warnings Listeners - Listeners-Data: ${s3ContentStream.listenerCount('data')},  MaxListeners: ${s3ContentStream.getMaxListeners()}`)
-                                console.log(`2.Keep an eye on Batch count:   ${batchCount}`)
-                                
-                                console.log(`Another chunk (${recs}): ${JSON.stringify(jsonChunk)}, chunks length is ${chunks.length}`)
-                                chunks.push(jsonChunk)
+                    s3ContentStream.setMaxListeners(tc.EventEmitterMaxListeners)
 
-                                if (chunks.length > 98)
-                                {
-                                    batchCount++
-                                    console.log(`3.Keep an eye on Batch count:   ${batchCount}`)
-                                    console.log(`Parsing S3 Content Stream (batch ${batchCount}) processed ${recs} chunks: `, jsonChunk)
-                                    xmlRows = convertToXML(chunks, config)
-                                    await queueWork(xmlRows, event, batchCount.toString(), chunks.length.toString())
-                                    chunks.length = 0
-                                }
-                            })
+                    if (config.format.toLowerCase() === 'csv')
+                    {
+                        s3ContentStream = s3ContentStream.pipe(csvParseStream)
+                    }
 
-                            .on('end', async function (msg: string) {
+                    console.log(`Establish stream, Paused? ${s3ContentStream.isPaused().toString()}`)
+                    debugger
+
+                    s3ContentStream
+                        .on('data', async function (jsonChunk: string) {
+                            recs++
+                            console.log(
+                                `Debug Event Emitter warnings Listeners - Listeners-Data: ${s3ContentStream.listenerCount(
+                                    'data',
+                                )},  MaxListeners: ${s3ContentStream.getMaxListeners()}`,
+                            )
+                            console.log(`2.Keep an eye on Batch count:   ${batchCount}`)
+
+                            console.log(
+                                `Another chunk (${recs}): ${JSON.stringify(jsonChunk)}, chunks length is ${chunks.length
+                                }`,
+                            )
+                            chunks.push(jsonChunk)
+
+                            if (chunks.length > 98)
+                            {
                                 batchCount++
-                                console.log(`4.Keep an eye on Batch count:   ${batchCount}`)
-                                console.log(`S3 Content Stream Ended for ${event.Records[0].s3.object.key}  (${batchCount} Batches - Processed ${recs} records)`)
+
+                                console.log(`3.Keep an eye on Batch count:   ${batchCount}`)
+
+                                console.log(
+                                    `Parsing S3 Content Stream (batch ${batchCount}) processed ${recs} chunks: `,
+                                    jsonChunk,
+                                )
                                 xmlRows = convertToXML(chunks, config)
                                 await queueWork(xmlRows, event, batchCount.toString(), chunks.length.toString())
                                 chunks.length = 0
-                                batchCount = 0
-                                workQueuedSuccess = true
-                                
-                                resolve('S3 Content Parsing Successful End')
-                            })
+                            }
+                        })
 
-                            .on('error', async function (err: string) {
-                                chunks.length = 0
-                                batchCount = 0
-                                console.log("Failed Parsing S3 Content - Error: ", err)
-                                workQueuedSuccess = false
-                                throw new Error(`An error has stopped Content Parsing at record ${recs} for s3 object ${event.Records[0].s3.object.key}. ${err}`)
-                            })
+                        .on('end', async function (msg: string) {
+                            batchCount++
+                            console.log(`4.Keep an eye on Batch count:   ${batchCount}`)
+                            xmlRows = convertToXML(chunks, config)
+                            await queueWork(xmlRows, event, batchCount.toString(), chunks.length.toString())
+                            chunks.length = 0
+                            batchCount = 0
+                            workQueuedSuccess = true
+                            debugger
+                            s3ContentResults = 'S3 Content Parsing Successful End'
+                            console.log(
+                                `S3 Content Stream Ended for ${event.Records[0].s3.object.key}  (${batchCount} Batches - Processed ${recs} records)`,
+                            )
+                            resolve(s3ContentResults)
+                        })
 
-                            .on('close', function (msg: string) {
-                                chunks.length = 0
-                                batchCount = 0
-                                console.log(`Completed Parsing S3 Content, processed ${recs} records from ${event.Records[0].s3.object.key}`)
-                            })
+                        .on('error', async function (err: string) {
+                            chunks.length = 0
+                            batchCount = 0
+                            console.log('Failed Parsing S3 Content - Error: ', err)
+                            workQueuedSuccess = false
+                            s3ContentResults = `An error has stopped Content Parsing at record ${recs} for s3 object ${event.Records[0].s3.object.key}. ${err}`
+                            console.log(
+                                `An error has stopped Content Parsing at record ${recs} for s3 object ${event.Records[0].s3.object.key}. ${err}`,
+                            )
+                            reject(s3ContentResults)
+                        })
 
-                    } catch (e)
-                    {
-                        workQueuedSuccess = false
-                        chunks.length = 0
-                        batchCount = 0
-                        throw new Error(`Exception parsing S3 Content for ${event.Records[0].s3.object.key}, \n${e}`)
-                    }
+                        .on('close', function (msg: string) {
+                            chunks.length = 0
+                            batchCount = 0
+                            if (s3ContentStream && !s3ContentStream.readable)
+                            {
+                                // if (!isReadableEnded(stream))
+                                //     return callback.call(stream, new ERR_STREAM_PREMATURE_CLOSE())
+                                console.log(`OnClose: Readable - ${s3ContentStream.readable}`)
+                            }
+                            s3ContentResults = `Completed Parsing S3 Content, processed ${recs} records from ${event.Records[0].s3.object.key}`
+                            console.log(
+                                `Completed Parsing S3 Content, processed ${recs} records from ${event.Records[0].s3.object.key}`,
+                            )
+                            resolve(s3ContentResults)
+                        })
 
+                    // return s3ContentResults
+
+                }).catch(e => {
+                    // throw new Error(`Exception Processing (Promise) S3 Get Object Content for ${event.Records[0].s3.object.key}: \n ${e}`);
+                    console.log(
+                        `Exception Processing (Await S3 Body) S3 Get Object Content for ${event.Records[0].s3.object.key}: \n ${e}`,
+                    )
                 })
-                // .catch((e) => {
-                //         throw new Error(`Exception Processing (Promise) S3 Get Object Content for ${event.Records[0].s3.object.key}: \n ${e}`);
-                //     })
-
+            })
+            .catch(e => {
+                // throw new Error(`Exception Processing (Promise) S3 Get Object Content for ${event.Records[0].s3.object.key}: \n ${e}`);
+                console.log(
+                    `Exception Processing (S3 Send Command Promise) S3 Get Object Content for ${event.Records[0].s3.object.key}: \n ${e}`,
+                )
             })
     } catch (e)
     {
         chunks.length = 0
         batchCount = 0
-        throw new Error(`Exception during Processing of S3 Object for ${event.Records[0].s3.object.key}: \n ${e}`);
+        throw new Error(`Exception during Processing of S3 Object for ${event.Records[0].s3.object.key}: \n ${e}`)
     }
 
     return { s3ContentResults, workQueuedSuccess }
 }
 
-
-function convertToXML(rows: string[], config: customerConfig) {
-
+function convertToXML (rows: string[], config: customerConfig) {
     console.log(`Packaged ${rows.length} rows as updates to ${config.customer}'s ${config.listName}`)
-    console.log(`ConvertToXML - Rows - First: ${JSON.stringify(rows[0])} , \nLast: ${JSON.stringify(rows[rows.length-1])}`)
-    
+    console.log(
+        `ConvertToXML - Rows - First: ${JSON.stringify(rows[0])} , \nLast: ${JSON.stringify(rows[rows.length - 1])}`,
+    )
+
     xmlRows = `<Envelope><Body><InsertUpdateRelationalTable><TABLE_ID>${config.listId}</TABLE_ID><ROWS>`
     let r = 0
 
-    rows.forEach((jo) => {
+    rows.forEach(jo => {
         r++
         xmlRows += `<ROW>`
-        Object.entries(jo)
-            .forEach(([key, value]) => {
-                // console.log(`Record ${r} as ${key}: ${value}`)
-                xmlRows += `<COLUMN name="${key}"> <![CDATA[${value}]]> </COLUMN>`
-            })
+        Object.entries(jo).forEach(([key, value]) => {
+            // console.log(`Record ${r} as ${key}: ${value}`)
+            xmlRows += `<COLUMN name="${key}"> <![CDATA[${value}]]> </COLUMN>`
+        })
         xmlRows += `</ROW>`
     })
 
-    //Tidy up the XML 
+    //Tidy up the XML
     xmlRows += `</ROWS></InsertUpdateRelationalTable></Body></Envelope>`
 
     return xmlRows
 }
 
-async function queueWork(queueContent: string, event: S3Event, batchNum: string, count: string) {
-
+async function queueWork (queueContent: string, event: S3Event, batchNum: string, count: string) {
     console.log(`Debug-QueueWork:  Batch - ${batchNum}  Count - ${count} `)
 
     const s3Key = event.Records[0].s3.object.key
     await storeWorkToS3(queueContent, s3Key, batchNum)
-    await addWorkToProcessQueue(config, s3Key, batchNum, count) 
-
+    await addWorkToProcessQueue(config, s3Key, batchNum, count)
 }
 
-async function storeWorkToS3(queueContent: string, s3Key: string, batch: string) {
-
+async function storeWorkToS3 (queueContent: string, s3Key: string, batch: string) {
     //write to the S3 Process Bucket
     const s3PutInput = {
-        "Body": queueContent,
-        "Bucket": "tricklercache-process",
-        "Key": `process_${batch}_${s3Key}`
-    };
+        Body: queueContent,
+        Bucket: 'tricklercache-process',
+        Key: `process_${batch}_${s3Key}`,
+    }
 
-    console.log(`Queuing Work (process_${batch}_${s3Key}) to Process Queue`);
+    console.log(`Queuing Work (process_${batch}_${s3Key}) to Process Queue`)
 
     let qs3
 
-    try {
-        qs3 = await s3.send(new PutObjectCommand(s3PutInput))
+    try
+    {
+        qs3 = await s3
+            .send(new PutObjectCommand(s3PutInput))
             .then(async (s3PutResult: PutObjectCommandOutput) => {
                 qs3 = JSON.stringify(s3PutResult.$metadata.httpStatusCode, null, 2)
-                console.log(`Queue Work - Write work (process_${batch}_${s3Key} to Processing Queue - ${qs3}`);
+                console.log(`Queue Work - Write work (process_${batch}_${s3Key} to Processing Queue - ${qs3}`)
             })
-            .catch((err) => {
-                throw new Error(`Failed writing work(process_${ batch }_${ s3Key } to S3 Processing bucket: ${ err }`)
-        })
-    } catch (e) {
+            .catch(err => {
+                throw new Error(`Failed writing work(process_${batch}_${s3Key} to S3 Processing bucket: ${err}`)
+            })
+    } catch (e)
+    {
         throw new Error(`Exception writing work(process_${batch}_${s3Key} to S3 Processing bucket: ${e}`)
     }
-return qs3
-
+    return qs3
 }
 
 async function addWorkToProcessQueue (config: customerConfig, s3Key: string, batch: string, count: string) {
@@ -600,8 +747,7 @@ async function addWorkToProcessQueue (config: customerConfig, s3Key: string, bat
     qb.workKey = `process_${batch}_${s3Key}`
     qb.updates = count
     qb.custconfig = config
-    const qc = JSON.stringify(qb) 
-    debugger; 
+    const qc = JSON.stringify(qb)
 
     sqsParams.MaxNumberOfMessages = 1
     sqsParams.MessageAttributes.FirstQueued.StringValue = Date.now().toString()
@@ -609,7 +755,6 @@ async function addWorkToProcessQueue (config: customerConfig, s3Key: string, bat
     sqsParams.QueueUrl = process.env.SQS_QUEUE_URL
     sqsParams.VisibilityTimeout = parseInt(process.env.ProcessQueueVisibilityTimeout!)
     sqsParams.WaitTimeSeconds = parseInt(process.env.ProcessQueueWaitTimeSeconds!)
-    
 
     const sqsParamsa = {
         MaxNumberOfMessages: 1,
@@ -618,76 +763,82 @@ async function addWorkToProcessQueue (config: customerConfig, s3Key: string, bat
         WaitTimeSeconds: 10,
         MessageAttributes: {
             FirstQueued: {
-                DataType: "String",
-                StringValue: ''
+                DataType: 'String',
+                StringValue: '',
             },
             Retry: {
-                DataType: "Number",
+                DataType: 'Number',
                 StringValue: '0',
             },
         },
-        MessageBody: ''
-    };
+        MessageBody: '',
+    }
 
     const writeSQSCommand = new SendMessageCommand({
         QueueUrl: sqsParams.QueueUrl,
         DelaySeconds: 1,
         MessageAttributes: {
             FirstQueued: {
-                DataType: "String",
-                StringValue: `${Date.now().toString()}`
-        },
+                DataType: 'String',
+                StringValue: `${Date.now().toString()}`,
+            },
             Retry: {
-                DataType: "Number",
+                DataType: 'Number',
                 StringValue: '0',
             },
         },
-        MessageBody: qc
-    });
+        MessageBody: qc,
+    })
 
-let qAdd
+    let qAdd
 
-    try {
-        qAdd = await sqsClient.send(writeSQSCommand)
+    try
+    {
+        qAdd = await sqsClient
+            .send(writeSQSCommand)
             .then(async (sqsWriteResult: SendMessageCommandOutput) => {
                 const wr = JSON.stringify(sqsWriteResult.$metadata.httpStatusCode, null, 2)
-                console.log(`Wrote Work to Process Queue (process_${s3Key}) - Result: ${wr} `);
-                if (wr !== '200') throw new Error(`Failed writing to Process Queue(queue URL${sqsParams.QueueUrl}), process_${qb.workKey}, SQS Params${sqsParams})`)
+                console.log(`Wrote Work to Process Queue (process_${s3Key}) - Result: ${wr} `)
+                if (wr !== '200')
+                    throw new Error(
+                        `Failed writing to Process Queue(queue URL${sqsParams.QueueUrl}), process_${qb.workKey}, SQS Params${sqsParams})`,
+                    )
                 qAdd = JSON.stringify(sqsWriteResult)
                 workQueuedSuccess = true
                 //Now Delete S3 File
             })
-            .catch((err) => {
-                console.log(`Failed writing to Process Queue - (queue URL${sqsParams.QueueUrl}), process_${qb.workKey}, SQS Params${sqsParams}) - Error: ${err} `)
-        })
-    } catch (e) {
-        console.log(`Exception writing to Process Queue - (queue URL${sqsParams.QueueUrl}), process_${qb.workKey}, SQS Params${sqsParams}) - Error: ${e}`)
+            .catch(err => {
+                console.log(
+                    `Failed writing to Process Queue - (queue URL${sqsParams.QueueUrl}), process_${qb.workKey}, SQS Params${sqsParams}) - Error: ${err} `,
+                )
+            })
+    } catch (e)
+    {
+        console.log(
+            `Exception writing to Process Queue - (queue URL${sqsParams.QueueUrl}), process_${qb.workKey}, SQS Params${sqsParams}) - Error: ${e}`,
+        )
     }
 
     return { qAdd, workQueuedSuccess }
-
 }
 
-async function reQueue (sqsevent: SQSEvent , queued: tcQueueMessage) {
-
+async function reQueue (sqsevent: SQSEvent, queued: tcQueueMessage) {
     let mar = sqsevent.Records[0].messageAttributes.Retry.stringValue as string
     let n = parseInt(mar)
     n++
     const r: string = n.toString()
-    
-    debugger;
 
     const workKey = JSON.parse(sqsevent.Records[0].body).workKey
-    
+
     const sp = sqsParams
     sp.VisibilityTimeout = 10
 
-    //ToDo: create random waittime, based on retry count. 
-    sp.WaitTimeSeconds = 10 
-    
+    //ToDo: create random waittime, based on retry count.
+    sp.WaitTimeSeconds = 10
+
     sp.MessageAttributes.Retry = {
-                DataType: "Number",
-                StringValue: r,
+        DataType: 'Number',
+        StringValue: r,
     }
     sp.MessageBody = sqsevent.Records[0].body
 
@@ -695,25 +846,22 @@ async function reQueue (sqsevent: SQSEvent , queued: tcQueueMessage) {
 
     let qAdd
 
-    try {
-        qAdd = await sqsClient.send(writeSQSCommand)
-            .then(async (sqsWriteResult: SendMessageCommandOutput) => {
-                const rr = JSON.stringify(sqsWriteResult.$metadata.httpStatusCode, null, 2)
-                console.log(`Process Queue - Wrote Retry Work to SQS Queue (process_${workKey} - Result: ${rr} `);
-                return JSON.stringify(sqsWriteResult)
-            });
-    } catch (e) {
+    try
+    {
+        qAdd = await sqsClient.send(writeSQSCommand).then(async (sqsWriteResult: SendMessageCommandOutput) => {
+            const rr = JSON.stringify(sqsWriteResult.$metadata.httpStatusCode, null, 2)
+            console.log(`Process Queue - Wrote Retry Work to SQS Queue (process_${workKey} - Result: ${rr} `)
+            return JSON.stringify(sqsWriteResult)
+        })
+    } catch (e)
+    {
         throw new Error(`ReQueue Work Exception - Writing Retry Work to SQS Queue: ${e}`)
     }
-    debugger;
 
     return qAdd
-
 }
 
-
-
-async function updateDatabase() {
+async function updateDatabase () {
     const update = `<Envelope>
           <Body>
                 <AddRecipient>
@@ -747,203 +895,197 @@ async function updateDatabase() {
     </Envelope>`
 }
 
-async function getS3Work(s3Key: string){
-    
+async function getS3Work (s3Key: string) {
     // console.log(`GetS3Work Key: ${s3Key}`)
 
     const getObjectCmd = {
-        Bucket: "tricklercache-process",
-        Key: s3Key
+        Bucket: 'tricklercache-process',
+        Key: s3Key,
     } as GetObjectCommandInput
 
     let work: string = ''
     try
     {
-        await s3.send(new GetObjectCommand(getObjectCmd))
-            .then(async (s3Result: GetObjectCommandOutput) => {
-                // work = JSON.stringify(b, null, 2)
-                work = await s3Result.Body?.transformToString('utf8') as string
-                console.log(`Work Pulled (${work.length} chars): ${s3Key}`)
-            });
+        await s3.send(new GetObjectCommand(getObjectCmd)).then(async (s3Result: GetObjectCommandOutput) => {
+            // work = JSON.stringify(b, null, 2)
+            work = (await s3Result.Body?.transformToString('utf8')) as string
+            console.log(`Work Pulled (${work.length} chars): ${s3Key}`)
+        })
     } catch (e)
     {
         throw new Error(`ProcessQueue - Get Work S3 Object (${s3Key}) Exception ${e}`)
     }
-return work
+    return work
 }
 
-export async function getAccessToken(config: customerConfig) {
-
-    try {
+export async function getAccessToken (config: customerConfig) {
+    try
+    {
         const rat = await fetch(`https://api-campaign-${config.region}-${config.pod}.goacoustic.com/oauth/token`, {
             method: 'POST',
             body: new URLSearchParams({
                 refresh_token: config.refreshToken,
                 client_id: config.clientId,
                 client_secret: config.clientSecret,
-                grant_type: 'refresh_token'
+                grant_type: 'refresh_token',
             }),
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
-                'User-Agent': 'S3 TricklerCache GetAccessToken'
-            }
+                'User-Agent': 'S3 TricklerCache GetAccessToken',
+            },
         })
 
         const ratResp = (await rat.json()) as accessResp
-        if (rat.status != 200) {
+        if (rat.status != 200)
+        {
             throw new Error(`Exception retrieving Access Token:   ${rat.status} - ${rat.statusText}`)
         }
         const accessToken = ratResp.access_token
         return { accessToken }.accessToken
-
-    } catch (e) {
-        console.log("Exception in getAccessToken: \n", e)
+    } catch (e)
+    {
+        console.log('Exception in getAccessToken: \n', e)
     }
 }
 
-export async function postToCampaign(xmlCalls: string, config: customerConfig, count: string) {
-    
+export async function postToCampaign (xmlCalls: string, config: customerConfig, count: string) {
     //
     //For Testing only
     //
-            config.pod = '2'
-            config.listId = '12663209'
-            xmlCalls = xmlCalls.replace('3055683', '12663209')
+    config.pod = '2'
+    config.listId = '12663209'
+    xmlCalls = xmlCalls.replace('3055683', '12663209')
     //
     //For Testing only
     //
 
-    debugger;
-
-    if ((process.env.accessToken === null) || process.env.accessToken == '')
+    if (process.env.accessToken === null || process.env.accessToken == '')
     {
         console.log(`Need AccessToken...`)
-        process.env.accessToken = await getAccessToken(config) as string
+        process.env.accessToken = (await getAccessToken(config)) as string
 
         const l = process.env.accessToken.length
-        const at = "......." + process.env.accessToken.substring(l - 10, l)
+        const at = '.......' + process.env.accessToken.substring(l - 10, l)
         console.log(`Generated a new AccessToken: ${at}`)
-    }
-    else
+    } else
     {
         const l = process.env.accessToken?.length ?? 0
-        const at = "......." + process.env.accessToken?.substring(l - 8, l)
+        const at = '.......' + process.env.accessToken?.substring(l - 8, l)
         console.log(`Access Token already present: ${at}`)
     }
-    debugger;
-    const myHeaders = new Headers();
-    myHeaders.append("Content-Type", "text/xml");
-    myHeaders.append("Authorization", "Bearer " + process.env.accessToken)
-    myHeaders.append("Content-Type", "text/xml")
-    myHeaders.append("Connection", "keep-alive")
-    myHeaders.append("Accept", "*/*")
-    myHeaders.append("Accept-Encoding", "gzip, deflate, br")
+
+    const myHeaders = new Headers()
+    myHeaders.append('Content-Type', 'text/xml')
+    myHeaders.append('Authorization', 'Bearer ' + process.env.accessToken)
+    myHeaders.append('Content-Type', 'text/xml')
+    myHeaders.append('Connection', 'keep-alive')
+    myHeaders.append('Accept', '*/*')
+    myHeaders.append('Accept-Encoding', 'gzip, deflate, br')
 
     let requestOptions: RequestInit = {
         method: 'POST',
         headers: myHeaders,
         body: xmlCalls,
-        redirect: 'follow'
-    };
+        redirect: 'follow',
+    }
 
     const host = `https://api-campaign-${config.region}-${config.pod}.goacoustic.com/XMLAPI`
-    
+
     let postRes
 
-    try {
+    try
+    {
         postRes = await fetch(host, requestOptions)
-        .then((response) => response.text())
-        .then((result) => {
-            // console.log("POST Update Result: ", result)
-            debugger; 
+            .then(response => response.text())
+            .then(result => {
+                // console.log("POST Update Result: ", result)
 
-            if (result.indexOf('max number of concurrent') > -1)
-                return "retry" 
-   
-            if (result.toLowerCase().indexOf('false</success>') > -1)
-            {
-                // "<Envelope><Body><RESULT><SUCCESS>false</SUCCESS></RESULT><Fault><Request/>
-                //   <FaultCode/><FaultString>Invalid XML Request</FaultString><detail><error>
-                //   <errorid>51</errorid><module/><class>SP.API</class><method/></error></detail>
-                //    </Fault></Body></Envelope>\r\n"
-                
-                throw new Error(`Unsuccessful POST of Update - ${result}`)
-            }
+                if (result.indexOf('max number of concurrent') > -1) return 'retry'
 
-            POSTSuccess = true
-            result = result.replace('\n', ' ')
-            return `Processed ${count} Updates - Result: ${result}`
-        })
-        .catch((e) => {
-            console.log(`Exception on POST to Campaign: ${e}`)
-        })
+                if (result.toLowerCase().indexOf('false</success>') > -1)
+                {
+                    // "<Envelope><Body><RESULT><SUCCESS>false</SUCCESS></RESULT><Fault><Request/>
+                    //   <FaultCode/><FaultString>Invalid XML Request</FaultString><detail><error>
+                    //   <errorid>51</errorid><module/><class>SP.API</class><method/></error></detail>
+                    //    </Fault></Body></Envelope>\r\n"
 
-    } catch(e) {
+                    throw new Error(`Unsuccessful POST of Update - ${result}`)
+                }
+
+                POSTSuccess = true
+                result = result.replace('\n', ' ')
+                return `Processed ${count} Updates - Result: ${result}`
+            })
+            .catch(e => {
+                console.log(`Exception on POST to Campaign: ${e}`)
+            })
+    } catch (e)
+    {
         console.log(`Exception during POST to Campaign (AccessToken ${process.env.accessToken}) Result: ${e}`)
     }
-    debugger;
 
-    return { postRes, POSTSuccess } 
+    return { postRes, POSTSuccess }
 }
 
-
-async function deleteS3Object(s3ObjKey: string, bucket: string) {
-    try {
+async function deleteS3Object (s3ObjKey: string, bucket: string) {
+    try
+    {
         console.log(`DeleteS3Object : \n'  ${s3ObjKey}`)
-        debugger;
-        await s3.send(
-            new DeleteObjectCommand({
-                Key: s3ObjKey,        
-                Bucket: bucket
+
+        await s3
+            .send(
+                new DeleteObjectCommand({
+                    Key: s3ObjKey,
+                    Bucket: bucket,
+                }),
+            )
+            .then(async (s3DelResult: DeleteObjectCommandOutput) => {
+                // console.log("Received the following Object: \n", data.Body?.toString());
+
+                const delRes = JSON.stringify(s3DelResult.$metadata.httpStatusCode, null, 2)
+
+                // console.log("Received the following Object: \n", JSON.stringify(data.Body, null, 2));
+                console.log(`Result from Delete of ${s3ObjKey}: ${delRes} `)
+
+                return delRes
             })
-        ).then(async (s3DelResult: DeleteObjectCommandOutput) => {
-            // console.log("Received the following Object: \n", data.Body?.toString());
-
-            const delRes = JSON.stringify(s3DelResult.$metadata.httpStatusCode, null, 2);
-
-            // console.log("Received the following Object: \n", JSON.stringify(data.Body, null, 2));
-            console.log(`Result from Delete of ${s3ObjKey}: ${delRes} `);
-
-            return delRes
-        });
-    } catch (e) {
-        console.log(`Exception Processing S3 Delete Command for ${s3ObjKey}: \n ${e}`);
+    } catch (e)
+    {
+        console.log(`Exception Processing S3 Delete Command for ${s3ObjKey}: \n ${e}`)
     }
 }
 
 function checkMetadata () {
-    
     //Pull metadata for table/db defined in config
     // confirm updates match Columns
-    // Log where Columns are not matching 
+    // Log where Columns are not matching
 }
 
-
-async function getAnS3ObjectforTesting(event: S3Event) {
+async function getAnS3ObjectforTesting (event: S3Event) {
     const listReq = {
         Bucket: event.Records[0].s3.bucket.name,
-        MaxKeys: 10
-    } as ListObjectsV2CommandInput;
+        MaxKeys: 10,
+    } as ListObjectsV2CommandInput
 
-    let s3Key: string = "";
+    let s3Key: string = ''
 
     try
     {
-        await s3.send(new ListObjectsV2Command(listReq))
-            .then(async (s3ListResult: ListObjectsV2CommandOutput) => {
-                // const d = JSON.stringify(s3ListResult.Body, null, 2)
+        await s3.send(new ListObjectsV2Command(listReq)).then(async (s3ListResult: ListObjectsV2CommandOutput) => {
 
-                s3Key = s3ListResult.Contents?.at(1)?.Key as string;
+            const i: number = Math.floor(Math.random() * (10 - 1 + 1) + 1)
+            s3Key = s3ListResult.Contents?.at(i)?.Key as string
 
-                // event.Records[0].s3.object.key  = s3ListResult.Contents?.at(0)?.Key as string
-                // console.log("Received the following Object: \n", JSON.stringify(data.Body, null, 2));
-                console.log("TestRun: Retrieved ", s3Key, " for this Test Run \n..\n..\n..");
-            });
+
+            // event.Records[0].s3.object.key  = s3ListResult.Contents?.at(0)?.Key as string
+            // console.log("Received the following Object: \n", JSON.stringify(data.Body, null, 2));
+            console.log(`TestRun (${i}) Retrieved ${s3Key} for this Test Run`)
+        })
     } catch (e)
     {
-        console.log("Exception Processing S3 List Command: \n..", e, '\n..\n..\n..');
+        console.log('Exception Processing S3 List Command: \n..', e, '\n..\n..\n..')
     }
-    return s3Key;
+    return s3Key
 }
 
 // export const writeSQS = async (msgAttr: string, msgBody: string) => {
@@ -965,9 +1107,8 @@ async function getAnS3ObjectforTesting(event: S3Event) {
 //     return response;
 // };
 
-
 // const sqsMessage = async (event: Event) => {
-    
+
 //     // while (true) {
 //     try {
 //         const rmc = new ReceiveMessageCommand(sqsParams);
@@ -1038,11 +1179,9 @@ async function getAnS3ObjectforTesting(event: S3Event) {
 //     }
 // }
 
-
 // export const sqsCount = async () => {
 //     // The configuration object (`{}`) is required. If the region and credentials
 //     // are omitted, the SDK uses your local configuration if it exists.
-
 
 //     // You can also use `ListQueuesCommand`, but to use that command you must
 //     // handle the pagination yourself. You can do that by sending the `ListQueuesCommand`
@@ -1063,5 +1202,3 @@ async function getAnS3ObjectforTesting(event: S3Event) {
 //     );
 //     console.log(queues.map((t) => `  * ${t}`).join("\n"));
 // };
-
-
