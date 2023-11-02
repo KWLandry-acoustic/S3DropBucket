@@ -123,7 +123,7 @@ let tc = {} as tcConfig
 const csvParseStream = Papa.parse(Papa.NODE_STREAM_INPUT, {
     header: true,
     comments: '#',
-    fastMode: true,  //ToDo: can use as long as no "Quoted" strings as values, commas skew results, need to escape commas in values. 
+    // fastMode: true,  //ToDo: can use as long as no "Quoted" strings as values, commas skew results, need to escape commas in values. 
                         //Apparently needed in order to get record by record results instead of chunks....
     skipEmptyLines: true,
     // step: function (results, parser) {               //Cannot use Step when using Streams
@@ -135,6 +135,7 @@ const csvParseStream = Papa.parse(Papa.NODE_STREAM_INPUT, {
     // },
     transform: function (value, field) {
         console.log(`csvParseStream - Row Field: ${field}, Row Value: ${value}`)
+        if(field === "__parsed_extra") debugger; 
         return value.trim()
     },
     transformHeader: function (header, index) {
@@ -488,7 +489,7 @@ async function processS3ObjectContentStream(event: S3Event) {
                                 batchCount = 0
                                 workQueuedSuccess = true
                                 
-                                resolve('S3 Content parsing Successful End')
+                                resolve('S3 Content Parsing Successful End')
                             })
 
                             .on('error', async function (err: string) {
