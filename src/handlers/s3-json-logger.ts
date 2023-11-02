@@ -141,7 +141,7 @@ const csvParseStream = Papa.parse(Papa.NODE_STREAM_INPUT, {
     //     return results
     // },
     transform: function (value, field) {
-        console.log(`csvParseStream - Row Field: ${field}, Row Value: ${value}`)
+        // console.log(`csvParseStream - Row Field: ${field}, Row Value: ${value}`)
         // if(field === "__parsed_extra") debugger;
         return value.trim()
     },
@@ -242,9 +242,9 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
         process.env.ProcessQueueVisibilityTimeout === null
     )
     {
-        console.log(`Debug-Process Env not populated: ${JSON.stringify(process.env)}`)
+        // console.log(`Debug-Process Env not populated: ${JSON.stringify(process.env)}`)
         tc = await getTricklerConfig()
-    } else console.log(`Debug-Process Env already populated: ${JSON.stringify(process.env)}`)
+    } //else console.log(`Debug-Process Env already populated: ${JSON.stringify(process.env)}`)
 
     const customer = event.Records[0].s3.object.key.split('_')[0] + '_'
     // console.log("GetCustomerConfig: Customer string is ", customer)
@@ -451,9 +451,9 @@ async function getCustomerConfig (customer: string) {
                             try
                             {
                                 cj = JSON.parse(cf)
-                                console.log(
-                                    `Parsing Config File: ${cj.customer}, Format: ${cj.format}, Region: ${cj.region}, Pod: ${cj.pod}, List Name: ${cj.listName},List  Id: ${cj.listId}, `,
-                                )
+                                // console.log(
+                                //     `Parsing Config File: ${cj.customer}, Format: ${cj.format}, Region: ${cj.region}, Pod: ${cj.pod}, List Name: ${cj.listName},List  Id: ${cj.listId}, `,
+                                // )
                             } catch (e)
                             {
                                 throw new Error(`Exception Parsing Config ${customer}config.json: ${e}`)
@@ -564,7 +564,7 @@ async function processS3ObjectContentStream (event: S3Event) {
                 // await s3Result.Body
 
                 await new Promise<string>(async (resolve, reject) => {
-                    console.log(`1.Keep an eye on Batch count: ${batchCount}`)
+                    // console.log(`1.Keep an eye on Batch count: ${batchCount}`)
 
                     let s3ContentStream = s3Result.Body as NodeJS.ReadableStream
 
@@ -575,17 +575,17 @@ async function processS3ObjectContentStream (event: S3Event) {
                         s3ContentStream = s3ContentStream.pipe(csvParseStream)
                     }
 
-                    console.log(`Establish stream, Paused? ${s3ContentStream.isPaused().toString()}`)
+                    // console.log(`Establish stream, Paused? ${s3ContentStream.isPaused().toString()}`)
                     debugger
 
                     s3ContentStream
                         .on('data', async function (jsonChunk: string) {
                             recs++
-                            console.log(
-                                `Debug Event Emitter warnings Listeners - Listeners-Data: ${s3ContentStream.listenerCount(
-                                    'data',
-                                )},  MaxListeners: ${s3ContentStream.getMaxListeners()}`,
-                            )
+                            // console.log(
+                            //     `Debug Event Emitter warnings Listeners - Listeners-Data: ${s3ContentStream.listenerCount(
+                            //         'data',
+                            //     )},  MaxListeners: ${s3ContentStream.getMaxListeners()}`,
+                            // )
                             console.log(`2.Keep an eye on Batch count:   ${batchCount}`)
 
                             console.log(
