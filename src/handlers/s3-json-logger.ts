@@ -623,8 +623,22 @@ async function processS3ObjectContentStream (event: S3Event) {
                                     `Parsing S3 Content Stream (batch ${batchCount}) processed ${recs} chunks: `,
                                     s3Chunk,
                                 )
-                                xmlRows = convertToXML(chunks, config)
-                                await queueWork(xmlRows, event, batchCount.toString(), chunks.length.toString())
+                                try
+                                {
+                                    xmlRows = convertToXML(chunks, config)
+                                } catch (e)
+                                {
+                                    console.log(`OnData - Exception Convert to XML ${e}`)
+                                }
+
+                                try
+                                {
+                                    await queueWork(xmlRows, event, batchCount.toString(), chunks.length.toString())
+                                } catch (e)
+                                {
+                                    console.log(`OnData - Exception queuing the work - ${e}`)
+                                }
+
                                 chunks.length = 0
                             }
                         })
@@ -632,8 +646,22 @@ async function processS3ObjectContentStream (event: S3Event) {
                         .on('end', async function (msg: string) {
                             batchCount++
                             console.log(`4.Keep an eye on Batch count:   ${batchCount}`)
-                            xmlRows = convertToXML(chunks, config)
-                            await queueWork(xmlRows, event, batchCount.toString(), chunks.length.toString())
+                            try
+                            {
+                                xmlRows = convertToXML(chunks, config)
+                            } catch (e)
+                            {
+                                console.log(`OnEnd - Exception Convert to XML ${e}`)
+                            }
+
+                            try
+                            {
+                                await queueWork(xmlRows, event, batchCount.toString(), chunks.length.toString())
+                            } catch (e)
+                            {
+                                console.log(`OnEnd - Exception queuing the work - ${e}`)
+                            }
+
                             chunks.length = 0
                             batchCount = 0
                             workQueuedSuccess = true
