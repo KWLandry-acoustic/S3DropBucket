@@ -13,7 +13,7 @@ import { ListObjectsV2Command, ListObjectsV2CommandInput, ListObjectsV2CommandOu
 import { Handler, S3Event, Context, SQSEvent } from 'aws-lambda'
 import fetch, { Headers, RequestInit, Response } from 'node-fetch'
 // import { Writable, Readable, Stream, Duplex } from "node:stream";
-import Papa from 'papaparse'
+import { parse } from 'csv-parse'
 
 import {
     SQSClient,
@@ -25,6 +25,8 @@ import {
     SendMessageCommand,
     SendMessageCommandOutput,
 } from '@aws-sdk/client-sqs'
+// import { ReadableStream, ReadableStreamDefaultReader } from 'node:stream/web'
+
 
 // import 'source-map-support/register'
 
@@ -65,9 +67,6 @@ export type sqsObject = {
 
 //-----------SQS
 
-/**
- * A Lambda function to process the Event payload received from S3.
- */
 
 const s3 = new S3Client({ region: 'us-east-1' })
 
@@ -125,31 +124,23 @@ export interface tcConfig {
 
 let tc = {} as tcConfig
 
-// description="There is no column __parsed_extra">
-// Pipes the S3 Read Stream, converting csv to json.
-const csvParseStream = Papa.parse(Papa.NODE_STREAM_INPUT, {
-    header: true,
-    comments: '#',
-    // fastMode: true,  //ToDo: can use as long as no "Quoted" strings as values, commas skew results, need to escape commas in values.
-    //Apparently needed in order to get record by record results instead of chunks....
-    skipEmptyLines: true,
-    // step: function (results, parser) {               //Cannot use Step when using Streams
-    //     console.log("Row data: ", results.data);
-    //     console.log("Character Index: ", parser.getCharIndex)
-    //     console.log("Row errors: ", results.errors);
-    //     console.log("Results Metadata: ", results.meta)
-    //     return results
-    // },
-    transform: function (value, field) {
-        // console.log(`csvParseStream - Row Field: ${field}, Row Value: ${value}`)
-        // if(field === "__parsed_extra") debugger;
-        return value.trim()
-    },
-    transformHeader: function (header, index) {
-        index
-        return header.trim()
-    },
-})
+
+const csvParser = parse({
+    delimiter: ',',
+    comment: '#',
+    trim: true,
+    skip_records_with_error: true,
+}
+    // , function (err, records) {
+    // console.log(`CSVParse Error: ${err}`)
+    // debugger
+    // return 'record in error - skipped'
+    // }
+)
+
+
+
+
 
 //Of concern, very large data sets
 // - as of 10/2023 CSV handled as the papaparse engine handles the record boundary,
@@ -171,6 +162,10 @@ const csvParseStream = Papa.parse(Papa.NODE_STREAM_INPUT, {
 //      Can the same file simply be reprocessed/requeued without issue?
 //          Row updates would be duplicated but would that matter?
 //
+
+/**
+ * A Lambda function to process the Event payload received from SQS - AWS Queues.
+ */
 export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, context: Context) => {
     //ToDo: Confirm SQS Queue deletes queued work
     //Interface to View and Edit Customer Configs
@@ -226,6 +221,11 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
     return postResult?.POSTSuccess
 }
 
+
+/**
+ * A Lambda function to process the Event payload received from S3.
+ */
+
 export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Context) => {
     // console.log(`AWS-SDK Version: ${version}`)
     // console.log('ENVIRONMENT VARIABLES\n' + JSON.stringify(process.env, null, 2))
@@ -274,12 +274,12 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
         throw new Error(`Exception Validating Config ${e}`)
     }
 
-    console.log(`Round 1 - Processing of ${event.Records[0].s3.object.key} `)
+    console.log(`Processing of ${event.Records[0].s3.object.key} `)
 
     const s3Result = await processS3ObjectContentStream(event)
 
     console.log(
-        `Round 1 - Processing of ${event.Records[0].s3.object.key} Completed (${s3Result.workQueuedSuccess}), \n${s3Result.s3ContentResults}`,
+        `Processing of ${event.Records[0].s3.object.key} Completed (${s3Result.workQueuedSuccess}), \n${s3Result.s3ContentResults}`,
     )
 
 
@@ -296,7 +296,6 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
 
     // console.log(`Round 2 - Processing of ${event.Records[0].s3.object.key} `)
 
-    // debugger
     // const s3Result2 = await processS3ObjectContentStream(event)
 
     // console.log(
@@ -312,7 +311,6 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
     // event.Records[0].s3.object.key = (await getAnS3ObjectforTesting(event)) as string
 
     // console.log(`Round 3 - Processing of ${event.Records[0].s3.object.key} `)
-    // debugger
     // const s3Result3 = await processS3ObjectContentStream(event)
 
     // console.log(
@@ -566,33 +564,53 @@ async function processS3ObjectContentStream (event: S3Event) {
                 await new Promise<string>(async (resolve, reject) => {
                     // console.log(`1.Keep an eye on Batch count: ${batchCount}`)
 
+
                     let s3ContentStream = s3Result.Body as NodeJS.ReadableStream
+
 
                     s3ContentStream.setMaxListeners(tc.EventEmitterMaxListeners)
 
                     if (config.format.toLowerCase() === 'csv')
                     {
-                        s3ContentStream = s3ContentStream.pipe(csvParseStream)
+                        // s3ContentStream = s3ContentStream.pipe(csvParseStream)
+                        s3ContentStream = s3ContentStream.pipe(csvParser)
+                            .on('skip', async function (err) {
+                                console.log(`CSV Parse Record Skipped due to invalid Record ${err} `)
+                            })
+                            .on('error', function (err) {
+                                console.log(`CSV Parse Error ${err}`)
+                            })
+
                     }
 
                     // console.log(`Establish stream, Paused? ${s3ContentStream.isPaused().toString()}`)
-                    debugger
 
                     s3ContentStream
-                        .on('data', async function (jsonChunk: string) {
+                        .on('error', async function (err: string) {
+                            chunks.length = 0
+                            batchCount = 0
+                            console.log('On Error - Failed Parsing S3 Content: ', err)
+                            debugger
+                            workQueuedSuccess = false
+                            s3ContentResults = `An error has stopped Content Parsing at record ${recs} for s3 object ${event.Records[0].s3.object.key}. ${err}`
+
+                            console.log(
+                                `An error has stopped Content Parsing at record ${recs} for s3 object ${event.Records[0].s3.object.key}. ${err}`,
+                            )
+                            reject(s3ContentResults)
+                        })
+
+                        .on('data', async function (s3Chunk: string) {
                             recs++
                             // console.log(
                             //     `Debug Event Emitter warnings Listeners - Listeners-Data: ${s3ContentStream.listenerCount(
                             //         'data',
                             //     )},  MaxListeners: ${s3ContentStream.getMaxListeners()}`,
                             // )
-                            console.log(`2.Keep an eye on Batch count:   ${batchCount}`)
 
-                            console.log(
-                                `Another chunk (${recs}): ${JSON.stringify(jsonChunk)}, chunks length is ${chunks.length
-                                }`,
-                            )
-                            chunks.push(jsonChunk)
+                            console.log(`Another chunk (Recs:${recs} Batch:${batchCount} Length:${chunks.length} - ${JSON.stringify(s3Chunk)}`)
+
+                            chunks.push(s3Chunk)
 
                             if (chunks.length > 98)
                             {
@@ -602,7 +620,7 @@ async function processS3ObjectContentStream (event: S3Event) {
 
                                 console.log(
                                     `Parsing S3 Content Stream (batch ${batchCount}) processed ${recs} chunks: `,
-                                    jsonChunk,
+                                    s3Chunk,
                                 )
                                 xmlRows = convertToXML(chunks, config)
                                 await queueWork(xmlRows, event, batchCount.toString(), chunks.length.toString())
@@ -618,24 +636,12 @@ async function processS3ObjectContentStream (event: S3Event) {
                             chunks.length = 0
                             batchCount = 0
                             workQueuedSuccess = true
-                            debugger
+
                             s3ContentResults = 'S3 Content Parsing Successful End'
                             console.log(
-                                `S3 Content Stream Ended for ${event.Records[0].s3.object.key}  (${batchCount} Batches - Processed ${recs} records)`,
+                                `OnEnd - S3 Content Stream Ended for ${event.Records[0].s3.object.key}  (${batchCount} Batches - Processed ${recs} records)`,
                             )
                             resolve(s3ContentResults)
-                        })
-
-                        .on('error', async function (err: string) {
-                            chunks.length = 0
-                            batchCount = 0
-                            console.log('Failed Parsing S3 Content - Error: ', err)
-                            workQueuedSuccess = false
-                            s3ContentResults = `An error has stopped Content Parsing at record ${recs} for s3 object ${event.Records[0].s3.object.key}. ${err}`
-                            console.log(
-                                `An error has stopped Content Parsing at record ${recs} for s3 object ${event.Records[0].s3.object.key}. ${err}`,
-                            )
-                            reject(s3ContentResults)
                         })
 
                         .on('close', function (msg: string) {
@@ -645,7 +651,23 @@ async function processS3ObjectContentStream (event: S3Event) {
                             {
                                 // if (!isReadableEnded(stream))
                                 //     return callback.call(stream, new ERR_STREAM_PREMATURE_CLOSE())
-                                console.log(`OnClose: Readable - ${s3ContentStream.readable}`)
+                                console.log(`OnClose: Readable - ${s3ContentStream.readable}  for ${event.Records[0].s3.object.key}`)
+                            }
+                            s3ContentResults = `OnClose - Parsing S3 Content, processed ${recs} records from ${event.Records[0].s3.object.key}`
+                            console.log(
+                                `Completed Parsing S3 Content, processed ${recs} records from ${event.Records[0].s3.object.key}`,
+                            )
+                            resolve(s3ContentResults)
+                        })
+
+                        .on('finished', function (msg: string) {
+                            chunks.length = 0
+                            batchCount = 0
+                            if (s3ContentStream && !s3ContentStream.readable)
+                            {
+                                // if (!isReadableEnded(stream))
+                                //     return callback.call(stream, new ERR_STREAM_PREMATURE_CLOSE())
+                                console.log(`OnFinished - Readable - ${s3ContentStream.readable}  for ${event.Records[0].s3.object.key}`)
                             }
                             s3ContentResults = `Completed Parsing S3 Content, processed ${recs} records from ${event.Records[0].s3.object.key}`
                             console.log(
@@ -653,6 +675,8 @@ async function processS3ObjectContentStream (event: S3Event) {
                             )
                             resolve(s3ContentResults)
                         })
+
+
 
                     // return s3ContentResults
 
@@ -798,7 +822,7 @@ async function addWorkToProcessQueue (config: customerConfig, s3Key: string, bat
             .send(writeSQSCommand)
             .then(async (sqsWriteResult: SendMessageCommandOutput) => {
                 const wr = JSON.stringify(sqsWriteResult.$metadata.httpStatusCode, null, 2)
-                console.log(`Wrote Work to Process Queue (process_${s3Key}) - Result: ${wr} `)
+                console.log(`Wrote Work to Process Queue (process_${qb.workKey}) - Result: ${wr} `)
                 if (wr !== '200')
                     throw new Error(
                         `Failed writing to Process Queue(queue URL${sqsParams.QueueUrl}), process_${qb.workKey}, SQS Params${sqsParams})`,
@@ -1115,7 +1139,7 @@ async function getAnS3ObjectforTesting (event: S3Event) {
 //         const data: ReceiveMessageCommandOutput = await sqsClient.send(rmc);
 //         if (data.Messages) {
 //             // NOTE: Could await next call but performance is better when called async
-//             debugger
+//             
 //             processReceivedMessages(data.Messages);
 //         }
 //     } catch (err) {
@@ -1128,7 +1152,7 @@ async function getAnS3ObjectforTesting (event: S3Event) {
 
 // function processReceivedMessage(msg: Message): sqsObject[] {
 //     var records: sqsObject[] = [];
-//     debugger;
+//     
 //     const body = JSON.parse(msg.Body!);
 //     for (const rec of body.Records) {
 //         if (rec.s3 === undefined || rec.s3 == "")
