@@ -332,7 +332,8 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
         const delResultCode = await deleteS3Object(event.Records[0].s3.object.key, event.Records[0].s3.bucket.name)
         console.log(`Result from Delete of ${event.Records[0].s3.object.key}: ${delResultCode} `)
     } else
-        throw new Error(`Deletion of Object ${event.Records[0].s3.object.key} skipped as previous processing failed`)
+        console.log(`Deletion of Object ${event.Records[0].s3.object.key} skipped as previous processing failed`)
+
 
     return `TricklerCache Processing of ${event.Records[0].s3.object.key} Successfully Completed.  ${s3Result.workQueuedSuccess}, ${s3Result.s3ContentResults}`
 }
