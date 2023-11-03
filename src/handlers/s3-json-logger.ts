@@ -538,11 +538,11 @@ async function processS3ObjectContentStream (event: S3Event) {
     let s3ContentResults: string = ''
     let batchCount = 0
 
-    console.log(`Pulling S3 Content for ${event.Records[0].s3.object.key}`)
-
     try
     {
-        await s3
+        console.log(`Pulling S3 Content for ${event.Records[0].s3.object.key}`)
+
+        const r = await s3
             .send(
                 new GetObjectCommand({
                     Key: event.Records[0].s3.object.key,
@@ -550,6 +550,9 @@ async function processS3ObjectContentStream (event: S3Event) {
                 }),
             )
             .then(async (s3Result: GetObjectCommandOutput) => {
+
+                console.log(`Pulling S3-GetObjectCommandOutput - ${event.Records[0].s3.object.key}`)
+
                 if (s3Result.$metadata.httpStatusCode != 200)
                 {
                     let errMsg = JSON.stringify(s3Result.$metadata)
@@ -603,11 +606,6 @@ async function processS3ObjectContentStream (event: S3Event) {
 
                         .on('data', async function (s3Chunk: string) {
                             recs++
-                            // console.log(
-                            //     `Debug Event Emitter warnings Listeners - Listeners-Data: ${s3ContentStream.listenerCount(
-                            //         'data',
-                            //     )},  MaxListeners: ${s3ContentStream.getMaxListeners()}`,
-                            // )
 
                             console.log(`Another chunk (Recs:${recs} Batch:${batchCount} Length:${chunks.length} - ${JSON.stringify(s3Chunk)}`)
 
@@ -737,6 +735,9 @@ async function processS3ObjectContentStream (event: S3Event) {
                     `Exception Processing (S3 Send Command Promise) S3 Get Object Content for ${event.Records[0].s3.object.key}: \n ${e}`,
                 )
             })
+
+        console.log(`ProcessS3ObjectContentStream returns: ${r}`)
+
     } catch (e)
     {
         chunks.length = 0
@@ -744,6 +745,7 @@ async function processS3ObjectContentStream (event: S3Event) {
         throw new Error(`Exception during Processing of S3 Object for ${event.Records[0].s3.object.key}: \n ${e}`)
     }
 
+    console.log(`ProcessS3ObjectContentStream returns: ${s3ContentResults}, ${workQueuedSuccess}`)
     return { s3ContentResults, workQueuedSuccess }
 }
 
