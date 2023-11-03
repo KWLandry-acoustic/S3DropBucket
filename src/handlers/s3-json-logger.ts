@@ -613,7 +613,7 @@ async function processS3ObjectContentStream (event: S3Event) {
                         .on('data', async function (s3Chunk: string) {
                             recs++
 
-                            console.log(`Another chunk (Recs:${recs} Batch:${batchCount} Length:${chunks.length} - ${JSON.stringify(s3Chunk)}`)
+                            // console.log(`Another chunk (Recs:${recs} Batch:${batchCount} Length:${chunks.length} - ${JSON.stringify(s3Chunk)}`)
 
                             chunks.push(s3Chunk)
 
