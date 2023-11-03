@@ -576,7 +576,7 @@ async function processS3ObjectContentStream (event: S3Event) {
                         // s3ContentStream = s3ContentStream.pipe(csvParseStream)
                         s3ContentStream = s3ContentStream.pipe(csvParser)
                             .on('skip', async function (err) {
-                                console.log(`CSV Parse Record Skipped due to invalid Record ${err} `)
+                                console.log(`CSV Parse Record Skipped due to invalid Record, error: ${err} `)
                             })
                             .on('error', function (err) {
                                 console.log(`CSV Parse Error ${err}`)
@@ -617,22 +617,25 @@ async function processS3ObjectContentStream (event: S3Event) {
                             {
                                 batchCount++
 
-                                console.log(`3.Keep an eye on Batch count:   ${batchCount}`)
+                                console.log(`3.OnData - Keep an eye on Batch count:   ${batchCount}`)
 
-                                console.log(
-                                    `Parsing S3 Content Stream (batch ${batchCount}) processed ${recs} chunks: `,
-                                    s3Chunk,
-                                )
                                 try
                                 {
+                                    console.log(
+                                        `OnData - Packaging S3 Content Stream (batch ${batchCount}) processed ${recs} chunks: ${s3Chunk}`
+                                    )
                                     xmlRows = convertToXML(chunks, config)
                                 } catch (e)
                                 {
-                                    console.log(`OnData - Exception Convert to XML ${e}`)
+                                    console.log(`OnData - Exception Converting to XML ${e}`)
                                 }
 
                                 try
                                 {
+                                    console.log(
+                                        `OnData - Queing S3 Content Stream (batch ${batchCount}) processed ${recs} chunks: `,
+                                        s3Chunk,
+                                    )
                                     await queueWork(xmlRows, event, batchCount.toString(), chunks.length.toString())
                                 } catch (e)
                                 {
@@ -645,7 +648,9 @@ async function processS3ObjectContentStream (event: S3Event) {
 
                         .on('end', async function (msg: string) {
                             batchCount++
-                            console.log(`4.Keep an eye on Batch count:   ${batchCount}`)
+                            console.log(`4.OnEnd - Keep an eye on Batch count:   ${batchCount}`)
+                            console.log(`OnEnd - Message:   ${msg}`)
+
                             try
                             {
                                 xmlRows = convertToXML(chunks, config)
@@ -656,6 +661,9 @@ async function processS3ObjectContentStream (event: S3Event) {
 
                             try
                             {
+                                console.log(
+                                    `OnEnd - Queing S3 Content Stream (batch ${batchCount}) processed ${recs}`
+                                )
                                 await queueWork(xmlRows, event, batchCount.toString(), chunks.length.toString())
                             } catch (e)
                             {
@@ -666,7 +674,7 @@ async function processS3ObjectContentStream (event: S3Event) {
                             batchCount = 0
                             workQueuedSuccess = true
 
-                            s3ContentResults = 'S3 Content Parsing Successful End'
+                            s3ContentResults = 'OnEnd - S3 Content Parsing Successful End'
                             console.log(
                                 `OnEnd - S3 Content Stream Ended for ${event.Records[0].s3.object.key}  (${batchCount} Batches - Processed ${recs} records)`,
                             )
@@ -676,6 +684,10 @@ async function processS3ObjectContentStream (event: S3Event) {
                         .on('close', function (msg: string) {
                             chunks.length = 0
                             batchCount = 0
+
+                            console.log(`OnClose - Message:   ${msg}`)
+
+
                             if (s3ContentStream && !s3ContentStream.readable)
                             {
                                 // if (!isReadableEnded(stream))
@@ -684,7 +696,7 @@ async function processS3ObjectContentStream (event: S3Event) {
                             }
                             s3ContentResults = `OnClose - Parsing S3 Content, processed ${recs} records from ${event.Records[0].s3.object.key}`
                             console.log(
-                                `Completed Parsing S3 Content, processed ${recs} records from ${event.Records[0].s3.object.key}`,
+                                `OnCLose - Completed Parsing S3 Content, processed ${recs} records from ${event.Records[0].s3.object.key}`,
                             )
                             resolve(s3ContentResults)
                         })
@@ -692,15 +704,18 @@ async function processS3ObjectContentStream (event: S3Event) {
                         .on('finished', function (msg: string) {
                             chunks.length = 0
                             batchCount = 0
+
+                            console.log(`OnFinished - Message:   ${msg}`)
+
                             if (s3ContentStream && !s3ContentStream.readable)
                             {
                                 // if (!isReadableEnded(stream))
                                 //     return callback.call(stream, new ERR_STREAM_PREMATURE_CLOSE())
                                 console.log(`OnFinished - Readable - ${s3ContentStream.readable}  for ${event.Records[0].s3.object.key}`)
                             }
-                            s3ContentResults = `Completed Parsing S3 Content, processed ${recs} records from ${event.Records[0].s3.object.key}`
+                            s3ContentResults = `OnFinished - Completed Parsing S3 Content, processed ${recs} records from ${event.Records[0].s3.object.key}`
                             console.log(
-                                `Completed Parsing S3 Content, processed ${recs} records from ${event.Records[0].s3.object.key}`,
+                                `OnFinished - Completed Parsing S3 Content, processed ${recs} records from ${event.Records[0].s3.object.key}`,
                             )
                             resolve(s3ContentResults)
                         })
