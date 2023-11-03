@@ -583,7 +583,7 @@ async function processS3ObjectContentStream (event: S3Event) {
                     if (config.format.toLowerCase() === 'csv')
                     {
                         // s3ContentStream = s3ContentStream.pipe(csvParseStream)
-                        s3ContentStream = s3ContentStream.pipe(csvParser)
+                        s3ContentStream = s3ContentStream.pipe(csvParser, { end: false })
                             .on('skip', async function (err) {
                                 console.log(`CSV Parse Record Skipped due to invalid Record, error: ${err} `)
                             })
