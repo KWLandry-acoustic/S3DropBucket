@@ -279,7 +279,7 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
     const s3Result = await processS3ObjectContentStream(event)
 
     console.log(
-        `Processing of ${event.Records[0].s3.object.key} Completed (${s3Result.workQueuedSuccess}), \n${s3Result.s3ContentResults}`,
+        `ProcessS3ObjectContentStream Return - for ${event.Records[0].s3.object.key} Completed (${s3Result.workQueuedSuccess}), \n${s3Result.s3ContentResults}`,
     )
 
 
