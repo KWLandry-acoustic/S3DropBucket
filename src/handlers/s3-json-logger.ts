@@ -277,9 +277,11 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
     console.log(`Processing of ${event.Records[0].s3.object.key} `)
 
 
+    let s3Result = { s3ContentResults: '', workQueuedSuccess: false }
+
     try
     {
-        const s3Result = await processS3ObjectContentStream(event)
+        s3Result = await processS3ObjectContentStream(event)
 
         console.log(
             `ProcessS3ObjectContentStream Return - for ${event.Records[0].s3.object.key} Completed (${s3Result.workQueuedSuccess}), \n${s3Result.s3ContentResults}`,
@@ -784,8 +786,11 @@ async function queueWork (queueContent: string, event: S3Event, batchNum: string
     console.log(`Debug-QueueWork:  Batch - ${batchNum}  Count - ${count} `)
 
     const s3Key = event.Records[0].s3.object.key
-    await storeWorkToS3(queueContent, s3Key, batchNum)
-    await addWorkToProcessQueue(config, s3Key, batchNum, count)
+    if (parseInt(batchNum) < 10)
+    {
+        await storeWorkToS3(queueContent, s3Key, batchNum)
+        await addWorkToProcessQueue(config, s3Key, batchNum, count)
+    }
 }
 
 async function storeWorkToS3 (queueContent: string, s3Key: string, batch: string) {
