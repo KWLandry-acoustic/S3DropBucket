@@ -10,5 +10,9 @@
       "ProcessQueueWaitTimeSeconds": 5,
       "RetryQueueVisibilityTimeout": 30,
       "RetryQueueInitialWaitTimeSeconds": 3,
-      "EventEmitterMaxListeners": 20
+      "EventEmitterMaxListeners": 20,
+      "CacheBucketPurgeCount": 0,
+      "CacheBucketPurge": "tricklercache",
+      "QueueBucketPurgeCount": 5000,
+      "QueueBucketPurge": "tricklercache-process"
 }

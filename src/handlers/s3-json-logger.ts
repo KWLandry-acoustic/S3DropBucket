@@ -120,6 +120,10 @@ export interface tcConfig {
     RetryQueueVisibilityTimeout: number
     RetryQueueInitialWaitTimeSeconds: number
     EventEmitterMaxListeners: number
+    CacheBucketPurgeCount: number
+    CacheBucketPurge: string
+    QueueBucketPurgeCount: number
+    QueueBucketPurge: string
 }
 
 let tc = {} as tcConfig
@@ -183,6 +187,14 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
     }
     // else console.log(`Debug-Process Env already populated: ${JSON.stringify(process.env)}`)
 
+    if (tc.QueueBucketPurgeCount > 0)
+    {
+        console.log(`Purge Requested, Only action will be to Purge ${tc.QueueBucketPurge} of ${tc.QueueBucketPurgeCount} Records. `)
+        const d = await purgeBucket(tc.QueueBucketPurgeCount, tc.QueueBucketPurge)
+        return d
+    }
+
+
     const tqm: tcQueueMessage = JSON.parse(event.Records[0].body)
 
     tqm.workKey = JSON.parse(event.Records[0].body).work
@@ -245,6 +257,15 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
         // console.log(`Debug-Process Env not populated: ${JSON.stringify(process.env)}`)
         tc = await getTricklerConfig()
     } //else console.log(`Debug-Process Env already populated: ${JSON.stringify(process.env)}`)
+
+
+    if (tc.CacheBucketPurgeCount > 0)
+    {
+        console.log(`Purge Requested, Only action will be to Purge ${tc.CacheBucketPurge} of ${tc.CacheBucketPurgeCount} Records. `)
+        const d = purgeBucket(tc.CacheBucketPurgeCount, tc.CacheBucketPurge)
+        return d
+    }
+
 
     const customer = event.Records[0].s3.object.key.split('_')[0] + '_'
     // console.log("GetCustomerConfig: Customer string is ", customer)
@@ -413,6 +434,35 @@ async function getTricklerConfig () {
             throw new Error(
                 `Tricklercache Config invalid definition: RetryQueueInitialWaitTimeSeconds - ${tc.RetryQueueInitialWaitTimeSeconds}`,
             )
+
+        if (tc.CacheBucketPurge !== undefined)
+            process.env.CacheBucketPurge = tc.CacheBucketPurge
+        else
+            throw new Error(
+                `Tricklercache Config invalid definition: CacheBucketPurge - ${tc.CacheBucketPurge}`,
+            )
+
+        if (tc.CacheBucketPurgeCount !== undefined)
+            process.env.CacheBucketPurgeCount = tc.CacheBucketPurgeCount.toFixed()
+        else
+            throw new Error(
+                `Tricklercache Config invalid definition: CacheBucketPurgeCount - ${tc.CacheBucketPurgeCount}`,
+            )
+
+        if (tc.QueueBucketPurge !== undefined)
+            process.env.QueueBucketPurge = tc.QueueBucketPurge
+        else
+            throw new Error(
+                `Tricklercache Config invalid definition: QueueBucketPurge - ${tc.QueueBucketPurge}`,
+            )
+
+        if (tc.QueueBucketPurgeCount !== undefined)
+            process.env.QueueBucketPurgeCount = tc.QueueBucketPurgeCount.toFixed()
+        else
+            throw new Error(
+                `Tricklercache Config invalid definition: QueueBucketPurgeCount - ${tc.QueueBucketPurgeCount}`,
+            )
+
     } catch (e)
     {
         throw new Error(`Exception parsing TricklerCache Config File ${e}`)
@@ -879,7 +929,7 @@ async function addWorkToProcessQueue (config: customerConfig, s3Key: string, bat
             .send(writeSQSCommand)
             .then(async (sqsWriteResult: SendMessageCommandOutput) => {
                 const wr = JSON.stringify(sqsWriteResult.$metadata.httpStatusCode, null, 2)
-                console.log(`Wrote Work to Process Queue (process_${qb.workKey}) - Result: ${wr} `)
+                console.log(`Wrote Work to Process Queue (${qb.workKey}) - Result: ${wr} `)
                 if (wr !== '200')
                     throw new Error(
                         `Failed writing to Process Queue(queue URL${sqsParams.QueueUrl}), process_${qb.workKey}, SQS Params${sqsParams})`,
@@ -1040,19 +1090,19 @@ export async function postToCampaign (xmlCalls: string, config: customerConfig, 
     //For Testing only
     //
 
-    if (process.env.accessToken === null || process.env.accessToken == '')
+    if (process.env.accessToken === undefined || process.env.accessToken === null || process.env.accessToken == '')
     {
-        console.log(`Need AccessToken...`)
+        console.log(`POST to Campaign - Need AccessToken...`)
         process.env.accessToken = (await getAccessToken(config)) as string
 
         const l = process.env.accessToken.length
-        const at = '.......' + process.env.accessToken.substring(l - 10, l)
-        console.log(`Generated a new AccessToken: ${at}`)
+        const redactAT = '.......' + process.env.accessToken.substring(l - 10, l)
+        console.log(`Generated a new AccessToken: ${redactAT}`)
     } else
     {
         const l = process.env.accessToken?.length ?? 0
-        const at = '.......' + process.env.accessToken?.substring(l - 8, l)
-        console.log(`Access Token already present: ${at}`)
+        const redactAT = '.......' + process.env.accessToken?.substring(l - 8, l)
+        console.log(`Access Token already present: ${redactAT}`)
     }
 
     const myHeaders = new Headers()
@@ -1111,7 +1161,7 @@ export async function postToCampaign (xmlCalls: string, config: customerConfig, 
 async function deleteS3Object (s3ObjKey: string, bucket: string) {
     try
     {
-        console.log(`DeleteS3Object : \n'  ${s3ObjKey}`)
+        console.log(`DeleteS3Object - ${s3ObjKey}`)
 
         await s3
             .send(
@@ -1167,6 +1217,29 @@ async function getAnS3ObjectforTesting (event: S3Event) {
         console.log('Exception Processing S3 List Command: \n..', e, '\n..\n..\n..')
     }
     return s3Key
+}
+
+async function purgeBucket (count: number, bucket: string) {
+    const listReq = {
+        Bucket: bucket,
+        MaxKeys: count,
+    } as ListObjectsV2CommandInput
+
+    let d = count
+    try
+    {
+        await s3.send(new ListObjectsV2Command(listReq)).then(async (s3ListResult: ListObjectsV2CommandOutput) => {
+            s3ListResult.Contents?.forEach((listItem) => {
+                d--
+                deleteS3Object(listItem.Key as string, bucket)
+            })
+        })
+    } catch (e)
+    {
+        console.log(`Exception Processing Purge of Bucket ${bucket}: \n${e}`)
+    }
+    console.log(`Deleted ${d} Objects from ${bucket}`)
+    return `Deleted ${d} Objects from ${bucket}`
 }
 
 // export const writeSQS = async (msgAttr: string, msgBody: string) => {
