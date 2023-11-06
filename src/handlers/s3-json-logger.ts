@@ -266,6 +266,7 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
         return d
     }
 
+    return true
 
     const customer = event.Records[0].s3.object.key.split('_')[0] + '_'
     // console.log("GetCustomerConfig: Customer string is ", customer)
