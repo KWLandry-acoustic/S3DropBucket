@@ -1225,12 +1225,12 @@ async function purgeBucket (count: number, bucket: string) {
         MaxKeys: count,
     } as ListObjectsV2CommandInput
 
-    let d = count
+    let d = 0
     try
     {
         await s3.send(new ListObjectsV2Command(listReq)).then(async (s3ListResult: ListObjectsV2CommandOutput) => {
             s3ListResult.Contents?.forEach((listItem) => {
-                d--
+                d++
                 deleteS3Object(listItem.Key as string, bucket)
             })
         })
