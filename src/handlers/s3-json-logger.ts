@@ -1159,9 +1159,12 @@ export async function postToCampaign (xmlCalls: string, config: customerConfig, 
 }
 
 async function deleteS3Object (s3ObjKey: string, bucket: string) {
+
+    let delRes = ''
+
     try
     {
-        console.log(`DeleteS3Object - ${s3ObjKey}`)
+        // console.log(`DeleteS3Object - ${s3ObjKey}`)
 
         await s3
             .send(
@@ -1173,17 +1176,19 @@ async function deleteS3Object (s3ObjKey: string, bucket: string) {
             .then(async (s3DelResult: DeleteObjectCommandOutput) => {
                 // console.log("Received the following Object: \n", data.Body?.toString());
 
-                const delRes = JSON.stringify(s3DelResult.$metadata.httpStatusCode, null, 2)
+                delRes = JSON.stringify(s3DelResult.$metadata.httpStatusCode, null, 2)
 
                 // console.log("Received the following Object: \n", JSON.stringify(data.Body, null, 2));
-                console.log(`Result from Delete of ${s3ObjKey}: ${delRes} `)
 
-                return delRes
+                // console.log(`Result from Delete of ${s3ObjKey}: ${delRes} `)
+
+                // return delRes
             })
     } catch (e)
     {
         console.log(`Exception Processing S3 Delete Command for ${s3ObjKey}: \n ${e}`)
     }
+    return delRes
 }
 
 function checkMetadata () {
@@ -1226,12 +1231,14 @@ async function purgeBucket (count: number, bucket: string) {
     } as ListObjectsV2CommandInput
 
     let d = 0
+    let r = ''
     try
     {
         await s3.send(new ListObjectsV2Command(listReq)).then(async (s3ListResult: ListObjectsV2CommandOutput) => {
-            s3ListResult.Contents?.forEach((listItem) => {
+            s3ListResult.Contents?.forEach(async (listItem) => {
                 d++
-                deleteS3Object(listItem.Key as string, bucket)
+                r = await deleteS3Object(listItem.Key as string, bucket)
+                if (r !== '204') console.log(`Non Successful return ( ${r} ) on Delete of ${listItem.Key}`)
             })
         })
     } catch (e)
