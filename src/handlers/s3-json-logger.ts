@@ -262,7 +262,7 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
     if (tc.CacheBucketPurgeCount > 0)
     {
         console.log(`Purge Requested, Only action will be to Purge ${tc.CacheBucketPurge} of ${tc.CacheBucketPurgeCount} Records. `)
-        const d = purgeBucket(tc.CacheBucketPurgeCount, tc.CacheBucketPurge)
+        const d = await purgeBucket(tc.CacheBucketPurgeCount, tc.CacheBucketPurge)
         return d
     }
 
