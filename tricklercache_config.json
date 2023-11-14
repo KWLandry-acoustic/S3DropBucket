@@ -6,13 +6,19 @@
       "xmlapiurl": "https://api-campaign-${config.region}-${config.pod}.goacoustic.com/XMLAPI",
       "restapiurl": "https://api-campaign-us-2.goacoustic.com:443/rest",
       "authapiurl": "https://api-campaign-${config.region}-${config.pod}.goacoustic.com/oauth/token",
+      "ProcessQueueQuiesce": true,
       "ProcessQueueVisibilityTimeout": 15,
       "ProcessQueueWaitTimeSeconds": 5,
       "RetryQueueVisibilityTimeout": 30,
       "RetryQueueInitialWaitTimeSeconds": 3,
       "EventEmitterMaxListeners": 20,
-      "CacheBucketPurgeCount": 1000,
+      "CacheBucketQuiesce": false,
+      "CacheBucketPurgeCount": 0,
       "CacheBucketPurge": "tricklercache",
-      "QueueBucketPurgeCount": 1000,
-      "QueueBucketPurge": "tricklercache-process"
+      "QueueBucketQuiesce": false,
+      "QueueBucketPurgeCount": 0,
+      "QueueBucketPurge": "tricklercache-process",
+      "MaxRetryUpdate": 10
 }
+
+
