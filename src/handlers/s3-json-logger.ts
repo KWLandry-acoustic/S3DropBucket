@@ -316,23 +316,13 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
     console.log(`Processing of ${event.Records[0].s3.object.key} `)
 
 
-    let s3Result = { s3ContentResults: '', workQueuedSuccess: false }
+    // let s3Result = { s3ContentResults: '', workQueuedSuccess: false }
 
-    try
-    {
-        s3Result = await processS3ObjectContentStream(event)
+    const s3CacheProcessorResult = await processS3ObjectContentStream(event)
 
-        debugger
-
-        if (tcDebug) console.log(
-            `ProcessS3ObjectContentStream Return - for ${event.Records[0].s3.object.key} Completed (${s3Result.workQueuedSuccess}), \n${s3Result.s3ContentResults}`,
-        )
-    } catch (e)
-    {
-        throw new Error(`Returned Exception when processS3ObjectContentStream - ${e}`)
-    }
-
-
+    if (tcDebug) console.log(
+        `ProcessS3ObjectContentStream Return - for ${event.Records[0].s3.object.key} Completed (Result: ${s3CacheProcessorResult})`
+    )
 
 
     // //resolve streaming stopping
@@ -371,22 +361,8 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
     // //resolve streaming stopping
 
 
-
-
-
-
-    //Once successful delete the original S3 Object
-    if (s3Result.workQueuedSuccess)
-    {
-        const delResultCode = await deleteS3Object(event.Records[0].s3.object.key, event.Records[0].s3.bucket.name)
-        if (tcDebug) console.log(`Result from Delete of ${event.Records[0].s3.object.key}: ${delResultCode} `)
-    } else
-        if (tcDebug) console.log(`Deletion of Object ${event.Records[0].s3.object.key} skipped as previous processing failed`)
-
-
-    return `TricklerCache Processing of ${event.Records[0].s3.object.key} Successfully Completed.  ${s3Result.workQueuedSuccess}, ${s3Result.s3ContentResults}`
+    return `TricklerCache Processing of ${event.Records[0].s3.object.key} Successfully Completed.`
 }
-
 export default s3JsonLoggerHandler
 
 async function getTricklerConfig () {
@@ -399,8 +375,8 @@ async function getTricklerConfig () {
     let tc = {} as tcConfig
     try
     {
-        tc = await s3.send(new GetObjectCommand(getObjectCmd)).then(async (s3Result: GetObjectCommandOutput) => {
-            const cr = (await s3Result.Body?.transformToString('utf8')) as string
+        tc = await s3.send(new GetObjectCommand(getObjectCmd)).then(async (getConfigS3Result: GetObjectCommandOutput) => {
+            const cr = (await getConfigS3Result.Body?.transformToString('utf8')) as string
             tc = JSON.parse(cr)
             // if (tcDebug) console.log(`Tricklercache Config: \n ${cr}`)
             return tc
@@ -537,13 +513,13 @@ async function getCustomerConfig (customer: string) {
                     Bucket: `tricklercache-configs`,
                 }),
             )
-            .then(async (s3Result: GetObjectCommandOutput) => {
-                if (s3Result.$metadata.httpStatusCode != 200)
+            .then(async (getCustConfigS3Result: GetObjectCommandOutput) => {
+                if (getCustConfigS3Result.$metadata.httpStatusCode != 200)
                 {
-                    let errMsg = JSON.stringify(s3Result.$metadata)
+                    let errMsg = JSON.stringify(getCustConfigS3Result.$metadata)
                     throw new Error(`Get S3 Object Command failed for ${customer}config.json \n${errMsg}`)
                 }
-                const s3Body = s3Result.Body as NodeJS.ReadableStream
+                const s3Body = getCustConfigS3Result.Body as NodeJS.ReadableStream
 
                 configJSON = new Promise<customerConfig>(async (resolve, reject) => {
                     if (s3Body !== undefined)
@@ -643,211 +619,211 @@ async function validateConfig (config: customerConfig) {
     return config as customerConfig
 }
 
+
 async function processS3ObjectContentStream (event: S3Event) {
     let chunks: string[] = new Array()
-    let s3ContentResults: string = ''
+    let s3ContentResults
     let batchCount = 0
 
-    try
-    {
-        if (tcDebug) console.log(`Pulling S3 Content for ${event.Records[0].s3.object.key}`)
+    // try
+    // {
+    if (tcDebug) console.log(`Processing S3 Content Stream for ${event.Records[0].s3.object.key}`)
 
-        const r = await s3
-            .send(
-                new GetObjectCommand({
-                    Key: event.Records[0].s3.object.key,
-                    Bucket: event.Records[0].s3.bucket.name,
-                }),
-            )
-            .then(async (s3Result: GetObjectCommandOutput) => {
+    await s3
+        .send(
+            new GetObjectCommand({
+                Key: event.Records[0].s3.object.key,
+                Bucket: event.Records[0].s3.bucket.name,
+            }),
+        )
+        .then(async (getS3StreamResult: GetObjectCommandOutput) => {
 
-                if (tcDebug) console.log(`S3GetObjectCommandOutput - Object returned from ${event.Records[0].s3.object.key}`)
+            if (tcDebug) console.log(`Get S3 Object - Object returned ${event.Records[0].s3.object.key}`)
 
-                if (s3Result.$metadata.httpStatusCode != 200)
-                {
-                    let errMsg = JSON.stringify(s3Result.$metadata)
-                    throw new Error(
-                        `Get S3 Object Command failed for ${event.Records[0].s3.object.key}. Result is ${errMsg}`,
-                    )
-                }
-
-                let recs = 0
-
-                // await s3Result.Body
-
-                await new Promise<string>(async (resolve, reject) => {
-                    // if (tcDebug) console.log(`1.Keep an eye on Batch count: ${batchCount}`)
-                    if (tcDebug) console.log(`S3GetObjectCommandOutput - Records returned from ${event.Records[0].s3.object.key}`)
-
-                    let s3ContentStream = s3Result.Body as NodeJS.ReadableStream
-
-                    // if (tcDebug) debugger
-
-                    s3ContentStream.setMaxListeners(tc.EventEmitterMaxListeners)
-
-                    if (config.format.toLowerCase() === 'csv')
-                    {
-                        s3ContentStream = s3ContentStream.pipe(csvParser)  //, { end: false })
-                            // .on('end', function (e: string) {
-                            //     debugger
-                            //     console.log(`CSVParse - OnEnd`)
-                            //     s3ContentStream.emit('end')
-                            // })
-                            // .on('data', function (f: string) {
-                            //     console.log(`CSVParse - OnData ${f}`)
-                            //     // debugger
-                            // })
-                            // .on('finish', function (f: string) {
-                            //     console.log(`CSVParse - OnFinish ${f}`)
-                            //     debugger
-                            //     s3ContentStream.emit('finish')
-
-                            // })
-                            // .on('close', function (c: string) {
-                            //     console.log(`CSVParse - OnClose ${c}`)
-                            //     debugger
-                            //     s3ContentStream.emit('close')
-
-                            // })
-                            .on('skip', async function (err) {
-                                console.log(`CSV Parse - Invalid Record\nError: ${err.code} for record ${err.lines}.\nOne possible cause is a field containing commas ',' and not properly Double-Quoted. \nContent: ${err.record} \nMessage: ${err.message} \nStack: ${err.stack} `)
-                            })
-                        // .on('error', function (err) {
-                        //     console.log(`CSVParse - Error ${err}`)
-                        //     s3ContentStream.emit('error')
-                        // })
-                    }
-
-                    // if (tcDebug) console.log(`Establish stream, Paused? ${s3ContentStream.isPaused().toString()}`)
-
-                    // if (tcDebug) console.log(`Established CSV Parser and listeners - now s3ContentStream Listeners`)
-
-                    s3ContentStream
-                        .on('error', async function (err: string) {
-                            chunks = []
-                            batchCount = 0
-                            workQueuedSuccess = false
-                            s3ContentResults = `An error has stopped Content Parsing at record ${recs} for s3 object ${event.Records[0].s3.object.key}. ${err}`
-
-                            console.log(s3ContentResults)
-
-                            reject(s3ContentResults)
-                        })
-                        .on('data', async function (s3Chunk: string) {
-                            recs++
-                            if (recs > config.updateMaxRows) throw new Error(`The number of Updates in this  Exceeds Max Row Updates allowed ${recs} `)
-
-                            if (tcDebug) console.log(`s3ContentStream OnData - Another chunk  (ArrayLen:${chunks.length} Recs:${recs} Batch:${batchCount} from ${event.Records[0].s3.object.key} - ${JSON.stringify(s3Chunk)}`)
-
-                            chunks.push(s3Chunk)
-
-                            if (chunks.length > 98)
-                            {
-                                batchCount++
-                                const a = chunks
-                                chunks = []
-
-                                if (tcDebug) console.log(`s3ContentStream OnData Over 99 Records - Queuing Work (Batch: ${batchCount} Chunks: ${a.length}) from ${event.Records[0].s3.object.key}`)
-
-                                const sw = await setWork(a, event.Records[0].s3.object.key, config, batchCount)
-
-                                if (tcDebug) console.log(`Await of SetWork returns - ${sw}`)
-
-                            }
-                        })
-
-                        .on('end', async function (msg: string) {
-                            batchCount++
-                            const a = chunks
-                            chunks = []
-
-                            if (tcDebug) console.log(`S3ContentStream OnEnd. Last batch length ${a.length} records, Batch count is ${batchCount}`)
-
-                            const sw = await setWork(a, event.Records[0].s3.object.key, config, batchCount)
-
-                            batchCount = 0
-
-                            s3ContentResults = `S3ContentStream OnEnd - S3 Content Parsing - Parsed ${recs} records for ${event.Records[0].s3.object.key}, Result ${sw}`
-                            if (tcDebug) console.log(s3ContentResults)
-
-                            return (s3ContentResults)
-                        })
-
-                        .on('close', function (msg: string) {
-                            chunks = []
-                            batchCount = 0
-
-                            // if (s3ContentStream && !s3ContentStream.readable)
-                            // {
-                            //     // if (!isReadableEnded(stream))
-                            //     //     return callback.call(stream, new ERR_STREAM_PREMATURE_CLOSE())
-                            //     console.log(`OnClose: Readable - ${s3ContentStream.readable}  for ${event.Records[0].s3.object.key}`)
-                            // }
-                            s3ContentResults = `S3ContentStream OnClose - S3 Content Streaming has Closed, processed ${recs} records from ${event.Records[0].s3.object.key}`
-                            if (tcDebug) console.log(s3ContentResults)
-                            // return (s3ContentResults)
-                        })
-
-                        .on('finish', function (msg: string) {
-                            // CSVParse for NodeJS
-                            // Problem: 
-                            // You are using the "finish" event and you don't have all your records. 
-                            // The "readable" event is still being called with a few records left.
-                            // Solution: 
-                            // The parser is both a writable and a readable stream.You write data and you read records.
-                            // Following Node.js.stream documentation, the "finish" event is from the write API and is 
-                            // emitted when the input source has flushed its data.The "end" event is from the read API 
-                            // and is emitted when there is no more data to be consumed from the stream.
-
-
-                            chunks = []
-                            batchCount = 0
-
-                            // if (s3ContentStream && !s3ContentStream.readable)
-                            // {
-                            //     // if (!isReadableEnded(stream))
-                            //     //     return callback.call(stream, new ERR_STREAM_PREMATURE_CLOSE())
-                            //     console.log(`s3ContentStream OnFinish (Readable ${s3ContentStream.readable}) for ${event.Records[0].s3.object.key}`)
-                            // }
-                            s3ContentResults = `s3ContentStream OnFinish - S3 Content Streaming has Finished, processed ${recs} records from ${event.Records[0].s3.object.key}`
-                            if (tcDebug) console.log(s3ContentResults)
-                            // return (s3ContentResults)
-                        })
-
-                }).catch(e => {
-                    // throw new Error(`Exception Processing (Promise) S3 Get Object Content for ${event.Records[0].s3.object.key}: \n ${e}`);
-                    console.log(
-                        `Exception Processing (Await S3 Body) S3 Get Object Content for ${event.Records[0].s3.object.key}: \n ${e}`,
-                    )
-                })
-            })
-            .catch(e => {
-                // throw new Error(`Exception Processing (Promise) S3 Get Object Content for ${event.Records[0].s3.object.key}: \n ${e}`);
-                console.log(
-                    `Exception Processing (S3 Send Command Promise) S3 Get Object Content for ${event.Records[0].s3.object.key}: \n ${e}`,
+            if (getS3StreamResult.$metadata.httpStatusCode != 200)
+            {
+                let errMsg = JSON.stringify(getS3StreamResult.$metadata)
+                throw new Error(
+                    `Get S3 Object Command failed for ${event.Records[0].s3.object.key}. Result is ${errMsg}`,
                 )
-            })
+            }
 
-        if (tcDebug) console.log(`ProcessS3ObjectContentStream returns: ${r}`)
+            let recs = 0
 
-    } catch (e)
-    {
-        chunks = []
-        batchCount = 0
-        throw new Error(`Exception during Processing of S3 Object for ${event.Records[0].s3.object.key}: \n ${e}`)
-    }
+            // await getS3StreamResult.Body
 
-    if (tcDebug) console.log(`Function ProcessS3ObjectContentStream returns: ${s3ContentResults}, ${workQueuedSuccess}`)
+            let s3ContentStream = getS3StreamResult.Body as NodeJS.ReadableStream
 
-    debugger
+            if (tcDebug) console.log(`Get S3 Object - Records returned from ${event.Records[0].s3.object.key}`)
 
-    return { s3ContentResults, workQueuedSuccess }
+            s3ContentStream.setMaxListeners(tc.EventEmitterMaxListeners)
+
+            if (config.format.toLowerCase() === 'csv')
+            {
+                s3ContentStream = s3ContentStream.pipe(csvParser)  //, { end: false })
+                    // .on('end', function (e: string) {
+                    //     debugger
+                    //     console.log(`CSVParse - OnEnd`)
+                    //     s3ContentStream.emit('end')
+                    // })
+                    // .on('data', function (f: string) {
+                    //     console.log(`CSVParse - OnData ${f}`)
+                    //     // debugger
+                    // })
+                    // .on('finish', function (f: string) {
+                    //     console.log(`CSVParse - OnFinish ${f}`)
+                    //     debugger
+                    //     s3ContentStream.emit('finish')
+
+                    // })
+                    // .on('close', function (c: string) {
+                    //     console.log(`CSVParse - OnClose ${c}`)
+                    //     debugger
+                    //     s3ContentStream.emit('close')
+
+                    // })
+                    .on('skip', async function (err) {
+                        console.log(`CSV Parse - Invalid Record\nError: ${err.code} for record ${err.lines}.\nOne possible cause is a field containing commas ',' and not properly Double-Quoted. \nContent: ${err.record} \nMessage: ${err.message} \nStack: ${err.stack} `)
+                    })
+                // .on('error', function (err) {
+                //     console.log(`CSVParse - Error ${err}`)
+                //     s3ContentStream.emit('error')
+                // })
+            }
+
+            // if (tcDebug) console.log(`Establish stream, Paused? ${s3ContentStream.isPaused().toString()}`)
+
+            // if (tcDebug) console.log(`Established CSV Parser and listeners - now s3ContentStream Listeners`)
+
+            s3ContentStream
+                .on('error', async function (err: string) {
+                    chunks = []
+                    batchCount = 0
+                    workQueuedSuccess = false
+                    s3ContentResults = `An error has stopped Content Parsing at record ${recs} for s3 object ${event.Records[0].s3.object.key}. ${err}`
+
+                    console.log(s3ContentResults)
+
+                    throw new Error(s3ContentResults)
+                })
+                .on('data', async function (s3Chunk: string) {
+                    recs++
+                    if (recs > config.updateMaxRows) throw new Error(`The number of Updates in this  Exceeds Max Row Updates allowed ${recs} `)
+
+                    if (tcDebug) console.log(`s3ContentStream OnData - Another chunk  (ArrayLen:${chunks.length} Recs:${recs} Batch:${batchCount} from ${event.Records[0].s3.object.key} - ${JSON.stringify(s3Chunk)}`)
+
+                    chunks.push(s3Chunk)
+
+                    if (chunks.length > 98)
+                    {
+                        batchCount++
+                        const a = chunks
+                        chunks = []
+
+                        if (tcDebug) console.log(`s3ContentStream OnData Over 99 Records - Queuing Work (Batch: ${batchCount} Chunks: ${a.length}) from ${event.Records[0].s3.object.key}`)
+
+                        const sw = await setWork(a, event.Records[0].s3.object.key, config, batchCount)
+
+                        if (tcDebug) console.log(`Await of SetWork returns - ${sw}`)
+
+                    }
+                })
+
+                .on('end', async function (msg: string) {
+                    batchCount++
+                    const a = chunks
+                    chunks = []
+
+                    if (tcDebug) console.log(`S3ContentStream OnEnd. Last batch length ${a.length} records, Batch count is ${batchCount}`)
+
+                    const sw = await setWork(a, event.Records[0].s3.object.key, config, batchCount)
+
+                    batchCount = 0
+
+                    s3ContentResults = `S3ContentStream OnEnd - S3 Content Parsing - Parsed ${recs} records for ${event.Records[0].s3.object.key}, Result ${sw}`
+                    if (tcDebug) console.log(s3ContentResults)
+
+                    // return (s3ContentResults)
+                })
+
+                .on('close', async function (msg: string) {
+                    chunks = []
+                    batchCount = 0
+
+                    // if (s3ContentStream && !s3ContentStream.readable)
+                    // {
+                    //     // if (!isReadableEnded(stream))
+                    //     //     return callback.call(stream, new ERR_STREAM_PREMATURE_CLOSE())
+                    //     console.log(`OnClose: Readable - ${s3ContentStream.readable}  for ${event.Records[0].s3.object.key}`)
+                    // }
+
+                    s3ContentResults = `S3ContentStream OnClose - S3 Content Streaming has Closed, successfully processed ${recs} records from ${event.Records[0].s3.object.key}\nNow Deleting ${event.Records[0].s3.object.key}`
+                    if (tcDebug) console.log(s3ContentResults)
+
+                    //Once successful delete the original S3 Object
+                    const delResultCode = await deleteS3Object(event.Records[0].s3.object.key, event.Records[0].s3.bucket.name)
+                    if (delResultCode !== '204') console.log(`Invalid Delete of ${event.Records[0].s3.object.key}, Expected 204 result code, received ${delResultCode}`)
+                    else console.log(`Successful Delete of ${event.Records[0].s3.object.key}  (Result ${delResultCode}) `)
+
+                })
+
+                .on('finish', function (msg: string) {
+                    // CSVParse for NodeJS
+                    // Problem: 
+                    // You are using the "finish" event and you don't have all your records. 
+                    // The "readable" event is still being called with a few records left.
+                    // Solution: 
+                    // The parser is both a writable and a readable stream.You write data and you read records.
+                    // Following Node.js.stream documentation, the "finish" event is from the write API and is 
+                    // emitted when the input source has flushed its data.The "end" event is from the read API 
+                    // and is emitted when there is no more data to be consumed from the stream.
+
+
+                    chunks = []
+                    batchCount = 0
+
+                    // if (s3ContentStream && !s3ContentStream.readable)
+                    // {
+                    //     // if (!isReadableEnded(stream))
+                    //     //     return callback.call(stream, new ERR_STREAM_PREMATURE_CLOSE())
+                    //     console.log(`s3ContentStream OnFinish (Readable ${s3ContentStream.readable}) for ${event.Records[0].s3.object.key}`)
+                    // }
+                    s3ContentResults = `s3ContentStream OnFinish - S3 Content Streaming has Finished, processed ${recs} records from ${event.Records[0].s3.object.key}`
+                    if (tcDebug) console.log(s3ContentResults)
+                    // return (s3ContentResults)
+                })
+
+            // }).catch(e => {
+            //     // throw new Error(`Exception Processing (Promise) S3 Get Object Content for ${event.Records[0].s3.object.key}: \n ${e}`);
+            //     console.log(
+            //         `Exception Processing (Await S3 Body) S3 Get Object Content for ${event.Records[0].s3.object.key}: \n ${e}`,
+            //     )
+            // })
+        })
+    // .catch(e => {
+    //     // throw new Error(`Exception Processing (Promise) S3 Get Object Content for ${event.Records[0].s3.object.key}: \n ${e}`);
+    //     console.log(
+    //         `Exception Processing (S3 Send Command Promise) S3 Get Object Content for ${event.Records[0].s3.object.key}: \n ${e}`,
+    //     )
+    // })
+
+    // } catch (e)
+    // {
+    //     chunks = []
+    //     batchCount = 0
+    //     throw new Error(`Exception during Processing of S3 Object for ${event.Records[0].s3.object.key}: \n ${e}`)
+    // }
+
+    if (tcDebug) console.log(`Process S3Object Content Stream returns: ${s3ContentResults}, ${workQueuedSuccess}`)
+
+    // return { s3ContentResults, workQueuedSuccess }
+    return
 }
 
 
 async function setWork (chunks: string[], s3Key: string, config: customerConfig, batch: number) {
 
-    if (batch > 10) throw new Error(`BatchCount Exceeds Safety - exiting: `)
+    if (batch > 20) throw new Error(`BatchCount Exceeds Safety Limit of 20 Batches - exiting: `)
 
     xmlRows = convertToXMLUpdate(chunks, config)
     const key = `process_${batch}_${s3Key}`
@@ -883,8 +859,6 @@ async function queueUpWork (queueContent: string, key: string, batchNum: string,
 
     const AddWorkToS3ProcessBucketResults = await addWorkToS3ProcessStore(queueContent, key)
     const AddWorkSQSProcessQueueResults = await addWorkToSQSProcessQueue(config, key, batchNum, recCount.toString())
-
-    debugger
 
     return JSON.stringify({ AddWorkToS3ProcessBucketResults, AddWorkSQSProcessQueueResults })
 }
@@ -989,7 +963,6 @@ async function addWorkToSQSProcessQueue (config: customerConfig, key: string, ba
                 SQSSendResult = JSON.stringify(sqsSendMessageResult)
 
                 workQueuedSuccess = true
-                debugger
 
                 if (tcDebug) console.log(`Wrote Work to SQS Process Queue (${sqsQMsgBody.workKey}) - Result: ${sqsWriteResult} `)
             })
@@ -1109,11 +1082,12 @@ async function getS3Work (s3Key: string) {
     let work: string = ''
     try
     {
-        await s3.send(new GetObjectCommand(getObjectCmd)).then(async (s3Result: GetObjectCommandOutput) => {
-            // work = JSON.stringify(b, null, 2)
-            work = (await s3Result.Body?.transformToString('utf8')) as string
-            if (tcDebug) console.log(`Work Pulled (${work.length} chars): ${s3Key}`)
-        })
+        await s3.send(new GetObjectCommand(getObjectCmd))
+            .then(async (getS3Result: GetObjectCommandOutput) => {
+                // work = JSON.stringify(b, null, 2)
+                work = (await getS3Result.Body?.transformToString('utf8')) as string
+                if (tcDebug) console.log(`Work Pulled (${work.length} chars): ${s3Key}`)
+            })
     } catch (e)
     {
         throw new Error(`ProcessQueue - Get Work S3 Object (${s3Key}) Exception ${e}`)
@@ -1254,11 +1228,7 @@ async function deleteS3Object (s3ObjKey: string, bucket: string) {
 
                 delRes = JSON.stringify(s3DelResult.$metadata.httpStatusCode, null, 2)
 
-                // if (tcDebug) console.log("Received the following Object: \n", JSON.stringify(data.Body, null, 2));
-
                 // if (tcDebug) console.log(`Result from Delete of ${s3ObjKey}: ${delRes} `)
-
-                // return delRes
             })
     } catch (e)
     {
@@ -1300,8 +1270,8 @@ async function getAnS3ObjectforTesting (bucket: string) {
     {
         console.log(`Exception Processing S3 List Command: ${e} `)
     }
-    // return s3Key
-    return 'pura_2023_11_12T01_43_58_170Z.csv'
+    return s3Key
+    // return 'pura_2023_11_12T01_43_58_170Z.csv'
 }
 
 
