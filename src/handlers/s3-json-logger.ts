@@ -10,7 +10,7 @@ import {
     DeleteObjectRequest,
 } from '@aws-sdk/client-s3'
 import { ListObjectsV2Command, ListObjectsV2CommandInput, ListObjectsV2CommandOutput } from '@aws-sdk/client-s3'
-import { Handler, S3Event, Context, SQSEvent } from 'aws-lambda'
+import { Handler, S3Event, Context, SQSEvent, SQSRecord } from 'aws-lambda'
 import fetch, { Headers, RequestInit, Response } from 'node-fetch'
 // import { Writable, Readable, Stream, Duplex } from "node:stream";
 import { parse } from 'csv-parse'
@@ -117,10 +117,21 @@ export interface tcConfig {
     QueueBucketPurge: string
 }
 
-let tcDebug = false
-
 let tc = {} as tcConfig
 
+export interface SQSBatchItemFails {
+    batchItemFailures: [
+        {
+            itemIdentifier: string
+        }
+    ]
+}
+
+
+let sqsBatchFail: SQSBatchItemFails
+
+
+let tcDebug = false
 
 const csvParser = parse({
     delimiter: ',',
@@ -196,52 +207,76 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
     }
 
 
-    const tqm: tcQueueMessage = JSON.parse(event.Records[0].body)
+    // Backoff strategy for failed invocations
 
-    tqm.workKey = JSON.parse(event.Records[0].body).work
+    //When an invocation fails, Lambda attempts to retry the invocation while implementing a backoff strategy.
+    // The backoff strategy differs slightly depending on whether Lambda encountered the failure due to an error in
+    //  your function code, or due to throttling.
 
-    //When Testing - get some actual work queued
-    if (tqm.workKey === 'process_2_pura_2023_10_27T15_11_40_732Z.csv')
-    {
-        tqm.workKey = (await getAnS3ObjectforTesting('tricklercache-process')) as string
-    }
+    //If your function code caused the error, Lambda gradually backs off retries by reducing the amount of 
+    // concurrency allocated to your Amazon SQS event source mapping.If invocations continue to fail, Lambda eventually
+    //  drops the message without retrying.
 
-    console.log(`Processing Work Queue for ${tqm.workKey}`)
-    if (tcDebug) console.log(`Debug-Processing Work Queue - Work File: \n ${JSON.stringify(tqm)}`)
-
+    //If the invocation fails due to throttling, Lambda gradually backs off retries by reducing the amount of 
+    // concurrency allocated to your Amazon SQS event source mapping.Lambda continues to retry the message until 
+    // the message's timestamp exceeds your queue's visibility timeout, at which point Lambda drops the message.
 
 
-    let postResult
+    let postResult: string = 'false'
 
-    try
-    {
-        const work = await getS3Work(tqm.workKey)
-        if (!work) throw new Error(`Failed to retrieve work (${tqm.workKey}) from Queue: `)
+    console.log(`SQS Events Batch ${event}`)
 
-        postResult = await postToCampaign(work, tqm.custconfig, tqm.updateCount)
-        if (postResult.postRes === 'retry')
+    event.Records.forEach((i) => {
+        sqsBatchFail.batchItemFailures.push({ itemIdentifier: i.messageId })
+    })
+
+    event.Records.forEach(async (i: SQSRecord) => {
+        const tqm: tcQueueMessage = JSON.parse(i.body)
+
+        tqm.workKey = JSON.parse(i.body).work
+
+        //When Testing - get some actual work queued
+        if (tqm.workKey === 'process_2_pura_2023_10_27T15_11_40_732Z.csv')
         {
-            await reQueue(event, tqm)
-            return postResult?.POSTSuccess
+            tqm.workKey = (await getAnS3ObjectforTesting('tricklercache-process')) as string
         }
 
-        if (!postResult.POSTSuccess) throw new Error(`Failed to process work ${tqm.workKey} - ${postResult.postRes} `)
+        console.log(`Processing Work Queue for ${tqm.workKey}`)
+        if (tcDebug) console.log(`Debug-Processing Work Queue - Work File: \n ${JSON.stringify(tqm)}`)
 
-        if (postResult.POSTSuccess)
+        debugger
+
+        try
         {
+            const work = await getS3Work(tqm.workKey)
+            if (!work) throw new Error(`Failed to retrieve work file (${tqm.workKey})`)
+
+            postResult = await postToCampaign(work, tqm.custconfig, tqm.updateCount)
+
+            // if (postResult.postRes === 'retry')
+            // {
+            //     await reQueue(event, tqm)
+            //     return postResult?.POSTSuccess
+            // }
+
+            if (postResult === 'false') throw new Error(`Failed to process work ${tqm.workKey}. Result ${postResult} `)
+
             deleteS3Object(tqm.workKey, 'trickler-process')
+
+        } catch (e)
+        {
+            console.log(`Processing Work Queue Exception: ${e}`)
         }
-    } catch (e)
-    {
-        console.log(`Processing Work Queue Exception: ${e}`)
-    }
 
-    debugger
+        debugger
 
-    console.log(`Processing Work Queue - Work (${tqm.workKey}), Success(${postResult?.POSTSuccess})`)
-    if (tcDebug) console.log(`Debug-Processing Work Queue - Work (${tqm.workKey})\n ${postResult?.postRes}`)
+        console.log(`Processing Work Queue - Work (${tqm.workKey}), Success(${postResult})`)
+        if (tcDebug) console.log(`Debug-Processing Work Queue - Work (${tqm.workKey})\n ${postResult}`)
+    })
 
-    return postResult?.POSTSuccess
+
+
+    return postResult
 }
 
 
@@ -321,7 +356,7 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
     const s3CacheProcessorResult = await processS3ObjectContentStream(event)
 
     if (tcDebug) console.log(
-        `ProcessS3ObjectContentStream Return - for ${event.Records[0].s3.object.key} Completed (Result: ${s3CacheProcessorResult})`
+        `ProcessS3ObjectContentStream - s3CacheProcessor Promise returned for ${event.Records[0].s3.object.key} Completed (Result: ${s3CacheProcessorResult})`
     )
 
 
@@ -623,6 +658,7 @@ async function validateConfig (config: customerConfig) {
 async function processS3ObjectContentStream (event: S3Event) {
     let chunks: string[] = new Array()
     let s3ContentResults
+    let s3ContentStream: NodeJS.ReadableStream
     let batchCount = 0
 
     // try
@@ -652,7 +688,7 @@ async function processS3ObjectContentStream (event: S3Event) {
 
             // await getS3StreamResult.Body
 
-            let s3ContentStream = getS3StreamResult.Body as NodeJS.ReadableStream
+            s3ContentStream = getS3StreamResult.Body as NodeJS.ReadableStream
 
             if (tcDebug) console.log(`Get S3 Object - Records returned from ${event.Records[0].s3.object.key}`)
 
@@ -706,6 +742,7 @@ async function processS3ObjectContentStream (event: S3Event) {
 
                     throw new Error(s3ContentResults)
                 })
+
                 .on('data', async function (s3Chunk: string) {
                     recs++
                     if (recs > config.updateMaxRows) throw new Error(`The number of Updates in this  Exceeds Max Row Updates allowed ${recs} `)
@@ -767,7 +804,7 @@ async function processS3ObjectContentStream (event: S3Event) {
 
                 })
 
-                .on('finish', function (msg: string) {
+                .on('finish', async function (msg: string) {
                     // CSVParse for NodeJS
                     // Problem: 
                     // You are using the "finish" event and you don't have all your records. 
@@ -793,6 +830,12 @@ async function processS3ObjectContentStream (event: S3Event) {
                     // return (s3ContentResults)
                 })
 
+            return new Promise((resolve, reject) => {
+                s3ContentStream.on('error', reject)
+                s3ContentStream.on('close', resolve)
+            })
+
+
             // }).catch(e => {
             //     // throw new Error(`Exception Processing (Promise) S3 Get Object Content for ${event.Records[0].s3.object.key}: \n ${e}`);
             //     console.log(
@@ -814,10 +857,13 @@ async function processS3ObjectContentStream (event: S3Event) {
     //     throw new Error(`Exception during Processing of S3 Object for ${event.Records[0].s3.object.key}: \n ${e}`)
     // }
 
-    if (tcDebug) console.log(`Process S3Object Content Stream returns: ${s3ContentResults}, ${workQueuedSuccess}`)
+    if (tcDebug) console.log(`Process S3Object Content Stream now processing ${event.Records[0].s3.object.key}`)
 
     // return { s3ContentResults, workQueuedSuccess }
-    return
+    // return s3ContentStream
+
+
+
 }
 
 
@@ -1205,7 +1251,7 @@ export async function postToCampaign (xmlCalls: string, config: customerConfig, 
         console.log(`Exception during POST to Campaign (AccessToken ${process.env.accessToken}) Result: ${e}`)
     }
 
-    return { postRes, POSTSuccess }
+    return POSTSuccess.toString()
 }
 
 async function deleteS3Object (s3ObjKey: string, bucket: string) {

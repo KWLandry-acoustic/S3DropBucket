@@ -121,7 +121,34 @@ Resources:
             - '@aws-sdk/fetch-http-handlerdeps/node-fetch'
             - '@aws-sdk/client3/package.json'
   
+  # Not defined here yet
+  # SQS Queues - tricklercacheQueue
+  #   Remember to use when defining: "FunctionResponseTypes": ["ReportBatchItemFailures"]
+  # 
+  #              tricklercache-DeadLetterQueue
+  # Resources:
+  #     tricklercacheQueue:
+  #       Type: "AWS::SQS::Queue"
+  #       Properties:
+  #         QueueName: "tricklercacheQueue"
+  #         VisibilityTimeout: 30
+  #         MessageRetentionPeriod: 60
+  #         RedrivePolicy:
+  #           deadLetterTargetArn:
+  #             "Fn::GetAtt":
+  #               - tricklercache-DeadLetterQueue
+  #               - Arn
+  #           maxReceiveCount: 1
+  #     tricklercache-DeadLetterQueue:
+  #       Type: "AWS::SQS::Queue"
+  #       Properties:
+  #         QueueName: "tricklercache-DeadLetterQueue"
+  #         MessageRetentionPeriod: 1209600   # 14 days in seconds
+
+
+  # S3 Bucket - tricklercache-process
   
+   
   
   #Can only define a new S3 Bucket on creation (first run), and then an existing bucket can only have a trigger added manually, 
   # tricklercache:
