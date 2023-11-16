@@ -435,6 +435,7 @@ export default s3JsonLoggerHandler
 function checkForTCConfigUpdates () {
     if (tcLogDebug) console.log(`Checking for TricklerCache Config updates`)
     getTricklerConfig()
+    console.log(`Refreshed TricklerCache Config - Logging Info: ${tcLogInfo} Debug: ${tcLogDebug} Verbose: ${tcLogDebug2}`)
 }
 
 async function getTricklerConfig () {
