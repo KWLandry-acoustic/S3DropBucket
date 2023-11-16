@@ -742,7 +742,7 @@ async function processS3ObjectContentStream (event: S3Event) {
 
             if (config.format.toLowerCase() === 'csv')
             {
-                s3ContentStream = s3ContentStream.pipe(csvParser) //, { end: false })
+                s3ContentStream = s3ContentStream.pipe(csvParser, { end: false })
                     // .on('end', function (e: string) {
                     //     debugger
                     //     console.log(`CSVParse - OnEnd`)
@@ -849,37 +849,43 @@ async function processS3ObjectContentStream (event: S3Event) {
                     recs = 0
                 })
 
-            // .on('finish', async function (msg: string) {
-            //     // CSVParse for NodeJS
-            //     // Problem:
-            //     // You are using the "finish" event and you don't have all your records.
-            //     // The "readable" event is still being called with a few records left.
-            //     // Solution:
-            //     // The parser is both a writable and a readable stream.You write data and you read records.
-            //     // Following Node.js.stream documentation, the "finish" event is from the write API and is
-            //     // emitted when the input source has flushed its data.The "end" event is from the read API
-            //     // and is emitted when there is no more data to be consumed from the stream.
+                .on('finish', async function (msg: string) {
+                    //     // CSVParse for NodeJS
+                    //     // Problem:
+                    //     // You are using the "finish" event and you don't have all your records.
+                    //     // The "readable" event is still being called with a few records left.
+                    //     // Solution:
+                    //     // The parser is both a writable and a readable stream.You write data and you read records.
+                    //     // Following Node.js.stream documentation, the "finish" event is from the write API and is
+                    //     // emitted when the input source has flushed its data.The "end" event is from the read API
+                    //     // and is emitted when there is no more data to be consumed from the stream.
 
 
-            //     chunks = []
-            //     batchCount = 0
+                    chunks = []
 
-            //     // if (s3ContentStream && !s3ContentStream.readable)
-            //     // {
-            //     //     // if (!isReadableEnded(stream))
-            //     //     //     return callback.call(stream, new ERR_STREAM_PREMATURE_CLOSE())
-            //     //     console.log(`s3ContentStream OnFinish (Readable ${s3ContentStream.readable}) for ${event.Records[0].s3.object.key}`)
-            //     // }
-            //     s3ContentResults = `s3ContentStream OnFinish - S3 Content Streaming has Finished, processed ${recs} records from ${event.Records[0].s3.object.key}`
-            //     if (tcLogDebug) console.log(s3ContentResults)
-            //     // return (s3ContentResults)
-            // })
+                    // if (s3ContentStream && !s3ContentStream.readable)
+                    // {
+                    //     // if (!isReadableEnded(stream))
+                    //     //     return callback.call(stream, new ERR_STREAM_PREMATURE_CLOSE())
+                    //     console.log(`OnClose: Readable - ${s3ContentStream.readable}  for ${key}`)
+                    // }
 
-            // debugger
-            // return new Promise((resolve, reject) => {
-            //     s3ContentStream.on('error', reject)
-            //     s3ContentStream.on('close', resolve)
-            // })
+                    s3ContentResults = `S3ContentStream OnFinish - S3 Content Streaming has Finished, successfully processed ${recs} records from ${key}\nNow Deleting ${key}`
+                    if (tcLogDebug) console.log(s3ContentResults)
+
+                    console.log(`S3 Content Stream Finished for ${key}. Processed ${recs} records`)
+
+                    batchCount = 0
+                    const r = recs
+                    recs = 0
+
+                    // return (s3ContentResults)
+
+                    // debugger
+                    // return new Promise((resolve, reject) => {
+                    //     s3ContentStream.on('error', reject)
+                    //     s3ContentStream.on('close', resolve)
+                })
 
 
 
