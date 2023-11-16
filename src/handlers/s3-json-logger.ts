@@ -133,7 +133,7 @@ let sqsBatchFail: SQSBatchItemFails
 
 let tcLogInfo = true
 let tcLogDebug = false
-let tcLogDebug2 = false
+let tcLogVerbose = false
 
 
 const csvParser = parse({
@@ -367,7 +367,8 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
         `ProcessS3ObjectContentStream - s3CacheProcessor Promise returned for ${key} Completed (Result: ${processS3ObjectStream})`
     )
 
-    console.log(`Completed processing S3 Object Stream \nJSON.stringify(${processS3ObjectStream})`)
+    debugger
+    console.log(`Completed processing S3 Object Stream \n${JSON.stringify(processS3ObjectStream)}`)
 
     //Once successful delete the original S3 Object
     const delResultCode = await deleteS3Object(key, bucket)
@@ -438,7 +439,7 @@ export default s3JsonLoggerHandler
 function checkForTCConfigUpdates () {
     if (tcLogDebug) console.log(`Checking for TricklerCache Config updates`)
     getTricklerConfig()
-    console.log(`Refreshed TricklerCache Config \n ${JSON.stringify(tc)} \nLogging set as: Info-${tcLogInfo} Debug-${tcLogDebug} Verbose-${tcLogDebug2}. \nMaxListeners - ${tc.EventEmitterMaxListeners}`)
+    console.log(`Refreshed TricklerCache Config \n ${JSON.stringify(tc)}`)
 }
 
 async function getTricklerConfig () {
@@ -468,7 +469,7 @@ async function getTricklerConfig () {
     {
         //ToDo: Need validation of Config
         if (tc.LOGLEVEL !== undefined && tc.LOGLEVEL.toLowerCase().indexOf('debug') > -1) tcLogDebug = true
-        if (tc.LOGLEVEL !== undefined && tc.LOGLEVEL.toLowerCase().indexOf('verbose') > -1) tcLogDebug2 = true
+        if (tc.LOGLEVEL !== undefined && tc.LOGLEVEL.toLowerCase().indexOf('verbose') > -1) tcLogVerbose = true
 
 
         if (tc.SQS_QUEUE_URL !== undefined) process.env.SQS_QUEUE_URL = tc.SQS_QUEUE_URL
@@ -792,7 +793,7 @@ async function processS3ObjectContentStream (event: S3Event) {
                     recs++
                     if (recs > config.updateMaxRows) throw new Error(`The number of Updates in this  Exceeds Max Row Updates allowed ${recs} `)
 
-                    // if (tcLogDebug2) console.log(`s3ContentStream OnData - Another chunk  (ArrayLen:${chunks.length} Recs:${recs} Batch:${batchCount} from ${key} - ${JSON.stringify(s3Chunk)}`)
+                    if (tcLogVerbose) console.log(`s3ContentStream OnData - Another chunk  (ArrayLen:${chunks.length} Recs:${recs} Batch:${batchCount} from ${key} - ${JSON.stringify(s3Chunk)}`)
 
                     chunks.push(s3Chunk)
 
@@ -826,7 +827,7 @@ async function processS3ObjectContentStream (event: S3Event) {
                     batchCount = 0
                     recs = 0
 
-                    return (s3ContentResults)
+                    return { key, recs, s3ContentResults }
                 })
 
                 .on('close', async function (msg: string) {
@@ -911,7 +912,8 @@ async function processS3ObjectContentStream (event: S3Event) {
     //     throw new Error(`Exception during Processing of S3 Object for ${key}: \n ${e}`)
     // }
 
-    if (tcLogDebug) console.log(`Process S3Object Content Stream now processing ${key}`)
+
+    if (tcLogDebug) console.log(`Now Processing the S3Object Content Stream for ${key}`)
     debugger
 
     // return new Promise((resolve, reject) => {
@@ -1000,7 +1002,7 @@ async function addWorkToS3ProcessStore (queueContent: string, key: string) {
                 if (S3ProcessBucketResult === '200')
                 {
                     AddWorkToS3ProcessBucket = `Wrote Work File (${key}) to S3 Process Store (Result ${S3ProcessBucketResult})`
-                    console.log(`${AddWorkToS3ProcessBucket}`)
+                    if (tcLogDebug) console.log(`${AddWorkToS3ProcessBucket}`)
                 }
                 else throw new Error(`Failed to write Work File to S3 Process Store (Result ${S3ProcessBucketResult}) for ${key}`)
             })
