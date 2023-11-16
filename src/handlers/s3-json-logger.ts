@@ -379,41 +379,41 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
 
     // //When Local Testing - pull an S3 Object and so avoid the not-found error
 
-    event.Records[0].s3.object.key = (await getAnS3ObjectforTesting(bucket)) as string
-    key = event.Records[0].s3.object.key
+    // event.Records[0].s3.object.key = (await getAnS3ObjectforTesting(bucket)) as string
+    // key = event.Records[0].s3.object.key
 
-    console.log(`Round 2 - Processing of ${key} `)
+    // console.log(`Round 2 - Processing of ${key} `)
 
-    const s3Result2 = await processS3ObjectContentStream(event)
+    // const s3Result2 = await processS3ObjectContentStream(event)
 
-    if (tcDebug) console.log(
-        `ProcessS3ObjectContentStream - s3CacheProcessor Promise 2 returned (${s3Result2}) for ${key} Completed (Result: ${s3Result2})`
-    )
+    // if (tcDebug) console.log(
+    //     `ProcessS3ObjectContentStream - s3CacheProcessor Promise 2 returned (${s3Result2}) for ${key} Completed (Result: ${s3Result2})`
+    // )
 
-    //Once successful delete the original S3 Object
-    const delResultCode2 = await deleteS3Object(key, bucket)
-    if (delResultCode !== '204') console.log(`Invalid Delete of ${key}, Expected 204 result code, received ${delResultCode}`)
-    else console.log(`Successful Delete of ${key}  (Result ${delResultCode}) `)
+    // //Once successful delete the original S3 Object
+    // const delResultCode2 = await deleteS3Object(key, bucket)
+    // if (delResultCode !== '204') console.log(`Invalid Delete of ${key}, Expected 204 result code, received ${delResultCode}`)
+    // else console.log(`Successful Delete of ${key}  (Result ${delResultCode}) `)
 
 
 
 
     // //When Local Testing - pull an S3 Object and so avoid the not-found error
 
-    event.Records[0].s3.object.key = (await getAnS3ObjectforTesting(bucket)) as string
-    key = event.Records[0].s3.object.key
+    // event.Records[0].s3.object.key = (await getAnS3ObjectforTesting(bucket)) as string
+    // key = event.Records[0].s3.object.key
 
-    console.log(`Round 3 - Processing of ${key} `)
-    const s3Result3 = await processS3ObjectContentStream(event)
+    // console.log(`Round 3 - Processing of ${key} `)
+    // const s3Result3 = await processS3ObjectContentStream(event)
 
-    if (tcDebug) console.log(
-        `ProcessS3ObjectContentStream - s3CacheProcessor Promise 3 returned (${s3Result3}) for ${key} Completed (Result: ${s3Result3})`
-    )
+    // if (tcDebug) console.log(
+    //     `ProcessS3ObjectContentStream - s3CacheProcessor Promise 3 returned (${s3Result3}) for ${key} Completed (Result: ${s3Result3})`
+    // )
 
-    //Once successful delete the original S3 Object
-    const delResultCode3 = await deleteS3Object(key, bucket)
-    if (delResultCode !== '204') console.log(`Invalid Delete of ${key}, Expected 204 result code, received ${delResultCode}`)
-    else console.log(`Successful Delete of ${key}  (Result ${delResultCode}) `)
+    // //Once successful delete the original S3 Object
+    // const delResultCode3 = await deleteS3Object(key, bucket)
+    // if (delResultCode !== '204') console.log(`Invalid Delete of ${key}, Expected 204 result code, received ${delResultCode}`)
+    // else console.log(`Successful Delete of ${key}  (Result ${delResultCode}) `)
 
 
 
