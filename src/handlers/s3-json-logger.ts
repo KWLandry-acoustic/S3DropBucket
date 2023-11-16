@@ -292,6 +292,16 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
     // if (tcLogDebug) console.log(`AWS-SDK Version: ${version}`)
     // if (tcLogDebug) console.log('ENVIRONMENT VARIABLES\n' + JSON.stringify(process.env, null, 2))
 
+
+    //ToDo: Resolve the progression of these steps, currently "Completed" is logged regardless of 'completion'
+    // and Delete happens regardless of 'completion' being successful or not
+    //
+    // INFO Started Processing inbound data(pura_2023_11_16T20_24_37_627Z.csv)
+    // INFO Completed processing inbound S3 Object Stream undefined
+    // INFO Successful Delete of pura_2023_11_16T20_24_37_627Z.csv(Result 204)
+    // 
+
+
     //When Local Testing - pull an S3 Object and so avoid the not-found error
     if (!event.Records[0].s3.object.key || event.Records[0].s3.object.key === 'devtest.csv')
     {
@@ -738,7 +748,6 @@ async function processS3ObjectContentStream (event: S3Event) {
 
             if (tcLogDebug) console.log(`Get S3 Object - Records returned from ${key}`)
 
-            s3ContentStream.setMaxListeners(tc.EventEmitterMaxListeners)
 
             if (config.format.toLowerCase() === 'csv')
             {
@@ -758,12 +767,12 @@ async function processS3ObjectContentStream (event: S3Event) {
                     //     s3ContentStream.emit('finish')
 
                     // })
-                    // .on('close', function (c: string) {
-                    //     console.log(`CSVParse - OnClose ${c}`)
-                    //     debugger
-                    //     s3ContentStream.emit('close')
+                    .on('close', function (c: string) {
+                        console.log(`CSVParse - OnClose ${c}`)
+                        debugger
+                        s3ContentStream.emit('close')
 
-                    // })
+                    })
                     .on('skip', async function (err) {
                         console.log(`CSV Parse - Invalid Record for ${key} \nError: ${err.code} for record ${err.lines}.\nOne possible cause is a field containing commas ',' and not properly Double-Quoted. \nContent: ${err.record} \nMessage: ${err.message} \nStack: ${err.stack} `)
                     })
@@ -776,6 +785,9 @@ async function processS3ObjectContentStream (event: S3Event) {
             // if (tcLogDebug) console.log(`Establish stream, Paused? ${s3ContentStream.isPaused().toString()}`)
 
             // if (tcLogDebug) console.log(`Established CSV Parser and listeners - now s3ContentStream Listeners`)
+
+
+            s3ContentStream.setMaxListeners(tc.EventEmitterMaxListeners)
 
             s3ContentStream
                 .on('error', async function (err: string) {
@@ -887,9 +899,6 @@ async function processS3ObjectContentStream (event: S3Event) {
                     //     s3ContentStream.on('close', resolve)
                 })
 
-
-
-
             // }).catch(e => {
             //     // throw new Error(`Exception Processing (Promise) S3 Get Object Content for ${key}: \n ${e}`);
             //     console.log(
@@ -898,8 +907,6 @@ async function processS3ObjectContentStream (event: S3Event) {
             // })
 
 
-            // await finished(s3ContentStream)
-            // return { s3ContentResults, workQueuedSuccess }
 
         })
     // .catch(e => {
@@ -917,6 +924,9 @@ async function processS3ObjectContentStream (event: S3Event) {
     // }
 
 
+    // await finished(s3ContentStream)
+    // return { s3ContentResults, workQueuedSuccess }
+
     if (tcLogDebug) console.log(`Began Processing the S3Object Content Stream for ${key}`)
     debugger
 
@@ -927,6 +937,7 @@ async function processS3ObjectContentStream (event: S3Event) {
 
     // return { s3ContentResults, workQueuedSuccess }
     // return s3ContentStream
+
     return streamResult
 
 }
@@ -934,7 +945,7 @@ async function processS3ObjectContentStream (event: S3Event) {
 
 async function storeAndQueueWork (chunks: string[], s3Key: string, config: customerConfig, batch: number) {
 
-    if (batch > 20) throw new Error(`BatchCount Exceeds Safety Limit of 20 Batches - exiting: `)
+    if (batch > 20) throw new Error(`S3 Object ${s3Key} Updates exceed Safety Limit of 20 Batches  - Exiting. `)
 
     xmlRows = convertToXMLUpdate(chunks, config)
     const key = `process_${batch}_${s3Key}`
