@@ -435,7 +435,7 @@ export default s3JsonLoggerHandler
 function checkForTCConfigUpdates () {
     if (tcLogDebug) console.log(`Checking for TricklerCache Config updates`)
     getTricklerConfig()
-    console.log(`Refreshed TricklerCache Config - Logging Info: ${tcLogInfo} Debug: ${tcLogDebug} Verbose: ${tcLogDebug2}`)
+    console.log(`Refreshed TricklerCache Config - Logging set as: Info-${tcLogInfo} Debug-${tcLogDebug} Verbose-${tcLogDebug2}. \nMaxListeners - ${tc.EventEmitterMaxListeners}`)
 }
 
 async function getTricklerConfig () {
@@ -992,7 +992,7 @@ async function addWorkToS3ProcessStore (queueContent: string, key: string) {
                 S3ProcessBucketResult = JSON.stringify(s3PutResult.$metadata.httpStatusCode, null, 2)
                 if (S3ProcessBucketResult === '200')
                 {
-                    AddWorkToS3ProcessBucket = `Wrote Work File to S3 Process Store (Result ${S3ProcessBucketResult}) for ${key}`
+                    AddWorkToS3ProcessBucket = `Wrote Work File (${key}) to S3 Process Store (Result ${S3ProcessBucketResult})`
                     console.log(`${AddWorkToS3ProcessBucket}`)
                 }
                 else throw new Error(`Failed to write Work File to S3 Process Store (Result ${S3ProcessBucketResult}) for ${key}`)
