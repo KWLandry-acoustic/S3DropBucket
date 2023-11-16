@@ -742,7 +742,7 @@ async function processS3ObjectContentStream (event: S3Event) {
 
             if (config.format.toLowerCase() === 'csv')
             {
-                s3ContentStream = s3ContentStream.pipe(csvParser, { end: false })
+                s3ContentStream = s3ContentStream.pipe(csvParser) //, { end: false })
                     // .on('end', function (e: string) {
                     //     debugger
                     //     console.log(`CSVParse - OnEnd`)
@@ -825,9 +825,8 @@ async function processS3ObjectContentStream (event: S3Event) {
                     if (tcLogDebug) console.log(s3ContentResults)
 
                     batchCount = 0
+                    const r = recs
                     recs = 0
-
-                    return { key, recs, s3ContentResults }
                 })
 
                 .on('close', async function (msg: string) {
@@ -846,9 +845,8 @@ async function processS3ObjectContentStream (event: S3Event) {
                     console.log(`S3 Content Stream Closed for ${key}. Processed ${recs} records`)
 
                     batchCount = 0
-
-                    return { key, recs, s3ContentResults }
-
+                    const r = recs
+                    recs = 0
                 })
 
             // .on('finish', async function (msg: string) {
