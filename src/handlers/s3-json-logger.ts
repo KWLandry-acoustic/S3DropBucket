@@ -433,6 +433,7 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
 export default s3JsonLoggerHandler
 
 function checkForTCConfigUpdates () {
+    if (tcLogDebug) console.log(`Checking for TricklerCache Config updates`)
     getTricklerConfig()
 }
 
