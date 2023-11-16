@@ -275,7 +275,7 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
 
         console.log(`Processing Work Queue - Work (${tqm.workKey}), Success(${postResult})`)
         if (tcLogDebug) console.log(`Debug-Processing Work Queue - Work (${tqm.workKey}), POST result ${postResult}`)
-        checkForTCConfigUpdates()
+
     })
 
 
@@ -372,8 +372,8 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
     if (delResultCode !== '204') console.log(`Invalid Delete of ${key}, Expected 204 result code, received ${delResultCode}`)
     else console.log(`Successful Delete of ${key}  (Result ${delResultCode}) `)
 
-
-
+    //Check for important Config updates each time
+    checkForTCConfigUpdates()
 
 
     // //resolve streaming stopping
@@ -789,7 +789,7 @@ async function processS3ObjectContentStream (event: S3Event) {
                     recs++
                     if (recs > config.updateMaxRows) throw new Error(`The number of Updates in this  Exceeds Max Row Updates allowed ${recs} `)
 
-                    if (tcLogDebug2) console.log(`s3ContentStream OnData - Another chunk  (ArrayLen:${chunks.length} Recs:${recs} Batch:${batchCount} from ${key} - ${JSON.stringify(s3Chunk)}`)
+                    // if (tcLogDebug2) console.log(`s3ContentStream OnData - Another chunk  (ArrayLen:${chunks.length} Recs:${recs} Batch:${batchCount} from ${key} - ${JSON.stringify(s3Chunk)}`)
 
                     chunks.push(s3Chunk)
 
