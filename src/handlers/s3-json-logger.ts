@@ -464,8 +464,8 @@ async function getTricklerConfig () {
     try
     {
         //ToDo: Need validation of Config
-        if (tc.LOGLEVEL !== undefined && tc.LOGLEVEL.toLowerCase().indexOf('debug')) tcLogDebug = true
-        if (tc.LOGLEVEL !== undefined && tc.LOGLEVEL.toLowerCase().indexOf('verbose')) tcLogDebug2 = true
+        if (tc.LOGLEVEL !== undefined && tc.LOGLEVEL.toLowerCase().indexOf('debug') > -1) tcLogDebug = true
+        if (tc.LOGLEVEL !== undefined && tc.LOGLEVEL.toLowerCase().indexOf('verbose') > -1) tcLogDebug2 = true
 
 
         if (tc.SQS_QUEUE_URL !== undefined) process.env.SQS_QUEUE_URL = tc.SQS_QUEUE_URL
@@ -761,7 +761,7 @@ async function processS3ObjectContentStream (event: S3Event) {
 
                     // })
                     .on('skip', async function (err) {
-                        console.log(`CSV Parse - Invalid Record\nError: ${err.code} for record ${err.lines}.\nOne possible cause is a field containing commas ',' and not properly Double-Quoted. \nContent: ${err.record} \nMessage: ${err.message} \nStack: ${err.stack} `)
+                        console.log(`CSV Parse - Invalid Record for ${key} \nError: ${err.code} for record ${err.lines}.\nOne possible cause is a field containing commas ',' and not properly Double-Quoted. \nContent: ${err.record} \nMessage: ${err.message} \nStack: ${err.stack} `)
                     })
                 // .on('error', function (err) {
                 //     console.log(`CSVParse - Error ${err}`)
