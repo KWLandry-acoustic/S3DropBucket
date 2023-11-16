@@ -356,7 +356,7 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
         throw new Error(`Exception Validating Config ${e}`)
     }
 
-    console.log(`Started Processing inbound data (${key}) for ${customer}`)
+    console.log(`Started Processing inbound data (${key})`)
 
 
     // let s3Result = { s3ContentResults: '', workQueuedSuccess: false }
@@ -368,7 +368,7 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
     )
 
     debugger
-    console.log(`Completed processing S3 Object Stream \n${JSON.stringify(processS3ObjectStream)}`)
+    console.log(`Completed processing inbound S3 Object Stream \n${JSON.stringify(processS3ObjectStream)}`)
 
     //Once successful delete the original S3 Object
     const delResultCode = await deleteS3Object(key, bucket)
@@ -711,7 +711,7 @@ async function processS3ObjectContentStream (event: S3Event) {
     // {
     if (tcLogDebug) console.log(`Processing S3 Content Stream for ${event.Records[0].s3.object.key}`)
 
-    await s3
+    let streamResult = await s3
         .send(
             new GetObjectCommand({
                 Key: key,
@@ -807,7 +807,7 @@ async function processS3ObjectContentStream (event: S3Event) {
 
                         const sw = await storeAndQueueWork(a, key, config, batchCount)
 
-                        if (tcLogDebug) console.log(`Await of SetWork returns - ${sw}`)
+                        if (tcLogDebug) console.log(`Await of StoreAndQueueWork returns - ${sw}`)
 
                     }
                 })
@@ -913,7 +913,7 @@ async function processS3ObjectContentStream (event: S3Event) {
     // }
 
 
-    if (tcLogDebug) console.log(`Now Processing the S3Object Content Stream for ${key}`)
+    if (tcLogDebug) console.log(`Began Processing the S3Object Content Stream for ${key}`)
     debugger
 
     // return new Promise((resolve, reject) => {
@@ -923,6 +923,7 @@ async function processS3ObjectContentStream (event: S3Event) {
 
     // return { s3ContentResults, workQueuedSuccess }
     // return s3ContentStream
+    return streamResult
 
 }
 
