@@ -813,13 +813,15 @@ async function processS3ObjectContentStream (event: S3Event) {
                     const a = chunks
                     chunks = []
 
-                    if (tcLogDebug) console.log(`S3ContentStream OnEnd, This Batch (${batchCount}) length is ${a.length} records`)
-                    batchCount = 0
+                    console.log(`S3 Content Stream Ended for ${key}. Processed ${recs} records`)
 
                     const swResult = await storeAndQueueWork(a, key, config, batchCount)
 
                     s3ContentResults = `S3ContentStream OnEnd (${key}) Set Work Result ${swResult}`
                     if (tcLogDebug) console.log(s3ContentResults)
+
+                    batchCount = 0
+                    recs = 0
 
                     return (s3ContentResults)
                 })
