@@ -1,5 +1,5 @@
 {
-      "LOGLEVEL": "info,debug",
+      "LOGLEVEL": "info",
       "AWS_REGION": "us-east-1",
 
       "SQS_QUEUE_URL": "https://sqs.us-east-1.amazonaws.com/777957353822/tricklercacheQueue",

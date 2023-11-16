@@ -332,7 +332,7 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
     // console.log("GetCustomerConfig: Customer string is ", customer)
 
     console.log(
-        `Processing Next S3 Trigger Event, RequestId: ", ${event.Records[0].responseElements['x-amz-request-id']}. Customer is ${customer}, Num of Events to be processed: ${event.Records.length}`,
+        `Received S3 Trigger Event(${event.Records[0].responseElements['x-amz-request-id']}) Customer indicated is ${customer}`,
     )
 
     //Just in case we start getting multiple file triggers for whatever reason
@@ -356,7 +356,7 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
         throw new Error(`Exception Validating Config ${e}`)
     }
 
-    console.log(`Processing of ${key} `)
+    console.log(`Started Processing inbound data (${key}) for ${customer}`)
 
 
     // let s3Result = { s3ContentResults: '', workQueuedSuccess: false }
@@ -366,6 +366,8 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
     if (tcLogDebug) console.log(
         `ProcessS3ObjectContentStream - s3CacheProcessor Promise returned for ${key} Completed (Result: ${processS3ObjectStream})`
     )
+
+    console.log(`Completed processing S3 Object Stream \nJSON.stringify(${processS3ObjectStream})`)
 
     //Once successful delete the original S3 Object
     const delResultCode = await deleteS3Object(key, bucket)
@@ -431,6 +433,7 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
 
 
 export default s3JsonLoggerHandler
+
 
 function checkForTCConfigUpdates () {
     if (tcLogDebug) console.log(`Checking for TricklerCache Config updates`)
@@ -828,7 +831,6 @@ async function processS3ObjectContentStream (event: S3Event) {
 
                 .on('close', async function (msg: string) {
                     chunks = []
-                    batchCount = 0
 
                     // if (s3ContentStream && !s3ContentStream.readable)
                     // {
@@ -840,7 +842,12 @@ async function processS3ObjectContentStream (event: S3Event) {
                     s3ContentResults = `S3ContentStream OnClose - S3 Content Streaming has Closed, successfully processed ${recs} records from ${key}\nNow Deleting ${key}`
                     if (tcLogDebug) console.log(s3ContentResults)
 
-                    return 'closed'
+                    console.log(`S3 Content Stream Closed for ${key}. Processed ${recs} records`)
+
+                    batchCount = 0
+
+                    return { key, recs, s3ContentResults }
+
                 })
 
             // .on('finish', async function (msg: string) {
