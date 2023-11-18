@@ -292,7 +292,8 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
 
     })
 
-    if (tcLogDebug) console.log(`Processed Work Queue Batch of ${event.Records.length} records. Batch Item Fail Log: (${sqsBatchFail})`)
+    // if (tcLogDebug)
+    console.log(`Processed Work Queue Batch of ${event.Records.length} records. Batch Item Fail Log: (${sqsBatchFail})`)
 
     // return sqsBatchFail
 
@@ -303,8 +304,11 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
             }
         ]
     }
-}
 
+
+
+}
+//End
 
 /**
  * A Lambda function to process the Event payload received from S3.
