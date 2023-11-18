@@ -272,6 +272,7 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
             if (work.length > 0)
             {
                 postResult = await postToCampaign(work, tqm.custconfig, tqm.updateCount)
+                console.log(`POST Result for ${tqm.workKey}: ${postResult}`)
 
                 if (postResult === 'retry')
                 {
