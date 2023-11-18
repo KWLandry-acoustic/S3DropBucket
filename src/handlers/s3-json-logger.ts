@@ -283,7 +283,7 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
                 {
                     console.log(`Work Successfully Processed (${tqm.workKey}), Deleting Work from Process Queue`)
                     const d: string = await deleteS3Object(tqm.workKey, 'tricklercache-process')
-                    if (d === '204') console.log(`Successful Deletion of ${tqm.workKey}`)
+                    if (d === '204') console.log(`Successful Deletion of Work: ${tqm.workKey}`)
                     else console.log(`Failed to Delete ${tqm.workKey}. Expected '204' received ${d}`)
                 }
             }
@@ -1369,7 +1369,6 @@ export async function postToCampaign (xmlCalls: string, config: customerConfig, 
 
             if (result.toLowerCase().indexOf('false</success>') > -1)
             {
-
                 // "<Envelope><Body><RESULT><SUCCESS>false</SUCCESS></RESULT><Fault><Request/>
                 //   <FaultCode/><FaultString>Invalid XML Request</FaultString><detail><error>
                 //   <errorid>51</errorid><module/><class>SP.API</class><method/></error></detail>
@@ -1381,7 +1380,7 @@ export async function postToCampaign (xmlCalls: string, config: customerConfig, 
             }
 
             result = result.replace('\n', ' ')
-            return `Processed ${count} Updates - Result: ${result}`
+            postRes = `Processed ${count} Updates - Result: ${result}`
         })
         .catch(e => {
             throw new Error(`Unsuccessful POST (Error) of Update: ${e}`)
@@ -1391,7 +1390,7 @@ export async function postToCampaign (xmlCalls: string, config: customerConfig, 
     //     console.log(`Exception during POST to Campaign (AccessToken ${process.env.accessToken}) Result: ${e}`)
     // }
 
-    return POSTSuccess.toString()
+    return postRes
 }
 
 async function deleteS3Object (s3ObjKey: string, bucket: string) {
