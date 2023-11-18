@@ -273,7 +273,7 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
                 }
                 else
                 {
-                    console.log(`Work Successfully Processed, Deleting from Process Queue ${tqm.workKey}`)
+                    console.log(`Work Successfully Processed (${tqm.workKey}), Deleting Work from Process Queue`)
                     const d: string = await deleteS3Object(tqm.workKey, 'tricklercache-process')
                     if (d === '204') console.log(`Successful Deletion of ${tqm.workKey}`)
                     else console.log(`Failed to Delete ${tqm.workKey}. Expected '204' received ${d}`)
