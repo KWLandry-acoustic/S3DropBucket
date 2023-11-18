@@ -833,8 +833,6 @@ async function processS3ObjectContentStream (event: S3Event) {
                         const a = chunks
                         chunks = []
 
-                        console.log(`Listener Count - ${s3ContentStream.listenerCount}`)
-
                         if (tcLogDebug) console.log(`s3ContentStream OnData Over 99 Records - Queuing Work (Batch: ${batchCount} Chunks: ${a.length}) from ${key}`)
 
                         const sw = await storeAndQueueWork(a, key, config, batchCount)
