@@ -1334,36 +1334,39 @@ export async function postToCampaign (xmlCalls: string, config: customerConfig, 
 
     let postRes
 
-    try
-    {
-        postRes = await fetch(host, requestOptions)
-            .then(response => response.text())
-            .then(result => {
-                // if (tcLogDebug) console.log("POST Update Result: ", result)
-                debugger
+    // try
+    // {
+    postRes = await fetch(host, requestOptions)
+        .then(response => response.text())
+        .then(result => {
+            // if (tcLogDebug) console.log("POST Update Result: ", result)
+            debugger
+
+            if (result.toLowerCase().indexOf('false</success>') > -1)
+            {
+
+                // "<Envelope><Body><RESULT><SUCCESS>false</SUCCESS></RESULT><Fault><Request/>
+                //   <FaultCode/><FaultString>Invalid XML Request</FaultString><detail><error>
+                //   <errorid>51</errorid><module/><class>SP.API</class><method/></error></detail>
+                //    </Fault></Body></Envelope>\r\n"
+
                 if (result.indexOf('max number of concurrent') > -1) postRes = 'retry'
+                else postRes = result
+                // throw new Error(`Unsuccessful POST of Update - ${result}`)
 
-                if (result.toLowerCase().indexOf('false</success>') > -1)
-                {
-                    // "<Envelope><Body><RESULT><SUCCESS>false</SUCCESS></RESULT><Fault><Request/>
-                    //   <FaultCode/><FaultString>Invalid XML Request</FaultString><detail><error>
-                    //   <errorid>51</errorid><module/><class>SP.API</class><method/></error></detail>
-                    //    </Fault></Body></Envelope>\r\n"
+            }
 
-                    throw new Error(`Unsuccessful POST of Update - ${result}`)
-                }
-
-                POSTSuccess = true
-                result = result.replace('\n', ' ')
-                return `Processed ${count} Updates - Result: ${result}`
-            })
-            .catch(e => {
-                console.log(`Exception on POST to Campaign: ${e}`)
-            })
-    } catch (e)
-    {
-        console.log(`Exception during POST to Campaign (AccessToken ${process.env.accessToken}) Result: ${e}`)
-    }
+            POSTSuccess = true
+            result = result.replace('\n', ' ')
+            return `Processed ${count} Updates - Result: ${result}`
+        })
+        .catch(e => {
+            console.log(`Exception on POST to Campaign: ${e}`)
+        })
+    // } catch (e)
+    // {
+    //     console.log(`Exception during POST to Campaign (AccessToken ${process.env.accessToken}) Result: ${e}`)
+    // }
 
     return POSTSuccess.toString()
 }
