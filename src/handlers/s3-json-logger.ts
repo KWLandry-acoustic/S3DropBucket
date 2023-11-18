@@ -1254,7 +1254,8 @@ async function getS3Work (s3Key: string) {
             })
     } catch (e)
     {
-        const err: string = e as string
+        const err: string = JSON.stringify(e)
+
         if (err.indexOf('NoSuchKey') > -1)
             throw new Error(`Failed to Retrieve Work from S3 Process Queue (${s3Key}) Exception ${e}`)
         else throw new Error(`Exception Retrieving Work from S3 Process Queue (${s3Key}) Exception ${e}`)
