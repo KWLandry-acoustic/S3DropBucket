@@ -753,6 +753,7 @@ async function processS3ObjectContentStream (event: S3Event) {
             }
 
             let recs = 0
+            const debugData = new Array()
 
             // await getS3StreamResult.Body
 
@@ -760,18 +761,18 @@ async function processS3ObjectContentStream (event: S3Event) {
 
             if (tcLogDebug) console.log(`Get S3 Object - Records returned from ${key}`)
 
-
             if (config.format.toLowerCase() === 'csv')
             {
                 s3ContentStream = s3ContentStream.pipe(csvParser, { end: false })
+                    .on('error', function (err) {
+                        console.log(`CSVParse - Error ${err}`)
+                        debugger
+                        s3ContentStream.emit('error')
+                    })
                     .on('end', function (e: string) {
                         debugger
                         console.log(`CSVParse - OnEnd`)
                         s3ContentStream.emit('end')
-                    })
-                    .on('data', function (f: string) {
-                        console.log(`CSVParse - OnData ${f}`)
-                        // debugger
                     })
                     .on('finish', function (f: string) {
                         console.log(`CSVParse - OnFinish ${f}`)
@@ -781,18 +782,20 @@ async function processS3ObjectContentStream (event: S3Event) {
                     })
                     .on('close', function (c: string) {
                         console.log(`CSVParse - OnClose ${c}`)
+                        console.log(`Stream Closed \n${JSON.stringify(debugData)}`)
                         debugger
                         s3ContentStream.emit('close')
 
                     })
                     .on('skip', async function (err) {
+                        debugData.push(err)
                         console.log(`CSV Parse - Invalid Record for ${key} \nError: ${err.code} for record ${err.lines}.\nOne possible cause is a field containing commas ',' and not properly Double-Quoted. \nContent: ${err.record} \nMessage: ${err.message} \nStack: ${err.stack} `)
                         debugger
                     })
-                    .on('error', function (err) {
-                        console.log(`CSVParse - Error ${err}`)
-                        debugger
-                        s3ContentStream.emit('error')
+                    .on('data', function (f: string) {
+                        debugData.push(f)
+                        // console.log(`CSVParse - OnData ${f}`)
+                        // debugger
                     })
             }
 
