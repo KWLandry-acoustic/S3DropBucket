@@ -26,6 +26,7 @@ import {
     SendMessageCommandOutput,
 } from '@aws-sdk/client-sqs'
 import { pipeline, finished } from 'stream/promises'
+import { forEach } from 'lodash'
 // import { ReadableStream, ReadableStreamDefaultReader } from 'node:stream/web'
 
 
@@ -239,10 +240,16 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
     if (tcLogDebug) console.log(`SQS Events Batch (${event.Records.length} records) ${JSON.stringify(event)}`)
 
     debugger
-    event.Records.forEach((i) => {
-        sqsBatchFail.batchItemFailures.push({ itemIdentifier: i.messageId })
+    // event.Records.forEach((i) => {
+    //     sqsBatchFail.batchItemFailures.push({ itemIdentifier: i.messageId })
+    // })
+
+
+    sqsBatchFail.batchItemFailures.forEach(() => {
+        sqsBatchFail.batchItemFailures.pop()
     })
 
+    //Process this Inbound Batch 
     event.Records.forEach(async (i: SQSRecord) => {
         const tqm: tcQueueMessage = JSON.parse(i.body)
 
@@ -1258,7 +1265,6 @@ async function getS3Work (s3Key: string) {
     {
         await s3.send(new GetObjectCommand(getObjectCmd))
             .then(async (getS3Result: GetObjectCommandOutput) => {
-                // work = JSON.stringify(b, null, 2)
                 work = (await getS3Result.Body?.transformToString('utf8')) as string
                 if (tcLogDebug) console.log(`Work Pulled (${work.length} chars): ${s3Key}`)
             })
