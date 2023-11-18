@@ -279,10 +279,11 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
 
         debugger
 
-        console.log(`Processing Work Queue - Work (${tqm.workKey}), Success(${postResult})`)
-        if (tcLogDebug) console.log(`Debug-Processing Work Queue - Work (${tqm.workKey}), POST result ${postResult}`)
+        console.log(`Processing Work Queue - Work (${tqm.workKey}), Result(${postResult})`)
 
     })
+
+    if (tcLogDebug) console.log(`Processing Work Queue (Work (${sqsBatchFail})`)
 
     // return sqsBatchFail
 
