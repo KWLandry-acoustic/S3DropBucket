@@ -25,7 +25,7 @@ import {
     SendMessageCommand,
     SendMessageCommandOutput,
 } from '@aws-sdk/client-sqs'
-import { finished } from 'stream/promises'
+import { pipeline, finished } from 'stream/promises'
 // import { ReadableStream, ReadableStreamDefaultReader } from 'node:stream/web'
 
 
@@ -129,7 +129,13 @@ export interface SQSBatchItemFails {
 }
 
 
-let sqsBatchFail: SQSBatchItemFails
+let sqsBatchFail: SQSBatchItemFails = {
+    batchItemFailures: [
+        {
+            itemIdentifier: ''
+        }
+    ]
+}
 
 let tcLogInfo = true
 let tcLogDebug = false
@@ -227,8 +233,8 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
 
     let postResult: string = 'false'
 
-    console.log(`SQS Events Batch ${event}`)
-
+    console.log(`SQS Events Batch ${JSON.stringify(event)}`)
+    debugger
     event.Records.forEach((i) => {
         sqsBatchFail.batchItemFailures.push({ itemIdentifier: i.messageId })
     })
@@ -278,9 +284,15 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
 
     })
 
+    // return sqsBatchFail
 
-
-    return postResult
+    return {
+        batchItemFailures: [
+            {
+                itemIdentifier: ''
+            }
+        ]
+    }
 }
 
 
@@ -752,21 +764,21 @@ async function processS3ObjectContentStream (event: S3Event) {
             if (config.format.toLowerCase() === 'csv')
             {
                 s3ContentStream = s3ContentStream.pipe(csvParser, { end: false })
-                    // .on('end', function (e: string) {
-                    //     debugger
-                    //     console.log(`CSVParse - OnEnd`)
-                    //     s3ContentStream.emit('end')
-                    // })
-                    // .on('data', function (f: string) {
-                    //     console.log(`CSVParse - OnData ${f}`)
-                    //     // debugger
-                    // })
-                    // .on('finish', function (f: string) {
-                    //     console.log(`CSVParse - OnFinish ${f}`)
-                    //     debugger
-                    //     s3ContentStream.emit('finish')
+                    .on('end', function (e: string) {
+                        debugger
+                        console.log(`CSVParse - OnEnd`)
+                        s3ContentStream.emit('end')
+                    })
+                    .on('data', function (f: string) {
+                        console.log(`CSVParse - OnData ${f}`)
+                        // debugger
+                    })
+                    .on('finish', function (f: string) {
+                        console.log(`CSVParse - OnFinish ${f}`)
+                        debugger
+                        s3ContentStream.emit('finish')
 
-                    // })
+                    })
                     .on('close', function (c: string) {
                         console.log(`CSVParse - OnClose ${c}`)
                         debugger
@@ -775,11 +787,13 @@ async function processS3ObjectContentStream (event: S3Event) {
                     })
                     .on('skip', async function (err) {
                         console.log(`CSV Parse - Invalid Record for ${key} \nError: ${err.code} for record ${err.lines}.\nOne possible cause is a field containing commas ',' and not properly Double-Quoted. \nContent: ${err.record} \nMessage: ${err.message} \nStack: ${err.stack} `)
+                        debugger
                     })
-                // .on('error', function (err) {
-                //     console.log(`CSVParse - Error ${err}`)
-                //     s3ContentStream.emit('error')
-                // })
+                    .on('error', function (err) {
+                        console.log(`CSVParse - Error ${err}`)
+                        debugger
+                        s3ContentStream.emit('error')
+                    })
             }
 
             // if (tcLogDebug) console.log(`Establish stream, Paused? ${s3ContentStream.isPaused().toString()}`)
@@ -789,7 +803,8 @@ async function processS3ObjectContentStream (event: S3Event) {
 
             s3ContentStream.setMaxListeners(tc.EventEmitterMaxListeners)
 
-            s3ContentStream
+
+            const s = await new Promise(() => s3ContentStream
                 .on('error', async function (err: string) {
                     chunks = []
                     batchCount = 0
@@ -803,9 +818,9 @@ async function processS3ObjectContentStream (event: S3Event) {
 
                 .on('data', async function (s3Chunk: string) {
                     recs++
-                    if (recs > config.updateMaxRows) throw new Error(`The number of Updates in this  Exceeds Max Row Updates allowed ${recs} `)
+                    if (recs > config.updateMaxRows) throw new Error(`The number of Updates in this batch Exceeds Max Row Updates allowed ${recs} `)
 
-                    if (tcLogVerbose) console.log(`s3ContentStream OnData - Another chunk  (ArrayLen:${chunks.length} Recs:${recs} Batch:${batchCount} from ${key} - ${JSON.stringify(s3Chunk)}`)
+                    if (tcLogVerbose) console.log(`s3ContentStream OnData - Another chunk (ArrayLen:${chunks.length} Recs:${recs} Batch:${batchCount} from ${key} - ${JSON.stringify(s3Chunk)}`)
 
                     chunks.push(s3Chunk)
 
@@ -814,6 +829,8 @@ async function processS3ObjectContentStream (event: S3Event) {
                         batchCount++
                         const a = chunks
                         chunks = []
+
+                        console.log(`Listener Count - ${s3ContentStream.listenerCount}`)
 
                         if (tcLogDebug) console.log(`s3ContentStream OnData Over 99 Records - Queuing Work (Batch: ${batchCount} Chunks: ${a.length}) from ${key}`)
 
@@ -859,6 +876,8 @@ async function processS3ObjectContentStream (event: S3Event) {
                     batchCount = 0
                     const r = recs
                     recs = 0
+
+                    return { 'close': s3ContentResults }
                 })
 
                 .on('finish', async function (msg: string) {
@@ -891,13 +910,23 @@ async function processS3ObjectContentStream (event: S3Event) {
                     const r = recs
                     recs = 0
 
-                    // return (s3ContentResults)
+                    return { 'finish': s3ContentResults }
 
                     // debugger
                     // return new Promise((resolve, reject) => {
                     //     s3ContentStream.on('error', reject)
                     //     s3ContentStream.on('close', resolve)
                 })
+
+            )
+
+                .then(() => {
+
+                    return "streamProcessed"
+
+                })
+
+
 
             // }).catch(e => {
             //     // throw new Error(`Exception Processing (Promise) S3 Get Object Content for ${key}: \n ${e}`);
@@ -1384,11 +1413,12 @@ async function getAnS3ObjectforTesting (bucket: string) {
             .then(async (s3ListResult: ListObjectsV2CommandOutput) => {
                 // event.Records[0].s3.object.key  = s3ListResult.Contents?.at(0)?.Key as string
                 // if (tcLogDebug) console.log("Received the following Object: \n", JSON.stringify(data.Body, null, 2));
-
+                debugger
                 if (s3ListResult.Contents)
                 {
                     const i: number = Math.floor(Math.random() * (10 - 1 + 1) + 1)
                     s3Key = s3ListResult.Contents?.at(i)?.Key as string
+                    console.log(`S3 List:\n${JSON.stringify(s3ListResult.Contents)}`)
                     if (tcLogDebug) console.log(`TestRun (${i}) Retrieved ${s3Key} for this Test Run`)
                 }
                 else throw new Error(`No S3 Object available for Testing: ${bucket}`)
