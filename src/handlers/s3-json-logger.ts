@@ -1312,19 +1312,6 @@ export async function getAccessToken (config: customerConfig) {
 
 export async function postToCampaign (xmlCalls: string, config: customerConfig, count: string) {
 
-
-    //
-    //For Testing only
-    //
-    config.pod = '2'
-    config.listId = '12663209'
-    xmlCalls = xmlCalls.replace('3055683', '12663209')
-    //
-    //For Testing only
-    //
-
-
-
     if (process.env.accessToken === undefined || process.env.accessToken === null || process.env.accessToken == '')
     {
         if (tcLogDebug) console.log(`POST to Campaign - Need AccessToken...`)
