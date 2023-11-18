@@ -259,32 +259,32 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
 
         debugger
 
-        // try
-        // {
-        const work = await getS3Work(tqm.workKey)
-        if (work.length > 0)
+        try
         {
-            postResult = await postToCampaign(work, tqm.custconfig, tqm.updateCount)
+            const work = await getS3Work(tqm.workKey)
+            if (work.length > 0)
+            {
+                postResult = await postToCampaign(work, tqm.custconfig, tqm.updateCount)
 
-            if (postResult === 'retry')
-            {
-                console.log(`Failed to POST Update from ${tqm.workKey}. Result ${postResult} Returning Work to Process Queue.`)
-                sqsBatchFail.batchItemFailures.push({ itemIdentifier: i.messageId })
+                if (postResult === 'retry')
+                {
+                    console.log(`Failed to POST Update from ${tqm.workKey}. Result ${postResult} Returning Work to Process Queue.`)
+                    sqsBatchFail.batchItemFailures.push({ itemIdentifier: i.messageId })
+                }
+                else
+                {
+                    console.log(`Work Successfully Processed, Deleting from Process Queue`)
+                    const d: string = await deleteS3Object(tqm.workKey, 'tricklercache-process')
+                    if (d === '204') console.log(`Successful Deletion of ${tqm.workKey}`)
+                    else console.log(`Failed to Delete ${tqm.workKey}. Expected '204' received ${d}`)
+                }
             }
-            else
-            {
-                console.log(`Work Successfully Processed, Deleting from Process Queue`)
-                const d: string = await deleteS3Object(tqm.workKey, 'tricklercache-process')
-                if (d === '204') console.log(`Successful Deletion of ${tqm.workKey}`)
-                else console.log(`Failed to Delete ${tqm.workKey}. Expected '204' received ${d}`)
-            }
+            else throw new Error(`Failed to retrieve work file (${tqm.workKey})`)
+
+        } catch (e)
+        {
+            console.log(`${e}`)
         }
-        else throw new Error(`Failed to retrieve work file (${tqm.workKey})`)
-
-        // } catch (e)
-        // {
-        //     console.log(`Processing Work Queue Error: ${e}`)
-        // }
 
         debugger
 
