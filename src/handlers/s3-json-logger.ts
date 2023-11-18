@@ -268,9 +268,13 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
             //     return postResult?.POSTSuccess
             // }
 
-            if (postResult === 'false') throw new Error(`Failed to process work ${tqm.workKey}. Result ${postResult} `)
-
-            deleteS3Object(tqm.workKey, 'tricklercache-process')
+            if (postResult === 'retry')
+            {
+                console.log(`Failed to process work of ${tqm.workKey}. Result ${postResult} `)
+                sqsBatchFail.batchItemFailures.push({ itemIdentifier: i.messageId })
+            }
+            else
+                deleteS3Object(tqm.workKey, 'tricklercache-process')
 
         } catch (e)
         {
@@ -1250,7 +1254,10 @@ async function getS3Work (s3Key: string) {
             })
     } catch (e)
     {
-        throw new Error(`ProcessQueue - Get Work S3 Object (${s3Key}) Exception ${e}`)
+        const err: string = e as string
+        if (err.indexOf('NoSuchKey') > -1)
+            throw new Error(`Failed to Retrieve Work from S3 Process Queue (${s3Key}) Exception ${e}`)
+        else throw new Error(`Exception Retrieving Work from S3 Process Queue (${s3Key}) Exception ${e}`)
     }
     return work
 }
