@@ -242,7 +242,7 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
     event.Records.forEach(async (i: SQSRecord) => {
         const tqm: tcQueueMessage = JSON.parse(i.body)
 
-        tqm.workKey = JSON.parse(i.body).work
+        tqm.workKey = JSON.parse(i.body).workKey
 
         //When Testing - get some actual work queued
         if (tqm.workKey === 'process_2_pura_2023_10_27T15_11_40_732Z.csv')
