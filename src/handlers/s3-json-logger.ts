@@ -1245,7 +1245,8 @@ async function updateDatabase () {
 }
 
 async function getS3Work (s3Key: string) {
-    // console.log(`GetS3Work Key: ${s3Key}`)
+
+    console.log(`Debug - GetS3Work Key: ${s3Key}`)
 
     const getObjectCmd = {
         Bucket: 'tricklercache-process',
