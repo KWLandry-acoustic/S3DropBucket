@@ -137,6 +137,8 @@ let sqsBatchFail: SQSBatchItemFails = {
     ]
 }
 
+sqsBatchFail.batchItemFailures.pop()
+
 let tcLogInfo = true
 let tcLogDebug = false
 let tcLogVerbose = false
@@ -260,23 +262,24 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
         try
         {
             const work = await getS3Work(tqm.workKey)
-            if (!work) throw new Error(`Failed to retrieve work file (${tqm.workKey})`)
-
-            postResult = await postToCampaign(work, tqm.custconfig, tqm.updateCount)
-
-            // if (postResult.postRes === 'retry')
-            // {
-            //     await reQueue(event, tqm)
-            //     return postResult?.POSTSuccess
-            // }
-
-            if (postResult === 'retry')
+            if (work.length > 0)
             {
-                console.log(`Failed to process work of ${tqm.workKey}. Result ${postResult} `)
-                sqsBatchFail.batchItemFailures.push({ itemIdentifier: i.messageId })
+                postResult = await postToCampaign(work, tqm.custconfig, tqm.updateCount)
+
+                if (postResult === 'retry')
+                {
+                    console.log(`Failed to POST Update from ${tqm.workKey}. Result ${postResult} Returning Work to Process Queue.`)
+                    sqsBatchFail.batchItemFailures.push({ itemIdentifier: i.messageId })
+                }
+                else
+                {
+                    console.log(`Work Successfully Processed, Deleting from Process Queue`)
+                    const d: string = await deleteS3Object(tqm.workKey, 'tricklercache-process')
+                    if (d === '204') console.log(`Successful Deletion of ${tqm.workKey}`)
+                    else console.log(`Failed to Delete ${tqm.workKey}. Expected '204' received ${d}`)
+                }
             }
-            else
-                deleteS3Object(tqm.workKey, 'tricklercache-process')
+            else throw new Error(`Failed to retrieve work file (${tqm.workKey})`)
 
         } catch (e)
         {
@@ -1407,7 +1410,7 @@ async function deleteS3Object (s3ObjKey: string, bucket: string) {
     {
         console.log(`Exception Processing S3 Delete Command for ${s3ObjKey}: \n ${e}`)
     }
-    return delRes
+    return delRes as string
 }
 
 function checkMetadata () {
