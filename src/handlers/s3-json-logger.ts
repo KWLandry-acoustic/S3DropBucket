@@ -254,7 +254,7 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
             tqm.workKey = (await getAnS3ObjectforTesting('tricklercache-process')) as string
         }
 
-        console.log(`Processing Work Queue for ${tqm.workKey}`)
+        // if (tcLogDebug) console.log(`Processing Work Queue for ${tqm.workKey}`)
         if (tcLogDebug) console.log(`Debug-Processing Work Queue - Work File is \n ${JSON.stringify(tqm)}`)
 
         debugger
