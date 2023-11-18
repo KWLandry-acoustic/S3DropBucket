@@ -270,7 +270,7 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
 
             if (postResult === 'false') throw new Error(`Failed to process work ${tqm.workKey}. Result ${postResult} `)
 
-            deleteS3Object(tqm.workKey, 'trickler-process')
+            deleteS3Object(tqm.workKey, 'tricklercache-process')
 
         } catch (e)
         {
@@ -1029,6 +1029,8 @@ async function addWorkToS3ProcessStore (queueContent: string, key: string) {
         console.log(`Work Bucket Quiesce is in effect, no New Work Files will be written to the S3 Queue Bucket.`)
         return
     }
+
+
     const s3PutInput = {
         Body: queueContent,
         Bucket: 'tricklercache-process',
