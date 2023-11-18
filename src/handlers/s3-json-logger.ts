@@ -1368,17 +1368,15 @@ export async function postToCampaign (xmlCalls: string, config: customerConfig, 
                 //    </Fault></Body></Envelope>\r\n"
 
                 if (result.indexOf('max number of concurrent') > -1) postRes = 'retry'
-                else postRes = result
-                // throw new Error(`Unsuccessful POST of Update - ${result}`)
+                else throw new Error(`Unsuccessful POST of Update: ${result}`)
 
             }
 
-            POSTSuccess = true
             result = result.replace('\n', ' ')
             return `Processed ${count} Updates - Result: ${result}`
         })
         .catch(e => {
-            console.log(`Exception on POST to Campaign: ${e}`)
+            throw new Error(`Unsuccessful POST (Error) of Update: ${e}`)
         })
     // } catch (e)
     // {
