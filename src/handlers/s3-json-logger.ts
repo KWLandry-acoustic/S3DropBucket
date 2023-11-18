@@ -233,7 +233,9 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
 
     let postResult: string = 'false'
 
-    console.log(`SQS Events Batch (${event.Records.length} records) ${JSON.stringify(event)}`)
+    console.log(`SQS Events Batch (${event.Records.length} records)`)
+    if (tcLogDebug) console.log(`SQS Events Batch (${event.Records.length} records) ${JSON.stringify(event)}`)
+
     debugger
     event.Records.forEach((i) => {
         sqsBatchFail.batchItemFailures.push({ itemIdentifier: i.messageId })
