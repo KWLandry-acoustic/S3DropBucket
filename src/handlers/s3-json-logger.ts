@@ -1254,7 +1254,7 @@ async function updateDatabase () {
 
 async function getS3Work (s3Key: string) {
 
-    console.log(`Debug - GetS3Work Key: ${s3Key}`)
+    if (tcLogDebug) console.log(`Debug - GetS3Work Key: ${s3Key}`)
 
     const getObjectCmd = {
         Bucket: 'tricklercache-process',
@@ -1350,7 +1350,7 @@ export async function postToCampaign (xmlCalls: string, config: customerConfig, 
     // {
     postRes = await fetch(host, requestOptions)
         .then(response => response.text())
-        .then(result => {
+        .then(async (result) => {
             // if (tcLogDebug) console.log("POST Update Result: ", result)
             debugger
 
@@ -1367,7 +1367,7 @@ export async function postToCampaign (xmlCalls: string, config: customerConfig, 
             }
 
             result = result.replace('\n', ' ')
-            postRes = `Processed ${count} Updates - Result: ${result}`
+            return postRes = `Processed ${count} Updates - Result: ${result}`
         })
         .catch(e => {
             throw new Error(`Unsuccessful POST (Error) of Update: ${e}`)
