@@ -1041,6 +1041,10 @@ function convertToXMLUpdate (rows: string[], config: customerConfig) {
     //Tidy up the XML
     xmlRows += `</ROWS></InsertUpdateRelationalTable></Body></Envelope>`
 
+
+    if (tc.SelectiveDebug.indexOf("6,") > -1) console.log(`SelectiveDebug 6 - Build Update XML: ${xmlRows}`)
+
+
     return xmlRows
 }
 

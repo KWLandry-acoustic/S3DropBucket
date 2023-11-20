@@ -14,7 +14,7 @@
       "QueueBucketQuiesce": false,
 
       "MaxBatchesSafety": 10,
-      "SelectiveDebug": "1,2,3,4,",
+      "SelectiveDebug": "1,2,3,4,5,6,",
       "EventEmitterMaxListeners": 100,
 
       "ProcessQueueVisibilityTimeout": 15,
