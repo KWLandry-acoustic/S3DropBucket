@@ -753,7 +753,7 @@ async function validateConfig (config: customerConfig) {
 async function processS3ObjectContentStream (key: string, bucket: string) {
     let chunks: string[] = new Array()
     let s3ContentResults = ''
-    let s3ContentStream: NodeJS.ReadableStream
+
     let batchCount = 0
 
     // try
@@ -785,7 +785,7 @@ async function processS3ObjectContentStream (key: string, bucket: string) {
 
             // await getS3StreamResult.Body
 
-            s3ContentStream = getS3StreamResult.Body as NodeJS.ReadableStream
+            let s3ContentStream = getS3StreamResult.Body as NodeJS.ReadableStream
 
             if (tcLogDebug) console.log(`Get S3 Object - Records returned from ${key}`)
 
@@ -795,25 +795,19 @@ async function processS3ObjectContentStream (key: string, bucket: string) {
                     .on('error', function (err) {
                         console.log(`CSVParse(${key}) - Error ${err}`)
                         debugger
-                        // s3ContentStream.emit('error')
                     })
                     .on('end', function (e: string) {
-                        debugger
                         console.log(`CSVParse(${key}) - OnEnd - Message: ${e} \nDebugData: ${JSON.stringify(debugData)}`)
-                        // s3ContentStream.emit('end')
+                        debugger
                     })
                     .on('finish', function (f: string) {
                         console.log(`CSVParse(${key}) - OnFinish ${f}`)
                         debugger
-                        // s3ContentStream.emit('finish')
-
                     })
                     .on('close', function (c: string) {
                         console.log(`CSVParse(${key}) - OnClose ${c}`)
                         console.log(`Stream Closed \n${JSON.stringify(debugData)}`)
                         debugger
-                        // s3ContentStream.emit('close')
-
                     })
                     .on('skip', async function (err) {
                         debugData.push(err)
