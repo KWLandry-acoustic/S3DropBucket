@@ -256,7 +256,9 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
 
         try
         {
+
             const work = await getS3Work(tqm.workKey)
+
             if (work.length > 0)
             {
                 postResult = await postToCampaign(work, tqm.custconfig, tqm.updateCount)
@@ -280,7 +282,7 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
 
         } catch (e)
         {
-            console.log(`${e}`)
+            console.log(`Exception retrieving Work File - ${e}`)
         }
 
         debugger
@@ -768,7 +770,7 @@ async function processS3ObjectContentStream (key: string, bucket: string) {
 
             let s3ContentReadableStream = getS3StreamResult.Body as NodeJS.ReadableStream
 
-            console.log(`S3 Content Stream Opened for ${key}, Records returned `)
+            console.log(`S3 Content Stream Opened for ${key}, Records arriving... `)
 
             if (config.format.toLowerCase() === 'csv')
             {
@@ -942,14 +944,9 @@ async function processS3ObjectContentStream (key: string, bucket: string) {
     if (tcLogDebug) console.log(`Began Processing the S3Object Content Stream for ${key}`)
     debugger
 
-    // return new Promise((resolve, reject) => {
-    //     s3ContentStream.on('error', reject)
-    //     s3ContentStream.on('close', resolve)
-    // })
 
     // return { s3ContentResults, workQueuedSuccess }
     // return s3ContentStream
-
     // return streamResult
 
 }
