@@ -814,7 +814,7 @@ async function processS3ObjectContentStream (key: string, bucket: string) {
 
             s3ContentReadableStream.setMaxListeners(tc.EventEmitterMaxListeners)
 
-            // const fuckit = await new Promise( () =>
+            // const streamPromise = await new Promise( () =>
             s3ContentReadableStream
                 .on('error', async function (err: string) {
                     chunks = []
