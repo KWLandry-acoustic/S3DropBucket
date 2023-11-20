@@ -409,7 +409,7 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
 
     // let s3Result = { s3ContentResults: '', workQueuedSuccess: false }
 
-    const processS3ObjectStream = await processS3ObjectContentStream(event)
+    const processS3ObjectStream = await processS3ObjectContentStream(key, bucket)
 
     if (tcLogDebug) console.log(
         `ProcessS3ObjectContentStream - s3CacheProcessor Promise returned for ${key} Completed (Result: ${processS3ObjectStream})`
@@ -750,17 +750,15 @@ async function validateConfig (config: customerConfig) {
 }
 
 
-async function processS3ObjectContentStream (event: S3Event) {
+async function processS3ObjectContentStream (key: string, bucket: string) {
     let chunks: string[] = new Array()
     let s3ContentResults = ''
     let s3ContentStream: NodeJS.ReadableStream
     let batchCount = 0
-    const key = event.Records[0].s3.object.key
-    const bucket = event.Records[0].s3.bucket.name
 
     // try
     // {
-    if (tcLogDebug) console.log(`Processing S3 Content Stream for ${event.Records[0].s3.object.key}`)
+    if (tcLogDebug) console.log(`Processing S3 Content Stream for ${key}`)
 
     let streamResult = await s3
         .send(
@@ -783,6 +781,7 @@ async function processS3ObjectContentStream (event: S3Event) {
 
             let recs = 0
             const debugData = new Array()
+            debugData.push()
 
             // await getS3StreamResult.Body
 
@@ -794,24 +793,23 @@ async function processS3ObjectContentStream (event: S3Event) {
             {
                 s3ContentStream = s3ContentStream.pipe(csvParser) //, { end: false })
                     .on('error', function (err) {
-                        console.log(`CSVParse - Error ${err}`)
+                        console.log(`CSVParse(${key}) - Error ${err}`)
                         debugger
                         s3ContentStream.emit('error')
                     })
                     .on('end', function (e: string) {
                         debugger
-
-                        console.log(`CSVParse - OnEnd ${e} \n${JSON.stringify(debugData)}`)
+                        console.log(`CSVParse(${key}) - OnEnd - Message: ${e} \nDebugData: ${JSON.stringify(debugData)}`)
                         s3ContentStream.emit('end')
                     })
                     .on('finish', function (f: string) {
-                        console.log(`CSVParse - OnFinish ${f}`)
+                        console.log(`CSVParse(${key}) - OnFinish ${f}`)
                         debugger
                         s3ContentStream.emit('finish')
 
                     })
                     .on('close', function (c: string) {
-                        console.log(`CSVParse - OnClose ${c}`)
+                        console.log(`CSVParse(${key}) - OnClose ${c}`)
                         console.log(`Stream Closed \n${JSON.stringify(debugData)}`)
                         debugger
                         s3ContentStream.emit('close')
@@ -819,12 +817,12 @@ async function processS3ObjectContentStream (event: S3Event) {
                     })
                     .on('skip', async function (err) {
                         debugData.push(err)
-                        console.log(`CSV Parse - Invalid Record for ${key} \nError: ${err.code} for record ${err.lines}.\nOne possible cause is a field containing commas ',' and not properly Double-Quoted. \nContent: ${err.record} \nMessage: ${err.message} \nStack: ${err.stack} `)
+                        console.log(`CSVParse(${key}) - Invalid Record \nError: ${err.code} for record ${err.lines}.\nOne possible cause is a field containing commas ',' and not properly Double-Quoted. \nContent: ${err.record} \nMessage: ${err.message} \nStack: ${err.stack} `)
                         debugger
                     })
                     .on('data', function (f: string) {
                         debugData.push(f)
-                        // console.log(`CSVParse - OnData ${f}`)
+                        console.log(`CSVParse(${key}) - OnData ${f}`)
                         // debugger
                     })
             }
