@@ -795,24 +795,24 @@ async function processS3ObjectContentStream (key: string, bucket: string) {
                     .on('error', function (err) {
                         console.log(`CSVParse(${key}) - Error ${err}`)
                         debugger
-                        s3ContentStream.emit('error')
+                        // s3ContentStream.emit('error')
                     })
                     .on('end', function (e: string) {
                         debugger
                         console.log(`CSVParse(${key}) - OnEnd - Message: ${e} \nDebugData: ${JSON.stringify(debugData)}`)
-                        s3ContentStream.emit('end')
+                        // s3ContentStream.emit('end')
                     })
                     .on('finish', function (f: string) {
                         console.log(`CSVParse(${key}) - OnFinish ${f}`)
                         debugger
-                        s3ContentStream.emit('finish')
+                        // s3ContentStream.emit('finish')
 
                     })
                     .on('close', function (c: string) {
                         console.log(`CSVParse(${key}) - OnClose ${c}`)
                         console.log(`Stream Closed \n${JSON.stringify(debugData)}`)
                         debugger
-                        s3ContentStream.emit('close')
+                        // s3ContentStream.emit('close')
 
                     })
                     .on('skip', async function (err) {
