@@ -792,7 +792,7 @@ async function processS3ObjectContentStream (event: S3Event) {
 
             if (config.format.toLowerCase() === 'csv')
             {
-                s3ContentStream = s3ContentStream.pipe(csvParser, { end: false })
+                s3ContentStream = s3ContentStream.pipe(csvParser) //, { end: false })
                     .on('error', function (err) {
                         console.log(`CSVParse - Error ${err}`)
                         debugger
@@ -835,6 +835,7 @@ async function processS3ObjectContentStream (event: S3Event) {
 
             s3ContentStream.setMaxListeners(tc.EventEmitterMaxListeners)
 
+            // const f = await finished(csvParser)
 
             const s = await new Promise(() => s3ContentStream
                 .on('error', async function (err: string) {
@@ -1008,24 +1009,24 @@ async function processS3ObjectContentStream (event: S3Event) {
 
 async function storeAndQueueWork (chunks: string[], s3Key: string, config: customerConfig, batch: number) {
 
-    if (batch > 20) throw new Error(`S3 Object ${s3Key} Updates (${batch}) exceed Safety Limit of 20 Batches  - Exiting. `)
+    if (batch > 20) throw new Error(`Updates from the S3 Object (${s3Key}) Exceed (${batch}) Safety Limit of 20 Batches of 99 Updates each. Exiting...`)
 
-    xmlRows = convertToXMLUpdate(chunks, config)
+    xmlRows = convertToXMLUpdates(chunks, config)
     const key = `process_${batch}_${s3Key}`
 
     if (tcLogDebug) console.log(`Queuing Work for ${key},  Batch - ${batch},  Records - ${chunks.length} `)
 
     const AddWorkToS3ProcessBucketResults = await addWorkToS3ProcessStore(xmlRows, key)
-    const AddWorkSQSProcessQueueResults = await addWorkToSQSProcessQueue(config, key, batch.toString(), chunks.length.toString())
+    const AddWorkToSQSProcessQueueResults = await addWorkToSQSProcessQueue(config, key, batch.toString(), chunks.length.toString())
 
-    return JSON.stringify({ AddWorkToS3ProcessBucketResults, AddWorkSQSProcessQueueResults })
+    return JSON.stringify({ AddWorkToS3ProcessBucketResults, AddWorkToSQSProcessQueueResults })
 }
 
 
-function convertToXMLUpdate (rows: string[], config: customerConfig) {
+function convertToXMLUpdates (rows: string[], config: customerConfig) {
     if (tcLogDebug) console.log(`Converting S3 Content to XML Updates. Packaging ${rows.length} rows as updates to ${config.customer}'s ${config.listName}`)
 
-    if (tc.SelectiveDebug.indexOf("6,") > -1) console.log(`SelectiveDebug 6 - Build Update XML: ${rows}`)
+    if (tc.SelectiveDebug.indexOf("6,") > -1) console.log(`SelectiveDebug 6 - Convert to XML Updates: ${rows}`)
 
     xmlRows = `<Envelope><Body><InsertUpdateRelationalTable><TABLE_ID>${config.listId}</TABLE_ID><ROWS>`
     let r = 0
