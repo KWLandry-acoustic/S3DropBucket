@@ -275,11 +275,12 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
             if (work.length > 0)
             {
                 postResult = await postToCampaign(work, tqm.custconfig, tqm.updateCount)
-                console.log(`POST Result for ${tqm.workKey}: ${postResult}`)
+                if (tcLogVerbose) console.log(`POST Result for ${tqm.workKey}: ${postResult}`)
+
 
                 if (postResult === 'retry')
                 {
-                    console.log(`Failed to POST Update from ${tqm.workKey}. Result ${postResult} Returning Work to Process Queue.`)
+                    console.log(`Retry Marked for ${tqm.workKey}. Result ${postResult} Returning Work to Process Queue.`)
                     sqsBatchFail.batchItemFailures.push({ itemIdentifier: i.messageId })
                 }
                 else
@@ -1371,9 +1372,12 @@ export async function postToCampaign (xmlCalls: string, config: customerConfig, 
                 //   <errorid>51</errorid><module/><class>SP.API</class><method/></error></detail>
                 //    </Fault></Body></Envelope>\r\n"
 
-                if (result.indexOf('max number of concurrent') > -1) postRes = 'retry'
+                if (result.toLowerCase().indexOf('max number of concurrent') > -1)
+                {
+                    if (tc.SelectiveDebug.indexOf("4,") > -1) console.log(`Marked for Retry`)
+                    return 'retry'
+                }
                 else throw new Error(`Unsuccessful POST of Update: ${result}`)
-
             }
 
             result = result.replace('\n', ' ')
