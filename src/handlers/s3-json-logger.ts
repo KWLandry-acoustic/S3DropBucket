@@ -1025,6 +1025,8 @@ async function storeAndQueueWork (chunks: string[], s3Key: string, config: custo
 function convertToXMLUpdate (rows: string[], config: customerConfig) {
     if (tcLogDebug) console.log(`Converting S3 Content to XML Updates. Packaging ${rows.length} rows as updates to ${config.customer}'s ${config.listName}`)
 
+    if (tc.SelectiveDebug.indexOf("6,") > -1) console.log(`SelectiveDebug 6 - Build Update XML: ${rows}`)
+
     xmlRows = `<Envelope><Body><InsertUpdateRelationalTable><TABLE_ID>${config.listId}</TABLE_ID><ROWS>`
     let r = 0
 
@@ -1040,10 +1042,6 @@ function convertToXMLUpdate (rows: string[], config: customerConfig) {
 
     //Tidy up the XML
     xmlRows += `</ROWS></InsertUpdateRelationalTable></Body></Envelope>`
-
-
-    if (tc.SelectiveDebug.indexOf("6,") > -1) console.log(`SelectiveDebug 6 - Build Update XML: ${xmlRows}`)
-
 
     return xmlRows
 }
