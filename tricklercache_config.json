@@ -13,7 +13,8 @@
       "CacheBucketQuiesce": false,
       "QueueBucketQuiesce": false,
 
-      "MaxRetryUpdate": 10,
+      "MaxBatchesSafety": 10,
+      "SelectiveDebug": true,
       "EventEmitterMaxListeners": 100,
 
       "ProcessQueueVisibilityTimeout": 15,
