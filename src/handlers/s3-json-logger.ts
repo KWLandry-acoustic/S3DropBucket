@@ -737,8 +737,6 @@ async function validateConfig (config: customerConfig) {
 
 async function processS3ObjectContentStream (key: string, bucket: string) {
     let chunks: string[] = new Array()
-    let s3ContentResults = ''
-
     let batchCount = 0
 
     // try
@@ -765,14 +763,12 @@ async function processS3ObjectContentStream (key: string, bucket: string) {
             }
 
             let recs = 0
-            const debugData = new Array()
-            debugData.push()
 
             // await getS3StreamResult.Body
 
-            let s3ContentStream = getS3StreamResult.Body as NodeJS.ReadableStream
+            let s3ContentReadableStream = getS3StreamResult.Body as NodeJS.ReadableStream
 
-            console.log(`S3 Content Stream Opened, Records returned for ${key}`)
+            console.log(`S3 Content Stream Opened for ${key}, Records returned `)
 
             if (config.format.toLowerCase() === 'csv')
             {
@@ -788,7 +784,7 @@ async function processS3ObjectContentStream (key: string, bucket: string) {
                     //     debugger
                     // }
                 )
-                s3ContentStream = s3ContentStream.pipe(csvParser) //, { end: false })
+                s3ContentReadableStream = s3ContentReadableStream.pipe(csvParser) //, { end: false })
                 // .on('error', function (err) {
                 //     console.log(`CSVParse(${key}) - Error ${err}`)
                 //     debugger
@@ -807,27 +803,24 @@ async function processS3ObjectContentStream (key: string, bucket: string) {
                 //     debugger
                 // })
                 // .on('skip', async function (err) {
-                //     debugData.push(err)
                 //     console.log(`CSVParse(${key}) - Invalid Record \nError: ${err.code} for record ${err.lines}.\nOne possible cause is a field containing commas ',' and not properly Double-Quoted. \nContent: ${err.record} \nMessage: ${err.message} \nStack: ${err.stack} `)
                 //     debugger
                 // })
                 // .on('data', function (f: string) {
-                //     debugData.push(f)
                 //     console.log(`CSVParse(${key}) - OnData ${f}`)
                 //     // debugger
                 // })
             }
 
-            s3ContentStream.setMaxListeners(tc.EventEmitterMaxListeners)
+            s3ContentReadableStream.setMaxListeners(tc.EventEmitterMaxListeners)
 
-            // const f = await finished(csvParser)
-
-            const s = await new Promise(() => s3ContentStream
+            // const fuckit = await new Promise( () =>
+            s3ContentReadableStream
                 .on('error', async function (err: string) {
                     chunks = []
                     batchCount = 0
 
-                    const errMessage = `An error has stopped Content Parsing at record ${recs} for s3 object ${key}. ${err}`
+                    const errMessage = `An error has stopped Content Parsing at record ${recs} for s3 object ${key}.\n${err}`
                     recs = 0
 
                     console.log(errMessage)
@@ -851,100 +844,85 @@ async function processS3ObjectContentStream (key: string, bucket: string) {
 
                         if (tcLogDebug) console.log(`s3ContentStream OnData Over 99 Records - Queuing Work (Batch: ${batchCount} Chunks: ${a.length}) from ${key}`)
 
-                        const sw = await storeAndQueueWork(a, key, config, batchCount)
+                        const sqwResult = await storeAndQueueWork(a, key, config, batchCount)
 
-                        if (tcLogDebug) console.log(`Await of StoreAndQueueWork returns - ${sw}`)
+                        if (tcLogDebug) console.log(`Await of StoreAndQueueWork returns - ${sqwResult}`)
 
                     }
                 })
 
                 .on('end', async function (msg: string) {
                     batchCount++
+
+                    const endResult = `S3 Content Stream Ended for ${key}. Processed ${recs} records in ${batchCount} batches.`
+
+                    console.log(endResult)
+
                     const a = chunks
-
-                    console.log(`S3 Content Stream Ended for ${key}. Processed ${recs} records`)
-
-                    const swResult = await storeAndQueueWork(a, key, config, batchCount)
-
-                    s3ContentResults = `S3ContentStream OnEnd (${key}) Parse Work Result ${swResult}`
-
                     chunks = []
                     batchCount = 0
                     recs = 0
 
-                    if (tcLogDebug) console.log(`Debug ${s3ContentResults}`)
-                    if (tc.SelectiveDebug.indexOf("2,") > -1) console.log(`Selective Debug 2: Stream OnEnd (${key}) \n ${s3ContentResults}`)
+                    const sqwResult = await storeAndQueueWork(a, key, config, batchCount)
+
+                    if (tcLogDebug) console.log(`Debug ${sqwResult}`)
+                    if (tc.SelectiveDebug.indexOf("2,") > -1) console.log(`Selective Debug 2: Stream OnEnd (${key}) \n ${sqwResult}`)
 
                 })
 
                 .on('close', async function (msg: string) {
                     chunks = []
-
-                    // if (s3ContentStream && !s3ContentStream.readable)
-                    // {
-                    //     // if (!isReadableEnded(stream))
-                    //     //     return callback.call(stream, new ERR_STREAM_PREMATURE_CLOSE())
-                    //     console.log(`OnClose: Readable - ${s3ContentStream.readable}  for ${key}`)
-                    // }
-
-                    s3ContentResults = `S3ContentStream OnClose - S3 Content Streaming has Closed, successfully processed ${recs} records from ${key}\nNow Deleting ${key}`
-                    if (tcLogDebug) console.log(s3ContentResults)
-
-                    console.log(`S3 Content Stream Closed for ${key}. Processed ${recs} records`)
-
                     batchCount = 0
-                    const r = recs
                     recs = 0
 
-                    return { 'close': s3ContentResults }
+                    const closeResult = `S3ContentStream OnClose - S3 Content Streaming has Closed, successfully processed ${recs} records from ${key}`
+                    if (tcLogDebug) console.log(closeResult)
+
+                    console.log(`S3 Content Stream Closed for ${key}.`)
+                    return { closeResult }
                 })
 
-                // .on('finish', async function (msg: string) {
-                //     //     // CSVParse for NodeJS
-                //     //     // Problem:
-                //     //     // You are using the "finish" event and you don't have all your records.
-                //     //     // The "readable" event is still being called with a few records left.
-                //     //     // Solution:
-                //     //     // The parser is both a writable and a readable stream.You write data and you read records.
-                //     //     // Following Node.js.stream documentation, the "finish" event is from the write API and is
-                //     //     // emitted when the input source has flushed its data.The "end" event is from the read API
-                //     //     // and is emitted when there is no more data to be consumed from the stream.
+            // .on('finish', async function (msg: string) {
+            //     //     // CSVParse for NodeJS
+            //     //     // Problem:
+            //     //     // You are using the "finish" event and you don't have all your records.
+            //     //     // The "readable" event is still being called with a few records left.
+            //     //     // Solution:
+            //     //     // The parser is both a writable and a readable stream.You write data and you read records.
+            //     //     // Following Node.js.stream documentation, the "finish" event is from the write API and is
+            //     //     // emitted when the input source has flushed its data.The "end" event is from the read API
+            //     //     // and is emitted when there is no more data to be consumed from the stream.
 
 
-                //     chunks = []
+            //     chunks = []
 
-                //     // if (s3ContentStream && !s3ContentStream.readable)
-                //     // {
-                //     //     // if (!isReadableEnded(stream))
-                //     //     //     return callback.call(stream, new ERR_STREAM_PREMATURE_CLOSE())
-                //     //     console.log(`OnClose: Readable - ${s3ContentStream.readable}  for ${key}`)
-                //     // }
+            //     // if (s3ContentStream && !s3ContentStream.readable)
+            //     // {
+            //     //     // if (!isReadableEnded(stream))
+            //     //     //     return callback.call(stream, new ERR_STREAM_PREMATURE_CLOSE())
+            //     //     console.log(`OnClose: Readable - ${s3ContentStream.readable}  for ${key}`)
+            //     // }
 
-                //     s3ContentResults = `S3ContentStream OnFinish - S3 Content Streaming has Finished, successfully processed ${recs} records from ${key}\nNow Deleting ${key}`
-                //     if (tcLogDebug) console.log(s3ContentResults)
-                //     if (tc.SelectiveDebug.indexOf("3,") > -1) console.log(`Selective Debug 3: Stream OnFinish (${key}) \n ${s3ContentResults}`)
+            //     s3ContentResults = `S3ContentStream OnFinish - S3 Content Streaming has Finished, successfully processed ${recs} records from ${key}\nNow Deleting ${key}`
+            //     if (tcLogDebug) console.log(s3ContentResults)
+            //     if (tc.SelectiveDebug.indexOf("3,") > -1) console.log(`Selective Debug 3: Stream OnFinish (${key}) \n ${s3ContentResults}`)
 
-                //     console.log(`S3 Content Stream Finished for ${key}. Processed ${recs} records`)
+            //     console.log(`S3 Content Stream Finished for ${key}. Processed ${recs} records`)
 
-                //     batchCount = 0
-                //     const r = recs
-                //     recs = 0
+            //     batchCount = 0
+            //     const r = recs
+            //     recs = 0
 
-                //     return { 'finish': s3ContentResults }
+            //     return { 'finish': s3ContentResults }
 
-                //     // debugger
-                //     // return new Promise((resolve, reject) => {
-                //     //     s3ContentStream.on('error', reject)
-                //     //     s3ContentStream.on('close', resolve)
-                // })
+            //     // debugger
+            //     // return new Promise((resolve, reject) => {
+            //     //     s3ContentStream.on('error', reject)
+            //     //     s3ContentStream.on('close', resolve)
+            // })
 
-            )
+            // )
 
-                .then(() => {
-
-                    return "streamProcessed"
-
-                })
 
 
 
@@ -958,22 +936,7 @@ async function processS3ObjectContentStream (key: string, bucket: string) {
 
 
         })
-    // .catch(e => {
-    //     // throw new Error(`Exception Processing (Promise) S3 Get Object Content for ${key}: \n ${e}`);
-    //     console.log(
-    //         `Exception Processing (S3 Send Command Promise) S3 Get Object Content for ${key}: \n ${e}`,
-    //     )
-    // })
 
-    // } catch (e)
-    // {
-    //     chunks = []
-    //     batchCount = 0
-    //     throw new Error(`Exception during Processing of S3 Object for ${key}: \n ${e}`)
-    // }
-
-
-    // await finished(s3ContentStream)
     // return { s3ContentResults, workQueuedSuccess }
 
     if (tcLogDebug) console.log(`Began Processing the S3Object Content Stream for ${key}`)
@@ -987,7 +950,7 @@ async function processS3ObjectContentStream (key: string, bucket: string) {
     // return { s3ContentResults, workQueuedSuccess }
     // return s3ContentStream
 
-    return streamResult
+    // return streamResult
 
 }
 
