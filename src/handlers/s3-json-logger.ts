@@ -106,7 +106,7 @@ export interface tcConfig {
     restapiurl: string
     authapiurl: string
     MaxBatchesSafety: number,
-    SelectiveDebug: boolean,
+    SelectiveDebug: string,
     ProcessQueueQuiesce: boolean
     ProcessQueueVisibilityTimeout: number
     ProcessQueueWaitTimeSeconds: number
@@ -145,7 +145,7 @@ sqsBatchFail.batchItemFailures.pop()
 let tcLogInfo = true
 let tcLogDebug = false
 let tcLogVerbose = false
-let tcSpecialDebug = false
+let tcSelectiveDebug = ""
 
 
 const csvParser = parse({
@@ -519,7 +519,7 @@ async function getTricklerConfig () {
         if (tc.LOGLEVEL !== undefined && tc.LOGLEVEL.toLowerCase().indexOf('debug') > -1) tcLogDebug = true
         if (tc.LOGLEVEL !== undefined && tc.LOGLEVEL.toLowerCase().indexOf('verbose') > -1) tcLogVerbose = true
 
-        if (tc.SelectiveDebug !== undefined) tcSpecialDebug = tc.SelectiveDebug
+        if (tc.SelectiveDebug !== undefined) tcSelectiveDebug = tc.SelectiveDebug
 
 
         if (tc.SQS_QUEUE_URL !== undefined) process.env.SQS_QUEUE_URL = tc.SQS_QUEUE_URL
@@ -852,7 +852,7 @@ async function processS3ObjectContentStream (event: S3Event) {
                     if (recs > config.updateMaxRows) throw new Error(`The number of Updates in this batch Exceeds Max Row Updates allowed ${recs} `)
 
                     if (tcLogVerbose) console.log(`s3ContentStream OnData - Another chunk (ArrayLen:${chunks.length} Recs:${recs} Batch:${batchCount} from ${key} - ${JSON.stringify(s3Chunk)}`)
-                    if (tc.SelectiveDebug) console.log(`s3ContentStream OnData - Another chunk (ArrayLen:${chunks.length} Recs:${recs} Batch:${batchCount} from ${key} - ${JSON.stringify(s3Chunk)}`)
+                    if (tc.SelectiveDebug.indexOf("1,") > -1) console.log(`Selective Debug 1: OnData - Another chunk (ArrayLen:${chunks.length} Recs:${recs} Batch:${batchCount} from ${key} - ${JSON.stringify(s3Chunk)}`)
 
                     chunks.push(s3Chunk)
 
@@ -883,7 +883,7 @@ async function processS3ObjectContentStream (event: S3Event) {
 
                     s3ContentResults = `S3ContentStream OnEnd (${key}) Set Work Result ${swResult}`
                     if (tcLogDebug) console.log(`Debug ${s3ContentResults}`)
-                    if (tc.SelectiveDebug) console.log(`Selective Debug: ${s3ContentResults}`)
+                    if (tc.SelectiveDebug.indexOf("2,") > -1) console.log(`Selective Debug 2: Stream OnEnd ${s3ContentResults}`)
 
                     batchCount = 0
                     const r = recs
@@ -935,7 +935,7 @@ async function processS3ObjectContentStream (event: S3Event) {
 
                     s3ContentResults = `S3ContentStream OnFinish - S3 Content Streaming has Finished, successfully processed ${recs} records from ${key}\nNow Deleting ${key}`
                     if (tcLogDebug) console.log(s3ContentResults)
-                    if (tc.SelectiveDebug) console.log(`Selective Debug: ${s3ContentResults}`)
+                    if (tc.SelectiveDebug.indexOf("3,") > -1) console.log(`Selective Debug 3: Stream OnFinish: ${s3ContentResults}`)
 
                     console.log(`S3 Content Stream Finished for ${key}. Processed ${recs} records`)
 
