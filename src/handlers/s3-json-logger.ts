@@ -788,33 +788,33 @@ async function processS3ObjectContentStream (key: string, bucket: string) {
                     // }
                 )
                 s3ContentStream = s3ContentStream.pipe(csvParser) //, { end: false })
-                    .on('error', function (err) {
-                        console.log(`CSVParse(${key}) - Error ${err}`)
-                        debugger
-                    })
-                    .on('end', function (e: string) {
-                        console.log(`CSVParse(${key}) - OnEnd - Message: ${e} \nDebugData: ${JSON.stringify(debugData)}`)
-                        debugger
-                    })
-                    .on('finish', function (f: string) {
-                        console.log(`CSVParse(${key}) - OnFinish ${f}`)
-                        debugger
-                    })
-                    .on('close', function (c: string) {
-                        console.log(`CSVParse(${key}) - OnClose ${c}`)
-                        console.log(`Stream Closed \n${JSON.stringify(debugData)}`)
-                        debugger
-                    })
-                    .on('skip', async function (err) {
-                        debugData.push(err)
-                        console.log(`CSVParse(${key}) - Invalid Record \nError: ${err.code} for record ${err.lines}.\nOne possible cause is a field containing commas ',' and not properly Double-Quoted. \nContent: ${err.record} \nMessage: ${err.message} \nStack: ${err.stack} `)
-                        debugger
-                    })
-                    .on('data', function (f: string) {
-                        debugData.push(f)
-                        console.log(`CSVParse(${key}) - OnData ${f}`)
-                        // debugger
-                    })
+                // .on('error', function (err) {
+                //     console.log(`CSVParse(${key}) - Error ${err}`)
+                //     debugger
+                // })
+                // .on('end', function (e: string) {
+                //     console.log(`CSVParse(${key}) - OnEnd - Message: ${e} \nDebugData: ${JSON.stringify(debugData)}`)
+                //     debugger
+                // })
+                // .on('finish', function (f: string) {
+                //     console.log(`CSVParse(${key}) - OnFinish ${f}`)
+                //     debugger
+                // })
+                // .on('close', function (c: string) {
+                //     console.log(`CSVParse(${key}) - OnClose ${c}`)
+                //     console.log(`Stream Closed \n${JSON.stringify(debugData)}`)
+                //     debugger
+                // })
+                // .on('skip', async function (err) {
+                //     debugData.push(err)
+                //     console.log(`CSVParse(${key}) - Invalid Record \nError: ${err.code} for record ${err.lines}.\nOne possible cause is a field containing commas ',' and not properly Double-Quoted. \nContent: ${err.record} \nMessage: ${err.message} \nStack: ${err.stack} `)
+                //     debugger
+                // })
+                // .on('data', function (f: string) {
+                //     debugData.push(f)
+                //     console.log(`CSVParse(${key}) - OnData ${f}`)
+                //     // debugger
+                // })
             }
 
             s3ContentStream.setMaxListeners(tc.EventEmitterMaxListeners)
