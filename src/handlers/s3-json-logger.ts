@@ -1285,7 +1285,7 @@ async function getS3Work (s3Key: string) {
         const err: string = JSON.stringify(e)
 
         if (err.indexOf('NoSuchKey') > -1)
-            throw new Error(`Work Not Found on S3 Process Queue (${s3Key}) Exception ${e}`)
+            throw new Error(`Work Not Found on S3 Process Queue (${s3Key}) Is an S3 Process Queue Management Policy Deleting Work before Processing can be accomplished?\nException ${e}`)
         else throw new Error(`Exception Retrieving Work from S3 Process Queue (${s3Key}) Exception ${e}`)
     }
     return work
@@ -1338,6 +1338,8 @@ export async function postToCampaign (xmlCalls: string, config: customerConfig, 
         if (tcLogDebug) console.log(`Access Token already present: ${redactAT}`)
     }
 
+
+
     const myHeaders = new Headers()
     myHeaders.append('Content-Type', 'text/xml')
     myHeaders.append('Authorization', 'Bearer ' + process.env.accessToken)
@@ -1354,6 +1356,9 @@ export async function postToCampaign (xmlCalls: string, config: customerConfig, 
     }
 
     const host = `https://api-campaign-${config.region}-${config.pod}.goacoustic.com/XMLAPI`
+
+
+    if (tc.SelectiveDebug.indexOf("5,") > -1) console.log(`SelectiveDebug 5 - POST Updates are: ${xmlCalls}`)
 
     let postRes
 
@@ -1374,7 +1379,7 @@ export async function postToCampaign (xmlCalls: string, config: customerConfig, 
 
                 if (result.toLowerCase().indexOf('max number of concurrent') > -1)
                 {
-                    if (tc.SelectiveDebug.indexOf("4,") > -1) console.log(`Marked for Retry`)
+                    if (tc.SelectiveDebug.indexOf("4,") > -1) console.log(`SelectiveDebug 4 - Marked for Retry`)
                     return 'retry'
                 }
                 else throw new Error(`Unsuccessful POST of Update: ${result}`)
