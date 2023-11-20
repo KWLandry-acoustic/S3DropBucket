@@ -827,11 +827,6 @@ async function processS3ObjectContentStream (key: string, bucket: string) {
                     })
             }
 
-            // if (tcLogDebug) console.log(`Establish stream, Paused? ${s3ContentStream.isPaused().toString()}`)
-
-            // if (tcLogDebug) console.log(`Established CSV Parser and listeners - now s3ContentStream Listeners`)
-
-
             s3ContentStream.setMaxListeners(tc.EventEmitterMaxListeners)
 
             // const f = await finished(csvParser)
@@ -840,7 +835,6 @@ async function processS3ObjectContentStream (key: string, bucket: string) {
                 .on('error', async function (err: string) {
                     chunks = []
                     batchCount = 0
-                    workQueuedSuccess = false
                     const errMessage = `An error has stopped Content Parsing at record ${recs} for s3 object ${key}. ${err}`
                     recs = 0
 
@@ -853,7 +847,7 @@ async function processS3ObjectContentStream (key: string, bucket: string) {
                     if (recs > config.updateMaxRows) throw new Error(`The number of Updates in this batch Exceeds Max Row Updates allowed ${recs} `)
 
                     if (tcLogVerbose) console.log(`s3ContentStream OnData - Another chunk (ArrayLen:${chunks.length} Recs:${recs} Batch:${batchCount} from ${key} - ${JSON.stringify(s3Chunk)}`)
-                    if (tc.SelectiveDebug.indexOf("1,") > -1) console.log(`Selective Debug 1: OnData - Another chunk (ArrayLen:${chunks.length} Recs:${recs} Batch:${batchCount} from ${key} - ${JSON.stringify(s3Chunk)}`)
+                    if (tc.SelectiveDebug.indexOf("1,") > -1) console.log(`Selective Debug 1: OnData (${key}) - Another chunk (ArrayLen:${chunks.length} Recs:${recs} Batch:${batchCount} from ${key} - ${JSON.stringify(s3Chunk)}`)
 
                     chunks.push(s3Chunk)
 
@@ -884,7 +878,7 @@ async function processS3ObjectContentStream (key: string, bucket: string) {
 
                     s3ContentResults = `S3ContentStream OnEnd (${key}) Set Work Result ${swResult}`
                     if (tcLogDebug) console.log(`Debug ${s3ContentResults}`)
-                    if (tc.SelectiveDebug.indexOf("2,") > -1) console.log(`Selective Debug 2: Stream OnEnd ${s3ContentResults}`)
+                    if (tc.SelectiveDebug.indexOf("2,") > -1) console.log(`Selective Debug 2: Stream OnEnd (${key}) \n ${s3ContentResults}`)
 
                     batchCount = 0
                     const r = recs
@@ -936,7 +930,7 @@ async function processS3ObjectContentStream (key: string, bucket: string) {
 
                     s3ContentResults = `S3ContentStream OnFinish - S3 Content Streaming has Finished, successfully processed ${recs} records from ${key}\nNow Deleting ${key}`
                     if (tcLogDebug) console.log(s3ContentResults)
-                    if (tc.SelectiveDebug.indexOf("3,") > -1) console.log(`Selective Debug 3: Stream OnFinish: ${s3ContentResults}`)
+                    if (tc.SelectiveDebug.indexOf("3,") > -1) console.log(`Selective Debug 3: Stream OnFinish (${key}) \n ${s3ContentResults}`)
 
                     console.log(`S3 Content Stream Finished for ${key}. Processed ${recs} records`)
 
