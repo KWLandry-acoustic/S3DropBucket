@@ -800,7 +800,7 @@ async function processS3ObjectContentStream (event: S3Event) {
                     })
                     .on('end', function (e: string) {
                         debugger
-                        console.log(`CSVParse - OnEnd`)
+                        console.log(`CSVParse - OnEnd ${JSON.stringify(debugData)}`)
                         s3ContentStream.emit('end')
                     })
                     .on('finish', function (f: string) {
