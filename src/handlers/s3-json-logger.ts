@@ -148,21 +148,6 @@ let tcLogVerbose = false
 let tcSelectiveDebug = ""
 
 
-const csvParser = parse({
-    delimiter: ',',
-    comment: '#',
-    trim: true,
-    skip_records_with_error: true,
-},
-    // function (msg) {
-    //     if (tcLogDebug) console.log(`CSVParse Function : ${msg}`)
-    //     debugger
-    // }
-)
-
-
-
-
 
 //Of concern, very large data sets
 // - as of 10/2023 CSV handled as the papaparse engine handles the record boundary,
@@ -791,6 +776,17 @@ async function processS3ObjectContentStream (key: string, bucket: string) {
 
             if (config.format.toLowerCase() === 'csv')
             {
+                const csvParser = parse({
+                    delimiter: ',',
+                    comment: '#',
+                    trim: true,
+                    skip_records_with_error: true,
+                },
+                    // function (msg) {
+                    //     if (tcLogDebug) console.log(`CSVParse Function : ${msg}`)
+                    //     debugger
+                    // }
+                )
                 s3ContentStream = s3ContentStream.pipe(csvParser) //, { end: false })
                     .on('error', function (err) {
                         console.log(`CSVParse(${key}) - Error ${err}`)
@@ -829,6 +825,7 @@ async function processS3ObjectContentStream (key: string, bucket: string) {
                 .on('error', async function (err: string) {
                     chunks = []
                     batchCount = 0
+
                     const errMessage = `An error has stopped Content Parsing at record ${recs} for s3 object ${key}. ${err}`
                     recs = 0
 
