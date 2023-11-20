@@ -365,7 +365,7 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
     // console.log("GetCustomerConfig: Customer string is ", customer)
 
     console.log(
-        `Received S3 Trigger Event(${event.Records[0].responseElements['x-amz-request-id']}) Customer indicated is ${customer}`,
+        `Received S3 Trigger Event(${event.Records[0].responseElements['x-amz-request-id']}) `,
     )
 
     //Just in case we start getting multiple file triggers for whatever reason
@@ -389,7 +389,7 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
         throw new Error(`Exception Validating Config ${e}`)
     }
 
-    console.log(`Started Processing inbound data (${key})`)
+    console.log(`Processing inbound data for ${key}, Customer is ${customer}`)
 
 
     // let s3Result = { s3ContentResults: '', workQueuedSuccess: false }
@@ -772,7 +772,7 @@ async function processS3ObjectContentStream (key: string, bucket: string) {
 
             let s3ContentStream = getS3StreamResult.Body as NodeJS.ReadableStream
 
-            if (tcLogDebug) console.log(`Get S3 Object - Records returned from ${key}`)
+            console.log(`S3 Content Stream Opened, Records returned for ${key}`)
 
             if (config.format.toLowerCase() === 'csv')
             {
