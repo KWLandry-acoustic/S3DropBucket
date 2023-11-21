@@ -310,6 +310,11 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
  */
 
 export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Context) => {
+
+
+    //ToDo: currently throttled to a single event each time, Add processing of multiple Events per invocation
+
+
     // if (tcLogDebug) console.log(`AWS-SDK Version: ${version}`)
     // if (tcLogDebug) console.log('ENVIRONMENT VARIABLES\n' + JSON.stringify(process.env, null, 2))
 
@@ -408,57 +413,6 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
 
     //Check for important Config updates each time
     checkForTCConfigUpdates()
-
-
-    // //resolve streaming stopping
-    // //resolve streaming stopping
-    // //resolve streaming stopping
-
-    // //When Local Testing - pull an S3 Object and so avoid the not-found error
-
-    // event.Records[0].s3.object.key = (await getAnS3ObjectforTesting(bucket)) as string
-    // key = event.Records[0].s3.object.key
-
-    // console.log(`Round 2 - Processing of ${key} `)
-
-    // const s3Result2 = await processS3ObjectContentStream(event)
-
-    // if (tcLogDebug) console.log(
-    //     `ProcessS3ObjectContentStream - s3CacheProcessor Promise 2 returned (${s3Result2}) for ${key} Completed (Result: ${s3Result2})`
-    // )
-
-    // //Once successful delete the original S3 Object
-    // const delResultCode2 = await deleteS3Object(key, bucket)
-    // if (delResultCode !== '204') console.log(`Invalid Delete of ${key}, Expected 204 result code, received ${delResultCode}`)
-    // else console.log(`Successful Delete of ${key}  (Result ${delResultCode}) `)
-
-
-
-
-    // //When Local Testing - pull an S3 Object and so avoid the not-found error
-
-    // event.Records[0].s3.object.key = (await getAnS3ObjectforTesting(bucket)) as string
-    // key = event.Records[0].s3.object.key
-
-    // console.log(`Round 3 - Processing of ${key} `)
-    // const s3Result3 = await processS3ObjectContentStream(event)
-
-    // if (tcLogDebug) console.log(
-    //     `ProcessS3ObjectContentStream - s3CacheProcessor Promise 3 returned (${s3Result3}) for ${key} Completed (Result: ${s3Result3})`
-    // )
-
-    // //Once successful delete the original S3 Object
-    // const delResultCode3 = await deleteS3Object(key, bucket)
-    // if (delResultCode !== '204') console.log(`Invalid Delete of ${key}, Expected 204 result code, received ${delResultCode}`)
-    // else console.log(`Successful Delete of ${key}  (Result ${delResultCode}) `)
-
-
-
-
-    // //resolve streaming stopping
-    // //resolve streaming stopping
-    // //resolve streaming stopping
-
 
     return `TricklerCache Processing of ${key} Successfully Completed.`
 }
@@ -748,7 +702,7 @@ async function processS3ObjectContentStream (key: string, bucket: string) {
                 Bucket: bucket,
             }),
         )
-        .then(async (getS3StreamResult: GetObjectCommandOutput) => {
+        .then(async (getS3StreamResult: GetObjectCommandOutput): Promise<string> => {
 
             if (tcLogDebug) console.log(`Get S3 Object - Object returned ${key}`)
 
@@ -878,50 +832,8 @@ async function processS3ObjectContentStream (key: string, bucket: string) {
 
                     console.log(`S3 Content Stream Closed for ${key}.`)
 
-                    return closeResult
+                    streamResult = closeResult
                 })
-
-            // .on('finish', async function (msg: string) {
-            //     //     // CSVParse for NodeJS
-            //     //     // Problem:
-            //     //     // You are using the "finish" event and you don't have all your records.
-            //     //     // The "readable" event is still being called with a few records left.
-            //     //     // Solution:
-            //     //     // The parser is both a writable and a readable stream.You write data and you read records.
-            //     //     // Following Node.js.stream documentation, the "finish" event is from the write API and is
-            //     //     // emitted when the input source has flushed its data.The "end" event is from the read API
-            //     //     // and is emitted when there is no more data to be consumed from the stream.
-
-
-            //     chunks = []
-
-            //     // if (s3ContentStream && !s3ContentStream.readable)
-            //     // {
-            //     //     // if (!isReadableEnded(stream))
-            //     //     //     return callback.call(stream, new ERR_STREAM_PREMATURE_CLOSE())
-            //     //     console.log(`OnClose: Readable - ${s3ContentStream.readable}  for ${key}`)
-            //     // }
-
-            //     s3ContentResults = `S3ContentStream OnFinish - S3 Content Streaming has Finished, successfully processed ${recs} records from ${key}\nNow Deleting ${key}`
-            //     if (tcLogDebug) console.log(s3ContentResults)
-            //     if (tc.SelectiveDebug.indexOf("3,") > -1) console.log(`Selective Debug 3: Stream OnFinish (${key}) \n ${s3ContentResults}`)
-
-            //     console.log(`S3 Content Stream Finished for ${key}. Processed ${recs} records`)
-
-            //     batchCount = 0
-            //     const r = recs
-            //     recs = 0
-
-            //     return { 'finish': s3ContentResults }
-
-            //     // debugger
-            //     // return new Promise((resolve, reject) => {
-            //     //     s3ContentStream.on('error', reject)
-            //     //     s3ContentStream.on('close', resolve)
-            // })
-
-            // )
-
 
 
 
@@ -932,6 +844,7 @@ async function processS3ObjectContentStream (key: string, bucket: string) {
             //     )
             // })
 
+            return streamResult
         })
 
     // return { s3ContentResults, workQueuedSuccess }
