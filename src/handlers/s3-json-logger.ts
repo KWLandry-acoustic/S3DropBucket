@@ -690,12 +690,14 @@ async function validateConfig (config: customerConfig) {
 async function processS3ObjectContentStream (key: string, bucket: string) {
     let chunks: string[] = new Array()
     let batchCount = 0
+    let streamResult = ''
+    let closeResult = ''
 
     // try
     // {
     if (tcLogDebug) console.log(`Processing S3 Content Stream for ${key}`)
 
-    let streamResult = await s3
+    streamResult = await s3
         .send(
             new GetObjectCommand({
                 Key: key,
@@ -827,12 +829,11 @@ async function processS3ObjectContentStream (key: string, bucket: string) {
                     batchCount = 0
                     recs = 0
 
-                    const closeResult = `S3ContentStream OnClose - S3 Content Streaming has Closed, successfully processed ${recs} records from ${key}`
+                    closeResult = `S3ContentStream OnClose - S3 Content Streaming has Closed, successfully processed ${recs} records from ${key}`
                     if (tcLogDebug) console.log(closeResult)
 
                     console.log(`S3 Content Stream Closed for ${key}.`)
 
-                    streamResult = closeResult
                 })
 
 
@@ -844,12 +845,12 @@ async function processS3ObjectContentStream (key: string, bucket: string) {
             //     )
             // })
 
-            return streamResult
+            return closeResult
         })
 
     // return { s3ContentResults, workQueuedSuccess }
     // return s3ContentStream
-    return streamResult
+    return closeResult
 
 }
 
