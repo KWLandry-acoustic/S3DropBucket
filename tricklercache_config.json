@@ -26,7 +26,7 @@
       "CacheBucketPurgeCount": 0,
       "CacheBucketPurge": "tricklercache",
 
-      "QueueBucketPurgeCount": 0,
+      "QueueBucketPurgeCount": 1000,
       "QueueBucketPurge": "tricklercache-process"
 }
 

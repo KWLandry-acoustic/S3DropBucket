@@ -227,7 +227,6 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
     console.log(`SQS Events Batch (${event.Records.length} records)`)
     if (tcLogDebug) console.log(`SQS Events Batch (${event.Records.length} records) ${JSON.stringify(event)}`)
 
-    debugger
     // event.Records.forEach((i) => {
     //     sqsBatchFail.batchItemFailures.push({ itemIdentifier: i.messageId })
     // })
@@ -252,13 +251,11 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
         // if (tcLogDebug) console.log(`Processing Work Queue for ${tqm.workKey}`)
         if (tcLogDebug) console.log(`Debug-Processing Work Queue - Work File is \n ${JSON.stringify(tqm)}`)
 
-        debugger
-
         try
         {
 
             const work = await getS3Work(tqm.workKey)
-
+            debugger
             if (work.length > 0)
             {
                 postResult = await postToCampaign(work, tqm.custconfig, tqm.updateCount)
@@ -285,7 +282,6 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
             console.log(`Exception retrieving Work File - ${e}`)
         }
 
-        debugger
 
         // console.log(`Processing Work Queue - Work (${tqm.workKey}), Result(${postResult})`)
 
@@ -881,7 +877,8 @@ async function processS3ObjectContentStream (key: string, bucket: string) {
                     if (tcLogDebug) console.log(closeResult)
 
                     console.log(`S3 Content Stream Closed for ${key}.`)
-                    streamResult = { closeResult }
+
+                    return closeResult
                 })
 
             // .on('finish', async function (msg: string) {
@@ -935,19 +932,11 @@ async function processS3ObjectContentStream (key: string, bucket: string) {
             //     )
             // })
 
-            return streamResult
-
         })
 
     // return { s3ContentResults, workQueuedSuccess }
-
-    if (tcLogDebug) console.log(`Began Processing the S3Object Content Stream for ${key}`)
-    debugger
-
-
-    // return { s3ContentResults, workQueuedSuccess }
     // return s3ContentStream
-    // return streamResult
+    return streamResult
 
 }
 
@@ -972,7 +961,7 @@ function convertToXMLUpdates (rows: string[], config: customerConfig) {
     if (tcLogDebug) console.log(`Converting S3 Content to XML Updates. Packaging ${rows.length} rows as updates to ${config.customer}'s ${config.listName}`)
 
     if (tc.SelectiveDebug.indexOf("6,") > -1) console.log(`SelectiveDebug 6 - Convert to XML Updates: ${JSON.stringify(rows)}`)
-
+    debugger
     xmlRows = `<Envelope><Body><InsertUpdateRelationalTable><TABLE_ID>${config.listId}</TABLE_ID><ROWS>`
     let r = 0
 
@@ -1316,7 +1305,6 @@ export async function postToCampaign (xmlCalls: string, config: customerConfig, 
         .then(response => response.text())
         .then(async (result) => {
             // if (tcLogDebug) console.log("POST Update Result: ", result)
-            debugger
 
             if (result.toLowerCase().indexOf('false</success>') > -1)
             {
@@ -1392,6 +1380,7 @@ async function getAnS3ObjectforTesting (bucket: string) {
 
     try
     {
+        debugger
         await s3.send(new ListObjectsV2Command(listReq))
             .then(async (s3ListResult: ListObjectsV2CommandOutput) => {
                 // event.Records[0].s3.object.key  = s3ListResult.Contents?.at(0)?.Key as string
@@ -1401,6 +1390,7 @@ async function getAnS3ObjectforTesting (bucket: string) {
                 {
                     const i: number = Math.floor(Math.random() * (10 - 1 + 1) + 1)
                     s3Key = s3ListResult.Contents?.at(i)?.Key as string
+                    debugger
                     console.log(`S3 List:\n${JSON.stringify(s3ListResult.Contents)}`)
                     if (tcLogDebug) console.log(`TestRun (${i}) Retrieved ${s3Key} for this Test Run`)
                 }
