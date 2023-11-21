@@ -292,7 +292,7 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
     })
 
     // if (tcLogDebug)
-    console.log(`Processed Work Queue Batch of ${event.Records.length} records. Batch Items Failed: ${sqsBatchFail.batchItemFailures.length} \n(${sqsBatchFail.batchItemFailures.length} records) \nLog: ${JSON.stringify(sqsBatchFail)}`)
+    console.log(`Processed Work Batch of ${event.Records.length} records. Batch Items Failed: ${sqsBatchFail.batchItemFailures.length}\nList: ${JSON.stringify(sqsBatchFail)}`)
 
     // return sqsBatchFail
 
@@ -403,7 +403,7 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
     )
 
     debugger
-    console.log(`Completed processing inbound S3 Object Stream \n${JSON.stringify(processS3ObjectStream)}`)
+    console.log(`Completed processing the S3 Object Stream for ${key}\n${JSON.stringify(processS3ObjectStream)}`)
 
     //Once successful delete the original S3 Object
     const delResultCode = await deleteS3Object(key, bucket)
@@ -881,7 +881,7 @@ async function processS3ObjectContentStream (key: string, bucket: string) {
                     if (tcLogDebug) console.log(closeResult)
 
                     console.log(`S3 Content Stream Closed for ${key}.`)
-                    return { closeResult }
+                    streamResult = { closeResult }
                 })
 
             // .on('finish', async function (msg: string) {
@@ -935,7 +935,7 @@ async function processS3ObjectContentStream (key: string, bucket: string) {
             //     )
             // })
 
-
+            return streamResult
 
         })
 
