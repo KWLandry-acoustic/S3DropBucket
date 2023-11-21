@@ -279,7 +279,7 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
 
         } catch (e)
         {
-            console.log(`Exception retrieving Work File - ${e}`)
+            console.log(`Exception processing a Work File (${tqm.workKey} - \n${e}`)
         }
 
 
@@ -288,7 +288,7 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
     })
 
     // if (tcLogDebug)
-    console.log(`Processed Work Batch of ${event.Records.length} records. Batch Items Failed: ${sqsBatchFail.batchItemFailures.length}\nList: ${JSON.stringify(sqsBatchFail)}`)
+    console.log(`Processed ${event.Records.length} Work Queue records. Items Fail Count: ${sqsBatchFail.batchItemFailures.length}\nList: ${JSON.stringify(sqsBatchFail)}`)
 
     // return sqsBatchFail
 
@@ -836,8 +836,6 @@ async function processS3ObjectContentStream (key: string, bucket: string) {
 
                 })
 
-
-
             // }).catch(e => {
             //     // throw new Error(`Exception Processing (Promise) S3 Get Object Content for ${key}: \n ${e}`);
             //     console.log(
@@ -1232,14 +1230,14 @@ export async function postToCampaign (xmlCalls: string, config: customerConfig, 
                     if (tc.SelectiveDebug.indexOf("4,") > -1) console.log(`SelectiveDebug 4 - Marked for Retry`)
                     return 'retry'
                 }
-                else throw new Error(`Unsuccessful POST of Update: ${result}`)
+                else throw new Error(`Unsuccessful POST of the Update: ${result}`)
             }
 
             result = result.replace('\n', ' ')
             return postRes = `Processed ${count} Updates - Result: ${result}`
         })
         .catch(e => {
-            throw new Error(`Unsuccessful POST (Error) of Update: ${e}`)
+            throw new Error(`Unsuccessful POST (Error) of the Update: ${e}`)
         })
     // } catch (e)
     // {
