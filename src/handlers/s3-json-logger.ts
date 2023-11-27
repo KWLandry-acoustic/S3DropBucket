@@ -314,21 +314,23 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
 export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Context) => {
 
 
-    //ToDo: currently throttled to a single event each time, Add processing of multiple Events per invocation
-
-
-    // if (tcLogDebug) console.log(`AWS-SDK Version: ${version}`)
-    // if (tcLogDebug) console.log('ENVIRONMENT VARIABLES\n' + JSON.stringify(process.env, null, 2))
-
-
+    //ToDo: 
+    //  Currently throttled to a single event each time, Add processing of multiple Events per invocation
+    //
+    //  ** Process to ReParse Cache and create Work Files
+    //
     //ToDo: Resolve the progression of these steps, currently "Completed" is logged regardless of 'completion'
     // and Delete happens regardless of 'completion' being successful or not
     //
     // INFO Started Processing inbound data(pura_2023_11_16T20_24_37_627Z.csv)
     // INFO Completed processing inbound S3 Object Stream undefined
     // INFO Successful Delete of pura_2023_11_16T20_24_37_627Z.csv(Result 204)
-    // 
+    //
 
+
+
+    // if (tcLogDebug) console.log(`AWS-SDK Version: ${version}`)
+    // if (tcLogDebug) console.log('ENVIRONMENT VARIABLES\n' + JSON.stringify(process.env, null, 2))
 
     //When Local Testing - pull an S3 Object and so avoid the not-found error
     if (!event.Records[0].s3.object.key || event.Records[0].s3.object.key === 'devtest.csv')
@@ -1007,7 +1009,7 @@ async function addWorkToSQSProcessQueue (config: customerConfig, key: string, ba
 
                 workQueuedSuccess = true
 
-                if (tcLogDebug) console.log(`Wrote Work to SQS Process Queue (${sqsQMsgBody.workKey}) - Result: ${sqsWriteResult} `)
+                if (tc.SelectiveDebug.indexOf("8,") > -1) console.log(`Wrote Work to SQS Process Queue (${sqsQMsgBody.workKey}) - Result: ${sqsWriteResult} `)
             })
             .catch(err => {
                 console.log(
@@ -1025,60 +1027,58 @@ async function addWorkToSQSProcessQueue (config: customerConfig, key: string, ba
     return { sqsWriteResult, workQueuedSuccess, SQSSendResult }
 }
 
-async function reQueue (sqsevent: SQSEvent, queued: tcQueueMessage) {
+// async function reQueue (sqsevent: SQSEvent, queued: tcQueueMessage) {
 
-    const workKey = JSON.parse(sqsevent.Records[0].body).workKey
-    debugger
+//     const workKey = JSON.parse(sqsevent.Records[0].body).workKey
+//     debugger
 
-    //ToDo: set attempts on requeue
+//     const sqsParams = {
+//         MaxNumberOfMessages: 1,
+//         QueueUrl: process.env.SQS_QUEUE_URL,
+//         VisibilityTimeout: parseInt(process.env.ProcessQueueVisibilityTimeout!),
+//         WaitTimeSeconds: parseInt(process.env.ProcessQueueWaitTimeSeconds!),
+//         MessageAttributes: {
+//             FirstQueued: {
+//                 DataType: 'String',
+//                 StringValue: Date.now().toString(),
+//             },
+//             Retry: {
+//                 DataType: 'Number',
+//                 StringValue: '0',
+//             },
+//         },
+//         MessageBody: JSON.stringify(queued),
+//     }
 
-    const sqsParams = {
-        MaxNumberOfMessages: 1,
-        QueueUrl: process.env.SQS_QUEUE_URL,
-        VisibilityTimeout: parseInt(process.env.ProcessQueueVisibilityTimeout!),
-        WaitTimeSeconds: parseInt(process.env.ProcessQueueWaitTimeSeconds!),
-        MessageAttributes: {
-            FirstQueued: {
-                DataType: 'String',
-                StringValue: Date.now().toString(),
-            },
-            Retry: {
-                DataType: 'Number',
-                StringValue: '0',
-            },
-        },
-        MessageBody: JSON.stringify(queued),
-    }
+//     let maR = sqsevent.Records[0].messageAttributes.Retry.stringValue as string
+//     let n = parseInt(maR)
+//     n++
+//     const r: string = n.toString()
+//     sqsParams.MessageAttributes.Retry = {
+//         DataType: 'Number',
+//         StringValue: r,
+//     }
 
-    let maR = sqsevent.Records[0].messageAttributes.Retry.stringValue as string
-    let n = parseInt(maR)
-    n++
-    const r: string = n.toString()
-    sqsParams.MessageAttributes.Retry = {
-        DataType: 'Number',
-        StringValue: r,
-    }
+//     // if (n > config.MaxRetryUpdate) throw new Error(`Queued Work ${workKey} has been retried more than 10 times: ${r}`)
 
-    // if (n > config.MaxRetryUpdate) throw new Error(`Queued Work ${workKey} has been retried more than 10 times: ${r}`)
+//     const writeSQSCommand = new SendMessageCommand(sqsParams)
 
-    const writeSQSCommand = new SendMessageCommand(sqsParams)
+//     let qAdd
 
-    let qAdd
+//     try
+//     {
+//         qAdd = await sqsClient.send(writeSQSCommand).then(async (sqsWriteResult: SendMessageCommandOutput) => {
+//             const rr = JSON.stringify(sqsWriteResult.$metadata.httpStatusCode, null, 2)
+//             if (tcLogDebug) console.log(`Process Queue - Wrote Retry Work to SQS Queue (process_${workKey} - Result: ${rr} `)
+//             return JSON.stringify(sqsWriteResult)
+//         })
+//     } catch (e)
+//     {
+//         throw new Error(`ReQueue Work Exception - Writing Retry Work to SQS Queue: ${e}`)
+//     }
 
-    try
-    {
-        qAdd = await sqsClient.send(writeSQSCommand).then(async (sqsWriteResult: SendMessageCommandOutput) => {
-            const rr = JSON.stringify(sqsWriteResult.$metadata.httpStatusCode, null, 2)
-            if (tcLogDebug) console.log(`Process Queue - Wrote Retry Work to SQS Queue (process_${workKey} - Result: ${rr} `)
-            return JSON.stringify(sqsWriteResult)
-        })
-    } catch (e)
-    {
-        throw new Error(`ReQueue Work Exception - Writing Retry Work to SQS Queue: ${e}`)
-    }
-
-    return qAdd
-}
+//     return qAdd
+// }
 
 async function updateDatabase () {
     const update = `<Envelope>
