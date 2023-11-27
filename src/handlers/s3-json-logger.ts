@@ -145,7 +145,7 @@ sqsBatchFail.batchItemFailures.pop()
 let tcLogInfo = true
 let tcLogDebug = false
 let tcLogVerbose = false
-let tcSelectiveDebug = ""
+let tcSelectiveDebug   //call out selective debug as an option
 
 
 
@@ -245,15 +245,17 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
         //When Testing - get some actual work queued
         if (tqm.workKey === 'process_2_pura_2023_10_27T15_11_40_732Z.csv')
         {
-            tqm.workKey = (await getAnS3ObjectforTesting('tricklercache-process')) as string
+            debugger
+            tqm.workKey = await getAnS3ObjectforTesting('tricklercache-process')
         }
 
-        // if (tcLogDebug) console.log(`Processing Work Queue for ${tqm.workKey}`)
+        console.log(`Processing Work Queue for ${tqm.workKey}`)
         if (tcLogDebug) console.log(`Debug-Processing Work Queue - Work File is \n ${JSON.stringify(tqm)}`)
+
+        debugger
 
         try
         {
-
             const work = await getS3Work(tqm.workKey)
             debugger
             if (work.length > 0)
@@ -288,7 +290,7 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
     })
 
     // if (tcLogDebug)
-    console.log(`Processed ${event.Records.length} Work Queue records. Items Fail Count: ${sqsBatchFail.batchItemFailures.length}\nList: ${JSON.stringify(sqsBatchFail)}`)
+    console.log(`Processed ${event.Records.length} Work Queue records. Items Fail Count: ${sqsBatchFail.batchItemFailures.length}\nItems Failed List: ${JSON.stringify(sqsBatchFail)}`)
 
     // return sqsBatchFail
 
@@ -331,7 +333,7 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
     //When Local Testing - pull an S3 Object and so avoid the not-found error
     if (!event.Records[0].s3.object.key || event.Records[0].s3.object.key === 'devtest.csv')
     {
-        event.Records[0].s3.object.key = (await getAnS3ObjectforTesting(event.Records[0].s3.bucket.name)) as string
+        event.Records[0].s3.object.key = await getAnS3ObjectforTesting(event.Records[0].s3.bucket.name)
     }
 
     let key = event.Records[0].s3.object.key
@@ -932,7 +934,7 @@ async function addWorkToS3ProcessStore (queueContent: string, key: string) {
                 if (S3ProcessBucketResult === '200')
                 {
                     AddWorkToS3ProcessBucket = `Wrote Work File (${key}) to S3 Process Store (Result ${S3ProcessBucketResult})`
-                    if (tcLogDebug) console.log(`${AddWorkToS3ProcessBucket}`)
+                    if (tc.SelectiveDebug.indexOf("7,") > -1) console.log(`${AddWorkToS3ProcessBucket}`)
                 }
                 else throw new Error(`Failed to write Work File to S3 Process Store (Result ${S3ProcessBucketResult}) for ${key}`)
             })
@@ -1141,6 +1143,7 @@ async function getS3Work (s3Key: string) {
 }
 
 export async function getAccessToken (config: customerConfig) {
+    debugger
     try
     {
         const rat = await fetch(`https://api-campaign-${config.region}-${config.pod}.goacoustic.com/oauth/token`, {
@@ -1166,7 +1169,7 @@ export async function getAccessToken (config: customerConfig) {
         return { accessToken }.accessToken
     } catch (e)
     {
-        throw new Error(`Exception in getAccessToken: \n ${e}`)
+        throw new Error(`Exception during getAccessToken: \n ${e}`)
     }
 }
 
@@ -1292,26 +1295,40 @@ async function getAnS3ObjectforTesting (bucket: string) {
 
     try
     {
-        debugger
         await s3.send(new ListObjectsV2Command(listReq))
+            // .then(response => response.Contents?.entries)
             .then(async (s3ListResult: ListObjectsV2CommandOutput) => {
                 // event.Records[0].s3.object.key  = s3ListResult.Contents?.at(0)?.Key as string
                 // if (tcLogDebug) console.log("Received the following Object: \n", JSON.stringify(data.Body, null, 2));
                 debugger
+
                 if (s3ListResult.Contents)
                 {
                     const i: number = Math.floor(Math.random() * (10 - 1 + 1) + 1)
                     s3Key = s3ListResult.Contents?.at(i)?.Key as string
-                    debugger
                     console.log(`S3 List:\n${JSON.stringify(s3ListResult.Contents)}`)
                     if (tcLogDebug) console.log(`TestRun (${i}) Retrieved ${s3Key} for this Test Run`)
+
                 }
                 else throw new Error(`No S3 Object available for Testing: ${bucket}`)
+
+                return s3Key
+            })
+            .then(() => {
+                console.log(`Second Then...`)
+            })
+            .finally(() => {
+                console.log(`Finally...)`)
+            })
+            .catch((e) => {
+                console.log(`Exception Processing S3 List Command: ${e} \n${e.stack}`)
             })
     } catch (e)
     {
         console.log(`Exception Processing S3 List Command: ${e} `)
     }
+
+
     return s3Key
     // return 'pura_2023_11_12T01_43_58_170Z.csv'
 }
