@@ -14,7 +14,7 @@
       "QueueBucketQuiesce": false,
 
       "MaxBatchesSafety": 10,
-      "SelectiveDebug": "4,5,7,8,",
+      "SelectiveDebug": "4,5,7,8,9,",
       "EventEmitterMaxListeners": 100,
 
       "ProcessQueueVisibilityTimeout": 15,
@@ -27,7 +27,18 @@
       "CacheBucketPurge": "tricklercache",
 
       "QueueBucketPurgeCount": 0,
-      "QueueBucketPurge": "tricklercache-process"
+      "QueueBucketPurge": "tricklercache-process",
+
+      "BatchCacheBucket": [
+            "pura_2023_08_31T19_57_11_999Z.csv",
+            "pura_2023_11_12T01_43_58_170Z.csv",
+            "pura_2023_11_16T23_40_24_840Z.csv",
+            "pura_2023_11_16T23_40_26_051Z.csv",
+            "pura_2023_11_19T16_46_47_296Z.csv",
+            "pura_2023_11_16T23_40_26_999Z.csv",
+            "pura_2023_11_16T23_40_19_302Z.csv",
+            "pura_2023_11_16T23_40_21_035Z.csv",
+            "pura_2023_08_31T19_57_11_812Z.csv" ]
 }
 
 
