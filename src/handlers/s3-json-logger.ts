@@ -379,13 +379,14 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
 
     for (const r of event.Records)
     {
+        let key = ''
         // {
         //     const contents = await fs.readFile(file, 'utf8')
         // }
         // event.Records.forEach(async (r: S3EventRecord) => {
         try
         {
-            let key = r.s3.object.key
+            key = r.s3.object.key
             const bucket = r.s3.bucket.name
 
             customersConfig = await getCustomerConfig(key)
@@ -418,7 +419,7 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
 
         } catch (e)
         {
-            console.log(`Exception processing Event Loop: ${e}`)
+            console.log(`Exception processing Event Loop (for ${key}) ${e}`)
         }
 
     }
