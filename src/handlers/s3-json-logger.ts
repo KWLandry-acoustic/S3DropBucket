@@ -1280,7 +1280,6 @@ export async function postToCampaign (xmlCalls: string, config: customerConfig, 
     postRes = await fetch(host, requestOptions)
         .then(response => response.text())
         .then(async (result) => {
-            // if (tcLogDebug) console.log("POST Update Result: ", result)
 
             if (result.toLowerCase().indexOf('false</success>') > -1)
             {
@@ -1289,19 +1288,23 @@ export async function postToCampaign (xmlCalls: string, config: customerConfig, 
                 //   <errorid>51</errorid><module/><class>SP.API</class><method/></error></detail>
                 //    </Fault></Body></Envelope>\r\n"
 
-                if (result.toLowerCase().indexOf('max number of concurrent') > -1)
+                if (
+                    result.toLowerCase().indexOf('max number of concurrent') > -1
+                )
                 {
                     if (tcc.SelectiveDebug.indexOf("_4") > -1) console.log(`Selective Debug 4 - Max Number of Concurrent Updates Fail - Marked for Retry`)
                     return 'retry'
                 }
-                else return `Unsuccessful POST of the Updates (${count}) - Result: ${result}`
+                else return `Error - Unsuccessful POST of the Updates (${count}) - Response : ${result}`
             }
 
             result = result.replace('\n', ' ')
             return `Successfully POSTed (${count}) Updates - Result: ${result}`
         })
         .catch(e => {
-            throw new Error(`Unsuccessful POST (Error) of the Update: ${e}`)
+            if (e.toLowerCase().indexOf('econnreset') > -1) return 'retry'
+            console.log(`Error - Unsuccessful POST of the Updates: ${e} - Set to Retry`)
+            return 'retry'
         })
     // } catch (e)
     // {
