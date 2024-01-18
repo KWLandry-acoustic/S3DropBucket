@@ -182,7 +182,7 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
         // if (tcLogDebug) console.log(`Debug-Process Env not populated: ${JSON.stringify(process.env)}`)
         tcc = await getTricklerConfig()
     }
-    if (tcc.SelectiveDebug.indexOf("_9,") > -1) console.log(`Selective Debug 9 - Process Environment Vars: ${JSON.stringify(process.env)}`)
+    if (tcc.SelectiveDebug.indexOf("_9") > -1) console.log(`Selective Debug 9 - Process Environment Vars: ${JSON.stringify(process.env)}`)
 
 
 
@@ -245,7 +245,7 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
         }
 
         console.log(`Processing Work Queue for ${tqm.workKey}`)
-        if (tcc.SelectiveDebug.indexOf("_11,") > -1) console.log(`Selective Debug 11 - SQS Events Batch Item ${JSON.stringify(q)}`)
+        if (tcc.SelectiveDebug.indexOf("_11") > -1) console.log(`Selective Debug 11 - SQS Events Batch Item ${JSON.stringify(q)}`)
 
         try
         {
@@ -253,7 +253,7 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
             if (work.length > 0)        //Retreive Contents of the Work File  
             {
                 postResult = await postToCampaign(work, tqm.custconfig, tqm.updateCount)
-                if (tcc.SelectiveDebug.indexOf("_8,") > -1) console.log(`POST Result for ${tqm.workKey}: ${postResult}`)
+                if (tcc.SelectiveDebug.indexOf("_8") > -1) console.log(`POST Result for ${tqm.workKey}: ${postResult}`)
 
                 if (postResult.indexOf('retry') > -1)
                 {
@@ -273,7 +273,7 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
                     else console.log(`Failed to Delete ${tqm.workKey}. Expected '204' but received ${d}`)
                 }
 
-                if (tcc.SelectiveDebug.indexOf("_11,") > -1) console.log(`Selective Debug 11 - SQS Events BatchFail \n${JSON.stringify(sqsBatchFail)}`)
+                if (tcc.SelectiveDebug.indexOf("_11") > -1) console.log(`Selective Debug 11 - SQS Events BatchFail \n${JSON.stringify(sqsBatchFail)}`)
 
             }
             else throw new Error(`Failed to retrieve work file (${tqm.workKey}) `)
@@ -350,7 +350,7 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
         tcc = await getTricklerConfig()
 
     }
-    if (tcc.SelectiveDebug.indexOf("_9,") > -1) console.log(`Selective Debug 9 - Process Environment Vars: ${JSON.stringify(process.env)}`)
+    if (tcc.SelectiveDebug.indexOf("_9") > -1) console.log(`Selective Debug 9 - Process Environment Vars: ${JSON.stringify(process.env)}`)
 
 
     if (tcc.CacheBucketPurgeCount > 0)
@@ -388,7 +388,7 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
 
             const processS3ObjectStream = await processS3ObjectContentStream(key, bucket, customersConfig)
 
-            if (tcc.SelectiveDebug.indexOf("_3,") > -1) console.log(`Return from Process S3 Object Content Stream - ${processS3ObjectStream}`)
+            if (tcc.SelectiveDebug.indexOf("_3") > -1) console.log(`Return from Process S3 Object Content Stream - ${processS3ObjectStream}`)
 
             const l = `Completed processing the S3 Object Stream for ${key}`
             console.log(l)
@@ -424,7 +424,7 @@ export default s3JsonLoggerHandler
 function checkForTCConfigUpdates () {
     if (tcLogDebug) console.log(`Checking for TricklerCache Config updates`)
     getTricklerConfig()
-    if (tcc.SelectiveDebug.indexOf("_1,") > -1) console.log(`Refreshed TricklerCache Config \n ${JSON.stringify(tcc)}`)
+    if (tcc.SelectiveDebug.indexOf("_1") > -1) console.log(`Refreshed TricklerCache Config \n ${JSON.stringify(tcc)}`)
 }
 
 async function getTricklerConfig () {
@@ -893,7 +893,7 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
                     const sqwResult = await storeAndQueueWork(d, key, custConfig, batchCount)
 
                     if (tcLogDebug) console.log(`Debug ${sqwResult}`)
-                    if (tcc.SelectiveDebug.indexOf("_2,") > -1) console.log(`Selective Debug 2: End of Queueing Work for (${key}) Result: ${sqwResult}`)
+                    if (tcc.SelectiveDebug.indexOf("_2") > -1) console.log(`Selective Debug 2: End of Queueing Work for (${key}) Result: ${sqwResult}`)
 
                 })
 
@@ -947,7 +947,7 @@ async function storeAndQueueWork (chunks: string[], s3Key: string, config: custo
 function convertToXMLUpdates (rows: string[], config: customerConfig) {
     if (tcLogDebug) console.log(`Converting S3 Content to XML Updates. Packaging ${rows.length} rows as updates to ${config.customer}'s ${config.listName}`)
 
-    if (tcc.SelectiveDebug.indexOf("_6,") > -1) console.log(`Selective Debug 6 - Convert to XML Updates: ${JSON.stringify(rows)}`)
+    if (tcc.SelectiveDebug.indexOf("_6") > -1) console.log(`Selective Debug 6 - Convert to XML Updates: ${JSON.stringify(rows)}`)
 
     xmlRows = `<Envelope><Body><InsertUpdateRelationalTable><TABLE_ID>${config.listId}</TABLE_ID><ROWS>`
     let r = 0
@@ -999,7 +999,7 @@ async function addWorkToS3ProcessStore (queueContent: string, key: string) {
                 if (S3ProcessBucketResult === '200')
                 {
                     AddWorkToS3ProcessBucket = `Wrote Work File (${key}) to S3 Process Store (Result ${S3ProcessBucketResult})`
-                    if (tcc.SelectiveDebug.indexOf("_7,") > -1) console.log(`Selective Debug 7 - ${AddWorkToS3ProcessBucket}`)
+                    if (tcc.SelectiveDebug.indexOf("_7") > -1) console.log(`Selective Debug 7 - ${AddWorkToS3ProcessBucket}`)
                 }
                 else throw new Error(`Failed to write Work File to S3 Process Store (Result ${S3ProcessBucketResult}) for ${key}`)
             })
@@ -1072,7 +1072,7 @@ async function addWorkToSQSProcessQueue (config: customerConfig, key: string, ba
 
                 workQueuedSuccess = true
 
-                if (tcc.SelectiveDebug.indexOf("_8,") > -1) console.log(`Queued Work to SQS Process Queue (${sqsQMsgBody.workKey}) - Result: ${sqsWriteResult} `)
+                if (tcc.SelectiveDebug.indexOf("_8") > -1) console.log(`Queued Work to SQS Process Queue (${sqsQMsgBody.workKey}) - Result: ${sqsWriteResult} `)
             })
             .catch(err => {
                 console.log(
@@ -1271,7 +1271,7 @@ export async function postToCampaign (xmlCalls: string, config: customerConfig, 
     const host = `https://api-campaign-${config.region}-${config.pod}.goacoustic.com/XMLAPI`
 
 
-    if (tcc.SelectiveDebug.indexOf("_5,") > -1) console.log(`Selective Debug 5 - Updates to POST are: ${xmlCalls}`)
+    if (tcc.SelectiveDebug.indexOf("_5") > -1) console.log(`Selective Debug 5 - Updates to POST are: ${xmlCalls}`)
 
     let postRes
 
@@ -1291,7 +1291,7 @@ export async function postToCampaign (xmlCalls: string, config: customerConfig, 
 
                 if (result.toLowerCase().indexOf('max number of concurrent') > -1)
                 {
-                    if (tcc.SelectiveDebug.indexOf("_4,") > -1) console.log(`Selective Debug 4 - Max Number of Concurrent Updates Fail - Marked for Retry`)
+                    if (tcc.SelectiveDebug.indexOf("_4") > -1) console.log(`Selective Debug 4 - Max Number of Concurrent Updates Fail - Marked for Retry`)
                     return 'retry'
                 }
                 else return `Unsuccessful POST of the Updates (${count}) - Result: ${result}`

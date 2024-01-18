@@ -14,7 +14,7 @@
       "QueueBucketQuiesce": false,
 
       "MaxBatchesWarning": 200,
-      "SelectiveDebug": "1, 3, 4, 6, 7, 8, 11, ",
+      "SelectiveDebug": "_1,_3,_4,_6,_7,_8,_11,",
       "EventEmitterMaxListeners": 100,
 
       "ProcessQueueVisibilityTimeout": 15,
