@@ -6,15 +6,15 @@
       "S3_CACHE_URL": "s3://arn:aws:s3:us-east-1:777957353822:accesspoint/tricklercache-access",
 
       "xmlapiurl": "https://api-campaign-${config.region}-${config.pod}.goacoustic.com/XMLAPI",
-      "restapiurl": "https://api-campaign-us-2.goacoustic.com:443/rest",
+      "restapiurl": "https://api-campaign-${config.region}-${config.pod}.goacoustic.com:443/rest",
       "authapiurl": "https://api-campaign-${config.region}-${config.pod}.goacoustic.com/oauth/token",
 
       "ProcessQueueQuiesce": false,
       "CacheBucketQuiesce": false,
       "QueueBucketQuiesce": false,
 
-      "MaxBatchesSafety": 10,
-      "SelectiveDebug": "1,4,7,8,",
+      "MaxBatchesWarning": 200,
+      "SelectiveDebug": "1, 3, 4, 6, 7, 8, 11, ",
       "EventEmitterMaxListeners": 100,
 
       "ProcessQueueVisibilityTimeout": 15,
@@ -27,10 +27,9 @@
       "CacheBucketPurge": "tricklercache",
 
       "QueueBucketPurgeCount": 0,
-      "QueueBucketPurge": "tricklercache-process",
+      "QueueBucketPurge": "tricklercache-process"
 
-      "BatchCacheBucket": [
-      ]
+
 }
 
 

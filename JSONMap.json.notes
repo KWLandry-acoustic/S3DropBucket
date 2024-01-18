@@ -1,0 +1,106 @@
+{
+      "LOGLEVEL": "info",           //Info, Debug, Warn,
+      "AWS_REGION": "us-east-1",    //Campaign POD Regions
+
+//SQS Queue for this deployment of the Lambda function - Tricklercache- tricklerQueueProcessorFunction
+      "SQS_QUEUE_URL": "https://sqs.us-east-1.amazonaws.com/777957353822/tricklercacheQueue",
+
+//S3 Bucket for this deployment of the Lambda function  - tricklercache-s3JsonLoggerFunction    
+      "S3_CACHE_URL": "s3://arn:aws:s3:us-east-1:777957353822:accesspoint/tricklercache-access",
+
+// API Endpoint templates 
+      "xmlapiurl": "https://api-campaign-${config.region}-${config.pod}.goacoustic.com/XMLAPI",
+      "restapiurl": "https://api-campaign-${config.region}-${config.pod}.goacoustic.com:443/rest",
+      "authapiurl": "https://api-campaign-${config.region}-${config.pod}.goacoustic.com/oauth/token",
+
+//Quiesce Processing of the SQS Process/Work Queue 
+      "ProcessQueueQuiesce": false,
+
+//Quiesce Processing of the S3 Drop Bucket (Customer Facing Bucket for new Work) 
+      "CacheBucketQuiesce": false,
+
+//Quiesce Processing of the S3 Process/Work Bucket (Where all new work arriving in the Customer-facing Bucket is staged for updating Campaign) 
+      "QueueBucketQuiesce": false,
+
+//Set a Warning threshold of the number of Batches parsed from a single Customer-facing Bucket file. New work arriving is parsed out in "Update Batches", if the number of batches exceeds this limit Logging will include a warning for Alerting on a possible issue with that S3 Object (file). 
+      "MaxBatchesWarning": 200,
+
+//Useful for Troubleshooting or monitoring, each Selective Debug turns on a detailed message about various steps in the process
+
+//Selective Debug 1: 
+//Selective Debug 2: Log the End of Queueing Work for a tricklercache file
+//Selective Debug 3: 
+//Selective Debug 4: Log when Campaign returns "Max Number of Concurrent API Calls" for a Batch Update, which will be returned to the SQS Queue for retry
+//Selective Debug 5: Log the Updates that will be POSTed to Campaign
+//Selective Debug 6: Log the rows of updates to be packaged into XML Updates to Campaign
+//Selective Debug 7: Log write of a Work File (Batch of Updates) to the S3 Process Bucket
+//Selective Debug 8: 
+//Selective Debug 9: Log Current Processing Environment Variables
+//Selective Debug 10: 
+//Selective Debug 11: Log the Current SQS Event Batch received
+//Selective Debug 12: 
+//Selective Debug 13:
+//Selective Debug 14: 
+//Selective Debug 15: 
+//Selective Debug 16: 
+//Selective Debug 17: 
+//Selective Debug 18: 
+//Selective Debug 19: 
+//Selective Debug 20: 
+      "SelectiveDebug": "1,4,6,7,8,",
+
+
+// Check S3 documentation for EventEmitterMaxListeners Tuning 
+      "EventEmitterMaxListeners": 100,
+
+// Check SQS documentation for ProcessQueueVisibilityTimeout Tuning 
+      "ProcessQueueVisibilityTimeout": 15,
+
+//Check SQS Documentation for ProcessQueueWaitTimeSeconds Tuning 
+      "ProcessQueueWaitTimeSeconds": 5,
+
+//Check SQS Documentation for RetryQueueVisibilityTimeout Tuning
+      "RetryQueueVisibilityTimeout": 30,
+
+//Check SQS Documentation for RetryQueueInitialWaitTimeSeconds Tuning
+      "RetryQueueInitialWaitTimeSeconds": 3,
+
+//Useful for cleaning out the S3 TricklerCache Bucket as quickly as possible. 
+//CacheBucketPurgeCount sets the number to purge at one time (Max 1000) 
+//CacheBucketPurge provides the means to name a custom-version of the cache bucket 
+      "CacheBucketPurgeCount": 0,
+      "CacheBucketPurge": "tricklercache",
+
+//Useful for cleaning out the S3 Tricklercache-process Bucket as quickly as possible. 
+//QueueBucketPurgeCount sets the number to purge at one time (Max 1000) 
+//QueueBucketPurge provides the means to name a custom-version of the Queue/Process bucket
+      "QueueBucketPurgeCount": 0,
+      "QueueBucketPurge": "tricklercache-process",
+
+
+
+
+
+/**  Deprecated::::: 
+/**       Use AWS S3 Command Line instead 
+/**       
+/**       //Useful for cleaning up individual Objects in the S3 Tricklercache Bucket
+/**       //DeleteCacheBucketObjects is an array of S3 Object names that are to be deleted from the Bucket
+/**       //This can also be accomplished via AWS S3 command-line commands, provided here for convenience
+/**             "DeleteCacheBucketObjects": [
+/**                   "acme_2023_11_12T01_43_58_170Z.csv",  //Delete these Objects from the Bucket
+/**                   "acme_2023_08_31T19_57_11_812Z.csv"
+/**                   "acme_2023_11_12T01_43_58_170Z.json"
+/**             ]
+/**       
+/**       //Useful for cleaning up individual Objects in the S3 Tricklercache-process Bucket
+/**       //DeleteProcessBucketObjects is an array of S3 Object names that are to be deleted from the Bucket
+/**       //This can also be accomplished via AWS S3 command-line commands, provided here for convenience
+/**             "DeleteProcessBucketObjects": [
+/**                   "process_0_acme_2024_01_08T12_53_48_244Z.csv",    //Delete these Objects from the Bucket
+/**                   "process_99_acme_2024_01_08T12_53_48_244Z.json",
+/**             ]
+/**
+
+
+}

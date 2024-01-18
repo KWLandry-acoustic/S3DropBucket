@@ -231,3 +231,5 @@ customer_config_json.notes
 .prettierrc.cjs
 .eslintrc.mjs
 
+exampleJson-1.json
+tricklercache_config.json.notes

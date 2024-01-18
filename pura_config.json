@@ -2,6 +2,7 @@
         "customer": "pura_",
         "format": "csv",
         "listId": "12663209",
+        "listType": "relational",
         "listName": "Segment Events Table",
         "pod": "2",
         "region": "us",
