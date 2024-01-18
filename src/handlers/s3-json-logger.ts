@@ -270,11 +270,10 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
                     console.log(`Work Successfully Posted to Campaign (${tqm.workKey}), Deleting Work from S3 Process Queue`)
                     const d: string = await deleteS3Object(tqm.workKey, 'tricklercache-process')
                     if (d === '204') console.log(`Successful Deletion of Work: ${tqm.workKey}`)
-
-                    if (tcc.SelectiveDebug.indexOf("_11") > -1) console.log(`Selective Debug 11 - SQS Events BatchFail \n${JSON.stringify(sqsBatchFail)}`)
-
                     else console.log(`Failed to Delete ${tqm.workKey}. Expected '204' but received ${d}`)
                 }
+
+                if (tcc.SelectiveDebug.indexOf("_12") > -1) console.log(`Selective Debug 11 - SQS Events BatchFail \n${JSON.stringify(sqsBatchFail)}`)
 
             }
             else throw new Error(`Failed to retrieve work file (${tqm.workKey}) `)
