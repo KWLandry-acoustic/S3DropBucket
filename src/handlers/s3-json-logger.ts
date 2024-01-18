@@ -219,7 +219,6 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
     let postResult: string = 'false'
 
     console.log(`Received SQS Events Batch of ${event.Records.length} records.`)
-    if (tcc.SelectiveDebug.indexOf("_11,") > -1) console.log(`Selective Debug 11 - SQS Events Batch\n${JSON.stringify(event)}`)
 
     // event.Records.forEach((i) => {
     //     sqsBatchFail.batchItemFailures.push({ itemIdentifier: i.messageId })
@@ -246,8 +245,7 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
         }
 
         console.log(`Processing Work Queue for ${tqm.workKey}`)
-        if (tcc.SelectiveDebug.indexOf("_11,") > -1) console.log(`Selective Debug 11 - SQS Events BatchFail \n${JSON.stringify(sqsBatchFail)}`)
-
+        if (tcc.SelectiveDebug.indexOf("_11,") > -1) console.log(`Selective Debug 11 - SQS Events Batch Item ${JSON.stringify(q)}`)
 
         try
         {
@@ -274,6 +272,9 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
                     if (d === '204') console.log(`Successful Deletion of Work: ${tqm.workKey}`)
                     else console.log(`Failed to Delete ${tqm.workKey}. Expected '204' but received ${d}`)
                 }
+
+                if (tcc.SelectiveDebug.indexOf("_11,") > -1) console.log(`Selective Debug 11 - SQS Events BatchFail \n${JSON.stringify(sqsBatchFail)}`)
+
             }
             else throw new Error(`Failed to retrieve work file (${tqm.workKey}) `)
 
