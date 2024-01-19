@@ -583,7 +583,7 @@ async function getCustomerConfig (filekey: string) {
 
     if (customer === '_' || customer.length < 4)
     {
-        throw new Error(`Exception: Customer cannot be determined from S3 Cache File '${key}'      \n      `)
+        throw new Error(`Exception: Customer cannot be determined from S3 Cache File '${filekey}'      \n      `)
     }
 
     let configJSON = {} as customerConfig
