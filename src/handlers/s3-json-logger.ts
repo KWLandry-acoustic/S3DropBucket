@@ -137,31 +137,30 @@ let tcSelectiveDebug   //call out selective debug as an option
 
 
 
-//Of concern, very large data sets
-// - as of 10/2023 CSV handled as the papaparse engine handles the record boundary,
-//  Now need to solve for JSON content
-//
-// But how to parse each chunk for JSON content as each chunk is a
-// network chunk that can land on any or no record boundary.
-//      Use a JSON Parser that handles record boundary just like the CSV parser?
-//      Parse out individual Updates from the JSON in the Read Stream using start/stop index
-//          of the stream/content?
-//
-// As of 10/2023 implemented an sqs Queue and deadletter queue,
-//      Multi-GB files are parsed into "99 row updates", written to an S3 "Process" bucket and
-//      an entry added to the sqs Queue that will trigger a 2nd Lambda to process each 'chunk' of 99
-//
-// If there is an exception processing an S3 file
-// Write what data can be processed as 99 updates, and simply throw the exception which will not
-// delete the S3 file for later inspection and re-processing
-//      Can the same file simply be reprocessed/requeued without issue?
-//          Row updates would be duplicated but would that matter?
-//
+//TODO:Of concern, very large data sets
+//TODO: - as of 10/2023 CSV handled as the papaparse engine handles the record boundary,
+//TODO:  Now need to solve for JSON content
+//TODO:
+//TODO: But how to parse each chunk for JSON content as each chunk is a
+//TODO: network chunk that can land on any or no record boundary.
+//TODO:      Use a JSON Parser that handles record boundary just like the CSV parser?
+//TODO:      Parse out individual Updates from the JSON in the Read Stream using start/stop index
+//TODO:          of the stream/content?
+//TODO:
+//TODO: As of 10/2023 implemented an sqs Queue and deadletter queue,
+//TODO:      Multi-GB files are parsed into "99 row updates", written to an S3 "Process" bucket and
+//TODO:      an entry added to the sqs Queue that will trigger a 2nd Lambda to process each 'chunk' of 99
+//TODO:
+//TODO: If there is an exception processing an S3 file
+//TODO: Write what data can be processed as 99 updates, and simply throw the exception which will not
+//TODO: delete the S3 file for later inspection and re-processing
+//TODO:      Can the same file simply be reprocessed/requeued without issue?
+//TODO:          Row updates would be duplicated but would that matter?
+//TODO:
 
 
-// ToDo: 
-//Interface to View and Edit Customer Configs
-//Interface to view Logs/Errors (echo cloudwatch logs?)
+//TODO: Interface to View and Edit Customer Configs
+//TODO: Interface to view Logs/Errors (echo cloudwatch logs?)
 //
 
 
@@ -172,10 +171,8 @@ let tcSelectiveDebug   //call out selective debug as an option
  */
 export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, context: Context) => {
     //
-    // ToDo: Confirm SQS Queue deletes queued work
+    //TODO: Confirm SQS Queue deletes queued work
     //       
-    //      Test Foreach for multiple Queue Events processing, by default SQS polls 5 events at a time unless Queue
-    //          has more events to process and then multiple Lambdas and number of Events increased
 
 
     if (
@@ -186,7 +183,7 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
     {
         tcc = await getTricklerConfig()
     }
-    if (tcc.SelectiveDebug.indexOf("_9") > -1) console.info(`Selective Debug 9 - Process Environment Vars: ${JSON.stringify(process.env)}`)
+    if (tcc.SelectiveDebug.indexOf("_9,") > -1) console.info(`Selective Debug 9 - Process Environment Vars: ${JSON.stringify(process.env)}`)
 
 
 
@@ -249,7 +246,7 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
         }
 
         console.info(`Processing Work Queue for ${tqm.workKey}`)
-        if (tcc.SelectiveDebug.indexOf("_11") > -1) console.info(`Selective Debug 11 - SQS Events Batch Item ${JSON.stringify(q)}`)
+        if (tcc.SelectiveDebug.indexOf("_11,") > -1) console.info(`Selective Debug 11 - SQS Events Batch Item ${JSON.stringify(q)}`)
 
         try
         {
@@ -257,7 +254,7 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
             if (work.length > 0)        //Retreive Contents of the Work File  
             {
                 postResult = await postToCampaign(work, tqm.custconfig, tqm.updateCount)
-                if (tcc.SelectiveDebug.indexOf("_8") > -1) console.info(`POST Result for ${tqm.workKey}: ${postResult}`)
+                if (tcc.SelectiveDebug.indexOf("_8,") > -1) console.info(`POST Result for ${tqm.workKey}: ${postResult}`)
 
                 if (postResult.indexOf('retry') > -1)
                 {
@@ -273,19 +270,19 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
                 {
                     console.info(`Work Successfully Posted to Campaign (${tqm.workKey}), Deleting Work from S3 Process Queue`)
 
-                    const d: string = await deleteS3Object(tqm.workKey, 'tricklercache-process', '', '')
+                    const d: string = await deleteS3Object(tqm.workKey, 'tricklercache-process')
                     if (d === '204') console.info(`Successful Deletion of Work: ${tqm.workKey}`)
                     else console.error(`Failed to Delete ${tqm.workKey}. Expected '204' but received ${d}`)
                 }
 
-                if (tcc.SelectiveDebug.indexOf("_12") > -1) console.info(`Selective Debug 12 - SQS Events BatchFail \n${JSON.stringify(sqsBatchFail)}`)
+                if (tcc.SelectiveDebug.indexOf("_12,") > -1) console.info(`Selective Debug 12 - SQS Events BatchFail \n${JSON.stringify(sqsBatchFail)}`)
 
             }
             else throw new Error(`Failed to retrieve work file (${tqm.workKey}) `)
 
         } catch (e)
         {
-            console.error(`Exception processing a Work File (${tqm.workKey} - \n${e} \n${JSON.stringify(tqm)}`)
+            console.error(`Exception - Processing a Work File (${tqm.workKey} - \n${e} \n${JSON.stringify(tqm)}`)
         }
 
     }
@@ -316,16 +313,15 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
 export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Context) => {
 
 
-    //ToDo: 
-    //  ** Currently throttled to a single event each time, Add processing of multiple Events per invocation
+    //TODO: Currently throttled to a single event each time, Add processing of multiple Events per invocation
     //
-    //  ** Process to ReParse Cache and create Work Files
+    //TODO: Process to ReParse Cache and create Work Files
     //
-    // Column mapping - Inbound Column Name to Table Column Mapping
-    // Type Validation - Inbound Data type validation to Mapping Type
+    //TODO: Column mapping - Inbound Column Name to Table Column Mapping
+    //TODO: Type Validation - Inbound Data type validation to Mapping Type
     //
 
-    //ToDo: Resolve the progression of these steps, currently "Completed" is logged regardless of 'completion'
+    //TODO: Resolve the progression of these steps, currently "Completed" is logged regardless of 'completion'
     // and Delete happens regardless of 'completion' being successful or not
     //
     // INFO Started Processing inbound data(pura_2023_11_16T20_24_37_627Z.csv)
@@ -349,7 +345,7 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
     {
         tcc = await getTricklerConfig()
     }
-    if (tcc.SelectiveDebug.indexOf("_9") > -1) console.info(`Selective Debug 9 - Process Environment Vars: ${JSON.stringify(process.env)}`)
+    if (tcc.SelectiveDebug.indexOf("_9,") > -1) console.info(`Selective Debug 9 - Process Environment Vars: ${JSON.stringify(process.env)}`)
 
 
     if (tcc.CacheBucketPurgeCount > 0)
@@ -379,44 +375,59 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
         // event.Records.forEach(async (r: S3EventRecord) => {
         key = r.s3.object.key
         const bucket = r.s3.bucket.name
+
+
+        //TODO: Resolve Duplicates Issue - S3 allows Duplicate Object Names but Delete marks all Objects of same Name Deleted. 
+        //   Which causes an issue with Key Not Found after an Object of Name A is processed and deleted, then another Object of Name A comes up in a Trigger.
         const vid = r.s3.object.versionId
         const et = r.s3.object.eTag
 
         try
         {
             customersConfig = await getCustomerConfig(key)
-
             console.info(`Processing inbound data for ${key}, Customer is ${customersConfig.customer}`)
+        }
+        catch (e)
+        {
+            console.error(`Exception - Retrieving Customer Config for ${key} \n${e}`)
+        }
 
+        try
+        {
 
             const processS3ObjectStream = await processS3ObjectContentStream(key, bucket, customersConfig)
 
-            if (tcc.SelectiveDebug.indexOf("_3") > -1) console.info(`Selective Debug 3 - Returned from Processing S3 Object Content Stream for ${key}. Result: ${processS3ObjectStream}`)
+            if (tcc.SelectiveDebug.indexOf("_3,") > -1) console.info(`Selective Debug 3 - Returned from Processing S3 Object Content Stream for ${key}. Result: ${processS3ObjectStream}`)
 
-            debugger
+            console.info(`Completed processing the S3 Object ${key} of ${event.Records.length} S3 DropBox Event Records`)
 
-            //Once successful delete the original S3 Object
-            const delResultCode = await deleteS3Object(key, bucket, et, vid)
-
-            if (delResultCode !== '204') throw new Error(`Invalid Delete of ${key}, Expected 204 result code, received ${delResultCode}`)
-            else console.info(`Successful Delete of ${key}  (Result ${delResultCode}) `)
-
-            const l = `Completed processing the S3 Object ${key}`
-            console.info(l)
-            return { l, key, delResultCode }
+            // return { l, key }
 
         } catch (e)
         {
-            console.error(`Exception processing S3 Event (for ${key}) \n${e}`)
+            console.error(`Exception - Processing S3 Object Content Stream for ${key} \n${e}`)
         }
 
+        try
+        {
+            //Once successful delete the original S3 Object
+            const delResultCode = await deleteS3Object(key, bucket)
+
+            if (delResultCode !== '204') throw new Error(`Invalid Delete of ${key}, Expected 204 result code, received ${delResultCode}`)
+            else console.info(`Successful Delete of ${key}  (Result ${delResultCode}) `)
+        }
+        catch (e)
+        {
+            console.error(`Exception - Deleting S3 Object after successful processing of the Content Stream for ${key} \n${e}`)
+        }
     }
 
     //Check for important Config updates
     checkForTCConfigUpdates()
 
-    return `TricklerCache Processing of Request Id ${event.Records[0].responseElements['x-amz-request-id']} Completed.`
+    console.info(`Completing S3 DropBucket Processing of Request Id ${event.Records[0].responseElements['x-amz-request-id']}`)
 
+    return `S3 DropBucket Processing of Request Id ${event.Records[0].responseElements['x-amz-request-id']} Completed.`
 }
 
 
@@ -427,7 +438,7 @@ export default s3JsonLoggerHandler
 function checkForTCConfigUpdates () {
     if (tcLogDebug) console.info(`Checking for TricklerCache Config updates`)
     getTricklerConfig()
-    if (tcc.SelectiveDebug.indexOf("_1") > -1) console.info(`Refreshed TricklerCache Config \n ${JSON.stringify(tcc)}`)
+    if (tcc.SelectiveDebug.indexOf("_1,") > -1) console.info(`Refreshed TricklerCache Config \n ${JSON.stringify(tcc)}`)
 }
 
 async function getTricklerConfig () {
@@ -447,7 +458,7 @@ async function getTricklerConfig () {
             })
     } catch (e)
     {
-        console.error(`Pulling TricklerConfig Exception \n ${e}`)
+        console.error(`Exception - Pulling TricklerConfig \n ${e}`)
     }
 
     try
@@ -568,10 +579,10 @@ async function getTricklerConfig () {
 
     } catch (e)
     {
-        throw new Error(`Exception parsing TricklerCache Config File ${e}`)
+        throw new Error(`Exception - Parsing TricklerCache Config File ${e}`)
     }
 
-    if (tc.SelectiveDebug.indexOf("_1") > -1) console.info(`Selective Debug 1 - Pulled tricklercache_config.json: \n${JSON.stringify(tc)}`)
+    if (tc.SelectiveDebug.indexOf("_1,") > -1) console.info(`Selective Debug 1 - Pulled tricklercache_config.json: \n${JSON.stringify(tc)}`)
 
     return tc
 }
@@ -586,7 +597,7 @@ async function getCustomerConfig (filekey: string) {
 
     if (customer === '_' || customer.length < 4)
     {
-        throw new Error(`Exception: Customer cannot be determined from S3 Cache File '${filekey}'      \n      `)
+        throw new Error(`Exception - Customer cannot be determined from S3 Cache File '${filekey}'      \n      `)
     }
 
     let configJSON = {} as customerConfig
@@ -605,7 +616,7 @@ async function getCustomerConfig (filekey: string) {
             .then(async (getConfigS3Result: GetObjectCommandOutput) => {
                 const ccr = await getConfigS3Result.Body?.transformToString('utf8') as string
 
-                if (tcc.SelectiveDebug.indexOf("_10") > -1) console.info(`Selective Debug 10 - Customers Config: \n ${ccr}`)
+                if (tcc.SelectiveDebug.indexOf("_10,") > -1) console.info(`Selective Debug 10 - Customers Config: \n ${ccr}`)
 
                 configJSON = JSON.parse(ccr)
             })
@@ -614,13 +625,13 @@ async function getCustomerConfig (filekey: string) {
                 const err: string = JSON.stringify(e)
 
                 if (err.indexOf('NoSuchKey') > -1)
-                    throw new Error(`Customer Config Not Found on S3 tricklercache-configs (${customer}config.json) \nException ${e}`)
-                else throw new Error(`Exception Retrieving Config from S3 tricklercache-configs (${customer}config.json) Exception ${e}`)
+                    throw new Error(`Exception - Customer Config Not Found on S3 tricklercache-configs (${customer}config.json) \nException ${e}`)
+                else throw new Error(`Exception - Retrieving Config from S3 tricklercache-configs (${customer}config.json) \nException ${e}`)
 
             })
     } catch (e)
     {
-        console.error(`Exception Pulling Customer Config \n${e}`)
+        console.error(`Exception - Pulling Customer Config \n${e}`)
     }
 
     //Was working before adding foreach block, which killed Promise, which led to rewriting this
@@ -632,8 +643,8 @@ async function getCustomerConfig (filekey: string) {
     // ,
     //         )
     //             .catch((err) => {
-    //                 console.error(`Exception Processing Customer Config - ${err}`)
-    //                 throw new Error(`Exception (Promise-Catch) Processing Customer Config: ${err} `)
+    //                 console.error(`Exception - Processing Customer Config - ${err}`)
+    //                 throw new Error(`Exception - (Promise-Catch) Processing Customer Config: ${err} `)
     //             })
 
     //             .then(async (custConfigS3Result: GetObjectCommandOutput) => {
@@ -656,7 +667,7 @@ async function getCustomerConfig (filekey: string) {
     //                 }
     //                 catch (e)
     //                 {
-    //                     console.error(`exception in then for Cust Config: ${e}`)
+    //                     console.error(`Exception - in then for Cust Config: ${e}`)
     //                 }
 
 
@@ -683,20 +694,20 @@ async function getCustomerConfig (filekey: string) {
     //                 // )
     //             } catch (e)
     //             {
-    //                 throw new Error(`Exception Parsing Config ${customer}config.json: ${e}`)
+    //                 throw new Error(`Exception - Parsing Config ${customer}config.json: ${e}`)
     //             }
 
     //             resolve(cj)
     // //         })
     // // }
     // }).catch(e => {
-    //     throw new Error(`Exception retrieving Customer Config ${customer}config.json \n${e}`)
+    //     throw new Error(`Exception - retrieving Customer Config ${customer}config.json \n${e}`)
     // })
 
 
     // } catch (e)
     // {
-    //     throw new Error(`Exception retrieving Customer Config ${customer}config.json: \n ${e}`)
+    //     throw new Error(`Exception - retrieving Customer Config ${customer}config.json: \n ${e}`)
     // }
 
     customersConfig = await validateCustomerConfig(configJSON)
@@ -792,7 +803,7 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
 
     if (tcLogDebug) console.info(`Processing S3 Content Stream for ${key}`)
 
-    await s3.send(
+    const processS3Object = await s3.send(
         new GetObjectCommand({
             Key: key,
             Bucket: bucket,
@@ -852,90 +863,119 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
 
             s3ContentReadableStream.setMaxListeners(tcc.EventEmitterMaxListeners)
 
+            if (custConfig.format.toLowerCase() === 'json')
+            {
+                //Placeholder 
+            }
+
+
             console.info(`S3 Content Stream Opened for ${key}`)
 
-            const streamPromise = await new Promise(() => {
-                s3ContentReadableStream
-                    .on('error', async function (err: string) {
-                        chunks = []
-                        batchCount = 0
+            // try
+            // {
+            // let streamPromiseResult = await new Promise(() => {
+            s3ContentReadableStream
+                .on('error', async function (err: string) {
+                    chunks = []
+                    batchCount = 0
 
-                        const errMessage = `An error has stopped Content Parsing at record ${recs} for s3 object ${key}.\n${err}`
-                        recs = 0
+                    const errMessage = `An error has stopped Content Parsing at record ${recs} for s3 object ${key}.\n${err}`
+                    recs = 0
 
-                        console.error(errMessage)
-                        throw new Error(errMessage)
-                    })
+                    console.error(errMessage)
+                    throw new Error(errMessage)
+                })
 
-                    .on('data', async function (s3Chunk: string) {
-                        recs++
-                        if (recs > custConfig.updateMaxRows) throw new Error(`The number of Updates in this batch Exceeds Max Row Updates allowed ${recs} in the Customers Config`)
+                .on('data', async function (s3Chunk: string) {
+                    recs++
+                    if (recs > custConfig.updateMaxRows) throw new Error(`The number of Updates in this batch Exceeds Max Row Updates allowed ${recs} in the Customers Config`)
 
-                        if (tcc.SelectiveDebug.indexOf("_13") > -1) console.info(`Selective Debug 13 - s3ContentStream OnData - Another chunk (ArrayLen:${chunks.length} Recs:${recs} Batch:${batchCount} from ${key} - ${JSON.stringify(s3Chunk)}`)
+                    if (tcc.SelectiveDebug.indexOf("_13,") > -1) console.info(`Selective Debug 13 - s3ContentStream OnData - Another chunk (ArrayLen:${chunks.length} Recs:${recs} Batch:${batchCount} from ${key} - ${JSON.stringify(s3Chunk)}`)
 
-                        chunks.push(s3Chunk)
+                    chunks.push(s3Chunk)
 
-                        if (chunks.length > 98)
-                        {
-                            batchCount++
-
-                            const a = chunks
-                            chunks = []
-
-                            if (tcLogDebug) console.info(`s3ContentStream OnData Over 99 Records - Queuing Work (Batch: ${batchCount} Chunks: ${a.length}) from ${key}`)
-
-                            const sqwResult = await storeAndQueueWork(a, key, custConfig, batchCount)
-
-                            if (tcLogDebug) console.info(`Await of Store And Queue Work returns - ${sqwResult}`)
-
-                        }
-                    })
-
-                    .on('end', async function (msg: string) {
+                    if (chunks.length > 98)
+                    {
                         batchCount++
 
-                        const streamEndResult = `S3 Content Stream Ended for ${key}. Processed ${recs} records as ${batchCount} batches.`
-                        if (tcLogDebug) console.info(streamEndResult)
-                        streamResult += `\nStream End Result: ${streamEndResult}`
-
-                        const d = chunks
+                        const a = chunks
                         chunks = []
-                        batchCount = 0
-                        recs = 0
 
-                        let storeQueueResult = await storeAndQueueWork(d, key, custConfig, batchCount)
-                        if (tcLogDebug) console.info(`Store and Queue Work Result: ${storeQueueResult}`)
+                        const sqwResult = await storeAndQueueWork(a, key, custConfig, batchCount)
 
-                        if (tcc.SelectiveDebug.indexOf("_2") > -1) console.info(`Selective Debug 2: End of Queueing Work for (${key}) Result: ${storeQueueResult}`)
-                        streamResult += `\nStore and Queue Work Result: ${storeQueueResult}`
-                        return streamResult
-                    })
+                        if (tcc.SelectiveDebug.indexOf("_2,") > -1) console.info(`Selective Debug 2: Content Stream OnData - Store And Queue Work for ${key} of Batch ${batchCount} of ${a.length} records, Result: \n${JSON.stringify(sqwResult)}`)
 
-                    .on('close', async function (msg: string) {
-                        chunks = []
-                        batchCount = 0
-                        recs = 0
+                    }
+                    console.info(`Debug - OnData - Another Chunk of data ${recs}`)
+                })
 
-                        streamResult += `\nS3 Content Stream Closed for ${key}, successfully processed ${recs} records.`
-                        console.info(streamResult)
-                        return streamResult
-                    })
+                .on('end', async function (msg: string) {
+                    batchCount++
 
-                // }).catch(e => {
-                //     // throw new Error(`Exception Processing (Promise) S3 Get Object Content for ${key}: \n ${e}`);
-                //     console.error(
-                //         `Exception Processing (Await S3 Body) S3 Get Object Content for ${key}: \n ${e}`,
-                //     )
-                // })
+                    const streamEndResult = `S3 Content Stream Ended for ${key}. Processed ${recs} records as ${batchCount} batches.`
+                    // "S3 Content Stream Ended for pura_2024_01_22T18_02_45_204Z.csv. Processed 33 records as 1 batches."
+                    if (tcLogDebug) console.info(streamEndResult)
+                    console.info(`OnEnd - Debug:  ${streamEndResult}`)
+                    // streamResult += `\n${streamEndResult}`
 
-                return streamResult
-            })
+                    const d = chunks
+                    chunks = []
+
+                    const storeQueueResult = await storeAndQueueWork(d, key, custConfig, batchCount)
+                    // "{\"AddWorkToS3ProcessBucketResults\":{\"AddWorkToS3ProcessBucket\":\"Wrote Work File (process_0_pura_2024_01_22T18_02_46_119Z_csv.xml) to S3 Processing Bucket (Result 200)\",\"S3ProcessBucketResult\":\"200\"},\"AddWorkToSQSProcessQueueResults\":{\"sqsWriteResult\":\"200\",\"workQueuedSuccess\":true,\"SQSSendResult\":\"{\\\"$metadata\\\":{\\\"httpStatusCode\\\":200,\\\"requestId\\\":\\\"e70fba06-94f2-5608-b104-e42dc9574636\\\",\\\"attempts\\\":1,\\\"totalRetryDelay\\\":0},\\\"MD5OfMessageAttributes\\\":\\\"0bca0dfda87c206313963daab8ef354a\\\",\\\"MD5OfMessageBody\\\":\\\"940f4ed5927275bc93fc945e63943820\\\",\\\"MessageId\\\":\\\"cf025cb3-dce3-4564-89a5-23dcae86dd42\\\"}\"}}"
+                    if (tcLogDebug) console.info(`Store and Queue Work Result: ${storeQueueResult}`)
+
+                    if (tcc.SelectiveDebug.indexOf("_2,") > -1) console.info(`Selective Debug 2: Content Stream End - Store and Queue Work for (${key}) of Batch ${batchCount} of ${d.length} records Result: \n${JSON.stringify(storeQueueResult)}`)
+
+                    batchCount = 0
+                    recs = 0
+
+                    streamResult += `\nStore and Queue Work Result: ${storeQueueResult}`
+
+                    return streamResult
+                })
+
+                .on('close', async function (msg: string) {
+
+                    streamResult += `\nS3 Content Stream Closed for ${key}`
+                    console.info(streamResult)
+
+                    chunks = []
+                    batchCount = 0
+                    recs = 0
+
+                    // return streamResult
+                })
+
+            // })
+            //     .then((streamResult ) => {
+            //         debugger
+            //         console.info(`Promise then`)
+            //         // streamPromiseResult = streamResult
+            //         // return streamPromiseResult as string
+            //         return streamResult as string
+            //     })
+            //     .catch(e => {
+            //         // throw new Error(`Exception - Processing Readable Stream Promise for S3 Get Object Content for ${key}: \n ${e}`);
+            //         console.error(
+            //             `Exception - Processing (Await s3 Content Readable Stream) S3 Get Object Content for ${key}: \n ${e}`,
+            //         )
+            //     })
+            // } catch (e)
+            // {
+            //     console.error(`Exception - StreamResult \n${e}`)
+            // }
+
+
+            return streamResult
+        })
+        .catch(e => {
+            console.error(`Exception -  Process S3 Object Content Stream for ${key}: \n ${e}`)
+            throw new Error(`Exception - Process S3 Object Content Stream for ${key}: \n ${e}`)
         })
 
-    // return { s3ContentResults, workQueuedSuccess }
-    // return s3ContentStream
-    // return closeResult
-    // return streamResult
+    return processS3Object
+    // })
 
 }
 
@@ -945,13 +985,17 @@ async function storeAndQueueWork (chunks: string[], s3Key: string, config: custo
     if (batch > tcc.MaxBatchesWarning) console.warn(`Warning: Updates from the S3 Object (${s3Key}) are exceeding (${batch}) the Warning Limit of ${tcc.MaxBatchesWarning} Batches per Object.`)
     // throw new Error(`Updates from the S3 Object (${s3Key}) Exceed (${batch}) Safety Limit of 20 Batches of 99 Updates each. Exiting...`)
 
+    if (customersConfig.listType.toLowerCase() === 'dbkeyed' ||
+        customersConfig.listType.toLowerCase() === 'dbnonkeyed')
+    {
+        xmlRows = convertJSONToXML_DBUpdates(chunks, config)
+    }
 
-    debugger
+    if (customersConfig.listType.toLowerCase() === 'relational')
+    {
+        xmlRows = convertJSONToXML_RTUpdates(chunks, config)
+    }
 
-
-    if (customersConfig.listType.toLowerCase() === 'dbkeyed' || customersConfig.listType.toLowerCase() === 'dbnonkeyed') xmlRows = convertToXML_DBUpdates(chunks, config)
-
-    if (customersConfig.listType.toLowerCase() === 'relational') xmlRows = convertToXML_RTUpdates(chunks, config)
 
     let key = s3Key.replace('.', '_')
     key = `process_${batch}_${key}.xml`
@@ -960,16 +1004,26 @@ async function storeAndQueueWork (chunks: string[], s3Key: string, config: custo
     if (tcLogDebug) console.info(`Queuing Work for ${s3Key} - ${key}. (Batch ${batch} of ${chunks.length} records) `)
 
     const AddWorkToS3ProcessBucketResults = await addWorkToS3ProcessStore(xmlRows, key)
-    const AddWorkToSQSProcessQueueResults = await addWorkToSQSProcessQueue(config, key, batch.toString(), chunks.length.toString())
+    //     {
+    //         AddWorkToS3ProcessBucket: "Wrote Work File (process_0_pura_2024_01_22T18_02_46_119Z_csv.xml) to S3 Processing Bucket (Result 200)",
+    //         S3ProcessBucketResult: "200",
+    // }
 
-    return JSON.stringify({ AddWorkToS3ProcessBucketResults, AddWorkToSQSProcessQueueResults })
+    const AddWorkToSQSProcessQueueResults = await addWorkToSQSProcessQueue(config, key, batch.toString(), chunks.length.toString())
+    //     {
+    //         sqsWriteResult: "200",
+    //         workQueuedSuccess: true,
+    //         SQSSendResult: "{\"$metadata\":{\"httpStatusCode\":200,\"requestId\":\"e70fba06-94f2-5608-b104-e42dc9574636\",\"attempts\":1,\"totalRetryDelay\":0},\"MD5OfMessageAttributes\":\"0bca0dfda87c206313963daab8ef354a\",\"MD5OfMessageBody\":\"940f4ed5927275bc93fc945e63943820\",\"MessageId\":\"cf025cb3-dce3-4564-89a5-23dcae86dd42\"}",
+    // }
+
+    return { AddWorkToS3ProcessBucketResults, AddWorkToSQSProcessQueueResults }
 }
 
 
-function convertToXML_RTUpdates (rows: string[], config: customerConfig) {
+function convertJSONToXML_RTUpdates (rows: string[], config: customerConfig) {
     if (tcLogDebug) console.info(`Converting S3 Content to XML RT Updates. Packaging ${rows.length} rows as updates to ${config.customer}'s ${config.listName}`)
 
-    if (tcc.SelectiveDebug.indexOf("_6") > -1) console.info(`Selective Debug 6 - Convert to XML Updates: ${JSON.stringify(rows)}`)
+    if (tcc.SelectiveDebug.indexOf("_6,") > -1) console.info(`Selective Debug 6 - Convert to XML Updates: ${JSON.stringify(rows)}`)
 
     xmlRows = `<Envelope><Body><InsertUpdateRelationalTable><TABLE_ID>${config.listId}</TABLE_ID><ROWS>`
     let r = 0
@@ -990,11 +1044,11 @@ function convertToXML_RTUpdates (rows: string[], config: customerConfig) {
     return xmlRows
 }
 
-function convertToXML_DBUpdates (rows: string[], config: customerConfig) {
+function convertJSONToXML_DBUpdates (rows: string[], config: customerConfig) {
 
     if (tcLogDebug) console.info(`Converting S3 Content to XML DB Updates. Packaging ${rows.length} rows as updates to ${config.customer}'s ${config.listName}`)
 
-    if (tcc.SelectiveDebug.indexOf("_16") > -1) console.info(`Selective Debug 16 - Convert to XML DB Updates: ${JSON.stringify(rows)}`)
+    if (tcc.SelectiveDebug.indexOf("_16,") > -1) console.info(`Selective Debug 16 - Convert JSON to XML DB Updates, JSON: ${JSON.stringify(rows)}`)
 
     // <AddRecipient>
     // <CREATED_FROM>0</CREATED_FROM>
@@ -1006,7 +1060,6 @@ function convertToXML_DBUpdates (rows: string[], config: customerConfig) {
 
     xmlRows = `<Envelope><Body>`
     let r = 0
-
 
     rows.forEach(jsonObj => {
         r++
@@ -1041,8 +1094,10 @@ function convertToXML_DBUpdates (rows: string[], config: customerConfig) {
             xmlRows += `<COLUMN><NAME>${key}</NAME><VALUE>${value}</VALUE></COLUMN>`
         })
 
-        xmlRows += `</AddRecipient></Body></Envelope>`
+        xmlRows += `</AddRecipient>`
     })
+
+    xmlRows += `</Body></Envelope>`
 
     return xmlRows
 }
@@ -1112,8 +1167,8 @@ async function addWorkToS3ProcessStore (queueContent: string, key: string) {
                 S3ProcessBucketResult = JSON.stringify(s3PutResult.$metadata.httpStatusCode, null, 2)
                 if (S3ProcessBucketResult === '200')
                 {
-                    AddWorkToS3ProcessBucket = `Wrote Work File (${key}) to S3 Process Store (Result ${S3ProcessBucketResult})`
-                    if (tcc.SelectiveDebug.indexOf("_7") > -1) console.info(`Selective Debug 7 - ${AddWorkToS3ProcessBucket}`)
+                    AddWorkToS3ProcessBucket = `Wrote Work File (${key}) to S3 Processing Bucket (Result ${S3ProcessBucketResult})`
+                    if (tcc.SelectiveDebug.indexOf("_7,") > -1) console.info(`Selective Debug 7 - ${AddWorkToS3ProcessBucket}`)
                 }
                 else throw new Error(`Failed to write Work File to S3 Process Store (Result ${S3ProcessBucketResult}) for ${key}`)
             })
@@ -1122,7 +1177,7 @@ async function addWorkToS3ProcessStore (queueContent: string, key: string) {
             })
     } catch (e)
     {
-        throw new Error(`PutObjectCommand Exception writing work(${key} to S3 Processing bucket: ${e}`)
+        throw new Error(`Exception - Put Object Command for writing work(${key} to S3 Processing bucket: ${e}`)
     }
 
     return { AddWorkToS3ProcessBucket, S3ProcessBucketResult }
@@ -1184,9 +1239,7 @@ async function addWorkToSQSProcessQueue (config: customerConfig, key: string, ba
                 }
                 SQSSendResult = JSON.stringify(sqsSendMessageResult)
 
-                workQueuedSuccess = true
-
-                if (tcc.SelectiveDebug.indexOf("_8") > -1) console.info(`Queued Work to SQS Process Queue (${sqsQMsgBody.workKey}) - Result: ${sqsWriteResult} `)
+                if (tcc.SelectiveDebug.indexOf("_8,") > -1) console.info(`Selective Debug 8 - Queued Work to SQS Process Queue (${sqsQMsgBody.workKey}) - Result: ${sqsWriteResult} `)
             })
             .catch(err => {
                 console.error(
@@ -1196,11 +1249,11 @@ async function addWorkToSQSProcessQueue (config: customerConfig, key: string, ba
     } catch (e)
     {
         console.error(
-            `Exception writing to SQS Process Queue - (queue URL${sqsParams.QueueUrl}), process_${sqsQMsgBody.workKey}, SQS Params${JSON.stringify(sqsParams)}) - Error: ${e}`,
+            `Exception - Writing to SQS Process Queue - (queue URL${sqsParams.QueueUrl}), process_${sqsQMsgBody.workKey}, SQS Params${JSON.stringify(sqsParams)}) - Error: ${e}`,
         )
     }
 
-    return { sqsWriteResult, workQueuedSuccess, SQSSendResult }
+    return { "SQSWriteResult": sqsWriteResult, "SQSQueued_Metadata": SQSSendResult }
 }
 
 // async function reQueue (sqsevent: SQSEvent, queued: tcQueueMessage) {
@@ -1280,8 +1333,8 @@ async function getS3Work (s3Key: string) {
         const err: string = JSON.stringify(e)
 
         if (err.indexOf('NoSuchKey') > -1)
-            throw new Error(`Work Not Found on S3 Process Queue (${s3Key}) Is an S3 Process Queue Management Policy Deleting Work before Processing can be accomplished?\nException ${e}`)
-        else throw new Error(`Exception Retrieving Work from S3 Process Queue (${s3Key}) Exception ${e}`)
+            throw new Error(`Exception - Work Not Found on S3 Process Queue (${s3Key}) Is an S3 Process Queue Management Policy Deleting Work before Processing can be accomplished? \n${e}`)
+        else throw new Error(`Exception - Retrieving Work from S3 Process Queue for ${s3Key}. \n ${e}`)
     }
     return work
 }
@@ -1306,13 +1359,13 @@ export async function getAccessToken (config: customerConfig) {
         const ratResp = (await rat.json()) as accessResp
         if (rat.status != 200)
         {
-            throw new Error(`Exception retrieving Access Token:   ${rat.status} - ${rat.statusText}`)
+            throw new Error(`Exception - Retrieving Access Token:   ${rat.status} - ${rat.statusText}`)
         }
         const accessToken = ratResp.access_token
         return { accessToken }.accessToken
     } catch (e)
     {
-        throw new Error(`Exception during getAccessToken: \n ${e}`)
+        throw new Error(`Exception - On GetAccessToken: \n ${e}`)
     }
 }
 
@@ -1353,7 +1406,7 @@ export async function postToCampaign (xmlCalls: string, config: customerConfig, 
     const host = `https://api-campaign-${config.region}-${config.pod}.goacoustic.com/XMLAPI`
 
 
-    if (tcc.SelectiveDebug.indexOf("_5") > -1) console.info(`Selective Debug 5 - Updates to POST are: ${xmlCalls}`)
+    if (tcc.SelectiveDebug.indexOf("_5,") > -1) console.info(`Selective Debug 5 - Updates to POST are: ${xmlCalls}`)
 
     let postRes
 
@@ -1374,7 +1427,7 @@ export async function postToCampaign (xmlCalls: string, config: customerConfig, 
                     result.toLowerCase().indexOf('max number of concurrent') > -1
                 )
                 {
-                    if (tcc.SelectiveDebug.indexOf("_4") > -1) console.info(`Selective Debug 4 - Max Number of Concurrent Updates Fail - Marked for Retry`)
+                    if (tcc.SelectiveDebug.indexOf("_4,") > -1) console.info(`Selective Debug 4 - Max Number of Concurrent Updates Fail - Marked for Retry`)
                     return 'retry'
                 }
                 else return `Error - Unsuccessful POST of the Updates (${count}) - Response : ${result}`
@@ -1390,36 +1443,34 @@ export async function postToCampaign (xmlCalls: string, config: customerConfig, 
         })
     // } catch (e)
     // {
-    //     console.error(`Exception during POST to Campaign (AccessToken ${process.env.accessToken}) Result: ${e}`)
+    //     console.error(`Exception - On POST to Campaign (AccessToken ${process.env.accessToken}) Result: ${e}`)
     // }
 
     return postRes
 }
 
-async function deleteS3Object (s3ObjKey: string, bucket: string, entity: string | undefined, ver: string | undefined) {
+async function deleteS3Object (s3ObjKey: string, bucket: string) {
 
     let delRes = ''
 
-    debugger
+    // debugger
 
-    const listObjectCommand = {
-        Bucket: bucket, // required
-        // KeyMarker: s3ObjKey,
-        Prefix: s3ObjKey,
-        // versionId: ver,
-        IfMatch: entity
-    }
-    console.log("Debug: ", entity, "Debug: ", ver)
-    const loc = new ListObjectVersionsCommand(listObjectCommand)
-    const locResponse = await s3.send(loc)
-        .then(async (listResult: ListObjectsV2CommandOutput) => {
-            console.log(`ListObject Response: ${JSON.stringify(listResult)}`)
-            debugger
-        })
+    // const listObjectCommand = {
+    //     Bucket: bucket, // required
+    //     // KeyMarker: s3ObjKey,
+    //     Prefix: s3ObjKey,
+    //     // versionId: ver,
+    //     IfMatch: entity
+    // }
+    // // console.info("Debug: ", entity, "Debug: ", ver)
+    // const loc = new ListObjectVersionsCommand(listObjectCommand)
+    // const locResponse = await s3.send(loc)
+    //     .then(async (listResult: ListObjectsV2CommandOutput) => {
+    //         console.info(`ListObject Response: ${JSON.stringify(listResult)}`)
+    //         debugger
+    //     })
 
-    debugger
-
-
+    // debugger
 
 
     try
@@ -1440,7 +1491,7 @@ async function deleteS3Object (s3ObjKey: string, bucket: string, entity: string 
             })
     } catch (e)
     {
-        console.error(`Exception Processing S3 Delete Command for ${s3ObjKey}: \n ${e} `)
+        console.error(`Exception - Attempting S3 Delete Command for ${s3ObjKey}: \n ${e} `)
     }
     return delRes as string
 }
@@ -1486,14 +1537,14 @@ async function getAnS3ObjectforTesting (bucket: string) {
             return s3Key
         })
         .catch((e) => {
-            console.error(`Exception on S3 List Command for Testing Objects from ${bucket}: ${e} `)
+            console.error(`Exception - On S3 List Command for Testing Objects from ${bucket}: ${e} `)
         })
     // .finally(() => {
     //     console.info(`S3 List Finally...`)
     // })
     // } catch (e)
     // {
-    //     console.error(`Exception Processing S3 List Command: ${ e } `)
+    //     console.error(`Exception - Processing S3 List Command: ${ e } `)
     // }
 
 
@@ -1516,13 +1567,13 @@ async function purgeBucket (count: number, bucket: string) {
         await s3.send(new ListObjectsV2Command(listReq)).then(async (s3ListResult: ListObjectsV2CommandOutput) => {
             s3ListResult.Contents?.forEach(async (listItem) => {
                 d++
-                r = await deleteS3Object(listItem.Key as string, bucket, '', '')
+                r = await deleteS3Object(listItem.Key as string, bucket)
                 if (r !== '204') console.error(`Non Successful return (Expected 204 but received ${r} ) on Delete of ${listItem.Key} `)
             })
         })
     } catch (e)
     {
-        console.error(`Exception Processing Purge of Bucket ${bucket}: \n${e} `)
+        console.error(`Exception - Attempting Purge of Bucket ${bucket}: \n${e} `)
     }
     console.info(`Deleted ${d} Objects from ${bucket} `)
     return `Deleted ${d} Objects from ${bucket} `
@@ -1600,7 +1651,7 @@ async function purgeBucket (count: number, bucket: string) {
 
 //         var records = processReceivedMessage(msg);
 //         var str = JSON.stringify(records);
-//         console.info(str); // TODO: Implement your logic HERE
+//         console.info(str); 
 //     }
 
 //     try {
