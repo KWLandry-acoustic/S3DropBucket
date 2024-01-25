@@ -246,7 +246,7 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
         }
 
         console.info(`Processing Work Queue for ${tqm.workKey}`)
-        if (tcc.SelectiveDebug.indexOf("_11,") > -1) console.info(`Selective Debug 11 - SQS Events Batch Item ${JSON.stringify(q)}`)
+        if (tcc.SelectiveDebug.indexOf("_11,") > -1) console.info(`Selective Debug 11 - SQS Events - Processing Batch Item ${JSON.stringify(q)}`)
 
         try
         {
@@ -258,13 +258,14 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
 
                 if (postResult.indexOf('retry') > -1)
                 {
-                    console.warn(`Retry Marked for ${tqm.workKey} (Batch Fails: ${sqsBatchFail.batchItemFailures.length + 1}) Returning Work Item ${q.messageId} to Process Queue.`)
+                    console.warn(`Retry Marked for ${tqm.workKey} (Retry Report: ${sqsBatchFail.batchItemFailures.length + 1}) Returning Work Item ${q.messageId} to Process Queue.`)
                     //Add to BatchFail array to Retry processing the work 
                     sqsBatchFail.batchItemFailures.push({ itemIdentifier: q.messageId })
+                    if (tcc.SelectiveDebug.indexOf("_12,") > -1) console.info(`Selective Debug 12 - Added ${tqm.workKey} to SQS Events Retry \n${JSON.stringify(sqsBatchFail)}`)
                 }
 
                 if (postResult.toLowerCase().indexOf('unsuccessful post') > -1)
-                    console.error(`Error - Unsuccesful POST for ${tqm.workKey}: ${postResult}`)
+                    console.error(`Error - Unsuccesful POST (Permanent Failure) for ${tqm.workKey}: \n${postResult}`)
 
                 if (postResult.toLowerCase().indexOf('successfully posted') > -1)
                 {
@@ -275,7 +276,6 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
                     else console.error(`Failed to Delete ${tqm.workKey}. Expected '204' but received ${d}`)
                 }
 
-                if (tcc.SelectiveDebug.indexOf("_12,") > -1) console.info(`Selective Debug 12 - SQS Events BatchFail \n${JSON.stringify(sqsBatchFail)}`)
 
             }
             else throw new Error(`Failed to retrieve work file (${tqm.workKey}) `)
@@ -1418,11 +1418,6 @@ export async function postToCampaign (xmlCalls: string, config: customerConfig, 
 
             if (result.toLowerCase().indexOf('false</success>') > -1)
             {
-                // "<Envelope><Body><RESULT><SUCCESS>false</SUCCESS></RESULT><Fault><Request/>
-                //   <FaultCode/><FaultString>Invalid XML Request</FaultString><detail><error>
-                //   <errorid>51</errorid><module/><class>SP.API</class><method/></error></detail>
-                //    </Fault></Body></Envelope>\r\n"
-
                 if (
                     result.toLowerCase().indexOf('max number of concurrent') > -1
                 )
