@@ -915,7 +915,7 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
                     const streamEndResult = `S3 Content Stream Ended for ${key}. Processed ${recs} records as ${batchCount} batches.`
                     // "S3 Content Stream Ended for pura_2024_01_22T18_02_45_204Z.csv. Processed 33 records as 1 batches."
                     if (tcLogDebug) console.info(streamEndResult)
-                    console.info(`OnEnd - Debug:  ${streamEndResult}`)
+
                     // streamResult += `\n${streamEndResult}`
 
                     const d = chunks
