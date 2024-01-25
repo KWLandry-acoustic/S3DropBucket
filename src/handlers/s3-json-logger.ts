@@ -362,7 +362,7 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
     }
 
     console.info(
-        `Received Batch of ${event.Records.length} S3 Events (${event.Records[0].responseElements['x-amz-request-id']}). `,
+        `Received S3 DropBucket Event Batch of ${event.Records.length} S3 Events (requestId: ${event.Records[0].responseElements['x-amz-request-id']}). `,
     )
 
     for (const r of event.Records)
