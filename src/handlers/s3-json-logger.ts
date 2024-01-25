@@ -265,7 +265,7 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
                 }
 
                 if (postResult.toLowerCase().indexOf('unsuccessful post') > -1)
-                    console.error(`Error - Unsuccesful POST (Permanent Failure) for ${tqm.workKey}: \n${postResult}`)
+                    console.error(`Error - Unsuccesful POST (Permanent Failure) for ${tqm.workKey}: \n${postResult} \n Customer: ${tqm.custconfig.customer}, Pod: ${tqm.custconfig.pod}, ListId: ${tqm.custconfig.listId} \n${work}`)
 
                 if (postResult.toLowerCase().indexOf('successfully posted') > -1)
                 {
