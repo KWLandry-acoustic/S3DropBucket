@@ -1021,9 +1021,6 @@ async function storeAndQueueWork (chunks: string[], s3Key: string, config: custo
 
 
 function convertJSONToXML_RTUpdates (rows: string[], config: customerConfig) {
-    if (tcLogDebug) console.info(`Converting S3 Content to XML RT Updates. Packaging ${rows.length} rows as updates to ${config.customer}'s ${config.listName}`)
-
-    if (tcc.SelectiveDebug.indexOf("_6,") > -1) console.info(`Selective Debug 6 - Convert to XML Updates: ${JSON.stringify(rows)}`)
 
     xmlRows = `<Envelope><Body><InsertUpdateRelationalTable><TABLE_ID>${config.listId}</TABLE_ID><ROWS>`
     let r = 0
@@ -1040,6 +1037,9 @@ function convertJSONToXML_RTUpdates (rows: string[], config: customerConfig) {
 
     //Tidy up the XML
     xmlRows += `</ROWS></InsertUpdateRelationalTable></Body></Envelope>`
+
+    if (tcLogDebug) console.info(`Converting S3 Content to XML RT Updates. Packaging ${rows.length} rows as updates to ${config.customer}'s ${config.listName}`)
+    if (tcc.SelectiveDebug.indexOf("_6,") > -1) console.info(`Selective Debug 6 - Convert JSON to XML RT Updates: ${JSON.stringify(rows)}`)
 
     return xmlRows
 }
@@ -1101,11 +1101,8 @@ function convertJSONToXML_DBUpdates (rows: string[], config: customerConfig) {
 
     xmlRows += `</Body></Envelope>`
 
-
-
     if (tcLogDebug) console.info(`Converting S3 Content to XML DB Updates. Packaging ${rows.length} rows as updates to ${config.customer}'s ${config.listName}`)
     if (tcc.SelectiveDebug.indexOf("_16,") > -1) console.info(`Selective Debug 16 - Convert JSON to XML DB Updates, JSON: ${JSON.stringify(rows)}`)
-
 
     return xmlRows
 }
