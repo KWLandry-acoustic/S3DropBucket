@@ -1046,10 +1046,6 @@ function convertJSONToXML_RTUpdates (rows: string[], config: customerConfig) {
 
 function convertJSONToXML_DBUpdates (rows: string[], config: customerConfig) {
 
-    if (tcLogDebug) console.info(`Converting S3 Content to XML DB Updates. Packaging ${rows.length} rows as updates to ${config.customer}'s ${config.listName}`)
-
-    if (tcc.SelectiveDebug.indexOf("_16,") > -1) console.info(`Selective Debug 16 - Convert JSON to XML DB Updates, JSON: ${JSON.stringify(rows)}`)
-
     // <AddRecipient>
     // <CREATED_FROM>0</CREATED_FROM>
     // <UPDATE_IF_FOUND>true</UPDATE_IF_FOUND>
@@ -1070,6 +1066,8 @@ function convertJSONToXML_DBUpdates (rows: string[], config: customerConfig) {
         // Use SyncFields as 'Lookup" values,
         //   Columns hold the Updates while SyncFields hold the 'lookup' values.
 
+
+
         //Only needed on non-keyed(In Campaign use DB -> Settings -> LookupKeys to find what fields are Lookup Keys)
         if (config.dbKey.toLowerCase() === 'dbnonkeyed')
         {
@@ -1080,12 +1078,12 @@ function convertJSONToXML_DBUpdates (rows: string[], config: customerConfig) {
                 debugger
                 const update = `<SYNC_FIELD><NAME>${k}</NAME><VALUE> <![CDATA[${lk}]]> </VALUE></SYNC_FIELD>`
                 xmlRows += update
-
-                console.info(`Building Updates: ${update}`)
             })
 
             xmlRows += `</SYNC_FIELDS>`
         }
+
+
 
         if (config.dbKey.toLowerCase() === 'dbkeyed')
         {
@@ -1094,13 +1092,20 @@ function convertJSONToXML_DBUpdates (rows: string[], config: customerConfig) {
 
         Object.entries(jsonObj).forEach(([key, value]) => {
             // console.info(`Record ${r} as ${key}: ${value}`)
-            xmlRows += `<COLUMN><NAME>${key}</NAME><VALUE>${value}</VALUE></COLUMN>`
+            const update = `<COLUMN><NAME>${key}</NAME><VALUE><![CDATA[${value}]]></VALUE></COLUMN>`
+            xmlRows += update
         })
 
         xmlRows += `</AddRecipient>`
     })
 
     xmlRows += `</Body></Envelope>`
+
+
+
+    if (tcLogDebug) console.info(`Converting S3 Content to XML DB Updates. Packaging ${rows.length} rows as updates to ${config.customer}'s ${config.listName}`)
+    if (tcc.SelectiveDebug.indexOf("_16,") > -1) console.info(`Selective Debug 16 - Convert JSON to XML DB Updates, JSON: ${JSON.stringify(rows)}`)
+
 
     return xmlRows
 }
