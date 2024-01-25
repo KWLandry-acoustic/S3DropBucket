@@ -906,7 +906,7 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
                         if (tcc.SelectiveDebug.indexOf("_2,") > -1) console.info(`Selective Debug 2: Content Stream OnData - Store And Queue Work for ${key} of Batch ${batchCount} of ${a.length} records, Result: \n${JSON.stringify(sqwResult)}`)
 
                     }
-                    console.info(`Debug - OnData - Another Chunk of data ${recs}`)
+
                 })
 
                 .on('end', async function (msg: string) {
