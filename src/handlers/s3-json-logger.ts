@@ -136,31 +136,35 @@ let tcLogVerbose = false
 let tcSelectiveDebug   //call out selective debug as an option
 
 
+//Debug: S3 Event delivered but File Key Not Found.... 
+//Debug: DropBox file deleted after Exception processing the file, 
+//Debug: VisualC not updating 
+//
+//
+//ToDo:Of concern, very large data sets
+//ToDo: - as of 10/2023 CSV handled as the papaparse engine handles the record boundary,
+//ToDo:  Now need to solve for JSON content
+//ToDo:
+//ToDo: But how to parse each chunk for JSON content as each chunk is a
+//ToDo: network chunk that can land on any or no record boundary.
+//ToDo:      Use a JSON Parser that handles record boundary just like the CSV parser?
+//ToDo:      Parse out individual Updates from the JSON in the Read Stream using start/stop index
+//ToDo:          of the stream/content?
+//ToDo:
+//ToDo: As of 10/2023 implemented an sqs Queue and deadletter queue,
+//ToDo:      Multi-GB files are parsed into "99 row updates", written to an S3 "Process" bucket and
+//ToDo:      an entry added to the sqs Queue that will trigger a 2nd Lambda to process each 'chunk' of 99
+//ToDo:
+//ToDo: If there is an exception processing an S3 file
+//ToDo: Write what data can be processed as 99 updates, and simply throw the exception which will not
+//ToDo: delete the S3 file for later inspection and re-processing
+//ToDo:      Can the same file simply be reprocessed/requeued without issue?
+//ToDo:          Row updates would be duplicated but would that matter?
+//ToDo:
 
-//TODO:Of concern, very large data sets
-//TODO: - as of 10/2023 CSV handled as the papaparse engine handles the record boundary,
-//TODO:  Now need to solve for JSON content
-//TODO:
-//TODO: But how to parse each chunk for JSON content as each chunk is a
-//TODO: network chunk that can land on any or no record boundary.
-//TODO:      Use a JSON Parser that handles record boundary just like the CSV parser?
-//TODO:      Parse out individual Updates from the JSON in the Read Stream using start/stop index
-//TODO:          of the stream/content?
-//TODO:
-//TODO: As of 10/2023 implemented an sqs Queue and deadletter queue,
-//TODO:      Multi-GB files are parsed into "99 row updates", written to an S3 "Process" bucket and
-//TODO:      an entry added to the sqs Queue that will trigger a 2nd Lambda to process each 'chunk' of 99
-//TODO:
-//TODO: If there is an exception processing an S3 file
-//TODO: Write what data can be processed as 99 updates, and simply throw the exception which will not
-//TODO: delete the S3 file for later inspection and re-processing
-//TODO:      Can the same file simply be reprocessed/requeued without issue?
-//TODO:          Row updates would be duplicated but would that matter?
-//TODO:
 
-
-//TODO: Interface to View and Edit Customer Configs
-//TODO: Interface to view Logs/Errors (echo cloudwatch logs?)
+//ToDo: Interface to View and Edit Customer Configs
+//ToDo: Interface to view Logs/Errors (echo cloudwatch logs?)
 //
 
 
@@ -171,8 +175,8 @@ let tcSelectiveDebug   //call out selective debug as an option
  */
 export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, context: Context) => {
     //
-    //TODO: Confirm SQS Queue deletes queued work
-    //       
+    //ToDo: Confirm SQS Queue deletes queued work
+    //ToDo: Confirm Retry of SQS Events (When Campaign throttles) works       
 
 
     if (
@@ -231,7 +235,6 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
     })
 
     //Process this Inbound Batch 
-
     for (const q of event.Records)
     {
         // event.Records.forEach(async (i: SQSRecord) => {
@@ -313,15 +316,15 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
 export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Context) => {
 
 
-    //TODO: Currently throttled to a single event each time, Add processing of multiple Events per invocation
+    //DONE: Currently throttled to a single event each time, Add processing of multiple Events per invocation
     //
-    //TODO: Process to ReParse Cache and create Work Files
+    //ToDo: Process to ReParse Cache and create Work Files
     //
-    //TODO: Column mapping - Inbound Column Name to Table Column Mapping
-    //TODO: Type Validation - Inbound Data type validation to Mapping Type
+    //ToDo: Column mapping - Inbound Column Name to Table Column Mapping
+    //ToDo: Type Validation - Inbound Data type validation to Mapping Type
     //
 
-    //TODO: Resolve the progression of these steps, currently "Completed" is logged regardless of 'completion'
+    //ToDo: Resolve the progression of these steps, currently "Completed" is logged regardless of 'completion'
     // and Delete happens regardless of 'completion' being successful or not
     //
     // INFO Started Processing inbound data(pura_2023_11_16T20_24_37_627Z.csv)
@@ -362,7 +365,7 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
     }
 
     console.info(
-        `Received S3 DropBucket Event Batch of ${event.Records.length} S3 Events (requestId: ${event.Records[0].responseElements['x-amz-request-id']}). `,
+        `Received S3 DropBucket Event Batch of ${event.Records.length} S3 Events (Event Id: ${event.Records[0].responseElements['x-amz-request-id']}). `,
     )
 
     for (const r of event.Records)
@@ -377,7 +380,7 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
         const bucket = r.s3.bucket.name
 
 
-        //TODO: Resolve Duplicates Issue - S3 allows Duplicate Object Names but Delete marks all Objects of same Name Deleted. 
+        //ToDo: Resolve Duplicates Issue - S3 allows Duplicate Object Names but Delete marks all Objects of same Name Deleted. 
         //   Which causes an issue with Key Not Found after an Object of Name A is processed and deleted, then another Object of Name A comes up in a Trigger.
         const vid = r.s3.object.versionId
         const et = r.s3.object.eTag
@@ -914,7 +917,7 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
 
                     const streamEndResult = `S3 Content Stream Ended for ${key}. Processed ${recs} records as ${batchCount} batches.`
                     // "S3 Content Stream Ended for pura_2024_01_22T18_02_45_204Z.csv. Processed 33 records as 1 batches."
-                    if (tcLogDebug) console.info(streamEndResult)
+                    console.info(streamEndResult)
 
                     // streamResult += `\n${streamEndResult}`
 
@@ -924,7 +927,6 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
                     const storeQueueResult = await storeAndQueueWork(d, key, custConfig, batchCount)
                     // "{\"AddWorkToS3ProcessBucketResults\":{\"AddWorkToS3ProcessBucket\":\"Wrote Work File (process_0_pura_2024_01_22T18_02_46_119Z_csv.xml) to S3 Processing Bucket (Result 200)\",\"S3ProcessBucketResult\":\"200\"},\"AddWorkToSQSProcessQueueResults\":{\"sqsWriteResult\":\"200\",\"workQueuedSuccess\":true,\"SQSSendResult\":\"{\\\"$metadata\\\":{\\\"httpStatusCode\\\":200,\\\"requestId\\\":\\\"e70fba06-94f2-5608-b104-e42dc9574636\\\",\\\"attempts\\\":1,\\\"totalRetryDelay\\\":0},\\\"MD5OfMessageAttributes\\\":\\\"0bca0dfda87c206313963daab8ef354a\\\",\\\"MD5OfMessageBody\\\":\\\"940f4ed5927275bc93fc945e63943820\\\",\\\"MessageId\\\":\\\"cf025cb3-dce3-4564-89a5-23dcae86dd42\\\"}\"}}"
                     if (tcLogDebug) console.info(`Store and Queue Work Result: ${storeQueueResult}`)
-
                     if (tcc.SelectiveDebug.indexOf("_2,") > -1) console.info(`Selective Debug 2: Content Stream End - Store and Queue Work for (${key}) of Batch ${batchCount} of ${d.length} records Result: \n${JSON.stringify(storeQueueResult)}`)
 
                     batchCount = 0
@@ -1039,7 +1041,9 @@ function convertJSONToXML_RTUpdates (rows: string[], config: customerConfig) {
     xmlRows += `</ROWS></InsertUpdateRelationalTable></Body></Envelope>`
 
     if (tcLogDebug) console.info(`Converting S3 Content to XML RT Updates. Packaging ${rows.length} rows as updates to ${config.customer}'s ${config.listName}`)
-    if (tcc.SelectiveDebug.indexOf("_6,") > -1) console.info(`Selective Debug 6 - Convert JSON to XML RT Updates: ${JSON.stringify(rows)}`)
+    if (tcc.SelectiveDebug.indexOf("_6,") > -1) console.info(`Selective Debug 6 - JSON to be converted to XML RT Updates: ${JSON.stringify(rows)}`)
+    if (tcc.SelectiveDebug.indexOf("_17,") > -1) console.info(`Selective Debug 17 - XML from JSON for RT Updates: ${xmlRows}`)
+
 
     return xmlRows
 }
@@ -1102,7 +1106,9 @@ function convertJSONToXML_DBUpdates (rows: string[], config: customerConfig) {
     xmlRows += `</Body></Envelope>`
 
     if (tcLogDebug) console.info(`Converting S3 Content to XML DB Updates. Packaging ${rows.length} rows as updates to ${config.customer}'s ${config.listName}`)
-    if (tcc.SelectiveDebug.indexOf("_16,") > -1) console.info(`Selective Debug 16 - Convert JSON to XML DB Updates, JSON: ${JSON.stringify(rows)}`)
+    if (tcc.SelectiveDebug.indexOf("_16,") > -1) console.info(`Selective Debug 16 - JSON to be converted to XML DB Updates: ${JSON.stringify(rows)}`)
+    if (tcc.SelectiveDebug.indexOf("_17,") > -1) console.info(`Selective Debug 17 - XML from JSON for DB Updates: ${xmlRows}`)
+
 
     return xmlRows
 }
