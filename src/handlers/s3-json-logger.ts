@@ -927,7 +927,7 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
                     const storeQueueResult = await storeAndQueueWork(d, key, custConfig, batchCount)
                     // "{\"AddWorkToS3ProcessBucketResults\":{\"AddWorkToS3ProcessBucket\":\"Wrote Work File (process_0_pura_2024_01_22T18_02_46_119Z_csv.xml) to S3 Processing Bucket (Result 200)\",\"S3ProcessBucketResult\":\"200\"},\"AddWorkToSQSProcessQueueResults\":{\"sqsWriteResult\":\"200\",\"workQueuedSuccess\":true,\"SQSSendResult\":\"{\\\"$metadata\\\":{\\\"httpStatusCode\\\":200,\\\"requestId\\\":\\\"e70fba06-94f2-5608-b104-e42dc9574636\\\",\\\"attempts\\\":1,\\\"totalRetryDelay\\\":0},\\\"MD5OfMessageAttributes\\\":\\\"0bca0dfda87c206313963daab8ef354a\\\",\\\"MD5OfMessageBody\\\":\\\"940f4ed5927275bc93fc945e63943820\\\",\\\"MessageId\\\":\\\"cf025cb3-dce3-4564-89a5-23dcae86dd42\\\"}\"}}"
                     if (tcLogDebug) console.info(`Store and Queue Work Result: ${storeQueueResult}`)
-                    if (tcc.SelectiveDebug.indexOf("_2,") > -1) console.info(`Selective Debug 2: Content Stream End - Store and Queue Work for (${key}) of Batch ${batchCount} of ${d.length} records Result: \n${JSON.stringify(storeQueueResult)}`)
+                    if (tcc.SelectiveDebug.indexOf("_2,") > -1) console.info(`Selective Debug 2: Content Stream for (${key}) has Ended - Store and Queue Work of Batch ${batchCount} of ${d.length} records - Result: \n${JSON.stringify(storeQueueResult)}`)
 
                     batchCount = 0
                     recs = 0
