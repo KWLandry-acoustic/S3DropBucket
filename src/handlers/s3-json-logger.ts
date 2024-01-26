@@ -409,20 +409,26 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
         } catch (e)
         {
             console.error(`Exception - Processing S3 Object Content Stream for ${key} \n${e}`)
-        }
 
-        try
-        {
-            //Once successful delete the original S3 Object
-            const delResultCode = await deleteS3Object(key, bucket)
+        }
+        console.warn(`Returned from Process S3 Object Content Stream: ${processS3ObjectContentStream}`)
 
-            if (delResultCode !== '204') throw new Error(`Invalid Delete of ${key}, Expected 204 result code, received ${delResultCode}`)
-            else console.info(`Successful Delete of ${key}  (Result ${delResultCode}) `)
-        }
-        catch (e)
+        if (!processS3ObjectContentStream)
         {
-            console.error(`Exception - Deleting S3 Object after successful processing of the Content Stream for ${key} \n${e}`)
+            try
+            {
+                //Once successful delete the original S3 Object
+                const delResultCode = await deleteS3Object(key, bucket)
+
+                if (delResultCode !== '204') throw new Error(`Invalid Delete of ${key}, Expected 204 result code, received ${delResultCode}`)
+                else console.info(`Successful Delete of ${key}  (Result ${delResultCode}) `)
+            }
+            catch (e)
+            {
+                console.error(`Exception - Deleting S3 Object after successful processing of the Content Stream for ${key} \n${e}`)
+            }
         }
+        else { }
     }
 
     //Check for important Config updates
