@@ -338,6 +338,9 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
 
     console.info(`Processed ${event.Records.length} Work Queue records. Items Fail Count: ${sqsBatchFail.batchItemFailures.length}\nItems Failed List: ${JSON.stringify(sqsBatchFail)}`)
 
+    //ToDo: Complete the messaging structure for Queue Processing 
+    if (tcc.SelectiveDebug.indexOf("_21,") > -1) console.info(`Selective Debug 21 - \n${JSON.stringify(processS3ObjectStreamResolution)}`)
+
     return sqsBatchFail
 
     //For debugging - report no fails 
@@ -522,6 +525,8 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
     checkForTCConfigUpdates()
 
     console.info(`Completing S3 DropBucket Processing of Request Id ${event.Records[0].responseElements['x-amz-request-id']}`)
+    if (tcc.SelectiveDebug.indexOf("_20,") > -1) console.info(`Selective Debug 20 - \n${JSON.stringify(processS3ObjectStreamResolution)}`)
+
     return JSON.stringify(processS3ObjectStreamResolution)
 }
 
