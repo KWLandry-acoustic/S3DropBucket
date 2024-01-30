@@ -183,9 +183,72 @@ let tcSelectiveDebug   //call out selective debug as an option
 
 
 //Debug: S3 Event delivered but File Key Not Found.... 
+//Debug: SQS Event in Batch, file processed and deleted Same event in Batch again, but file already deleted. 
 //Debug: DropBox file deleted after Exception processing the file, 
 //Debug: VisualC not updating 
 //
+//
+
+
+//ToDo: Add DeadLetterQueue Report - Now Sending Failed DropBucket Evetns to DeadLetterQueue,
+// need a report to list all DLQ Events in order to be able to work on the issue
+//
+
+
+//ToDo: Check on recovery from Invalid Access/Expired Token Exceptions 
+//
+// 2024-01 - 20T19:04:00.174-05:00	2024-01 - 21T00:04:00.174Z 4641d197 - e475 - 507a - 9b06 - 8fb185c5ca7d INFO POST Result for process_0_pura_2024_01_21T00_03_49_368Z.csv: Error - Unsuccessful POST of the Updates(28) - Response : <Envelope> <Body> <RESULT> <SUCCESS> false < /SUCCESS> </RESULT > <Fault> <Request/> <FaultCode>invalid_token</FaultCode > <FaultString> <![CDATA[The access token has expired.Token provided was: ah3fLaC_E8-hLl5waLTUynMmMx4XFc - fKuNDoyWv1M0AS1]]> </FaultString> <detail> <error> <errorid>145</errorid > <module/> <class>SP.Admin</class > <method/> </error > </detail> </Fault > </Body> </Envelope >
+//     Field	Value
+// eventTimestamp 2024-01 - 20T19:04:00.174-05:00
+// logEvent 2024-01 - 21T00:04:00.174Z	4641d197 - e475 - 507a - 9b06 - 8fb185c5ca7d	INFO	POST Result for process_0_pura_2024_01_21T00_03_49_368Z.csv: Error - Unsuccessful POST of the Updates(28) - Response :
+// <Envelope>
+//     <Body>
+//     <RESULT>
+//     <SUCCESS> false < /SUCCESS>
+//     < /RESULT>
+//     < Fault >
+//     <Request/>
+//     < FaultCode > invalid_token < /FaultCode>
+//     < FaultString > <![CDATA[The access token has expired.Token provided was: ah3fLaC_E8-hLl5waLTUynMmMx4XFc - fKuNDoyWv1M0AS1]]> </FaultString>
+//         < detail >
+//         <error>
+//         <errorid> 145 < /errorid>
+//         < module />
+//         <class> SP.Admin < /class>
+//         < method />
+//         </error>
+//         < /detail>
+//         < /Fault>
+//         < /Body>
+//         < /Envelope>
+
+//ToDo: Check on recovery/retry for ECONNRESET errors
+// eventTimestamp
+// 2024-01 - 20T17: 10: 54.871-05:00
+// logEvent
+// 2024-01 - 20T22: 10: 54.871Z	589a5cd9 - 6126 - 505e-89cd-02ff260c8c9a	ERROR	Exception processing a Work File(process_0_pura_2024_01_20T21_25_08_509Z.csv -
+//     Error: Exception during getAccessToken:
+//     FetchError: request to https://api-campaign-us-2.goacoustic.com/oauth/token 
+//          failed, reason: read ECONNRESET 
+//     { "workKey": "process_0_pura_2024_01_20T21_25_08_509Z.csv", "attempts": 1, "updateCount": "30", "custconfig": { "customer": "pura_", "format": "csv", "listId": "12663209", "listName": "Segment Events Table", "pod": "2", "region": "us", "refreshToken": "rD-7E2r8BynGDaapr13oJV9BxQr20lsYGN9RPkbrtPtAS1", "clientId": "1d99f8d8-0897-4090-983a-c517cc54032e", "clientSecret": "124bd238-0987-40a2-b8fb-879ddd4d3241" }, "firstQueued": "1705785910874" }
+
+
+//ToDo: Keep an eye on "Unhandled Promise Rejection" Errors (Anomaly Detection)
+// eventTimestamp 2024-01 - 22T20: 42: 17.915-05:00
+// logEvent 2024-01 - 23T01: 42: 17.915Z	20500c10 - 1a91 - 4801 - 925b - 95d80b2d9415	ERROR	Unhandled Promise Rejection 	{ "errorType": "Runtime.UnhandledPromiseRejection", "errorMessage": "Error: The number of Updates in this batch Exceeds Max Row Updates allowed 101 in the Customers Config", "reason": { "errorType": "Error", "errorMessage": "The number of Updates in this batch Exceeds Max Row Updates allowed 101 in the Customers Config", "stack": ["Error: The number of Updates in this batch Exceeds Max Row Updates allowed 101 in the Customers Config", "    at Parser.<anonymous> (/tmp/tmpy9bupcce/src/handlers/s3-json-logger.ts:872:68)", "    at Parser.emit (node:events:517:28)", "    at addChunk (node:internal/streams/readable:335:12)", "    at readableAddChunk (node:internal/streams/readable:308:9)", "    at Readable.push (node:internal/streams/readable:245:10)", "    at file:///opt/nodejs/node_modules/csv-parse/lib/index.js:32:12", "    at Object.__push (file:///opt/nodejs/node_modules/csv-parse/lib/api/index.js:534:7)", "    at Object.__onRecord (file:///opt/nodejs/node_modules/csv-parse/lib/api/index.js:431:30)", "    at Object.parse (file:///opt/nodejs/node_modules/csv-parse/lib/api/index.js:247:40)", "    at Parser._transform (file:///opt/nodejs/node_modules/csv-parse/lib/index.js:31:26)"] }, "promise": { }, "stack": ["Runtime.UnhandledPromiseRejection: Error: The number of Updates in this batch Exceeds Max Row Updates allowed 101 in the Customers Config", "    at process.<anonymous> (file:///var/runtime/index.mjs:1276:17)", "    at process.emit (node:events:517:28)", "    at emit (node:internal/process/promises:149:20)", "    at processPromiseRejections (node:internal/process/promises:278:11)", "    at process.processTicksAndRejections (node:internal/process/task_queues:96:32)"] }
+
+
+//ToDo: Check on recovery/reporting for "Error Saving Row" Errors
+//<FAILURE failure_type="transient" description="Error saving row">
+// <COLUMN name="EventValue" > <![CDATA[renee.lankford@gmail.com]]> </COLUMN>
+//     < COLUMN name = "EventSource" > <![CDATA[track Event]]> </COLUMN>
+//         < COLUMN name = "Email" > <![CDATA[renee.lankford@gmail.com]]> </COLUMN>
+//             < COLUMN name = "EventTimestamp" > <![CDATA[2024-01-18T15: 45: 31.037Z]]> </COLUMN>
+//                 < COLUMN name = "EventName" > <![CDATA[email]]> </COLUMN>
+//                     < /FAILURE>
+
+
+//ToDo: Add JSON Path to capability for JSON files in DropBox 
 //
 //ToDo: Of concern, very large data sets
 //ToDo: - as of 10/2023 CSV handled as the papaparse engine handles the record boundary,
@@ -197,7 +260,7 @@ let tcSelectiveDebug   //call out selective debug as an option
 //ToDo:      Parse out individual Updates from the JSON in the Read Stream using start/stop index
 //ToDo:          of the stream/content?
 //ToDo:
-//ToDo: As of 10/2023 implemented an sqs Queue and deadletter queue,
+//ToDo: As of 10/2023 implemented an SQS Queue and deadletter queue,
 //ToDo:      Multi-GB files are parsed into "99 row updates", written to an S3 "Process" bucket and
 //ToDo:      an entry added to the sqs Queue that will trigger a 2nd Lambda to process each 'chunk' of 99
 //ToDo:
@@ -210,7 +273,9 @@ let tcSelectiveDebug   //call out selective debug as an option
 
 
 //ToDo: Interface to View and Edit Customer Configs
+
 //ToDo: Interface to view Logs/Errors (echo cloudwatch logs?)
+
 //
 
 
@@ -338,8 +403,8 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
 
     console.info(`Processed ${event.Records.length} Work Queue records. Items Fail Count: ${sqsBatchFail.batchItemFailures.length}\nItems Failed List: ${JSON.stringify(sqsBatchFail)}`)
 
-    //ToDo: Complete the messaging structure for Queue Processing 
-    if (tcc.SelectiveDebug.indexOf("_21,") > -1) console.info(`Selective Debug 21 - \n${JSON.stringify(processS3ObjectStreamResolution)}`)
+    //ToDo: Complete the Final Processing Outcomes messaging for Queue Processing 
+    // if (tcc.SelectiveDebug.indexOf("_21,") > -1) console.info(`Selective Debug 21 - \n${JSON.stringify(processS3ObjectStreamResolution)}`)
 
     return sqsBatchFail
 
@@ -456,9 +521,65 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
         try
         {
             processS3ObjectStreamResolution = await processS3ObjectContentStream(key, bucket, customersConfig)
-                .then((p: {}) => {
-                    console.info(`Completed processing all records of the S3 Object ${key}`)
+                .then(async (p: {}) => {
+                    debugger
+                    const t = JSON.stringify(p)
+                    const m = t.substring(t.indexOf('Processed '), t.length)
+                    // "S3 Content Stream Ended for pura_2024_01_27T15_24_31_911Z.csv. Processed 78 records as 1 batches."
+
+                    console.info(`Completed processing all records of the S3 Object ${key}. ${m}`)
+
+                    const res: string = JSON.stringify(p)
+
+                    //     processS3ObjectStream{
+                    //         OnStreamEndResult: "S3 Content Stream Ended for pura_2024_01_25T01_43_15_416Z.csv. Processed 32 records as 1 batches.",
+                    //             OnCloseResult: "S3 Content Stream Closed for pura_2024_01_25T01_43_15_416Z.csv",
+                    //                 OnEndStoreQueueResult: {
+                    //             AddWorkToS3ProcessBucketResults: {
+                    //                 S3ProcessBucketResult: "200",
+                    //                     AddWorkToS3ProcessBucket: "Wrote Work File (process_1_pura_2024_01_25T01_43_15_416Z_csv.xml) to S3 Processing Bucket (Result 200)",
+                    // },
+                    //             AddWorkToSQSProcessQueueResults: {
+                    //                 SQSWriteResult: "200",
+                    //                     SQSQueued_Metadata: "{\"$metadata\":{\"httpStatusCode\":200,\"requestId\":\"f8026976-f6d5-576c-b623-37465848963a\",\"attempts\":1,\"totalRetryDelay\":0},\"MD5OfMessageAttributes\":\"ecbf774db07230321b7c431cc9c2e4bd\",\"MD5OfMessageBody\":\"034de727ae2b9028b69328dffa1e23f0\",\"MessageId\":\"e256b0db-14f2-474d-be7d-3f4fa09afbe4\"}",
+                    // },
+                    //         },
+                    //     }
+
+
+                    if (res.indexOf('S3ProcessBucketResult":"200"') > -1 &&
+                        res.indexOf('SQSWriteResult":"200"') > -1)
+                    {
+                        try
+                        {
+                            //Once successful delete the original S3 Object
+                            delResultCode = await deleteS3Object(key, bucket)
+
+                            if (delResultCode !== '204') throw new Error(`Invalid Delete of ${key}, Expected 204 result code, received ${delResultCode}`)
+                            else
+                            {
+                                const dr = `Successful Delete of ${key}  (Result ${delResultCode})`
+                                console.info(dr)
+                                processS3ObjectStreamResolution = { ...processS3ObjectStreamResolution, "DeleteResult": dr }
+                            }
+                        }
+                        catch (e)
+                        {
+                            console.error(`Exception - Deleting S3 Object after successful processing of the Content Stream for ${key} \n${e}`)
+                        }
+                    }
+                    else
+                    {
+                        const dr = `UnSuccessful Processing of S3 DropBucket object ${key}. Object not deleted after processing contents.)`
+                        console.error(dr)
+                        processS3ObjectStreamResolution = { ...processS3ObjectStreamResolution, "DeleteResult": dr }
+                        throw new Error(`Exception - Unsuccessful Cleanup - ${dr}`)
+                    }
+
+                    debugger
+
                     return p
+
                 })
                 .catch(e => {
                     console.error(`Exception - Process S3 Object Stream exception \n${e}`)
@@ -472,53 +593,8 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
         }
 
 
-
-        //     processS3ObjectStream{
-        //         OnStreamEndResult: "S3 Content Stream Ended for pura_2024_01_25T01_43_15_416Z.csv. Processed 32 records as 1 batches.",
-        //             OnCloseResult: "S3 Content Stream Closed for pura_2024_01_25T01_43_15_416Z.csv",
-        //                 OnEndStoreQueueResult: {
-        //             AddWorkToS3ProcessBucketResults: {
-        //                 S3ProcessBucketResult: "200",
-        //                     AddWorkToS3ProcessBucket: "Wrote Work File (process_1_pura_2024_01_25T01_43_15_416Z_csv.xml) to S3 Processing Bucket (Result 200)",
-        // },
-        //             AddWorkToSQSProcessQueueResults: {
-        //                 SQSWriteResult: "200",
-        //                     SQSQueued_Metadata: "{\"$metadata\":{\"httpStatusCode\":200,\"requestId\":\"f8026976-f6d5-576c-b623-37465848963a\",\"attempts\":1,\"totalRetryDelay\":0},\"MD5OfMessageAttributes\":\"ecbf774db07230321b7c431cc9c2e4bd\",\"MD5OfMessageBody\":\"034de727ae2b9028b69328dffa1e23f0\",\"MessageId\":\"e256b0db-14f2-474d-be7d-3f4fa09afbe4\"}",
-        // },
-        //         },
-        //     }
-
-
-        const res: string = JSON.stringify(processS3ObjectStreamResolution)
         debugger
-        if (res.indexOf('S3ProcessBucketResult":"200"') > -1 &&
-            res.indexOf('SQSWriteResult":"200"') > -1)
-        {
-            try
-            {
-                //Once successful delete the original S3 Object
-                delResultCode = await deleteS3Object(key, bucket)
 
-                if (delResultCode !== '204') throw new Error(`Invalid Delete of ${key}, Expected 204 result code, received ${delResultCode}`)
-                else
-                {
-                    const dr = `Successful Delete of ${key}  (Result ${delResultCode})`
-                    console.info(dr)
-                    processS3ObjectStreamResolution = { ...processS3ObjectStreamResolution, "DeleteResult": dr }
-                }
-            }
-            catch (e)
-            {
-                console.error(`Exception - Deleting S3 Object after successful processing of the Content Stream for ${key} \n${e}`)
-            }
-        }
-        else
-        {
-            const dr = `UnSuccessful Processing of S3 DropBucket object ${key}. Object not deleted.)`
-            console.error(dr)
-            processS3ObjectStreamResolution = { ...processS3ObjectStreamResolution, "DeleteResult": dr }
-            throw new Error(`Exception - Unsuccessful Cleanup - ${dr}`)
-        }
     }
 
     //Check for important Config updates (which caches the config in Lambdas long-running cache)
@@ -614,7 +690,7 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
             const readStream = await new Promise(async (resolve, reject) => {
                 // #region
                 s3ContentReadableStream
-                    .on('error', async function (err: string): Promise<any> {
+                    .on('error', async function (err: string) {
                         const errMessage = `An error has stopped Content Parsing at record ${recs} for s3 object ${key}.\n${err}`
                         console.error(errMessage)
 
@@ -650,7 +726,7 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
 
                     })
 
-                    .on('end', async function (): Promise<any> {
+                    .on('end', async function () {
                         batchCount++
 
                         const streamEndResult = `S3 Content Stream Ended for ${key}. Processed ${recs} records as ${batchCount} batches.`
@@ -680,7 +756,7 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
                         resolve({ ...streamResult })
                     })
 
-                    .on('close', async function (): Promise<any> {
+                    .on('close', async function () {
 
                         streamResult = { ...streamResult, "OnCloseResult": `S3 Content Stream Closed for ${key}` }
 
@@ -910,8 +986,8 @@ async function getCustomerConfig (filekey: string) {
                 const err: string = JSON.stringify(e)
 
                 if (err.indexOf('NoSuchKey') > -1)
-                    throw new Error(`Exception - Customer Config Not Found on S3 tricklercache-configs (${customer}config.json) \nException ${e}`)
-                else throw new Error(`Exception - Retrieving Config from S3 tricklercache-configs (${customer}config.json) \nException ${e}`)
+                    throw new Error(`Exception - Customer Config Not Found (${customer}config.json) on S3 tricklercache-configs\nException ${e}`)
+                else throw new Error(`Exception - Retrieving Config (${customer}config.json) from S3 tricklercache-configs \nException ${e}`)
 
             })
     } catch (e)
