@@ -181,102 +181,6 @@ let tcSelectiveDebug   //call out selective debug as an option
 
 
 
-
-//Debug: S3 Event delivered but File Key Not Found.... 
-//Debug: SQS Event in Batch, file processed and deleted Same event in Batch again, but file already deleted. 
-//Debug: DropBox file deleted after Exception processing the file, 
-//Debug: VisualC not updating 
-//
-//
-
-
-//ToDo: Add DeadLetterQueue Report - need a report to list all DLQ Events in order to 
-//  be able to work / troubleshoot the issue
-//
-
-//ToDo: Confirm BatchItemFails are returned to Queue
-//
-
-//ToDo: Check on recovery from Invalid Access/Expired Token Exceptions 
-//      "access token has expired"
-
-
-//ToDo: Check on recovery/retry for ECONNRESET errors
-// eventTimestamp
-// 2024-01 - 20T17: 10: 54.871-05:00
-// logEvent
-// 2024-01 - 20T22: 10: 54.871Z	589a5cd9 - 6126 - 505e-89cd-02ff260c8c9a	ERROR	Exception processing a Work File(process_0_pura_2024_01_20T21_25_08_509Z.csv -
-//     Error: Exception during getAccessToken:
-//     FetchError: request to https://api-campaign-us-2.goacoustic.com/oauth/token 
-//          failed, reason: read ECONNRESET 
-//
-
-
-//ToDo: Keep an eye on counts of "Unhandled Promise Rejection" Errors (Anomaly Detection)
-// eventTimestamp 2024-01 - 22T20: 42: 17.915-05:00
-// logEvent 2024-01 - 23T01: 42: 17.915Z	20500c10 - 1a91 - 4801 - 925b - 95d80b2d9415	
-// ERROR	Unhandled Promise Rejection 	{ "errorType": "Runtime.UnhandledPromiseRejection", 
-//  "errorMessage": "Error: The number of Updates in this batch Exceeds Max Row Updates allowed 101 in the Customers Config", 
-//   "reason": { "errorType": "Error", "errorMessage": "The number of Updates in this batch Exceeds Max Row Updates allowed 101 in the Customers Config", 
-//  "stack": ["Error: The number of Updates in this batch Exceeds Max Row Updates allowed 101 in the Customers Config", "    
-// at Parser.<anonymous>(/tmp/tmpy9bupcce / src / handlers / s3 - json - logger.ts: 872: 68)", "    
-// at Parser.emit(node: events: 517: 28)", "    at addChunk(node: internal / streams / readable: 335: 12)", "    
-// at readableAddChunk(node: internal / streams / readable: 308: 9)", "    
-// at Readable.push(node: internal / streams / readable: 245: 10)", "    
-// at file:///opt/nodejs/node_modules/csv-parse/lib/index.js:32:12", "    
-
-
-
-//ToDo: Check on recovery/reporting for "Error Saving Row" Errors
-//<FAILURE failure_type="transient" description="Error saving row">
-// <COLUMN name="EventValue" > <![CDATA[renee.lankford@gmail.com]]> </COLUMN>
-//     < COLUMN name = "EventSource" > <![CDATA[track Event]]> </COLUMN>
-//         < COLUMN name = "Email" > <![CDATA[renee.lankford@gmail.com]]> </COLUMN>
-//             < COLUMN name = "EventTimestamp" > <![CDATA[2024-01-18T15: 45: 31.037Z]]> </COLUMN>
-//                 < COLUMN name = "EventName" > <![CDATA[email]]> </COLUMN>
-//                     < /FAILURE>
-
-
-//ToDo: Add JSON Path to capability for JSON files in DropBox 
-//
-
-
-//ToDo: Of concern, very large data sets
-//ToDo: - as of 10/2023 CSV handled as the papaparse engine handles the record boundary,
-//ToDo:  Now need to solve for JSON content
-//ToDo:
-//ToDo: But how to parse each chunk for JSON content as each chunk is a
-//ToDo: network chunk that can land on any or no record boundary.
-//ToDo:      Use a JSON Parser that handles record boundary just like the CSV parser?
-//ToDo:      Parse out individual Updates from the JSON in the Read Stream using start/stop index
-//ToDo:          of the stream/content?
-//
-
-
-
-//ToDo: As of 10/2023 implemented an SQS Queue and deadletter queue,
-//ToDo:      Multi-GB files are parsed into "99 row updates", written to an S3 "Process" bucket and
-//ToDo:      an entry added to the sqs Queue that will trigger a 2nd Lambda to process each 'chunk' of 99
-//
-
-
-//ToDo: If there is an exception processing an S3 file
-//ToDo: Write what data can be processed as 99 updates, and simply throw the exception which will not
-//ToDo: delete the S3 file for later inspection and re-processing
-//ToDo:      Can the same file simply be reprocessed/requeued without issue?
-//ToDo:          Row updates would be duplicated but would that matter?
-//ToDo:
-
-
-//ToDo: Interface to View and Edit Customer Configs
-
-//ToDo: Interface to view Logs/Errors (echo cloudwatch logs?)
-
-//
-
-
-
-
 /**
  * A Lambda function to process the Event payload received from SQS - AWS Queues.
  */
@@ -483,8 +387,7 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
         `Received S3 DropBucket Event Batch. There are ${event.Records.length} S3 DropBox Event Records in this invocation. (Event Id: ${event.Records[0].responseElements['x-amz-request-id']}).`,
     )
 
-    //Future:
-    //Left this for possible switch of Trigger to be an SQS Trigger of an S3 Write, 
+    //Future: Left this for possible switch of Trigger to be an SQS Trigger of an S3 Write, 
     // Drive higher concurrency in each Lambda invocation by running batches of 10 files written at a time(SQS Batch) 
     for (const r of event.Records)
     {
@@ -696,7 +599,7 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
 
                     .on('data', async function (s3Chunk: string) {
                         recs++
-                        if (recs > custConfig.updateMaxRows) throw new Error(`The number of Updates in this batch Exceeds Max Row Updates allowed ${recs} in the Customers Config`)
+                        if (recs > custConfig.updateMaxRows) throw new Error(`The number of Updates in this batch Exceeds Max Row Updates allowed ${recs} in the Customers Config. S3 Object ${key} will not be deleted to allow for review.`)
 
                         if (tcc.SelectiveDebug.indexOf("_13,") > -1) console.info(`Selective Debug 13 - s3ContentStream OnData - Another chunk (ArrayLen:${chunks.length} Recs:${recs} Batch:${batchCount} from ${key} - ${JSON.stringify(s3Chunk)}`)
 
@@ -737,14 +640,17 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
                         const d = chunks
                         chunks = []
 
-                        const storeQueueResult = await storeAndQueueWork(d, key, custConfig, batchCount)
-                        // "{\"AddWorkToS3ProcessBucketResults\":{\"AddWorkToS3ProcessBucket\":\"Wrote Work File (process_0_pura_2024_01_22T18_02_46_119Z_csv.xml) to S3 Processing Bucket (Result 200)\",\"S3ProcessBucketResult\":\"200\"},\"AddWorkToSQSProcessQueueResults\":{\"sqsWriteResult\":\"200\",\"workQueuedSuccess\":true,\"SQSSendResult\":\"{\\\"$metadata\\\":{\\\"httpStatusCode\\\":200,\\\"requestId\\\":\\\"e70fba06-94f2-5608-b104-e42dc9574636\\\",\\\"attempts\\\":1,\\\"totalRetryDelay\\\":0},\\\"MD5OfMessageAttributes\\\":\\\"0bca0dfda87c206313963daab8ef354a\\\",\\\"MD5OfMessageBody\\\":\\\"940f4ed5927275bc93fc945e63943820\\\",\\\"MessageId\\\":\\\"cf025cb3-dce3-4564-89a5-23dcae86dd42\\\"}\"}}"
-                        streamResult = {
-                            ...streamResult, "OnEndStoreQueueResult": storeQueueResult
-                        }
+                        if (d.length > 0)
+                        {
+                            const storeQueueResult = await storeAndQueueWork(d, key, custConfig, batchCount)
+                            // "{\"AddWorkToS3ProcessBucketResults\":{\"AddWorkToS3ProcessBucket\":\"Wrote Work File (process_0_pura_2024_01_22T18_02_46_119Z_csv.xml) to S3 Processing Bucket (Result 200)\",\"S3ProcessBucketResult\":\"200\"},\"AddWorkToSQSProcessQueueResults\":{\"sqsWriteResult\":\"200\",\"workQueuedSuccess\":true,\"SQSSendResult\":\"{\\\"$metadata\\\":{\\\"httpStatusCode\\\":200,\\\"requestId\\\":\\\"e70fba06-94f2-5608-b104-e42dc9574636\\\",\\\"attempts\\\":1,\\\"totalRetryDelay\\\":0},\\\"MD5OfMessageAttributes\\\":\\\"0bca0dfda87c206313963daab8ef354a\\\",\\\"MD5OfMessageBody\\\":\\\"940f4ed5927275bc93fc945e63943820\\\",\\\"MessageId\\\":\\\"cf025cb3-dce3-4564-89a5-23dcae86dd42\\\"}\"}}"
+                            streamResult = {
+                                ...streamResult, "OnEndStoreQueueResult": storeQueueResult
+                            }
 
-                        if (tcLogDebug) console.info(`Store and Queue Work Result: ${storeQueueResult}`)
-                        if (tcc.SelectiveDebug.indexOf("_2,") > -1) console.info(`Selective Debug 2: Content Stream OnEnd for (${key}) - Store and Queue Work of ${batchCount + 1} Batches of ${d.length} records - Result: \n${JSON.stringify(storeQueueResult)}`)
+                            if (tcLogDebug) console.info(`Store and Queue Work Result: ${storeQueueResult}`)
+                            if (tcc.SelectiveDebug.indexOf("_2,") > -1) console.info(`Selective Debug 2: Content Stream OnEnd for (${key}) - Store and Queue Work of ${batchCount + 1} Batches of ${d.length} records - Result: \n${JSON.stringify(storeQueueResult)}`)
+                        }
 
                         batchCount = 0
                         recs = 0
@@ -1444,8 +1350,8 @@ async function saveS3Work (s3Key: string, body: string, bucket: string) {
     const putObjectCmd = {
         Bucket: bucket,
         Key: s3Key,
-        Body: body,
-        ContentLength: Number(`${body.length}`),
+        Body: body
+        // ContentLength: Number(`${body.length}`),
     } as GetObjectCommandInput
 
     let save: string = ''

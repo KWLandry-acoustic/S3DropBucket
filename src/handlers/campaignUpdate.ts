@@ -13,118 +13,124 @@ import { get } from "lodash"
 //Stop/return once all data processed - no additional Files with Customer Prefix 
 
 
-function getAndParseConfigFile() {
+function getAndParseConfigFile () {
 
 }
 
-function getAllFilesToProcess() {
+function getAllFilesToProcess () {
   //create array of all files to be processed
 
 }
 
-function parseRows() {
-    //forEach file in the array pull each row into an array up to 100 entries
-    //On completion of a file - rename the file 
+function parseRows () {
+  //forEach file in the array pull each row into an array up to 100 entries
+  //On completion of a file - rename the file 
 }
 
-function markFileAsProcessed() {
+function markFileAsProcessed () {
 
-} 
+}
 
-function postUpdates() {
+function postUpdates () {
 
 }
 
 const _a = {
-    pod: {
-        label: 'Pod',
-        description: 'Pod Number for API Endpoint',
-        default: '2',
-        type: 'string',
-        required: true
-      },
-      region: {
-        label: 'Region',
-        description: 'Region for API Endpoint, either US, EU, AP, or CA',
-        choices: [
-          { label: 'US', value: 'US' },
-          { label: 'EU', value: 'EU' },
-          { label: 'AP', value: 'AP' },
-          { label: 'CA', value: 'CA' }
-        ],
-        default: 'US',
-        type: 'string',
-        required: true
-      },
-      tableName: {
-        label: 'Acoustic Segment Table Name',
-        description: `The Segment Table Name in Acoustic Campaign Data dialog.`,
-        default: 'Segment Events Table Name',
-        type: 'string',
-        required: true
-      },
-      tableListId: {
-        label: 'Acoustic Segment Table List Id',
-        description: 'The Segment Table List Id from the Database-Relational Table dialog in Acoustic Campaign',
-        default: '',
-        type: 'string',
-        required: true
-      },
-      a_clientId: {
-        label: 'Acoustic App Definition ClientId',
-        description: 'The Client Id from the App definition dialog in Acoustic Campaign',
-        default: '',
-        type: 'string',
-        required: true
-      },
-      a_clientSecret: {
-        label: 'Acoustic App Definition ClientSecret',
-        description: 'The Client Secret from the App definition dialog in Acoustic Campaign',
-        default: '',
-        type: 'password',
-        required: true
-      },
-      a_refreshToken: {
-        label: 'Acoustic App Access Definition RefreshToken',
-        description: 'The RefreshToken provided when defining access for the App in Acoustic Campaign',
-        default: '',
-        type: 'password',
-        required: true
-      },
-      attributesMax: {
-        label: 'Properties Max',
-        description:
-          'A safety against mapping too many attributes into the Event, ignore Event if number of Event Attributes exceeds this maximum. Note: Before increasing the default max number, consult the Acoustic Destination documentation.',
-        default: 15,
-        type: 'number',
-        required: false
-      }
-    }
+  pod: {
+    label: 'Pod',
+    description: 'Pod Number for API Endpoint',
+    default: '2',
+    type: 'string',
+    required: true
+  },
+  region: {
+    label: 'Region',
+    description: 'Region for API Endpoint, either US, EU, AP, or CA',
+    choices: [
+      { label: 'US', value: 'US' },
+      { label: 'EU', value: 'EU' },
+      { label: 'AP', value: 'AP' },
+      { label: 'CA', value: 'CA' }
+    ],
+    default: 'US',
+    type: 'string',
+    required: true
+  },
+  tableName: {
+    label: 'Acoustic Segment Table Name',
+    description: `The Segment Table Name in Acoustic Campaign Data dialog.`,
+    default: 'Segment Events Table Name',
+    type: 'string',
+    required: true
+  },
+  tableListId: {
+    label: 'Acoustic Segment Table List Id',
+    description: 'The Segment Table List Id from the Database-Relational Table dialog in Acoustic Campaign',
+    default: '',
+    type: 'string',
+    required: true
+  },
+  a_clientId: {
+    label: 'Acoustic App Definition ClientId',
+    description: 'The Client Id from the App definition dialog in Acoustic Campaign',
+    default: '',
+    type: 'string',
+    required: true
+  },
+  a_clientSecret: {
+    label: 'Acoustic App Definition ClientSecret',
+    description: 'The Client Secret from the App definition dialog in Acoustic Campaign',
+    default: '',
+    type: 'password',
+    required: true
+  },
+  a_refreshToken: {
+    label: 'Acoustic App Access Definition RefreshToken',
+    description: 'The RefreshToken provided when defining access for the App in Acoustic Campaign',
+    default: '',
+    type: 'password',
+    required: true
+  },
+  attributesMax: {
+    label: 'Properties Max',
+    description:
+      'A safety against mapping too many attributes into the Event, ignore Event if number of Event Attributes exceeds this maximum. Note: Before increasing the default max number, consult the Acoustic Destination documentation.',
+    default: 15,
+    type: 'number',
+    required: false
+  }
+}
 
 
-export function parseSections(section: { [key: string]: string }, nestDepth: number) {
+export function parseSections (section: { [key: string]: string }, nestDepth: number) {
   const parseResults: { [key: string]: string } = {}
-  try {
+  try
+  {
     //if (nestDepth > 5) return parseResults
     if (nestDepth > 10)
       throw new Error(
         'Event data exceeds nesting depth. Use Mapping to avoid nesting data attributes more than 3 levels deep')
 
-    for (const key of Object.keys(section)) {
-      if (typeof section[key] === 'object') {
+    for (const key of Object.keys(section))
+    {
+      if (typeof section[key] === 'object')
+      {
         nestDepth++
         const nested: { [key: string]: string } = parseSections(
           section[key] as {} as { [key: string]: string },
           nestDepth
         )
-        for (const nestedKey of Object.keys(nested)) {
+        for (const nestedKey of Object.keys(nested))
+        {
           parseResults[`${key}.${nestedKey}`] = nested[nestedKey]
         }
-      } else {
+      } else
+      {
         parseResults[key] = section[key]
       }
     }
-  } catch (e) {
+  } catch (e)
+  {
     throw new Error(
       `Unexpected Exception while parsing Event payload.\n ${e}`
     )
@@ -133,7 +139,7 @@ export function parseSections(section: { [key: string]: string }, nestDepth: num
 }
 const payload: { [key: string]: string } = {}
 
-export function addUpdateEvents(payload: { [key: string]: string }, email: string, limit: number) {
+export function addUpdateEvents (payload: { [key: string]: string }, email: string, limit: number) {
   let eventName = ''
   let eventValue = ''
   let xmlRows = ''
@@ -234,7 +240,8 @@ export function addUpdateEvents(payload: { [key: string]: string }, email: strin
   //   delete propertiesTraitsKV[`${ak}`]
   // }
 
-  if (av !== '') {
+  if (av !== '')
+  {
     let audiStatus = av
 
     eventValue = audiStatus
@@ -350,7 +357,7 @@ const settings = ""
 //   //   rows.push(row.map(wrapQuotes).join(payload.delimiter))
 //   // }
 
-//   //   // TODO: verify multiple emails are handled
+//   // 
 //   //   const filename = payloads[0].filename
 //   //   const fileContent = Buffer.from(rows.join('\n'))
 
