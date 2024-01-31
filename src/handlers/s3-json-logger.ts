@@ -190,37 +190,16 @@ let tcSelectiveDebug   //call out selective debug as an option
 //
 
 
-//ToDo: Add DeadLetterQueue Report - Now Sending Failed DropBucket Evetns to DeadLetterQueue,
-// need a report to list all DLQ Events in order to be able to work on the issue
+//ToDo: Add DeadLetterQueue Report - need a report to list all DLQ Events in order to 
+//  be able to work / troubleshoot the issue
 //
 
+//ToDo: Confirm BatchItemFails are returned to Queue
+//
 
 //ToDo: Check on recovery from Invalid Access/Expired Token Exceptions 
-//
-// 2024-01 - 20T19:04:00.174-05:00	2024-01 - 21T00:04:00.174Z 4641d197 - e475 - 507a - 9b06 - 8fb185c5ca7d INFO POST Result for process_0_pura_2024_01_21T00_03_49_368Z.csv: Error - Unsuccessful POST of the Updates(28) - Response : <Envelope> <Body> <RESULT> <SUCCESS> false < /SUCCESS> </RESULT > <Fault> <Request/> <FaultCode>invalid_token</FaultCode > <FaultString> <![CDATA[The access token has expired.Token provided was: ah3fLaC_E8-hLl5waLTUynMmMx4XFc - fKuNDoyWv1M0AS1]]> </FaultString> <detail> <error> <errorid>145</errorid > <module/> <class>SP.Admin</class > <method/> </error > </detail> </Fault > </Body> </Envelope >
-//     Field	Value
-// eventTimestamp 2024-01 - 20T19:04:00.174-05:00
-// logEvent 2024-01 - 21T00:04:00.174Z	4641d197 - e475 - 507a - 9b06 - 8fb185c5ca7d	INFO	POST Result for process_0_pura_2024_01_21T00_03_49_368Z.csv: Error - Unsuccessful POST of the Updates(28) - Response :
-// <Envelope>
-//     <Body>
-//     <RESULT>
-//     <SUCCESS> false < /SUCCESS>
-//     < /RESULT>
-//     < Fault >
-//     <Request/>
-//     < FaultCode > invalid_token < /FaultCode>
-//     < FaultString > <![CDATA[The access token has expired.Token provided was: ah3fLaC_E8-hLl5waLTUynMmMx4XFc - fKuNDoyWv1M0AS1]]> </FaultString>
-//         < detail >
-//         <error>
-//         <errorid> 145 < /errorid>
-//         < module />
-//         <class> SP.Admin < /class>
-//         < method />
-//         </error>
-//         < /detail>
-//         < /Fault>
-//         < /Body>
-//         < /Envelope>
+//      "access token has expired"
+
 
 //ToDo: Check on recovery/retry for ECONNRESET errors
 // eventTimestamp
@@ -230,12 +209,22 @@ let tcSelectiveDebug   //call out selective debug as an option
 //     Error: Exception during getAccessToken:
 //     FetchError: request to https://api-campaign-us-2.goacoustic.com/oauth/token 
 //          failed, reason: read ECONNRESET 
-//     { "workKey": "process_0_pura_2024_01_20T21_25_08_509Z.csv", "attempts": 1, "updateCount": "30", "custconfig": { "customer": "pura_", "format": "csv", "listId": "12663209", "listName": "Segment Events Table", "pod": "2", "region": "us", "refreshToken": "rD-7E2r8BynGDaapr13oJV9BxQr20lsYGN9RPkbrtPtAS1", "clientId": "1d99f8d8-0897-4090-983a-c517cc54032e", "clientSecret": "124bd238-0987-40a2-b8fb-879ddd4d3241" }, "firstQueued": "1705785910874" }
+//
 
 
-//ToDo: Keep an eye on "Unhandled Promise Rejection" Errors (Anomaly Detection)
+//ToDo: Keep an eye on counts of "Unhandled Promise Rejection" Errors (Anomaly Detection)
 // eventTimestamp 2024-01 - 22T20: 42: 17.915-05:00
-// logEvent 2024-01 - 23T01: 42: 17.915Z	20500c10 - 1a91 - 4801 - 925b - 95d80b2d9415	ERROR	Unhandled Promise Rejection 	{ "errorType": "Runtime.UnhandledPromiseRejection", "errorMessage": "Error: The number of Updates in this batch Exceeds Max Row Updates allowed 101 in the Customers Config", "reason": { "errorType": "Error", "errorMessage": "The number of Updates in this batch Exceeds Max Row Updates allowed 101 in the Customers Config", "stack": ["Error: The number of Updates in this batch Exceeds Max Row Updates allowed 101 in the Customers Config", "    at Parser.<anonymous> (/tmp/tmpy9bupcce/src/handlers/s3-json-logger.ts:872:68)", "    at Parser.emit (node:events:517:28)", "    at addChunk (node:internal/streams/readable:335:12)", "    at readableAddChunk (node:internal/streams/readable:308:9)", "    at Readable.push (node:internal/streams/readable:245:10)", "    at file:///opt/nodejs/node_modules/csv-parse/lib/index.js:32:12", "    at Object.__push (file:///opt/nodejs/node_modules/csv-parse/lib/api/index.js:534:7)", "    at Object.__onRecord (file:///opt/nodejs/node_modules/csv-parse/lib/api/index.js:431:30)", "    at Object.parse (file:///opt/nodejs/node_modules/csv-parse/lib/api/index.js:247:40)", "    at Parser._transform (file:///opt/nodejs/node_modules/csv-parse/lib/index.js:31:26)"] }, "promise": { }, "stack": ["Runtime.UnhandledPromiseRejection: Error: The number of Updates in this batch Exceeds Max Row Updates allowed 101 in the Customers Config", "    at process.<anonymous> (file:///var/runtime/index.mjs:1276:17)", "    at process.emit (node:events:517:28)", "    at emit (node:internal/process/promises:149:20)", "    at processPromiseRejections (node:internal/process/promises:278:11)", "    at process.processTicksAndRejections (node:internal/process/task_queues:96:32)"] }
+// logEvent 2024-01 - 23T01: 42: 17.915Z	20500c10 - 1a91 - 4801 - 925b - 95d80b2d9415	
+// ERROR	Unhandled Promise Rejection 	{ "errorType": "Runtime.UnhandledPromiseRejection", 
+//  "errorMessage": "Error: The number of Updates in this batch Exceeds Max Row Updates allowed 101 in the Customers Config", 
+//   "reason": { "errorType": "Error", "errorMessage": "The number of Updates in this batch Exceeds Max Row Updates allowed 101 in the Customers Config", 
+//  "stack": ["Error: The number of Updates in this batch Exceeds Max Row Updates allowed 101 in the Customers Config", "    
+// at Parser.<anonymous>(/tmp/tmpy9bupcce / src / handlers / s3 - json - logger.ts: 872: 68)", "    
+// at Parser.emit(node: events: 517: 28)", "    at addChunk(node: internal / streams / readable: 335: 12)", "    
+// at readableAddChunk(node: internal / streams / readable: 308: 9)", "    
+// at Readable.push(node: internal / streams / readable: 245: 10)", "    
+// at file:///opt/nodejs/node_modules/csv-parse/lib/index.js:32:12", "    
+
 
 
 //ToDo: Check on recovery/reporting for "Error Saving Row" Errors
@@ -250,6 +239,8 @@ let tcSelectiveDebug   //call out selective debug as an option
 
 //ToDo: Add JSON Path to capability for JSON files in DropBox 
 //
+
+
 //ToDo: Of concern, very large data sets
 //ToDo: - as of 10/2023 CSV handled as the papaparse engine handles the record boundary,
 //ToDo:  Now need to solve for JSON content
@@ -259,11 +250,16 @@ let tcSelectiveDebug   //call out selective debug as an option
 //ToDo:      Use a JSON Parser that handles record boundary just like the CSV parser?
 //ToDo:      Parse out individual Updates from the JSON in the Read Stream using start/stop index
 //ToDo:          of the stream/content?
-//ToDo:
+//
+
+
+
 //ToDo: As of 10/2023 implemented an SQS Queue and deadletter queue,
 //ToDo:      Multi-GB files are parsed into "99 row updates", written to an S3 "Process" bucket and
 //ToDo:      an entry added to the sqs Queue that will trigger a 2nd Lambda to process each 'chunk' of 99
-//ToDo:
+//
+
+
 //ToDo: If there is an exception processing an S3 file
 //ToDo: Write what data can be processed as 99 updates, and simply throw the exception which will not
 //ToDo: delete the S3 file for later inspection and re-processing
@@ -364,7 +360,7 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
 
         try
         {
-            const work = await getS3Work(tqm.workKey)
+            const work = await getS3Work(tqm.workKey, "tricklercache-process")
             if (work.length > 0)        //Retreive Contents of the Work File  
             {
                 postResult = await postToCampaign(work, tqm.custconfig, tqm.updateCount)
@@ -646,9 +642,6 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
                     trim: true,
                     skip_records_with_error: true,
                 },
-                    // function (msg) {
-                    //     if (tcLogDebug) console.info(`CSVParse Function : ${msg}`)
-                    // }
                 )
                 s3ContentReadableStream = s3ContentReadableStream.pipe(csvParser)
                 //#region
@@ -713,6 +706,8 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
                         {
                             batchCount++
 
+                            if (tcc.SelectiveDebug.indexOf('_99,') > -1) saveSampleJSON(JSON.stringify(chunks))
+
                             const d = chunks
                             chunks = []
 
@@ -735,6 +730,8 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
                         streamResult = {
                             ...streamResult, "OnEndStreamEndResult": streamEndResult
                         }
+
+                        if (tcc.SelectiveDebug.indexOf('_99,') > -1) saveSampleJSON(JSON.stringify(chunks))
 
 
                         const d = chunks
@@ -766,7 +763,6 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
 
                     })
                 // #region
-                //Optional??? StreamResult still preserved for later return?? 
 
                 return { ...streamResult }
 
@@ -995,82 +991,6 @@ async function getCustomerConfig (filekey: string) {
         console.error(`Exception - Pulling Customer Config \n${e}`)
     }
 
-    //Was working before adding foreach block, which killed Promise, which led to rewriting this
-    //block until it was discovered foreach needed to be replaced with const x of y
-    //But, as config is so small probably don't need a streamreader to get the data
-    //     try
-    //     {
-    //         await s3.send(
-    // ,
-    //         )
-    //             .catch((err) => {
-    //                 console.error(`Exception - Processing Customer Config - ${err}`)
-    //                 throw new Error(`Exception - (Promise-Catch) Processing Customer Config: ${err} `)
-    //             })
-
-    //             .then(async (custConfigS3Result: GetObjectCommandOutput) => {
-    //                 try
-    //                 {
-    //                     if (custConfigS3Result.$metadata.httpStatusCode != 200)
-    //                     {
-    //                         let errMsg = JSON.stringify(custConfigS3Result.$metadata)
-    //                         throw new Error(`Get S3 Object Command failed for ${customer}config.json \n${errMsg}`)
-    //                     }
-
-    //                     // const s3Body = custConfigS3Result.Body as NodeJS.ReadableStream
-
-
-    //                     const c = await custConfigS3Result.Body?.transformToString('utf8') as string
-    //                     configJSON = JSON.parse(c) as customerConfig
-    //                     customersConfig = await validateCustomerConfig(configJSON)
-
-    //                     return customersConfig as customerConfig
-    //                 }
-    //                 catch (e)
-    //                 {
-    //                     console.error(`Exception - in then for Cust Config: ${e}`)
-    //                 }
-
-
-    //             })
-
-
-    // configJSON = new Promise<customerConfig>(async (resolve, reject) => {
-    //     if (s3Body !== undefined)
-    //     {
-    //         s3Body.on('data', (chunk: Uint8Array) => {
-    //             configObjs.push(chunk)
-    //         })
-    //         s3Body.on('error', () => {
-    //             reject
-    //         })
-    //         s3Body.on('end', () => {
-    //             let cj = {} as customerConfig
-    //             let cf = Buffer.concat(configObjs).toString('utf8')
-    //             try
-    //             {
-    //                 cj = JSON.parse(cf)
-    //                 // if (tcLogDebug) console.info(
-    //                 //     `Parsing Config File: ${cj.customer}, Format: ${cj.format}, Region: ${cj.region}, Pod: ${cj.pod}, List Name: ${cj.listName},List  Id: ${cj.listId}, `,
-    //                 // )
-    //             } catch (e)
-    //             {
-    //                 throw new Error(`Exception - Parsing Config ${customer}config.json: ${e}`)
-    //             }
-
-    //             resolve(cj)
-    // //         })
-    // // }
-    // }).catch(e => {
-    //     throw new Error(`Exception - retrieving Customer Config ${customer}config.json \n${e}`)
-    // })
-
-
-    // } catch (e)
-    // {
-    //     throw new Error(`Exception - retrieving Customer Config ${customer}config.json: \n ${e}`)
-    // }
-
     customersConfig = await validateCustomerConfig(configJSON)
     return customersConfig as customerConfig
 }
@@ -1155,9 +1075,81 @@ async function validateCustomerConfig (config: customerConfig) {
     return config as customerConfig
 }
 
+
+async function updateDatabase () {
+
+    const update = `<Envelope>
+          <Body>
+                <AddRecipient>
+                      <LIST_ID>${customersConfig.listId}</LIST_ID>
+                      <CREATED_FROM>${customersConfig.createdFrom}</CREATED_FROM>
+                      <UPDATE_IF_FOUND>true</UPDATE_IF_FOUND>
+                      ${customersConfig.lookupKeys}
+                      <COLUMN>
+                            <NAME>EMAIL</NAME>
+                            <VALUE>a.bundy@555shoe.com</VALUE>
+                      </COLUMN>
+                      <COLUMN>
+                            <NAME>city</NAME>
+                            <VALUE>Dallas</VALUE>
+                      </COLUMN>
+                      <COLUMN>
+                            <NAME>Column_Nonexistent</NAME>
+                            <VALUE>123-45-6789</VALUE>
+                      </COLUMN>
+                      <COLUMN>
+                            <NAME>Street_Address</NAME>
+                            <VALUE>123 New Street</VALUE>
+                      </COLUMN>
+                </AddRecipient>
+          </Body>
+    </Envelope>`
+}
+
+
+async function storeAndQueueWork (chunks: string[], s3Key: string, config: customerConfig, batch: number) {
+
+    if (batch > tcc.MaxBatchesWarning) console.warn(`Warning: Updates from the S3 Object(${s3Key}) are exceeding(${batch}) the Warning Limit of ${tcc.MaxBatchesWarning} Batches per Object.`)
+    // throw new Error(`Updates from the S3 Object(${ s3Key }) Exceed(${ batch }) Safety Limit of 20 Batches of 99 Updates each.Exiting...`)
+
+    if (customersConfig.listType.toLowerCase() === 'dbkeyed' ||
+        customersConfig.listType.toLowerCase() === 'dbnonkeyed')
+    {
+        xmlRows = convertJSONToXML_DBUpdates(chunks, config)
+    }
+
+    if (customersConfig.listType.toLowerCase() === 'relational')
+    {
+        xmlRows = convertJSONToXML_RTUpdates(chunks, config)
+    }
+
+
+    let key = s3Key.replace('.', '_')
+    key = `process_${batch}_${key}.xml`
+
+
+    if (tcLogDebug) console.info(`Queuing Work for ${s3Key} - ${key}. (Batch ${batch} of ${chunks.length} records)`)
+
+    const AddWorkToS3ProcessBucketResults = await addWorkToS3ProcessStore(xmlRows, key)
+    //     {
+    //         AddWorkToS3ProcessBucket: "Wrote Work File (process_0_pura_2024_01_22T18_02_46_119Z_csv.xml) to S3 Processing Bucket (Result 200)",
+    //         S3ProcessBucketResult: "200",
+    // }
+
+    const AddWorkToSQSProcessQueueResults = await addWorkToSQSProcessQueue(config, key, batch.toString(), chunks.length.toString())
+    //     {
+    //         sqsWriteResult: "200",
+    //         workQueuedSuccess: true,
+    //         SQSSendResult: "{\"$metadata\":{\"httpStatusCode\":200,\"requestId\":\"e70fba06-94f2-5608-b104-e42dc9574636\",\"attempts\":1,\"totalRetryDelay\":0},\"MD5OfMessageAttributes\":\"0bca0dfda87c206313963daab8ef354a\",\"MD5OfMessageBody\":\"940f4ed5927275bc93fc945e63943820\",\"MessageId\":\"cf025cb3-dce3-4564-89a5-23dcae86dd42\"}",
+    // }
+
+    return { AddWorkToS3ProcessBucketResults, AddWorkToSQSProcessQueueResults }
+}
+
 function convertJSONToXML_RTUpdates (rows: string[], config: customerConfig) {
 
-    xmlRows = `< Envelope > <Body> <InsertUpdateRelationalTable> <TABLE_ID> ${config.listId} </TABLE_ID><ROWS>`
+    xmlRows = `<Envelope> <Body> <InsertUpdateRelationalTable> <TABLE_ID> ${config.listId} </TABLE_ID><ROWS>`
+
     let r = 0
 
     rows.forEach(jo => {
@@ -1182,19 +1174,6 @@ function convertJSONToXML_RTUpdates (rows: string[], config: customerConfig) {
 }
 
 function convertJSONToXML_DBUpdates (rows: string[], config: customerConfig) {
-
-
-    //ToDo: CRM Lead Source - Populate Every Time?? With "S3DropBucket" ?
-    //
-
-
-    // <AddRecipient>
-    // <CREATED_FROM>0</CREATED_FROM>
-    // <UPDATE_IF_FOUND>true</UPDATE_IF_FOUND>
-    // <SYNC_FIELDS>
-    // <SYNC_FIELD> 
-    // <COLUMN> 
-    // <NAME> <VALUE>
 
     xmlRows = `<Envelope><Body>`
     let r = 0
@@ -1253,80 +1232,6 @@ function convertJSONToXML_DBUpdates (rows: string[], config: customerConfig) {
 
     return xmlRows
 }
-
-async function updateDatabase () {
-
-    const update = `<Envelope>
-          <Body>
-                <AddRecipient>
-                      <LIST_ID>${customersConfig.listId}</LIST_ID>
-                      <CREATED_FROM>${customersConfig.createdFrom}</CREATED_FROM>
-                      <UPDATE_IF_FOUND>true</UPDATE_IF_FOUND>
-                      ${customersConfig.lookupKeys}
-                      <COLUMN>
-                            <NAME>EMAIL</NAME>
-                            <VALUE>a.bundy@555shoe.com</VALUE>
-                      </COLUMN>
-                      <COLUMN>
-                            <NAME>city</NAME>
-                            <VALUE>Dallas</VALUE>
-                      </COLUMN>
-                      <COLUMN>
-                            <NAME>Column_Nonexistent</NAME>
-                            <VALUE>123-45-6789</VALUE>
-                      </COLUMN>
-                      <COLUMN>
-                            <NAME>Street_Address</NAME>
-                            <VALUE>123 New Street</VALUE>
-                      </COLUMN>
-                </AddRecipient>
-          </Body>
-    </Envelope>`
-}
-
-
-
-
-async function storeAndQueueWork (chunks: string[], s3Key: string, config: customerConfig, batch: number) {
-
-    if (batch > tcc.MaxBatchesWarning) console.warn(`Warning: Updates from the S3 Object(${s3Key}) are exceeding(${batch}) the Warning Limit of ${tcc.MaxBatchesWarning} Batches per Object.`)
-    // throw new Error(`Updates from the S3 Object(${ s3Key }) Exceed(${ batch }) Safety Limit of 20 Batches of 99 Updates each.Exiting...`)
-
-    if (customersConfig.listType.toLowerCase() === 'dbkeyed' ||
-        customersConfig.listType.toLowerCase() === 'dbnonkeyed')
-    {
-        xmlRows = convertJSONToXML_DBUpdates(chunks, config)
-    }
-
-    if (customersConfig.listType.toLowerCase() === 'relational')
-    {
-        xmlRows = convertJSONToXML_RTUpdates(chunks, config)
-    }
-
-
-    let key = s3Key.replace('.', '_')
-    key = `process_${batch}_${key}.xml`
-
-
-    if (tcLogDebug) console.info(`Queuing Work for ${s3Key} - ${key}. (Batch ${batch} of ${chunks.length} records)`)
-
-    const AddWorkToS3ProcessBucketResults = await addWorkToS3ProcessStore(xmlRows, key)
-    //     {
-    //         AddWorkToS3ProcessBucket: "Wrote Work File (process_0_pura_2024_01_22T18_02_46_119Z_csv.xml) to S3 Processing Bucket (Result 200)",
-    //         S3ProcessBucketResult: "200",
-    // }
-
-    const AddWorkToSQSProcessQueueResults = await addWorkToSQSProcessQueue(config, key, batch.toString(), chunks.length.toString())
-    //     {
-    //         sqsWriteResult: "200",
-    //         workQueuedSuccess: true,
-    //         SQSSendResult: "{\"$metadata\":{\"httpStatusCode\":200,\"requestId\":\"e70fba06-94f2-5608-b104-e42dc9574636\",\"attempts\":1,\"totalRetryDelay\":0},\"MD5OfMessageAttributes\":\"0bca0dfda87c206313963daab8ef354a\",\"MD5OfMessageBody\":\"940f4ed5927275bc93fc945e63943820\",\"MessageId\":\"cf025cb3-dce3-4564-89a5-23dcae86dd42\"}",
-    // }
-
-    return { AddWorkToS3ProcessBucketResults, AddWorkToSQSProcessQueueResults }
-}
-
-
 
 async function addWorkToS3ProcessStore (queueContent: string, key: string) {
     //write to the S3 Process Bucket
@@ -1502,12 +1407,12 @@ async function addWorkToSQSProcessQueue (config: customerConfig, key: string, ba
 
 
 
-async function getS3Work (s3Key: string) {
+async function getS3Work (s3Key: string, bucket: string) {
 
     if (tcLogDebug) console.info(`Debug - GetS3Work Key: ${s3Key}`)
 
     const getObjectCmd = {
-        Bucket: 'tricklercache-process',
+        Bucket: bucket,
         Key: s3Key,
     } as GetObjectCommandInput
 
@@ -1528,6 +1433,34 @@ async function getS3Work (s3Key: string) {
         else throw new Error(`Exception - Retrieving Work from S3 Process Queue for ${s3Key}. \n ${e}`)
     }
     return work
+}
+
+async function saveS3Work (s3Key: string, body: string, bucket: string) {
+
+    if (tcLogDebug) console.info(`Debug - SaveS3Work Key: ${s3Key}`)
+
+    // https://tricklercache-configs.s3.amazonaws.com/Saved/
+
+    const putObjectCmd = {
+        Bucket: bucket,
+        Key: s3Key,
+        Body: body,
+        ContentLength: Number(`${body.length}`),
+    } as GetObjectCommandInput
+
+    let save: string = ''
+    try
+    {
+        await s3.send(new PutObjectCommand(putObjectCmd))
+            .then(async (getS3Result: GetObjectCommandOutput) => {
+                save = (await getS3Result.Body?.transformToString('utf8')) as string
+                if (tcLogDebug) console.info(`Work Saved (${save.length} chars): ${s3Key}`)
+            })
+    } catch (e)
+    {
+        throw new Error(`Exception - Saving Work for ${s3Key}. \n ${e}`)
+    }
+    return save
 }
 
 export async function getAccessToken (config: customerConfig) {
@@ -1604,16 +1537,20 @@ export async function postToCampaign (xmlCalls: string, config: customerConfig, 
     // try
     // {
     postRes = await fetch(host, requestOptions)
-        .then(response => response.text())
+        .then(response => response.text()
+        )
         .then(async (result) => {
 
             if (result.toLowerCase().indexOf('false</success>') > -1)
             {
                 if (
-                    result.toLowerCase().indexOf('max number of concurrent') > -1
+                    result.toLowerCase().indexOf('max number of concurrent') > -1 ||
+                    result.toLowerCase().indexOf('access token has expired') > -1 ||
+                    result.toLowerCase().indexOf('Error saving row') > -1
+                    // result.toLowerCase().indexOf('max number of concurrent') > -1 ||
                 )
                 {
-                    if (tcc.SelectiveDebug.indexOf("_4,") > -1) console.info(`Selective Debug 4 - Max Number of Concurrent Updates Fail - Marked for Retry`)
+                    console.error(`Selective Debug 4 - Failed Update - Marked for Retry. \n${result}`)
                     return 'retry'
                 }
                 else return `Error - Unsuccessful POST of the Updates (${count}) - Response : ${result}`
@@ -1740,7 +1677,12 @@ async function getAnS3ObjectforTesting (bucket: string) {
     // return 'pura_2023_11_12T01_43_58_170Z.csv'
 }
 
+function saveSampleJSON (body: string) {
 
+    const path = "Saved/"
+    saveS3Work(`${path}sampleJSON_${Date.now().toString()}.json`, body, 'tricklercache-configs')
+    // s3://tricklercache-configs/Saved/
+}
 
 async function purgeBucket (count: number, bucket: string) {
     const listReq = {

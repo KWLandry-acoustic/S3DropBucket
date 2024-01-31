@@ -16,7 +16,7 @@
       "EventEmitterMaxListeners": 100,
 
       "MaxBatchesWarning": 200,
-      "SelectiveDebug": "_4,_6,_12,",
+      "SelectiveDebug": "_4,_6,_12,_99,",
 
 
       "CacheBucketPurgeCount": 0,
