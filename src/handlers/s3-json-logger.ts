@@ -1481,8 +1481,11 @@ export async function postToCampaign (xmlCalls: string, config: customerConfig, 
                 debugger
                 const m = result.match(/<FAILURE(.*)>$/gim)
 
-                console.error(`Unsuccessful POST of the Updates (${count}) - \nFailures: ${JSON.stringify(m)}`)
-                return `Error - Unsuccessful POST of the Updates (${count}) - \nFailures: ${JSON.stringify(m)}`
+                if (!m || m?.length > 0)
+                {
+                    console.error(`Unsuccessful POST of the Updates (${count}) - \nFailures: ${JSON.stringify(m)}`)
+                    return `Error - Unsuccessful POST of the Updates (${count}) - \nFailures: ${JSON.stringify(m)}`
+                }
             }
 
             result = result.replace('\n', ' ')
