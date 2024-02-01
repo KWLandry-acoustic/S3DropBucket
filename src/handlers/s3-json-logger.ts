@@ -236,6 +236,8 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
 
     console.info(`Received SQS Events Batch of ${event.Records.length} records.`)
 
+    if (tcc.SelectiveDebug.indexOf("_4,") > -1) console.info(`Selective Debug 4 - \n${JSON.stringify(event)}`)
+
     // event.Records.forEach((i) => {
     //     sqsBatchFail.batchItemFailures.push({ itemIdentifier: i.messageId })
     // })
@@ -599,7 +601,7 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
 
                     .on('data', async function (s3Chunk: string) {
                         recs++
-                        if (recs > custConfig.updateMaxRows) throw new Error(`The number of Updates in this batch Exceeds Max Row Updates allowed ${recs} in the Customers Config. S3 Object ${key} will not be deleted to allow for review.`)
+                        if (recs > custConfig.updateMaxRows) throw new Error(`The number of Updates in this batch Exceeds Max Row Updates allowed ${recs} in the Customers Config. S3 Object ${key} will not be deleted to allow for review and possible restaging.`)
 
                         if (tcc.SelectiveDebug.indexOf("_13,") > -1) console.info(`Selective Debug 13 - s3ContentStream OnData - Another chunk (ArrayLen:${chunks.length} Recs:${recs} Batch:${batchCount} from ${key} - ${JSON.stringify(s3Chunk)}`)
 
