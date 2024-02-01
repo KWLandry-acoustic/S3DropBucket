@@ -22,12 +22,8 @@ import {
     SendMessageCommand,
     SendMessageCommandOutput,
 } from '@aws-sdk/client-sqs'
+
 import { close } from 'fs'
-
-// import 'source-map-support/register'
-
-// import { packageJson } from '@aws-sdk/client3/package.json'
-// const version = packageJson.version
 
 const sqsClient = new SQSClient({})
 
@@ -39,8 +35,7 @@ export type sqsObject = {
 
 const s3 = new S3Client({ region: 'us-east-1' })
 
-let workQueuedSuccess = false
-let POSTSuccess = false
+let TestPrefix = "visualcrossing"
 
 let xmlRows: string = ''
 
@@ -236,7 +231,7 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
 
     console.info(`Received SQS Events Batch of ${event.Records.length} records.`)
 
-    if (tcc.SelectiveDebug.indexOf("_4,") > -1) console.info(`Selective Debug 4 - \n${JSON.stringify(event)}`)
+    if (tcc.SelectiveDebug.indexOf("_4,") > -1) console.info(`Selective Debug 4 - Received ${event.Records.length} Work Queue Records. Records are: \n${JSON.stringify(event)}`)
 
     // event.Records.forEach((i) => {
     //     sqsBatchFail.batchItemFailures.push({ itemIdentifier: i.messageId })
@@ -258,7 +253,7 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
         //When Testing - get some actual work queued
         if (tqm.workKey === 'process_2_pura_2023_10_27T15_11_40_732Z.csv')
         {
-            tqm.workKey = await getAnS3ObjectforTesting('tricklercache-process')
+            tqm.workKey = await getAnS3ObjectforTesting('tricklercache-process', TestPrefix)
         }
 
         console.info(`Processing Work Queue for ${tqm.workKey}`)
@@ -270,7 +265,7 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
             if (work.length > 0)        //Retreive Contents of the Work File  
             {
                 postResult = await postToCampaign(work, tqm.custconfig, tqm.updateCount)
-                if (tcc.SelectiveDebug.indexOf("_8,") > -1) console.info(`POST Result for ${tqm.workKey}: ${postResult}`)
+                if (tcc.SelectiveDebug.indexOf("_8,") > -1) console.info(`Selective Debug 8 - POST Result for ${tqm.workKey}: ${postResult}`)
 
                 if (postResult.indexOf('retry') > -1)
                 {
@@ -357,7 +352,7 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
     //When Local Testing - pull an S3 Object and so avoid the not-found error
     if (!event.Records[0].s3.object.key || event.Records[0].s3.object.key === 'devtest.csv')
     {
-        event.Records[0].s3.object.key = await getAnS3ObjectforTesting(event.Records[0].s3.bucket.name)
+        event.Records[0].s3.object.key = await getAnS3ObjectforTesting(event.Records[0].s3.bucket.name, TestPrefix)
     }
 
 
@@ -1465,19 +1460,41 @@ export async function postToCampaign (xmlCalls: string, config: customerConfig, 
                     // result.toLowerCase().indexOf('max number of concurrent') > -1 ||
                 )
                 {
-                    console.error(`Selective Debug 4 - Failed Update - Marked for Retry. \n${result}`)
+                    console.error(`Update Temporary Failure - Marked for Retry. \n${result}`)
                     return 'retry'
                 }
                 else return `Error - Unsuccessful POST of the Updates (${count}) - Response : ${result}`
+            }
+
+
+            // <FAILURES>
+            // <FAILURE failure_type="permanent" description = "There is no column name" >
+            // </FAILURE>
+            // < /FAILURES>
+            if (result.toLowerCase().indexOf("<failures>") > -1)
+            {
+                debugger
+                const m = result.match(/<FAILURE(.*)>$/gim)
+
+                console.error(`Unsuccessful POST of the Updates (${count}) - \nFailures: ${JSON.stringify(m)}`)
+                return `Error - Unsuccessful POST of the Updates (${count}) - \nFailures: ${JSON.stringify(m)}`
             }
 
             result = result.replace('\n', ' ')
             return `Successfully POSTed (${count}) Updates - Result: ${result}`
         })
         .catch(e => {
-            if (e.toLowerCase().indexOf('econnreset') > -1) return 'retry'
-            console.error(`Error - Unsuccessful POST of the Updates: ${e} - Set to Retry`)
-            return 'retry'
+            if (e.toLowerCase().indexOf('econnreset') > -1)
+            {
+                console.error(`Error - Temporary failure to POST the Updates - Marked for Retry.`)
+                return 'retry'
+            }
+            else
+            {
+                console.error(`Error - Unsuccessful POST of the Updates: ${e}`)
+                throw new Error(`Exception - Unsuccessful POST of the Updates \n${e}`)
+                // return 'Unsuccessful POST of the Updates'
+            }
         })
     // } catch (e)
     // {
@@ -1540,10 +1557,11 @@ function checkMetadata () {
     //ToDo:  Log where Columns are not matching
 }
 
-async function getAnS3ObjectforTesting (bucket: string) {
+async function getAnS3ObjectforTesting (bucket: string, prefix: string) {
     const listReq = {
         Bucket: bucket,
-        MaxKeys: 11
+        MaxKeys: 11,
+        Prefix: prefix
     } as ListObjectsV2CommandInput
 
     let s3Key: string = ''
