@@ -1192,7 +1192,7 @@ async function addWorkToSQSProcessQueue (config: customerConfig, key: string, ba
     sqsQMsgBody.updateCount = recCount
     sqsQMsgBody.custconfig = config
     sqsQMsgBody.firstQueued = Date.now().toString()
-
+    debugger
     const sqsParams = {
         MaxNumberOfMessages: 1,
         QueueUrl: process.env.SQS_QUEUE_URL,
@@ -1335,7 +1335,7 @@ async function getS3Work (s3Key: string, bucket: string) {
         const err: string = JSON.stringify(e)
 
         if (err.indexOf('NoSuchKey') > -1)
-            throw new Error(`Exception - Work Not Found on S3 Process Queue (${s3Key}) Is an S3 Process Queue Management Policy Deleting Work before Processing can be accomplished? \n${e}`)
+            throw new Error(`Exception - Work Not Found on S3 Process Queue (${s3Key}) Check Process Queue Management Policy Deleting Work before Processing can be accomplished. Work not returned for Retry. \n${e}`)
         else throw new Error(`Exception - Retrieving Work from S3 Process Queue for ${s3Key}. \n ${e}`)
     }
     return work
@@ -1389,7 +1389,14 @@ export async function getAccessToken (config: customerConfig) {
         const ratResp = (await rat.json()) as accessResp
         if (rat.status != 200)
         {
-            throw new Error(`Exception - Retrieving Access Token:   ${rat.status} - ${rat.statusText}`)
+            const err = ratResp as unknown as { "error": string, "error_description": string }
+            console.error(`Problem retrieving Access Token (${rat.status}) Error: ${err.error} \nDescription: ${err.error_description}`)
+            //  {
+            //  error: "invalid_client",
+            //  error_description: "Unable to find matching client for 1d99f8d8-0897-4090-983a-c517cc54032e",
+            //  }
+
+            throw new Error(`Problem - Retrieving Access Token:   ${rat.status} - ${err.error}  - \n${err.error_description}`)
         }
         const accessToken = ratResp.access_token
         return { accessToken }.accessToken
@@ -1400,7 +1407,7 @@ export async function getAccessToken (config: customerConfig) {
 }
 
 export async function postToCampaign (xmlCalls: string, config: customerConfig, count: string) {
-
+    debugger
     if (process.env.accessToken === undefined || process.env.accessToken === null || process.env.accessToken == '')
     {
         if (tcLogDebug) console.info(`POST to Campaign - Need AccessToken...`)
