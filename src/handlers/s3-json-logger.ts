@@ -1060,7 +1060,12 @@ function convertJSONToXML_RTUpdates (rows: string[], config: customerConfig) {
         xmlRows += `<ROW>`
         Object.entries(jo).forEach(([key, value]) => {
             // console.info(`Record ${r} as ${key}: ${value}`)
-            xmlRows += `<COLUMN name="${key}"> <![CDATA[${value}]]> </COLUMN>`
+
+            if (config.customer === 'visualcrossing_' && key === 'name')
+            {
+                xmlRows += `<COLUMN name="zip"> <![CDATA[${value}]]> </COLUMN>`
+            }
+            else xmlRows += `<COLUMN name="${key}"> <![CDATA[${value}]]> </COLUMN>`
         })
         xmlRows += `</ROW>`
     })
