@@ -1063,6 +1063,7 @@ function convertJSONToXML_RTUpdates (rows: string[], config: customerConfig) {
 
             if (config.customer === 'visualcrossing_' && key === 'name')
             {
+                debugger
                 xmlRows += `<COLUMN name="zip"> <![CDATA[${value}]]> </COLUMN>`
             }
             else xmlRows += `<COLUMN name="${key}"> <![CDATA[${value}]]> </COLUMN>`
@@ -1120,6 +1121,20 @@ function convertJSONToXML_DBUpdates (rows: string[], config: customerConfig) {
 
         Object.entries(jsonObj).forEach(([key, value]) => {
             // console.info(`Record ${r} as ${key}: ${value}`)
+
+
+
+            if (config.customer === 'visualcrossing_' && key === 'name')
+            {
+                const update = `<COLUMN><NAME>name</NAME><VALUE><![CDATA[${value}]]></VALUE></COLUMN>`
+
+            }
+            else xmlRows += `<COLUMN name="${key}"> <![CDATA[${value}]]> </COLUMN>`
+
+
+
+
+
             const update = `<COLUMN><NAME>${key}</NAME><VALUE><![CDATA[${value}]]></VALUE></COLUMN>`
             xmlRows += update
         })
@@ -1409,7 +1424,7 @@ export async function getAccessToken (config: customerConfig) {
 }
 
 export async function postToCampaign (xmlCalls: string, config: customerConfig, count: string) {
-    debugger
+
     if (process.env.accessToken === undefined || process.env.accessToken === null || process.env.accessToken == '')
     {
         if (tcLogDebug) console.info(`POST to Campaign - Need AccessToken...`)
@@ -1476,15 +1491,23 @@ export async function postToCampaign (xmlCalls: string, config: customerConfig, 
             // <FAILURE failure_type="permanent" description = "There is no column name" >
             // </FAILURE>
             // < /FAILURES>
-            if (result.toLowerCase().indexOf("<failures>") > -1)
+            if (result.toLowerCase().indexOf("<failure ") > -1)
             {
+                let msg = ''
                 debugger
-                const m = result.match(/<FAILURE(.*)>$/gim)
+                const m = result.match(/<FAILURE (.*)>$/gim)
 
-                if (!m || m?.length > 0)
+                if (m && m?.length > 0)
                 {
-                    console.error(`Unsuccessful POST of the Updates (${count}) - \nFailures: ${JSON.stringify(m)}`)
-                    return `Error - Unsuccessful POST of the Updates (${count}) - \nFailures: ${JSON.stringify(m)}`
+                    for (const l in m)
+                    {
+                        // "<FAILURE failure_type=\"permanent\" description=\"There is no column name\">"
+                        l.replace("There is no column", "There is no column = ")
+                        msg += l
+                    }
+
+                    console.error(`Unsuccessful POST of the Updates (${count}) - \nFailures: ${JSON.stringify(msg)}`)
+                    return `Error - Unsuccessful POST of the Updates (${count}) - \nFailures: ${JSON.stringify(msg)}`
                 }
             }
 
