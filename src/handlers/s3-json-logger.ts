@@ -78,7 +78,7 @@ export interface tcQueueMessage {
     attempts: number
     updateCount: string
     custconfig: customerConfig
-    firstQueued: string
+    lastQueued: string
 }
 
 export interface tcConfig {
@@ -91,6 +91,7 @@ export interface tcConfig {
     MaxBatchesWarning: number,
     SelectiveDebug: string,
     ProcessQueueQuiesce: boolean
+    reQueue: string,
     // ProcessQueueVisibilityTimeout: number
     // ProcessQueueWaitTimeSeconds: number
     // RetryQueueVisibilityTimeout: number
@@ -210,6 +211,14 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
         const d = await purgeBucket(tcc.QueueBucketPurgeCount, tcc.QueueBucketPurge)
         return d
     }
+
+    if (tcc.reQueue !== '')
+    {
+        console.info(`ReQueue of all ${tcc.reQueue} updates on the Work Queue requested. `)
+        const d = await requeueWork(tcc.reQueue)
+        console.info(`ReQueue result: ${d}`)
+    }
+
 
 
     // Backoff strategy for failed invocations
@@ -696,9 +705,9 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
 
 
 
-function checkForTCConfigUpdates () {
+async function checkForTCConfigUpdates () {
     if (tcLogDebug) console.info(`Checking for TricklerCache Config updates`)
-    getValidateTricklerConfig()
+    tcc = await getValidateTricklerConfig()
     if (tcc.SelectiveDebug.indexOf("_1,") > -1) console.info(`Refreshed TricklerCache Config \n ${JSON.stringify(tcc)}`)
 }
 
@@ -836,6 +845,13 @@ async function getValidateTricklerConfig () {
             throw new Error(
                 `Tricklercache Config invalid definition: QueueBucketPurgeCount - ${tc.QueueBucketPurgeCount}`,
             )
+
+        if (tc.reQueue !== undefined)
+            process.env.TricklerProcessRequeue = tc.reQueue
+        // else                 //ReQueue is optional
+        //     throw new Error(
+        //         `Tricklercache Config invalid definition: ReQueue - ${tc.reQueue}`,
+        //     )
 
     } catch (e)
     {
@@ -1028,7 +1044,7 @@ async function storeAndQueueWork (chunks: string[], s3Key: string, config: custo
 
 
     let key = s3Key.replace('.', '_')
-    key = `process_${batch}_${key}.xml`
+    key = `${key}_update_${batch}.xml`
 
 
     if (tcLogDebug) console.info(`Queuing Work for ${s3Key} - ${key}. (Batch ${batch} of ${chunks.length} records)`)
@@ -1201,6 +1217,50 @@ async function addWorkToS3ProcessStore (queueContent: string, key: string) {
     return { S3ProcessBucketResult, AddWorkToS3ProcessBucket }
 }
 
+
+async function requeueWork (customer: string) {
+    const cc = await getCustomerConfig(customer)
+
+    const bucket = 'tricklercache-process'
+    let ct = ''
+
+    const listReq = {
+        Bucket: bucket,
+        MaxKeys: 1000,
+        ifMatch: customer
+    } as ListObjectsV2CommandInput
+
+    let q = 0
+    let isTruncated: boolean | unknown = true
+
+    debugger
+
+    try
+    {
+        while (isTruncated)
+        {
+            await s3.send(new ListObjectsV2Command(listReq))
+                .then(async (s3ListResult: ListObjectsV2CommandOutput) => {
+
+                    listReq.ContinuationToken = s3ListResult?.NextContinuationToken
+                    isTruncated = s3ListResult?.IsTruncated
+
+                    s3ListResult.Contents?.forEach(async (listItem) => {
+                        q++
+                        const r = await addWorkToSQSProcessQueue(cc, listItem.Key as string, "", "")
+                        if (r.SQSWriteResult !== '200') console.error(`Non Successful return, received ${r} ) on ReQueue of ${listItem.Key} `)
+                    })
+                })
+        }
+    } catch (e)
+    {
+        console.error(`Exception - While Requeuing ${customer} Updates from Process bucket: \n${e} `)
+    }
+    console.info(`Requeued ${q} Updates of ${customer} from Process bucket`)
+
+    return `Requeued ${q} Updates of ${customer} from Process bucket`
+}
+
 async function addWorkToSQSProcessQueue (config: customerConfig, key: string, batch: string, recCount: string) {
 
     const sqsQMsgBody = {} as tcQueueMessage
@@ -1208,8 +1268,8 @@ async function addWorkToSQSProcessQueue (config: customerConfig, key: string, ba
     sqsQMsgBody.attempts = 1
     sqsQMsgBody.updateCount = recCount
     sqsQMsgBody.custconfig = config
-    sqsQMsgBody.firstQueued = Date.now().toString()
-    debugger
+    sqsQMsgBody.lastQueued = Date.now().toString()
+
     const sqsParams = {
         MaxNumberOfMessages: 1,
         QueueUrl: process.env.SQS_QUEUE_URL,
@@ -1267,7 +1327,7 @@ async function addWorkToSQSProcessQueue (config: customerConfig, key: string, ba
     } catch (e)
     {
         console.error(
-            `Exception - Writing to SQS Process Queue - (queue URL${sqsParams.QueueUrl}), process_${sqsQMsgBody.workKey}, SQS Params${JSON.stringify(sqsParams)}) - Error: ${e}`,
+            `Exception - Writing to SQS Process Queue - (queue URL${sqsParams.QueueUrl}), ${sqsQMsgBody.workKey}, SQS Params${JSON.stringify(sqsParams)}) - Error: ${e}`,
         )
     }
 
@@ -1515,9 +1575,10 @@ export async function postToCampaign (xmlCalls: string, config: customerConfig, 
             return `Successfully POSTed (${count}) Updates - Result: ${result}`
         })
         .catch(e => {
-            if (e.toLowerCase().indexOf('econnreset') > -1)
+            console.error(`Error - Temporary failure to POST the Updates - Marked for Retry. ${e}`)
+            if (e.indexOf('econnreset') > -1)
             {
-                console.error(`Error - Temporary failure to POST the Updates - Marked for Retry.`)
+                console.error(`Error - Temporary failure to POST the Updates - Marked for Retry. ${e}`)
                 return 'retry'
             }
             else

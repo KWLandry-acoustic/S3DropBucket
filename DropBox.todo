@@ -1,92 +1,93 @@
+Future: 
+  Todo: Periodic URL call - pull data - VisualCrossing Weather Data
+SegmentConnector: 
+  Todo: Complete Test of latest
+  Todo: Create PR
+DropBox Interface: 
+
+  ☐ ToDo: Stand up an Interface to View and Edit Customer Configs @created(24-01-31 12:54)
+  ☐ Todo: Stand up a Reporting Interface @created(24-01-31 12:25)
+  ☐ ToDo: Interface to view Logs/Errors (echo cloudwatch logs?) @created(24-01-31 12:55)
+  ☐ ToDo: Keep an eye on Anomaly Detection Reports @created(24-02-02 13:49)
+  ☐ ToDo: Add DeadLetterQueue Report - need a report to list all DLQ Events in order to @created(24-01-31 12:55)
+    be able to work / troubleshoot the issue
+
 DropBox: 
-☐ Debug: S3 Event delivered but File Key Not Found.... @created(24-01-31 12:35)
-☐ Debug: SQS Event in Batch, file processed and deleted Same event in Batch again, but file already deleted. @created(24-01-31 12:36)
-☐ Debug: DropBox file deleted after Exception processing the file, @created(24-01-31 12:36)
-☐ Debug: VisualC not updating @created(24-01-31 12:36)
-☐ Debug: Resolve SaveSample exception @created(24-01-31 12:36)
-  `   2024-01 - 31T02: 18: 59.176Z	624ac595 - 1a20 - 4fc8 - 9919 -09c4d51cb07c	ERROR	Unhandled Promise Rejection
-      {
-      "errorType": "Runtime.UnhandledPromiseRejection",
-            "errorMessage": "Error: Exception - Saving Work for Saved/sampleJSON_1706667539081.json. \n XAmzContentSHA256Mismatch: The provided 'x-amz-content-sha256' header does not match what was computed.",
-                  "reason": {
-            "errorType": "Error",
-                  "errorMessage": "Exception - Saving Work for Saved/sampleJSON_1706667539081.json. \n XAmzContentSHA256Mismatch: The provided 'x-amz-content-sha256' header does not match what was computed.",
-                  "stack": [
-                        "Error: Exception - Saving Work for Saved/sampleJSON_1706667539081.json. ",
-                        " XAmzContentSHA256Mismatch: The provided 'x-amz-content-sha256' header does not match what was computed.",
-                        "    at saveS3Work (/tmp/tmpgwm2zd3v/src/handlers/s3-json-logger.ts:1461:15)",
-                        "    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)"
-                  ]
-      },
-      "promise": { },
-      "stack": [
-            "Runtime.UnhandledPromiseRejection: Error: Exception - Saving Work for Saved/sampleJSON_1706667539081.json. ",
-            " XAmzContentSHA256Mismatch: The provided 'x-amz-content-sha256' header does not match what was computed.",
-            "    at process.<anonymous> (file:///var/runtime/index.mjs:1276:17)",
-            "    at process.emit (node:events:517:28)",
-            "    at emit (node:internal/process/promises:149:20)",
-            "    at processPromiseRejections (node:internal/process/promises:278:11)",
-            "    at process.processTicksAndRejections (node:internal/process/task_queues:96:32)"
-      ]
-      }
-`
+  ☐ Debug: S3 Event delivered to Lambda but Lambda then reports File Key Not Found.... @created(24-01-31 12:35)
+  ☐ Debug: SQS Event in Batch, file processed and deleted Same event in Batch again, but file already deleted. @created(24-01-31 12:36)
+  ☐ Debug: DropBox file deleted after Exception processing the file, @created(24-01-31 12:36)
+  ☐ Debug: VisualC not updating @created(24-01-31 12:36)
+  ☐ Debug: Resolve SaveSample exception @created(24-01-31 12:36)
+    `   2024-01 - 31T02: 18: 59.176Z	624ac595 - 1a20 - 4fc8 - 9919 -09c4d51cb07c	ERROR	Unhandled Promise Rejection
+        {
+        "errorType": "Runtime.UnhandledPromiseRejection",
+              "errorMessage": "Error: Exception - Saving Work for Saved/sampleJSON_1706667539081.json. \n XAmzContentSHA256Mismatch: The provided 'x-amz-content-sha256' header does not match what was computed.",
+                    "reason": {
+              "errorType": "Error",
+                    "errorMessage": "Exception - Saving Work for Saved/sampleJSON_1706667539081.json. \n XAmzContentSHA256Mismatch: The provided 'x-amz-content-sha256' header does not match what was computed.",
+                    "stack": [
+                          "Error: Exception - Saving Work for Saved/sampleJSON_1706667539081.json. ",
+                          " XAmzContentSHA256Mismatch: The provided 'x-amz-content-sha256' header does not match what was computed.",
+                          "    at saveS3Work (/tmp/tmpgwm2zd3v/src/handlers/s3-json-logger.ts:1461:15)",
+                          "    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)"
+                    ]
+        },
+        "promise": { },
+        "stack": [
+              "Runtime.UnhandledPromiseRejection: Error: Exception - Saving Work for Saved/sampleJSON_1706667539081.json. ",
+              " XAmzContentSHA256Mismatch: The provided 'x-amz-content-sha256' header does not match what was computed.",
+              "    at process.<anonymous> (file:///var/runtime/index.mjs:1276:17)",
+              "    at process.emit (node:events:517:28)",
+              "    at emit (node:internal/process/promises:149:20)",
+              "    at processPromiseRejections (node:internal/process/promises:278:11)",
+              "    at process.processTicksAndRejections (node:internal/process/task_queues:96:32)"
+        ]
+        }
+  `
+   ☐ Todo: Report on all Objects that get "Unhandled Promise Rejection" Errors: @created(24-02-02 13:47)
+      ☐ The number of Updates in this batch Exceeds Max Row Updates allowed 101 in the Customers Config", @created(24-02-02 13:47)
+        ☐ *Can see "Unhandled" in Logs* @created(24-02-02 13:47)
 
 
-ToDo: Keep an eye on Anomaly Detection Reports
+  ☐ ToDo: Confirm BatchItemFails are returned to Queue @created(24-01-31 12:55)
+        Should be returned to Queue for retry
+  ☐ ToDo: Check on recovery from Invalid Access/Expired Token Exceptions @created(24-01-31 12:55)
+        "access token has expired"
+        Should be returned to Queue for retry
+  ☐ ToDo: Check on recovery/retry for ECONNRESET errors @created(24-01-31 12:55)
+        Should be returned to Queue for retry
+  ` eventTimestamp
+  2024-01 - 20T17: 10: 54.871-05:00
+  logEvent
+  2024-01 - 20T22: 10: 54.871Z	589a5cd9 - 6126 - 505e-89cd-02ff260c8c9a	ERROR	Exception processing a Work File(process_0_pura_2024_01_20T21_25_08_509Z.csv -
+      Error: Exception during getAccessToken:
+      FetchError: request to https://api-campaign-us-2.goacoustic.com/oauth/token 
+            failed, reason: read ECONNRESET 
+
+  `
+
+  ☐ ToDo: Check on recovery/reporting for "Error Saving Row" Errors @created(24-01-31 12:55)
+  `<FAILURE failure_type="transient" description="Error saving row">
+  <COLUMN name="EventValue" > <![CDATA[renee.lankford@gmail.com]]> </COLUMN>
+      < COLUMN name = "EventSource" > <![CDATA[track Event]]> </COLUMN>
+          < COLUMN name = "Email" > <![CDATA[renee.lankford@gmail.com]]> </COLUMN>
+              < COLUMN name = "EventTimestamp" > <![CDATA[2024-01-18T15: 45: 31.037Z]]> </COLUMN>
+                  < COLUMN name = "EventName" > <![CDATA[email]]> </COLUMN>
+                      < /FAILURE>
+  `
+
+  ☐ ToDo: Add JSON Path to Map capability for JSON files in DropBox @created(24-01-31 12:55)
+
+  ✔ ToDo: - as of 10/2023 CSV handled as the papaparse engine handles the record boundary, @created(24-01-31 12:31) @done(24-01-31 12:31)
+  ✔ ToDo:  Now need to solve for JSON content @created(24-01-31 12:31) @done(24-01-31 12:31)
 
 
-☐ Todo: Reporting Interface @created(24-01-31 12:25)
-☐ ToDo: Interface to View and Edit Customer Configs @created(24-01-31 12:54)
-
-☐ ToDo: Interface to view Logs/Errors (echo cloudwatch logs?) @created(24-01-31 12:55)
-
-☐ ToDo: Add DeadLetterQueue Report - need a report to list all DLQ Events in order to @created(24-01-31 12:55)
-  be able to work / troubleshoot the issue
-
-ToDo: Report on all Objects that get "Unhandled Promise Rejection" Errors:
- The number of Updates in this batch Exceeds Max Row Updates allowed 101 in the Customers Config",
-      *Can see in Log*
-
-
-☐ ToDo: Confirm BatchItemFails are returned to Queue @created(24-01-31 12:55)
-      Should be returned to Queue for retry
-☐ ToDo: Check on recovery from Invalid Access/Expired Token Exceptions @created(24-01-31 12:55)
-      "access token has expired"
-      Should be returned to Queue for retry
-☐ ToDo: Check on recovery/retry for ECONNRESET errors @created(24-01-31 12:55)
-      Should be returned to Queue for retry
-` eventTimestamp
- 2024-01 - 20T17: 10: 54.871-05:00
- logEvent
- 2024-01 - 20T22: 10: 54.871Z	589a5cd9 - 6126 - 505e-89cd-02ff260c8c9a	ERROR	Exception processing a Work File(process_0_pura_2024_01_20T21_25_08_509Z.csv -
-     Error: Exception during getAccessToken:
-     FetchError: request to https://api-campaign-us-2.goacoustic.com/oauth/token 
-          failed, reason: read ECONNRESET 
-
-`
-
-☐ ToDo: Check on recovery/reporting for "Error Saving Row" Errors @created(24-01-31 12:55)
-`<FAILURE failure_type="transient" description="Error saving row">
- <COLUMN name="EventValue" > <![CDATA[renee.lankford@gmail.com]]> </COLUMN>
-     < COLUMN name = "EventSource" > <![CDATA[track Event]]> </COLUMN>
-         < COLUMN name = "Email" > <![CDATA[renee.lankford@gmail.com]]> </COLUMN>
-             < COLUMN name = "EventTimestamp" > <![CDATA[2024-01-18T15: 45: 31.037Z]]> </COLUMN>
-                 < COLUMN name = "EventName" > <![CDATA[email]]> </COLUMN>
-                     < /FAILURE>
-`
-
-☐ ToDo: Add JSON Path to Map capability for JSON files in DropBox @created(24-01-31 12:55)
-
-✔ ToDo: - as of 10/2023 CSV handled as the papaparse engine handles the record boundary, @created(24-01-31 12:31) @done(24-01-31 12:31)
-✔ ToDo:  Now need to solve for JSON content @created(24-01-31 12:31) @done(24-01-31 12:31)
-
-
-☐ ToDo: Of concern, very large data sets @created(24-01-31 12:55)
-☐ ToDo: But how to parse LARGE JSON Files - each chunk for JSON content as each chunk is a @created(24-01-31 12:55)
-      network chunk that can land on any or no record boundary.
-           Use a JSON Parser that handles record boundary just like the CSV parser?
-           Parse out individual Updates from the JSON in the Read Stream using start/stop index
-               of the stream/content?
+  ☐ ToDo: Of concern, very large data sets @created(24-01-31 12:55)
+  ☐ ToDo: But how to parse LARGE JSON Files - each chunk for JSON content as each chunk is a @created(24-01-31 12:55)
+        network chunk that can land on any or no record boundary.
+            Use a JSON Parser that handles record boundary just like the CSV parser?
+            Parse out individual Updates from the JSON in the Read Stream using start/stop index
+                of the stream/content?
 
 
 
