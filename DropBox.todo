@@ -1,5 +1,9 @@
 Future: 
   Todo: Periodic URL call - pull data - VisualCrossing Weather Data
+    Notes: Using AWS Example - 
+  
+  Todo: Look into using AWS Transfer Family Solution (SFTP, et. al.) 
+
 SegmentConnector: 
   Todo: Complete Test of latest
   Todo: Create PR
@@ -11,8 +15,20 @@ DropBox Interface:
   ☐ ToDo: Keep an eye on Anomaly Detection Reports @created(24-02-02 13:49)
   ☐ ToDo: Add DeadLetterQueue Report - need a report to list all DLQ Events in order to @created(24-01-31 12:55)
     be able to work / troubleshoot the issue
+DropBox Queue Processor:
 
-DropBox: 
+    DONE: Currently throttled to a single event each time, Add processing of multiple Events per invocation
+    
+    ✔ ToDo: Process to ReParse Cache and create Work Files @created(24-02-03 18:29) @done(24-02-03 18:29)
+    
+    ToDo: Column mapping - Inbound Column Name to Table Column Mapping
+    ToDo: Type Validation - Inbound Data type validation to Mapping Type
+    
+
+    //ToDo: Resolve the progression of these steps, currently "Completed" is logged regardless of 'completion'
+    // and Delete happens regardless of 'completion' being successful or not
+
+DropBox Processor: 
   ☐ Debug: S3 Event delivered to Lambda but Lambda then reports File Key Not Found.... @created(24-01-31 12:35)
   ☐ Debug: SQS Event in Batch, file processed and deleted Same event in Batch again, but file already deleted. @created(24-01-31 12:36)
   ☐ Debug: DropBox file deleted after Exception processing the file, @created(24-01-31 12:36)
@@ -44,6 +60,10 @@ DropBox:
         ]
         }
   `
+
+    ✔ ToDo: Confirm SQS Queue deletes queued work @created(24-02-03 18:24) @done(24-02-03 18:24)
+    ✔ ToDo: Confirm Retry of SQS Events (When Campaign throttles) works @created(24-02-03 18:24) @done(24-02-03 18:24)
+
    ☐ Todo: Report on all Objects that get "Unhandled Promise Rejection" Errors: @created(24-02-02 13:47)
       ☐ The number of Updates in this batch Exceeds Max Row Updates allowed 101 in the Customers Config", @created(24-02-02 13:47)
         ☐ *Can see "Unhandled" in Logs* @created(24-02-02 13:47)

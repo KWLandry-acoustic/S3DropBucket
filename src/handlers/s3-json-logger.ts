@@ -181,10 +181,6 @@ let tcSelectiveDebug   //call out selective debug as an option
  * A Lambda function to process the Event payload received from SQS - AWS Queues.
  */
 export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, context: Context) => {
-    //
-    //ToDo: Confirm SQS Queue deletes queued work
-    //ToDo: Confirm Retry of SQS Events (When Campaign throttles) works       
-
 
     if (
         process.env.ProcessQueueVisibilityTimeout === undefined ||
@@ -214,7 +210,7 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
 
     if (tcc.reQueue !== '')
     {
-        console.info(`ReQueue of all ${tcc.reQueue} updates on the Work Queue requested. `)
+        console.info(`ReQueue requested for all ${tcc.reQueue} updates on the Work Queue. `)
         const d = await requeueWork(tcc.reQueue)
         console.info(`ReQueue result: ${d}`)
     }
@@ -336,16 +332,7 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
 export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Context) => {
 
 
-    //DONE: Currently throttled to a single event each time, Add processing of multiple Events per invocation
-    //
-    //ToDo: Process to ReParse Cache and create Work Files
-    //
-    //ToDo: Column mapping - Inbound Column Name to Table Column Mapping
-    //ToDo: Type Validation - Inbound Data type validation to Mapping Type
-    //
 
-    //ToDo: Resolve the progression of these steps, currently "Completed" is logged regardless of 'completion'
-    // and Delete happens regardless of 'completion' being successful or not
     //
     // INFO Started Processing inbound data(pura_2023_11_16T20_24_37_627Z.csv)
     // INFO Completed processing inbound S3 Object Stream undefined
@@ -1128,8 +1115,6 @@ function convertJSONToXML_DBUpdates (rows: string[], config: customerConfig) {
             xmlRows += `</SYNC_FIELDS>`
         }
 
-
-
         if (config.dbKey.toLowerCase() === 'dbkeyed')
         {
             //Placeholder
@@ -1138,26 +1123,13 @@ function convertJSONToXML_DBUpdates (rows: string[], config: customerConfig) {
         Object.entries(jsonObj).forEach(([key, value]) => {
             // console.info(`Record ${r} as ${key}: ${value}`)
 
-
-
-            if (config.customer === 'visualcrossing_' && key === 'name')
-            {
-                const update = `<COLUMN><NAME>name</NAME><VALUE><![CDATA[${value}]]></VALUE></COLUMN>`
-
-            }
-            else xmlRows += `<COLUMN name="${key}"> <![CDATA[${value}]]> </COLUMN>`
-
-
-
-
-
-            const update = `<COLUMN><NAME>${key}</NAME><VALUE><![CDATA[${value}]]></VALUE></COLUMN>`
-            xmlRows += update
+            // <COLUMN> <NAME> CRM Lead Source < /NAME> <VALUE>AddUpdateContact99</VALUE > </COLUMN>
+            if (config.customer === 'visualcrossing_' && key === 'name') xmlRows += `<COLUMN><NAME>zip</NAME><VALUE><![CDATA[${value}]]></VALUE></COLUMN>`
+            else xmlRows += `<COLUMN><NAME>${key}</NAME><VALUE><![CDATA[${value}]]></VALUE></COLUMN>`
         })
 
         //CRM Lead Source Update 
-        const update = `<COLUMN><NAME>CRM Lead Source</NAME><VALUE><![CDATA[S3DropBucket]]></VALUE></COLUMN>`
-        xmlRows += update
+        xmlRows += `<COLUMN><NAME>CRM Lead Source</NAME><VALUE><![CDATA[S3DropBucket]]></VALUE></COLUMN>`
 
         xmlRows += `</AddRecipient>`
     })
@@ -1222,7 +1194,6 @@ async function requeueWork (customer: string) {
     const cc = await getCustomerConfig(customer)
 
     const bucket = 'tricklercache-process'
-    let ct = ''
 
     const listReq = {
         Bucket: bucket,
@@ -1256,6 +1227,7 @@ async function requeueWork (customer: string) {
     {
         console.error(`Exception - While Requeuing ${customer} Updates from Process bucket: \n${e} `)
     }
+
     console.info(`Requeued ${q} Updates of ${customer} from Process bucket`)
 
     return `Requeued ${q} Updates of ${customer} from Process bucket`
