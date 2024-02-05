@@ -1102,7 +1102,7 @@ function convertJSONToXML_DBUpdates (rows: string[], config: customerConfig) {
 
 
         //Only needed on non-keyed(In Campaign use DB -> Settings -> LookupKeys to find what fields are Lookup Keys)
-        if (config.dbKey.toLowerCase() === 'dbnonkeyed')
+        if (config.listType.toLowerCase() === 'dbnonkeyed')
         {
             const lk = config.lookupKeys.split(',')
 
