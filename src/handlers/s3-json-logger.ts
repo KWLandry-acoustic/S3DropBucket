@@ -1516,10 +1516,19 @@ export async function postToCampaign (xmlCalls: string, config: customerConfig, 
         )
         .then(async (result) => {
 
-            console.error(`Debug POST Response: ${result}`)
+            // console.error(`Debug POST Response: ${result}`)
 
             if (result.toLowerCase().indexOf('false</success>') > -1)
             {
+
+                //Todo: Add this error in: 
+                // ERROR	Debug POST Response: <Envelope>
+                //  <Body> <RESULT>
+                //  <SUCCESS> true < /SUCCESS>
+                //  < FAILURES >
+                //  <FAILURE failure_type="permanent" description = "All key columns are not present" >
+
+
                 if (
                     result.toLowerCase().indexOf('max number of concurrent') > -1 ||
                     result.toLowerCase().indexOf('access token has expired') > -1 ||

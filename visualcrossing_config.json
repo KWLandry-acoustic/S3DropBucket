@@ -1,8 +1,8 @@
 {
         "customer": "visualcrossing_",
         "format": "csv",
-        "listId": "13242696",
-        "listName": "WeatherForecast",
+        "listId": "13262176",
+        "listName": "WeatherForecast2",
         "listType": "Relational",
         "dbKey": "zip",
         "pod": "2",
