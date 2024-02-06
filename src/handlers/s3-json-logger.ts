@@ -1515,7 +1515,9 @@ export async function postToCampaign (xmlCalls: string, config: customerConfig, 
         .then(response => response.text()
         )
         .then(async (result) => {
+
             console.error(`Debug POST Response: ${result}`)
+
             if (result.toLowerCase().indexOf('false</success>') > -1)
             {
                 if (
