@@ -1120,6 +1120,8 @@ function convertJSONToXML_DBUpdates (rows: string[], config: customerConfig) {
 
             xmlRows += `<SYNC_FIELDS>`
             lk.forEach(k => {
+                debugger
+                k = k.trim()
                 const sf = `<SYNC_FIELD><NAME>${k}</NAME><VALUE><![CDATA[${j[k]}]]></VALUE></SYNC_FIELD>`
                 xmlRows += sf
             })
