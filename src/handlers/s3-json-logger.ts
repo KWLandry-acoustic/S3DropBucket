@@ -1129,9 +1129,10 @@ function convertJSONToXML_DBUpdates (rows: string[], config: customerConfig) {
             xmlRows += `</SYNC_FIELDS>`
         }
 
-        if (config.dbKey.toLowerCase() === 'dbkeyed')
+        if (config.listType.toLowerCase() === 'dbkeyed')
         {
             //Placeholder
+            //Don't need to do anything with DBKey, it's superfluous but documents the keys of the keyed DB
         }
 
         Object.entries(jsonObj).forEach(([key, value]) => {
@@ -1301,7 +1302,7 @@ async function addWorkToSQSProcessQueue (config: customerConfig, key: string, ba
                 }
                 SQSSendResult = JSON.stringify(sqsSendMessageResult)
 
-                if (tcc.SelectiveDebug.indexOf("_8,") > -1) console.info(`Selective Debug 8 - Queued Work to SQS Process Queue (${sqsQMsgBody.workKey}) - Result: ${sqsWriteResult} `)
+                if (tcc.SelectiveDebug.indexOf("_14,") > -1) console.info(`Selective Debug 14 - Queued Work to SQS Process Queue (${sqsQMsgBody.workKey}) - Result: ${sqsWriteResult} `)
             })
             .catch(err => {
                 console.error(
@@ -1514,7 +1515,7 @@ export async function postToCampaign (xmlCalls: string, config: customerConfig, 
         .then(response => response.text()
         )
         .then(async (result) => {
-
+            console.error(`Debug POST Response: ${result}`)
             if (result.toLowerCase().indexOf('false</success>') > -1)
             {
                 if (
@@ -1524,7 +1525,7 @@ export async function postToCampaign (xmlCalls: string, config: customerConfig, 
                     // result.toLowerCase().indexOf('max number of concurrent') > -1 ||
                 )
                 {
-                    console.error(`Update Temporary Failure - Marked for Retry. \n${result}`)
+                    console.error(`POST of the Updates - Temporary Failure - Marked for Retry. \n${result}`)
                     return 'retry'
                 }
                 else return `Error - Unsuccessful POST of the Updates (${count}) - Response : ${result}`
