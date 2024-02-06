@@ -9,8 +9,9 @@
       "restapiurl": "https://api-campaign-${config.region}-${config.pod}.goacoustic.com:443/rest",
       "authapiurl": "https://api-campaign-${config.region}-${config.pod}.goacoustic.com/oauth/token",
 
+
+      "DropBucketQuiesce": true,
       "ProcessQueueQuiesce": false,
-      "CacheBucketQuiesce": false,
       "QueueBucketQuiesce": false,
 
       "reQueue": "",
@@ -21,8 +22,8 @@
       "SelectiveDebug": "_4,_6,_8,_12,_17,",
 
 
-      "CacheBucketPurgeCount": 0,
-      "CacheBucketPurge": "tricklercache",
+      "DropBucketPurgeCount": 0,
+      "DropBucketPurge": "tricklercache",
 
       "QueueBucketPurgeCount": 0,
       "QueueBucketPurge": "tricklercache-process"

@@ -97,9 +97,9 @@ export interface tcConfig {
     // RetryQueueVisibilityTimeout: number
     // RetryQueueInitialWaitTimeSeconds: number
     EventEmitterMaxListeners: number
-    CacheBucketQuiesce: boolean
-    CacheBucketPurgeCount: number
-    CacheBucketPurge: string
+    DropBucketQuiesce: boolean
+    DropBucketPurgeCount: number
+    DropBucketPurge: string
     QueueBucketQuiesce: boolean
     QueueBucketPurgeCount: number
     QueueBucketPurge: string
@@ -191,9 +191,6 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
         tcc = await getValidateTricklerConfig()
     }
     if (tcc.SelectiveDebug.indexOf("_9,") > -1) console.info(`Selective Debug 9 - Process Environment Vars: ${JSON.stringify(process.env)}`)
-
-
-
 
     if (tcc.ProcessQueueQuiesce) 
     {
@@ -363,14 +360,14 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
     if (tcc.SelectiveDebug.indexOf("_9,") > -1) console.info(`Selective Debug 9 - Process Environment Vars: ${JSON.stringify(process.env)}`)
 
 
-    if (tcc.CacheBucketPurgeCount > 0)
+    if (tcc.DropBucketPurgeCount > 0)
     {
-        console.warn(`Purge Requested, Only action will be to Purge ${tcc.CacheBucketPurge} of ${tcc.CacheBucketPurgeCount} Records. `)
-        const d = await purgeBucket(tcc.CacheBucketPurgeCount, tcc.CacheBucketPurge)
+        console.warn(`Purge Requested, Only action will be to Purge ${tcc.DropBucketPurge} of ${tcc.DropBucketPurgeCount} Records. `)
+        const d = await purgeBucket(tcc.DropBucketPurgeCount, tcc.DropBucketPurge)
         return d
     }
 
-    if (tcc.CacheBucketQuiesce) 
+    if (tcc.DropBucketQuiesce) 
     {
         console.warn(`Trickler Cache Quiesce is in effect, new S3 Files will be ignored and not processed from the S3 Cache Bucket.\nTo Process files that have arrived during a Quiesce of the Cache, use the TricklerCacheProcess(S3File) Utility.`)
         return
@@ -786,28 +783,28 @@ async function getValidateTricklerConfig () {
             )
 
 
-        if (tc.CacheBucketQuiesce !== undefined)
+        if (tc.DropBucketQuiesce !== undefined)
         {
-            process.env.CacheBucketQuiesce = tc.CacheBucketQuiesce.toString()
+            process.env.DropBucketQuiesce = tc.DropBucketQuiesce.toString()
         }
         else
             throw new Error(
-                `Tricklercache Config invalid definition: CacheBucketQuiesce - ${tc.CacheBucketQuiesce}`,
+                `Tricklercache Config invalid definition: DropBucketQuiesce - ${tc.DropBucketQuiesce}`,
             )
 
 
-        if (tc.CacheBucketPurge !== undefined)
-            process.env.CacheBucketPurge = tc.CacheBucketPurge
+        if (tc.DropBucketPurge !== undefined)
+            process.env.DropBucketPurge = tc.DropBucketPurge
         else
             throw new Error(
-                `Tricklercache Config invalid definition: CacheBucketPurge - ${tc.CacheBucketPurge}`,
+                `Tricklercache Config invalid definition: DropBucketPurge - ${tc.DropBucketPurge}`,
             )
 
-        if (tc.CacheBucketPurgeCount !== undefined)
-            process.env.CacheBucketPurgeCount = tc.CacheBucketPurgeCount.toFixed()
+        if (tc.DropBucketPurgeCount !== undefined)
+            process.env.DropBucketPurgeCount = tc.DropBucketPurgeCount.toFixed()
         else
             throw new Error(
-                `Tricklercache Config invalid definition: CacheBucketPurgeCount - ${tc.CacheBucketPurgeCount}`,
+                `Tricklercache Config invalid definition: DropBucketPurgeCount - ${tc.DropBucketPurgeCount}`,
             )
 
         if (tc.QueueBucketQuiesce !== undefined)
@@ -1106,9 +1103,19 @@ function convertJSONToXML_DBUpdates (rows: string[], config: customerConfig) {
         {
             const lk = config.lookupKeys.split(',')
 
+            // < SYNC_FIELDS >
+            // <SYNC_FIELD> <NAME> EMAIL < /NAME>
+            // < VALUE > somebody@domain.com</VALUE> </SYNC_FIELD >
+            //     <SYNC_FIELD>
+            //     <NAME> Customer Id < /NAME>
+            //         < VALUE > 123 - 45 - 6789 < /VALUE> </SYNC_FIELD >
+            //         </SYNC_FIELDS>
+
+            debugger
+
             xmlRows += `<SYNC_FIELDS>`
             lk.forEach(k => {
-                const update = `<SYNC_FIELD><NAME>${k}</NAME><VALUE> <![CDATA[${lk}]]> </VALUE></SYNC_FIELD>`
+                const update = `<SYNC_FIELD><NAME>${k}</NAME><VALUE> <![CDATA[${rows}]]> </VALUE></SYNC_FIELD>`
                 xmlRows += update
             })
 
