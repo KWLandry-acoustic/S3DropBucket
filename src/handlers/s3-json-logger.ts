@@ -35,9 +35,15 @@ export type sqsObject = {
 
 const s3 = new S3Client({ region: 'us-east-1' })
 
+
+
 let TestPrefix = "visualcrossing"
+let localTesting = false
 
 let xmlRows: string = ''
+
+
+
 
 interface S3Object {
     Bucket: string
@@ -346,6 +352,7 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
     if (!event.Records[0].s3.object.key || event.Records[0].s3.object.key === 'devtest.csv')
     {
         event.Records[0].s3.object.key = await getAnS3ObjectforTesting(event.Records[0].s3.bucket.name, TestPrefix)
+        localTesting = true
     }
 
 
@@ -369,8 +376,11 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
 
     if (tcc.DropBucketQuiesce) 
     {
-        console.warn(`Trickler Cache Quiesce is in effect, new S3 Files will be ignored and not processed from the S3 Cache Bucket.\nTo Process files that have arrived during a Quiesce of the Cache, use the TricklerCacheProcess(S3File) Utility.`)
-        return
+        if (!localTesting)
+        {
+            console.warn(`Trickler Cache Quiesce is in effect, new S3 Files will be ignored and not processed from the S3 Cache Bucket.\nTo Process files that have arrived during a Quiesce of the Cache, use the aws cli command to copy the files from the DropBucket to the DropBucket to drive the object creation event to the Lambda function.`)
+            return
+        }
     }
 
     console.info(
@@ -1060,13 +1070,7 @@ function convertJSONToXML_RTUpdates (rows: string[], config: customerConfig) {
         xmlRows += `<ROW>`
         Object.entries(jo).forEach(([key, value]) => {
             // console.info(`Record ${r} as ${key}: ${value}`)
-
-            if (config.customer === 'visualcrossing_' && key === 'name')
-            {
-                debugger
-                xmlRows += `<COLUMN name="zip"> <![CDATA[${value}]]> </COLUMN>`
-            }
-            else xmlRows += `<COLUMN name="${key}"> <![CDATA[${value}]]> </COLUMN>`
+            xmlRows += `<COLUMN name="${key}"> <![CDATA[${value}]]> </COLUMN>`
         })
         xmlRows += `</ROW>`
     })
@@ -1089,13 +1093,15 @@ function convertJSONToXML_DBUpdates (rows: string[], config: customerConfig) {
 
     rows.forEach(jsonObj => {
         r++
+        const s = JSON.stringify(jsonObj)
+        const j = JSON.parse(s)
+
         xmlRows += `<AddRecipient><LIST_ID>${config.listId}</LIST_ID><CREATED_FROM>0</CREATED_FROM><UPDATE_IF_FOUND>true</UPDATE_IF_FOUND>`
 
         // If Keyed, then Column that is the key must be present in Column Set
         // If Not Keyed must use Lookup Fields
         // Use SyncFields as 'Lookup" values,
         //   Columns hold the Updates while SyncFields hold the 'lookup' values.
-
 
 
         //Only needed on non-keyed(In Campaign use DB -> Settings -> LookupKeys to find what fields are Lookup Keys)
@@ -1111,12 +1117,11 @@ function convertJSONToXML_DBUpdates (rows: string[], config: customerConfig) {
             //         < VALUE > 123 - 45 - 6789 < /VALUE> </SYNC_FIELD >
             //         </SYNC_FIELDS>
 
-            debugger
 
             xmlRows += `<SYNC_FIELDS>`
             lk.forEach(k => {
-                const update = `<SYNC_FIELD><NAME>${k}</NAME><VALUE> <![CDATA[${rows}]]> </VALUE></SYNC_FIELD>`
-                xmlRows += update
+                const sf = `<SYNC_FIELD><NAME>${k}</NAME><VALUE><![CDATA[${j[k]}]]></VALUE></SYNC_FIELD>`
+                xmlRows += sf
             })
 
             xmlRows += `</SYNC_FIELDS>`
@@ -1129,13 +1134,11 @@ function convertJSONToXML_DBUpdates (rows: string[], config: customerConfig) {
 
         Object.entries(jsonObj).forEach(([key, value]) => {
             // console.info(`Record ${r} as ${key}: ${value}`)
-
-            // <COLUMN> <NAME> CRM Lead Source < /NAME> <VALUE>AddUpdateContact99</VALUE > </COLUMN>
-            if (config.customer === 'visualcrossing_' && key === 'name') xmlRows += `<COLUMN><NAME>zip</NAME><VALUE><![CDATA[${value}]]></VALUE></COLUMN>`
-            else xmlRows += `<COLUMN><NAME>${key}</NAME><VALUE><![CDATA[${value}]]></VALUE></COLUMN>`
+            xmlRows += `<COLUMN><NAME>${key}</NAME><VALUE><![CDATA[${value}]]></VALUE></COLUMN>`
         })
 
         //CRM Lead Source Update 
+        //Todo: CRM Lead Source as a config option
         xmlRows += `<COLUMN><NAME>CRM Lead Source</NAME><VALUE><![CDATA[S3DropBucket]]></VALUE></COLUMN>`
 
         xmlRows += `</AddRecipient>`

@@ -10,7 +10,7 @@
       "authapiurl": "https://api-campaign-${config.region}-${config.pod}.goacoustic.com/oauth/token",
 
 
-      "DropBucketQuiesce": true,
+      "DropBucketQuiesce": false,
       "ProcessQueueQuiesce": false,
       "QueueBucketQuiesce": false,
 

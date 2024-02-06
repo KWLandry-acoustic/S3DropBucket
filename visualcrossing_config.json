@@ -5,7 +5,7 @@
         "listName": "Master_Database_KWLandry_4",
         "listType": "DBNonKeyed",
         "dbKey": "zip",
-        "lookupKeys": "zip, datetime",
+        "lookupKeys": "name, datetime",
         "pod": "2",
         "region": "us",
         "updateMaxRows": 100,
