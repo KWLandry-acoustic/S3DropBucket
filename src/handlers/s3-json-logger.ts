@@ -12,6 +12,9 @@ import fetch, { Headers, RequestInit, Response } from 'node-fetch'
 
 import { parse } from 'csv-parse'
 
+import jsonpath from 'jsonpath'
+
+
 import {
     SQSClient,
     ReceiveMessageCommand,
@@ -36,8 +39,6 @@ export type sqsObject = {
 const s3 = new S3Client({ region: 'us-east-1' })
 
 
-
-let TestPrefix = "visualcrossing"
 let localTesting = false
 
 let xmlRows: string = ''
@@ -65,7 +66,7 @@ interface customerConfig {
     refreshToken: string // API Access
     clientId: string // API Access
     clientSecret: string // API Access
-    // map: object
+    map: object
     // colVals: { [idx: string]: string }
     // columns: string[]
 }
@@ -98,6 +99,7 @@ export interface tcConfig {
     SelectiveDebug: string,
     ProcessQueueQuiesce: boolean
     reQueue: string,
+    prefixFocus: string,
     // ProcessQueueVisibilityTimeout: number
     // ProcessQueueWaitTimeSeconds: number
     // RetryQueueVisibilityTimeout: number
@@ -196,6 +198,9 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
     {
         tcc = await getValidateTricklerConfig()
     }
+
+    console.info(`The Selective Debug Set is: ${tcc.SelectiveDebug}`)
+
     if (tcc.SelectiveDebug.indexOf("_9,") > -1) console.info(`Selective Debug 9 - Process Environment Vars: ${JSON.stringify(process.env)}`)
 
     if (tcc.ProcessQueueQuiesce) 
@@ -261,7 +266,7 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
         //When Testing - get some actual work queued
         if (tqm.workKey === 'process_2_pura_2023_10_27T15_11_40_732Z.csv')
         {
-            tqm.workKey = await getAnS3ObjectforTesting('tricklercache-process', TestPrefix)
+            tqm.workKey = await getAnS3ObjectforTesting('tricklercache-process')
         }
 
         console.info(`Processing Work Queue for ${tqm.workKey}`)
@@ -334,8 +339,6 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
 
 export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Context) => {
 
-
-
     //
     // INFO Started Processing inbound data(pura_2023_11_16T20_24_37_627Z.csv)
     // INFO Completed processing inbound S3 Object Stream undefined
@@ -347,15 +350,6 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
     let delResultCode
 
 
-
-    //When Local Testing - pull an S3 Object and so avoid the not-found error
-    if (!event.Records[0].s3.object.key || event.Records[0].s3.object.key === 'devtest.csv')
-    {
-        event.Records[0].s3.object.key = await getAnS3ObjectforTesting(event.Records[0].s3.bucket.name, TestPrefix)
-        localTesting = true
-    }
-
-
     if (
         process.env.EventEmitterMaxListeners === undefined ||
         process.env.EventEmitterMaxListeners === '' ||
@@ -364,7 +358,17 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
     {
         tcc = await getValidateTricklerConfig()
     }
+
+    console.info(`The Selective Debug Set is: ${tcc.SelectiveDebug}`)
+
     if (tcc.SelectiveDebug.indexOf("_9,") > -1) console.info(`Selective Debug 9 - Process Environment Vars: ${JSON.stringify(process.env)}`)
+
+    //When Local Testing - pull an S3 Object and so avoid the not-found error
+    if (!event.Records[0].s3.object.key || event.Records[0].s3.object.key === 'devtest.csv')
+    {
+        event.Records[0].s3.object.key = await getAnS3ObjectforTesting(event.Records[0].s3.bucket.name)
+        localTesting = true
+    }
 
 
     if (tcc.DropBucketPurgeCount > 0)
@@ -399,6 +403,7 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
         key = r.s3.object.key
         const bucket = r.s3.bucket.name
 
+        if (!key.startsWith(tcc.prefixFocus)) return
 
         //ToDo: Resolve Duplicates Issue - S3 allows Duplicate Object Names but Delete marks all Objects of same Name Deleted. 
         //   Which causes an issue with Key Not Found after an Object of Name A is processed and deleted, then another Object of Name A comes up in a Trigger.
@@ -420,31 +425,22 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
         try
         {
             processS3ObjectStreamResolution = await processS3ObjectContentStream(key, bucket, customersConfig)
-                .then(async (p: {}) => {
+                .then(async (p) => {
+
                     debugger
-                    const t = JSON.stringify(p)
-                    const m = t.substring(t.indexOf('Processed '), t.length)
+
+                    const res: string = JSON.stringify(p)
+
+                    const m = res.substring(res.indexOf('Processed '), res.length)
                     // "S3 Content Stream Ended for pura_2024_01_27T15_24_31_911Z.csv. Processed 78 records as 1 batches."
 
                     console.info(`Completed processing all records of the S3 Object ${key}. ${m}`)
 
-                    const res: string = JSON.stringify(p)
 
-                    //     processS3ObjectStream{
-                    //         OnStreamEndResult: "S3 Content Stream Ended for pura_2024_01_25T01_43_15_416Z.csv. Processed 32 records as 1 batches.",
-                    //             OnCloseResult: "S3 Content Stream Closed for pura_2024_01_25T01_43_15_416Z.csv",
-                    //                 OnEndStoreQueueResult: {
-                    //             AddWorkToS3ProcessBucketResults: {
-                    //                 S3ProcessBucketResult: "200",
-                    //                     AddWorkToS3ProcessBucket: "Wrote Work File (process_1_pura_2024_01_25T01_43_15_416Z_csv.xml) to S3 Processing Bucket (Result 200)",
-                    // },
-                    //             AddWorkToSQSProcessQueueResults: {
-                    //                 SQSWriteResult: "200",
-                    //                     SQSQueued_Metadata: "{\"$metadata\":{\"httpStatusCode\":200,\"requestId\":\"f8026976-f6d5-576c-b623-37465848963a\",\"attempts\":1,\"totalRetryDelay\":0},\"MD5OfMessageAttributes\":\"ecbf774db07230321b7c431cc9c2e4bd\",\"MD5OfMessageBody\":\"034de727ae2b9028b69328dffa1e23f0\",\"MessageId\":\"e256b0db-14f2-474d-be7d-3f4fa09afbe4\"}",
-                    // },
-                    //         },
-                    //     }
 
+                    // "{\"OnEndStreamEndResult\":\"S3 Content Stream Ended for pura_2024_02_06T18_53_39_117Z.json. Processed 1 records as 1 batches.\",\"OnCloseResult\":\"S3 Content Stream Closed for pura_2024_02_06T18_53_39_117Z.json\",\"OnEndStoreQueueResult\":{\"AddWorkToS3ProcessBucketResults\":{\"S3ProcessBucketResult\":\"200\",\"AddWorkToS3ProcessBucket\":\"Wrote Work File (pura_2024_02_06T18_53_39_117Z_json_update_1.xml) to S3 Processing Bucket (Result 200)\"},\"AddWorkToSQSProcessQueueResults\":{\"SQSWriteResult\":\"200\",\"SQSQueued_Metadata\":\"{\\\"$metadata\\\":{\\\"httpStatusCode\\\":200,\\\"requestId\\\":\\\"09a22ec4-f4de-5ff3-9d64-70f85970c5e6\\\",\\\"attempts\\\":1,\\\"totalRetryDelay\\\":0},\\\"MD5OfMessageAttributes\\\":\\\"9e4190fa2a65416b50c4fb048df384d5\\\",\\\"MD5OfMessageBody\\\":\\\"d690df155f4c619dd1a10814054768b1\\\",\\\"MessageId\\\":\\\"6fed0be3-b323-4da5-b700-9492b105b297\\\"}\"}}}"
+
+                    if (tcc.SelectiveDebug.indexOf("_11,") > -1) console.info(`Selective Debug${res}`)
 
                     if (res.indexOf('S3ProcessBucketResult":"200"') > -1 &&
                         res.indexOf('SQSWriteResult":"200"') > -1)
@@ -519,7 +515,7 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
 
     let processS3Object = await s3.send(new GetObjectCommand({
         Key: key,
-        Bucket: bucket,
+        Bucket: bucket
     })
     )
         .then(async (getS3StreamResult: GetObjectCommandOutput) => {
@@ -590,21 +586,25 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
                         const errMessage = `An error has stopped Content Parsing at record ${recs} for s3 object ${key}.\n${err}`
                         console.error(errMessage)
 
-                        chunks = []
+                        chunks: JSON = {} as JSON
                         batchCount = 0
                         recs = 0
-                        throw new Error(errMessage)
+                        throw new Error(`Error on Readable Stream for DropBucket Object ${key}. \nError Message: ${errMessage}`)
                         // reject(streamResult)
                     })
-
-                    .on('data', async function (s3Chunk: string) {
+                    .on('data', async function (s3Chunk: JSON) {
                         recs++
                         if (recs > custConfig.updateMaxRows) throw new Error(`The number of Updates in this batch Exceeds Max Row Updates allowed ${recs} in the Customers Config. S3 Object ${key} will not be deleted to allow for review and possible restaging.`)
 
                         if (tcc.SelectiveDebug.indexOf("_13,") > -1) console.info(`Selective Debug 13 - s3ContentStream OnData - Another chunk (ArrayLen:${chunks.length} Recs:${recs} Batch:${batchCount} from ${key} - ${JSON.stringify(s3Chunk)}`)
 
-                        chunks.push(s3Chunk)
 
+                        const appliedMap = applyMap(s3Chunk, custConfig.map)
+
+                        // chunks.push(s3Chunk)
+                        chunks = { ...chunks, ...appliedMap }
+
+                        debugger
                         if (chunks.length > 98)
                         {
                             batchCount++
@@ -633,24 +633,34 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
                         streamResult = {
                             ...streamResult, "OnEndStreamEndResult": streamEndResult
                         }
+                        debugger
+                        if (recs < 1 && chunks.length < 1)
+                        {
+                            streamResult = {
+                                ...streamResult, "Exception - ": `Exception - No records returned from parsing file. Check the content as well as the configured file format (${custConfig.format}) matches the content of the file.`
+                            }
+                            console.error(`Exception - ${JSON.stringify(streamResult)}`)
+                            throw new Error(`Exception - ${streamResult}`)
+                        }
 
                         if (tcc.SelectiveDebug.indexOf('_99,') > -1) saveSampleJSON(JSON.stringify(chunks))
 
+                        debugger
 
                         const d = chunks
                         chunks = []
 
-                        if (d.length > 0)
-                        {
-                            const storeQueueResult = await storeAndQueueWork(d, key, custConfig, batchCount)
-                            // "{\"AddWorkToS3ProcessBucketResults\":{\"AddWorkToS3ProcessBucket\":\"Wrote Work File (process_0_pura_2024_01_22T18_02_46_119Z_csv.xml) to S3 Processing Bucket (Result 200)\",\"S3ProcessBucketResult\":\"200\"},\"AddWorkToSQSProcessQueueResults\":{\"sqsWriteResult\":\"200\",\"workQueuedSuccess\":true,\"SQSSendResult\":\"{\\\"$metadata\\\":{\\\"httpStatusCode\\\":200,\\\"requestId\\\":\\\"e70fba06-94f2-5608-b104-e42dc9574636\\\",\\\"attempts\\\":1,\\\"totalRetryDelay\\\":0},\\\"MD5OfMessageAttributes\\\":\\\"0bca0dfda87c206313963daab8ef354a\\\",\\\"MD5OfMessageBody\\\":\\\"940f4ed5927275bc93fc945e63943820\\\",\\\"MessageId\\\":\\\"cf025cb3-dce3-4564-89a5-23dcae86dd42\\\"}\"}}"
-                            streamResult = {
-                                ...streamResult, "OnEndStoreQueueResult": storeQueueResult
-                            }
-
-                            if (tcLogDebug) console.info(`Store and Queue Work Result: ${storeQueueResult}`)
-                            if (tcc.SelectiveDebug.indexOf("_2,") > -1) console.info(`Selective Debug 2: Content Stream OnEnd for (${key}) - Store and Queue Work of ${batchCount + 1} Batches of ${d.length} records - Result: \n${JSON.stringify(storeQueueResult)}`)
+                        // if (d.length > 0)
+                        // {
+                        const storeQueueResult = await storeAndQueueWork(d, key, custConfig, batchCount)
+                        // "{\"AddWorkToS3ProcessBucketResults\":{\"AddWorkToS3ProcessBucket\":\"Wrote Work File (process_0_pura_2024_01_22T18_02_46_119Z_csv.xml) to S3 Processing Bucket (Result 200)\",\"S3ProcessBucketResult\":\"200\"},\"AddWorkToSQSProcessQueueResults\":{\"sqsWriteResult\":\"200\",\"workQueuedSuccess\":true,\"SQSSendResult\":\"{\\\"$metadata\\\":{\\\"httpStatusCode\\\":200,\\\"requestId\\\":\\\"e70fba06-94f2-5608-b104-e42dc9574636\\\",\\\"attempts\\\":1,\\\"totalRetryDelay\\\":0},\\\"MD5OfMessageAttributes\\\":\\\"0bca0dfda87c206313963daab8ef354a\\\",\\\"MD5OfMessageBody\\\":\\\"940f4ed5927275bc93fc945e63943820\\\",\\\"MessageId\\\":\\\"cf025cb3-dce3-4564-89a5-23dcae86dd42\\\"}\"}}"
+                        streamResult = {
+                            ...streamResult, "OnEndStoreQueueResult": storeQueueResult
                         }
+
+                        if (tcLogDebug) console.info(`Store and Queue Work Result: ${storeQueueResult}`)
+                        if (tcc.SelectiveDebug.indexOf("_2,") > -1) console.info(`Selective Debug 2: Content Stream OnEnd for (${key}) - Store and Queue Work of ${batchCount + 1} Batches of ${d.length} records - Result: \n${JSON.stringify(storeQueueResult)}`)
+                        // }
 
                         batchCount = 0
                         recs = 0
@@ -670,15 +680,15 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
                     })
                 // #region
 
-                return { ...streamResult }
+                return { ...streamResult, "ReturnLocation": `Returning from ReadStream. ` }
 
             })
-                .then(() => {
-
-                    return { ...streamResult }
+                .then((r) => {
+                    console.info(`${JSON.stringify(streamResult)} "ReturnLocation": "Returning from ReadStream Then Clause.\n${r}`)
+                    return { ...streamResult, "ReturnLocation": `Returning from ReadStream Then Clause. \n${r}` }
                 })
                 .catch(e => {
-                    const err = `Exception - Process S3 Object Content Stream for ${key}.\nResults: ${JSON.stringify(streamResult)}.\n${e} `
+                    const err = `Exception - ReadStream (catch) - Process S3 Object Content Stream for ${key}.\nResults: ${JSON.stringify(streamResult)}.\n${e} `
                     console.error(err)
                     throw new Error(err)
                 })
@@ -686,17 +696,39 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
             return readStream
         })
         .catch(e => {
-            console.error(`Exception - Process S3 Object Content Stream for ${key}.\nResults: ${JSON.stringify(streamResult)}.\n${e} `)
+            console.error(`Exception (error) - Process S3 Object Content Stream for ${key}.\nResults: ${JSON.stringify(streamResult)}.\n${e} `)
 
-            throw new Error(`Exception - Process S3 Object Content Stream for ${key}.\nResults: ${JSON.stringify(streamResult)}.\n${e} `)
+            throw new Error(`Exception (throw) - Process S3 Object Content Stream for ${key}.\nResults: ${JSON.stringify(streamResult)}.\n${e} `)
         })
-
-    return { ...processS3Object }
 
 }
 
 
+function applyMap (chunk: JSON, map: Object) {
 
+    Object.entries(map).forEach(([k, v]) => {
+
+        try
+        {
+            Object.assign(chunk, { [k]: jsonpath.value(chunk, v) })
+
+        } catch (e)
+        {
+            console.error(`Error parsing JSONPath Statement ${k} ${v}, ${e}`)
+        }
+
+        // const a1 = jsonpath.parse(value)
+        // const a2 = jsonpath.parent(s3Chunk, value)
+        // const a3 = jsonpath.paths(s3Chunk, value)
+        // const a4 = jsonpath.query(s3Chunk, value)
+        // const a6 = jsonpath.value(s3Chunk, value)
+
+        //Confirms Update was accomplished 
+        // const j = jsonpath.query(s3Chunk, v)
+        // console.log(`${j}`)
+    })
+    return chunk
+}
 
 
 async function checkForTCConfigUpdates () {
@@ -845,7 +877,15 @@ async function getValidateTricklerConfig () {
         // else                 //ReQueue is optional
         //     throw new Error(
         //         `Tricklercache Config invalid definition: ReQueue - ${tc.reQueue}`,
-        //     )
+        //     )        
+
+
+        if (tc.prefixFocus !== undefined)
+        {
+            process.env.TricklerProcessPrefix = tc.prefixFocus
+            console.warn(`A Prefix Focus has been configured. Only DropBucket Objects with the prefix "${tc.prefixFocus}" will be processed.`)
+        }
+
 
     } catch (e)
     {
@@ -985,6 +1025,30 @@ async function validateCustomerConfig (config: customerConfig) {
         throw new Error("Invalid Config - Update set as Database NonKeyed but lookupKeys is not defined. ")
     }
 
+    if (!config.map)
+    {
+        config.map = {}
+    }
+    // else
+    // {
+    //     config.map = { ...config.map}
+    // }
+
+    let tmpMap: Record<string, string> = {}
+    Object.entries(config.map).forEach(([key, value]) => {
+        try
+        {
+            const v = jsonpath.stringify(value)
+            tmpMap[key] = value
+
+        }
+        catch (e)
+        {
+            console.error(`Error parsing JSONPath Statement for ${key}:"${value}", Invalid JSONPath - ${e}`)
+        }
+        config.map = tmpMap
+    })
+
     return config as customerConfig
 }
 
@@ -1055,6 +1119,8 @@ async function storeAndQueueWork (chunks: string[], s3Key: string, config: custo
     //         workQueuedSuccess: true,
     //         SQSSendResult: "{\"$metadata\":{\"httpStatusCode\":200,\"requestId\":\"e70fba06-94f2-5608-b104-e42dc9574636\",\"attempts\":1,\"totalRetryDelay\":0},\"MD5OfMessageAttributes\":\"0bca0dfda87c206313963daab8ef354a\",\"MD5OfMessageBody\":\"940f4ed5927275bc93fc945e63943820\",\"MessageId\":\"cf025cb3-dce3-4564-89a5-23dcae86dd42\"}",
     // }
+
+    if (tcc.SelectiveDebug.indexOf("_15,") > -1) console.info(`Selective Debug 15 - Results of Store and Queue of Updates - Add to Proces Bucket: ${JSON.stringify(AddWorkToS3ProcessBucketResults)}\n Add to Process Queue: ${JSON.stringify(AddWorkToSQSProcessQueueResults)}`)
 
     return { AddWorkToS3ProcessBucketResults, AddWorkToSQSProcessQueueResults }
 }
@@ -1203,49 +1269,6 @@ async function addWorkToS3ProcessStore (queueContent: string, key: string) {
 }
 
 
-async function requeueWork (customer: string) {
-    const cc = await getCustomerConfig(customer)
-
-    const bucket = 'tricklercache-process'
-
-    const listReq = {
-        Bucket: bucket,
-        MaxKeys: 1000,
-        ifMatch: customer
-    } as ListObjectsV2CommandInput
-
-    let q = 0
-    let isTruncated: boolean | unknown = true
-
-    debugger
-
-    try
-    {
-        while (isTruncated)
-        {
-            await s3.send(new ListObjectsV2Command(listReq))
-                .then(async (s3ListResult: ListObjectsV2CommandOutput) => {
-
-                    listReq.ContinuationToken = s3ListResult?.NextContinuationToken
-                    isTruncated = s3ListResult?.IsTruncated
-
-                    s3ListResult.Contents?.forEach(async (listItem) => {
-                        q++
-                        const r = await addWorkToSQSProcessQueue(cc, listItem.Key as string, "", "")
-                        if (r.SQSWriteResult !== '200') console.error(`Non Successful return, received ${r} ) on ReQueue of ${listItem.Key} `)
-                    })
-                })
-        }
-    } catch (e)
-    {
-        console.error(`Exception - While Requeuing ${customer} Updates from Process bucket: \n${e} `)
-    }
-
-    console.info(`Requeued ${q} Updates of ${customer} from Process bucket`)
-
-    return `Requeued ${q} Updates of ${customer} from Process bucket`
-}
-
 async function addWorkToSQSProcessQueue (config: customerConfig, key: string, batch: string, recCount: string) {
 
     const sqsQMsgBody = {} as tcQueueMessage
@@ -1319,6 +1342,49 @@ async function addWorkToSQSProcessQueue (config: customerConfig, key: string, ba
     return { "SQSWriteResult": sqsWriteResult, "SQSQueued_Metadata": SQSSendResult }
 }
 
+
+async function requeueWork (customer: string) {
+    const cc = await getCustomerConfig(customer)
+
+    const bucket = 'tricklercache-process'
+
+    const listReq = {
+        Bucket: bucket,
+        MaxKeys: 1000,
+        ifMatch: customer
+    } as ListObjectsV2CommandInput
+
+    let q = 0
+    let isTruncated: boolean | unknown = true
+
+    debugger
+
+    try
+    {
+        while (isTruncated)
+        {
+            await s3.send(new ListObjectsV2Command(listReq))
+                .then(async (s3ListResult: ListObjectsV2CommandOutput) => {
+
+                    listReq.ContinuationToken = s3ListResult?.NextContinuationToken
+                    isTruncated = s3ListResult?.IsTruncated
+
+                    s3ListResult.Contents?.forEach(async (listItem) => {
+                        q++
+                        const r = await addWorkToSQSProcessQueue(cc, listItem.Key as string, "", "")
+                        if (r.SQSWriteResult !== '200') console.error(`Non Successful return, received ${r} ) on ReQueue of ${listItem.Key} `)
+                    })
+                })
+        }
+    } catch (e)
+    {
+        console.error(`Exception - While Requeuing ${customer} Updates from Process bucket: \n${e} `)
+    }
+
+    console.info(`Requeued ${q} Updates of ${customer} from Process bucket`)
+
+    return `Requeued ${q} Updates of ${customer} from Process bucket`
+}
 
 // async function reQueue (sqsevent: SQSEvent, queued: tcQueueMessage) {
 
@@ -1645,11 +1711,11 @@ function checkMetadata () {
     //ToDo:  Log where Columns are not matching
 }
 
-async function getAnS3ObjectforTesting (bucket: string, prefix: string) {
+async function getAnS3ObjectforTesting (bucket: string) {
     const listReq = {
         Bucket: bucket,
         MaxKeys: 11,
-        Prefix: prefix
+        Prefix: tcc.prefixFocus
     } as ListObjectsV2CommandInput
 
     let s3Key: string = ''
