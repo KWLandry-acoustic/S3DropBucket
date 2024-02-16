@@ -58,13 +58,13 @@ Resources:
         Sourcemap: false
         Target: node18.12
       SamResourceId: s3DropBucketFunction
-  tricklerQueueProcessorFunction:
+  S3DropBucketQueueProcessorFunction:
     Type: AWS::Serverless::Function
     Properties:
       Description: A Lambda function triggered on a file sent to an S3 bucket.
       Role: arn:aws:iam::777957353822:role/tricklercacheExecutionRole
       CodeUri: s3://aws-us-east-1-777957353822-tricklercache-pipe/8c9dbf85b43c564e8ae403c9efdff0ed
-      Handler: s3DropBucket.tricklerQueueProcessorHandler
+      Handler: s3DropBucket.S3DropBucketQueueProcessorHandler
       Runtime: nodejs18.x
       Architectures:
       - x86_64

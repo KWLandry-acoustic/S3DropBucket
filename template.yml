@@ -74,7 +74,7 @@ Resources:
             - '@aws-sdk/fetch-http-handlerdeps/node-fetch'
             - '@aws-sdk/client3/package.json'
   
-  tricklerQueueProcessorFunction:
+  S3DropBucketQueueProcessorFunction:
     # Type: "AWS::Lambda::Function"
     Type: AWS::Serverless::Function
     Properties:
@@ -87,7 +87,7 @@ Resources:
       Role: arn:aws:iam::777957353822:role/tricklercacheExecutionRole 
       CodeUri: ./
       # CodeUri: src/handlers/          #---Gets reBuilt in SAM Package 
-      Handler: s3DropBucket.tricklerQueueProcessorHandler
+      Handler: s3DropBucket.S3DropBucketQueueProcessorHandler
       Runtime: nodejs18.x
       Architectures: 
         - x86_64

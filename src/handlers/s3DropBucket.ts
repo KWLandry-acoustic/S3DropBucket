@@ -331,7 +331,7 @@ export const s3DropBucketSFTPHandler: Handler = async (event: SQSEvent, context:
 /**
  * A Lambda function to process the Event payload received from SQS - AWS Queues.
  */
-export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, context: Context) => {
+export const S3DropBucketQueueProcessorHandler: Handler = async (event: SQSEvent, context: Context) => {
 
     if (
         process.env.ProcessQueueVisibilityTimeout === undefined ||
