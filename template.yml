@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: 2010-09-09
-Description: Lambda-S3 TricklerCache Project
+Description: Lambda-S3 DropBucket Project
 Transform: AWS::Serverless-2016-10-31
 Globals: 
   Function:
@@ -25,11 +25,11 @@ Resources:
         CompatibleRuntimes:
           - nodejs18.x
 
-  s3JsonLoggerFunction:
+  s3DropBucketFunction:
     # Type: "AWS::Lambda::Function"
     Type: AWS::Serverless::Function
     Properties:
-      Description: A Lambda function triggered on a file sent to an S3 bucket.
+      Description: A Lambda function triggered on a file dropped on an S3 bucket. The file is then processsed for Impor/Update work with the work Queued to be processed as fast as Campaign APIs allow. 
       Environment:
         Variables:
           Version: !Ref AppId 
@@ -38,7 +38,7 @@ Resources:
       Role: arn:aws:iam::777957353822:role/tricklercacheExecutionRole 
       CodeUri: ./
       # CodeUri: src/handlers/          #---Gets reBuilt in SAM Package 
-      Handler: s3-json-logger.s3JsonLoggerHandler
+      Handler: s3DropBucket.s3DropBucketHandler
       Runtime: nodejs18.x
       Architectures: 
         - x86_64
@@ -66,7 +66,7 @@ Resources:
           - .js=.mjs
         Sourcemap: inline
         EntryPoints: 
-          - src/handlers/s3-json-logger.ts
+          - src/handlers/s3DropBucket.ts
         External: 
             - '@aws-sdk/client-s3'
             - 'node-fetch'
@@ -87,7 +87,7 @@ Resources:
       Role: arn:aws:iam::777957353822:role/tricklercacheExecutionRole 
       CodeUri: ./
       # CodeUri: src/handlers/          #---Gets reBuilt in SAM Package 
-      Handler: s3-json-logger.tricklerQueueProcessorHandler
+      Handler: s3DropBucket.tricklerQueueProcessorHandler
       Runtime: nodejs18.x
       Architectures: 
         - x86_64
@@ -115,7 +115,7 @@ Resources:
           - .js=.mjs
         Sourcemap: inline
         EntryPoints: 
-          - src/handlers/s3-json-logger.ts
+          - src/handlers/s3DropBucket.ts
         External: 
             - '@aws-sdk/client-s3'
             - 'node-fetch'
@@ -123,6 +123,56 @@ Resources:
             - '@aws-sdk/fetch-http-handlerdeps/node-fetch'
             - '@aws-sdk/client3/package.json'
   
+  s3DropBucketSFTPFunction:
+    # Type: "AWS::Lambda::Function"
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: A Lambda function triggered on a file sent to an S3 bucket.
+      Environment:
+        Variables:
+          Version: !Ref AppId 
+          # NODE_OPTIONS: --enable-source-map --trace-warnings --unhandled-rejections=warn
+          NODE_OPTIONS: --trace-warnings --unhandled-rejections=warn
+      Role: arn:aws:iam::777957353822:role/tricklercacheExecutionRole 
+      CodeUri: ./
+      # CodeUri: src/handlers/          #---Gets reBuilt in SAM Package 
+      Handler: s3DropBucket.s3DropBucketSFTPHandler
+      Runtime: nodejs18.x
+      Architectures: 
+        - x86_64
+      MemorySize: 752
+      Timeout: 30
+      Policies:
+        - S3ReadPolicy:
+            BucketName: !Sub ${BucketName} 
+      Layers:
+        - !Ref dependencyLayer
+    # #Build Parameters
+    Metadata:    
+      BuildMethod: esbuild
+      Architecture: x86_64
+      BuildProperties:
+        # Target: es2020
+        Target: node18.12
+        Format: esm
+        Platform: node
+        Packages: external
+        # mainFields: 
+        #   --main-fields=module, main
+        Minify: false
+        OutExtension:
+          - .js=.mjs
+        Sourcemap: inline
+        EntryPoints: 
+          - src/handlers/s3DropBucket.ts
+        External: 
+            - '@aws-sdk/client-s3'
+            - 'node-fetch'
+            - 'nodejs'
+            - '@aws-sdk/fetch-http-handlerdeps/node-fetch'
+            - '@aws-sdk/client3/package.json'
+  
+
   # Not defined here yet
   # SQS Queues - tricklercacheQueue
   #   Remember to use when defining: "FunctionResponseTypes": ["ReportBatchItemFailures"]

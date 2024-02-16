@@ -4,10 +4,10 @@
 codeuri = "./"
 runtime = "nodejs18.x"
 architecture = "x86_64"
-handler = "s3-json-logger.s3JsonLoggerHandler"
+handler = "s3DropBucket.s3DropBucketHandler"
 manifest_hash = "4de50a0c776047a913288081b082ede1"
 packagetype = "Zip"
-functions = ["s3JsonLoggerFunction"]
+functions = ["s3DropBucketFunction"]
 
 [function_build_definitions.507a273e-7695-457a-a57f-d8a51f1d92ce.metadata]
 CodeUri = "./"
@@ -19,7 +19,7 @@ Minify = true
 OutExtension = [".js=.mjs"]
 Target = "es2020"
 Sourcemap = true
-EntryPoints = [".aws-sam/build/s3JsonLoggerFunction/s3-json-logger.mjs",]
+EntryPoints = [".aws-sam/build/s3DropBucketFunction/s3DropBucket.mjs",]
 External = ['@aws-sdk/client-s3', 'node-fetch', '@aws-sdk/protocol-http']
 
 

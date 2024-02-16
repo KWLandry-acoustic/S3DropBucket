@@ -19,13 +19,13 @@ Resources:
       ContentUri: s3://aws-us-east-1-777957353822-tricklercache-pipe/3c0fd418514675966096fdbbd27167fd
       CompatibleRuntimes:
       - nodejs18.x
-  s3JsonLoggerFunction:
+  s3DropBucketFunction:
     Type: AWS::Serverless::Function
     Properties:
       Description: A Lambda function triggered on a file sent to an S3 bucket.
       Role: arn:aws:iam::777957353822:role/tricklercacheExecutionRole
       CodeUri: s3://aws-us-east-1-777957353822-tricklercache-pipe/8c9dbf85b43c564e8ae403c9efdff0ed
-      Handler: s3-json-logger.s3JsonLoggerHandler
+      Handler: s3-json-logger.s3DropBucketHandler
       Runtime: nodejs18.x
       Architectures:
       - x86_64
@@ -42,7 +42,7 @@ Resources:
       BuildMethod: esbuild
       BuildProperties:
         EntryPoints:
-        - src/handlers/s3-json-logger.ts
+        - src/handlers/s3DropBucket.ts
         External:
         - '@aws-sdk/client-s3'
         - node-fetch
@@ -57,14 +57,14 @@ Resources:
         Platform: node
         Sourcemap: false
         Target: node18.12
-      SamResourceId: s3JsonLoggerFunction
+      SamResourceId: s3DropBucketFunction
   tricklerQueueProcessorFunction:
     Type: AWS::Serverless::Function
     Properties:
       Description: A Lambda function triggered on a file sent to an S3 bucket.
       Role: arn:aws:iam::777957353822:role/tricklercacheExecutionRole
       CodeUri: s3://aws-us-east-1-777957353822-tricklercache-pipe/8c9dbf85b43c564e8ae403c9efdff0ed
-      Handler: s3-json-logger.tricklerQueueProcessorHandler
+      Handler: s3DropBucket.tricklerQueueProcessorHandler
       Runtime: nodejs18.x
       Architectures:
       - x86_64
@@ -81,7 +81,7 @@ Resources:
       BuildMethod: esbuild
       BuildProperties:
         EntryPoints:
-        - src/handlers/s3-json-logger.ts
+        - src/handlers/s3DropBucket.ts
         External:
         - '@aws-sdk/client-s3'
         - node-fetch
@@ -96,4 +96,43 @@ Resources:
         Platform: node
         Sourcemap: false
         Target: node18.12
-      SamResourceId: s3JsonLoggerFunction
+      SamResourceId: s3DropBucketFunction
+  s3DropBucketSFTPFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: A Lambda function triggered on a file sent to an S3 bucket.
+      Role: arn:aws:iam::777957353822:role/tricklercacheExecutionRole
+      CodeUri: s3://aws-us-east-1-777957353822-tricklercache-pipe/8c9dbf85b43c564e8ae403c9efdff0ed
+      Handler: s3DropBucket.s3DropBucketSFTPHandler
+      Runtime: nodejs18.x
+      Architectures:
+      - x86_64
+      MemorySize: 624
+      Timeout: 899
+      Policies:
+      - S3ReadPolicy:
+          BucketName:
+            Fn::Sub: ${BucketName}
+      Layers:
+      - Ref: dependencyLayer
+    Metadata:
+      Architecture: x86_64
+      BuildMethod: esbuild
+      BuildProperties:
+        EntryPoints:
+        - src/handlers/s3DropBucket.ts
+        External:
+        - '@aws-sdk/client-s3'
+        - node-fetch
+        - nodejs
+        - '@aws-sdk/fetch-http-handlerdeps/node-fetch'
+        - '@aws-sdk/client3/package.json'
+        Format: esm
+        Minify: false
+        OutExtension:
+        - .js=.mjs
+        Packages: external
+        Platform: node
+        Sourcemap: false
+        Target: node18.12
+      SamResourceId: s3DropBucketFunction

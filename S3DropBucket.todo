@@ -1,38 +1,81 @@
 Future: 
-  Todo: Periodic URL call - pull data - VisualCrossing Weather Data
+  ToDo: Periodic URL call - pull data - VisualCrossing Weather Data
     Notes: Using AWS Example - 
-  
-  Todo: Look into using AWS Transfer Family Solution (SFTP, et. al.) 
+
+  ToDo: Look into using AWS Transfer Family Solution (SFTP, et. al.) 
+  ToDo: Extract Data from the SFTP Download folder 
+
+
+Documentation DropBox: 
+  ToDo: Word Template
+
+Documentation Data Cookbook - Ingesting and Transforming Data using S3 DropBox and other methods:
+  ToDo: Word Template
+
 
 SegmentConnector: 
-  Todo: Complete Test of latest
-  Todo: Create PR
-DropBox Interface: 
+  ✔ Todo: Complete Test of latest @created(24-02-14 12:03) @done(24-02-14 12:03)
+  ✔ Todo: Create PR @created(24-02-14 12:03) @done(24-02-14 12:03)
+  ToDo: Confirm last update data arriving, no issues,
+  ToDo: review all material for Catalog PR 
+  ToDo: Create PR for Catalog Entry
+  ToDo: Confirm Catalog Entry correctness and completion
 
+DropBox UI Interface: 
   ☐ ToDo: Stand up an Interface to View and Edit Customer Configs @created(24-01-31 12:54)
   ☐ Todo: Stand up a Reporting Interface @created(24-01-31 12:25)
   ☐ ToDo: Interface to view Logs/Errors (echo cloudwatch logs?) @created(24-01-31 12:55)
   ☐ ToDo: Keep an eye on Anomaly Detection Reports @created(24-02-02 13:49)
   ☐ ToDo: Add DeadLetterQueue Report - need a report to list all DLQ Events in order to @created(24-01-31 12:55)
     be able to work / troubleshoot the issue
+
+
+Dropbox SFTP Connector:
+  ToDo: create another lambda for SFTP Work
+   
+
 DropBox Queue Processor:
 
-    DONE: Currently throttled to a single event each time, Add processing of multiple Events per invocation
-    
+    ✔ Todo: Currently throttled to a single event each time, Add processing of multiple Events per invocation @created(24-02-14 12:04) @done(24-02-14 12:04)
     ✔ ToDo: Process to ReParse Cache and create Work Files @created(24-02-03 18:29) @done(24-02-03 18:29)
     
     ToDo: Column mapping - Inbound Column Name to Table Column Mapping
     ToDo: Type Validation - Inbound Data type validation to Mapping Type
-    
+        ✔ ToDo: Confirm SQS Queue deletes queued work @created(24-02-03 18:24) @done(24-02-03 18:24)
 
     //ToDo: Resolve the progression of these steps, currently "Completed" is logged regardless of 'completion'
     // and Delete happens regardless of 'completion' being successful or not
+  ☐ ToDo: Confirm BatchItemFails are returned to Queue @created(24-01-31 12:55)
+        Should be returned to Queue for retry
+  ☐ ToDo: Check on recovery from Invalid Access/Expired Token Exceptions @created(24-01-31 12:55)
+        "access token has expired"
+        Should be returned to Queue for retry
+  ☐ ToDo: Check on recovery/reporting for "Error Saving Row" Errors @created(24-01-31 12:55)
+`<FAILURE failure_type="transient" description="Error saving row">
+  <COLUMN name="EventValue" > <![CDATA[renee.lankford@gmail.com]]> </COLUMN>
+      < COLUMN name = "EventSource" > <![CDATA[track Event]]> </COLUMN>
+          < COLUMN name = "Email" > <![CDATA[renee.lankford@gmail.com]]> </COLUMN>
+              < COLUMN name = "EventTimestamp" > <![CDATA[2024-01-18T15: 45: 31.037Z]]> </COLUMN>
+                  < COLUMN name = "EventName" > <![CDATA[email]]> </COLUMN>
+                      < /FAILURE>
+  `
+  ☐ ToDo: Check on recovery/retry for ECONNRESET errors @created(24-01-31 12:55)
+        Should be returned to Queue for retry
+` eventTimestamp
+  2024-01 - 20T17: 10: 54.871-05:00
+  logEvent
+  2024-01 - 20T22: 10: 54.871Z	589a5cd9 - 6126 - 505e-89cd-02ff260c8c9a	ERROR	Exception processing a Work File(process_0_pura_2024_01_20T21_25_08_509Z.csv -
+      Error- Exception during getAccessToken:
+      FetchError: request to https://api-campaign-us-2.goacoustic.com/oauth/token 
+            failed, reason: read ECONNRESET 
+  `        
 
-DropBox Processor: 
+
+DropBox S3 Processor: 
   ☐ Debug: S3 Event delivered to Lambda but Lambda then reports File Key Not Found.... @created(24-01-31 12:35)
   ☐ Debug: SQS Event in Batch, file processed and deleted Same event in Batch again, but file already deleted. @created(24-01-31 12:36)
   ☐ Debug: DropBox file deleted after Exception processing the file, @created(24-01-31 12:36)
-  ☐ Debug: VisualC not updating @created(24-01-31 12:36)
+  ✔ Debug: VisualC not updating @created(24-01-31 12:36) @done(24-02-14 12:10)
   ☐ Debug: Resolve SaveSample exception @created(24-01-31 12:36)
     `   2024-01 - 31T02: 18: 59.176Z	624ac595 - 1a20 - 4fc8 - 9919 -09c4d51cb07c	ERROR	Unhandled Promise Rejection
         {
@@ -58,10 +101,8 @@ DropBox Processor:
               "    at processPromiseRejections (node:internal/process/promises:278:11)",
               "    at process.processTicksAndRejections (node:internal/process/task_queues:96:32)"
         ]
-        }
-  `
+        }`
 
-    ✔ ToDo: Confirm SQS Queue deletes queued work @created(24-02-03 18:24) @done(24-02-03 18:24)
     ✔ ToDo: Confirm Retry of SQS Events (When Campaign throttles) works @created(24-02-03 18:24) @done(24-02-03 18:24)
 
    ☐ Todo: Report on all Objects that get "Unhandled Promise Rejection" Errors: @created(24-02-02 13:47)
@@ -69,35 +110,9 @@ DropBox Processor:
         ☐ *Can see "Unhandled" in Logs* @created(24-02-02 13:47)
 
 
-  ☐ ToDo: Confirm BatchItemFails are returned to Queue @created(24-01-31 12:55)
-        Should be returned to Queue for retry
-  ☐ ToDo: Check on recovery from Invalid Access/Expired Token Exceptions @created(24-01-31 12:55)
-        "access token has expired"
-        Should be returned to Queue for retry
-  ☐ ToDo: Check on recovery/retry for ECONNRESET errors @created(24-01-31 12:55)
-        Should be returned to Queue for retry
-  ` eventTimestamp
-  2024-01 - 20T17: 10: 54.871-05:00
-  logEvent
-  2024-01 - 20T22: 10: 54.871Z	589a5cd9 - 6126 - 505e-89cd-02ff260c8c9a	ERROR	Exception processing a Work File(process_0_pura_2024_01_20T21_25_08_509Z.csv -
-      Error: Exception during getAccessToken:
-      FetchError: request to https://api-campaign-us-2.goacoustic.com/oauth/token 
-            failed, reason: read ECONNRESET 
-
-  `
-
-  ☐ ToDo: Check on recovery/reporting for "Error Saving Row" Errors @created(24-01-31 12:55)
-  `<FAILURE failure_type="transient" description="Error saving row">
-  <COLUMN name="EventValue" > <![CDATA[renee.lankford@gmail.com]]> </COLUMN>
-      < COLUMN name = "EventSource" > <![CDATA[track Event]]> </COLUMN>
-          < COLUMN name = "Email" > <![CDATA[renee.lankford@gmail.com]]> </COLUMN>
-              < COLUMN name = "EventTimestamp" > <![CDATA[2024-01-18T15: 45: 31.037Z]]> </COLUMN>
-                  < COLUMN name = "EventName" > <![CDATA[email]]> </COLUMN>
-                      < /FAILURE>
-  `
-
-  ☐ ToDo: Add JSON Path to Map capability for JSON files in DropBox @created(24-01-31 12:55)
-
+  ☐ ToDo: Add UnZip capability @created(24-02-14 12:12) @started(24-02-14 12:12)
+  ☐ ToDo: Add JSON Path to Map capability for JSON files in DropBox @created(24-01-31 12:55) @started(24-02-14 12:12)
+    ☐ Todo: Test JSONPath capabilty @created(24-02-14 12:11)
   ✔ ToDo: - as of 10/2023 CSV handled as the papaparse engine handles the record boundary, @created(24-01-31 12:31) @done(24-01-31 12:31)
   ✔ ToDo:  Now need to solve for JSON content @created(24-01-31 12:31) @done(24-01-31 12:31)
 
@@ -109,11 +124,11 @@ DropBox Processor:
             Parse out individual Updates from the JSON in the Read Stream using start/stop index
                 of the stream/content?
 
+  ToDo: Test NodeJS stream UnArchiver
 
 
 
-
-UserGuide:             
+ToDo UserGuide:             
       Projects:
   ☐ Anything with a colon at the end of the line is a project
   ☐ Projects will show some statistics next to them @1h

@@ -44,8 +44,6 @@ let localTesting = false
 let xmlRows: string = ''
 
 
-
-
 interface S3Object {
     Bucket: string
     Key: string
@@ -181,6 +179,151 @@ let tcLogInfo = true
 let tcLogDebug = false
 let tcLogVerbose = false
 let tcSelectiveDebug   //call out selective debug as an option
+
+
+
+export const s3DropBucketSFTPHandler: Handler = async (event: SQSEvent, context: Context) => {
+
+    if (
+        process.env.ProcessQueueVisibilityTimeout === undefined ||
+        process.env.ProcessQueueVisibilityTimeout === '' ||
+        process.env.ProcessQueueVisibilityTimeout === null
+    )
+    {
+        tcc = await getValidateTricklerConfig()
+    }
+
+    console.info(`The Selective Debug Set is: ${tcc.SelectiveDebug}`)
+
+    if (tcc.SelectiveDebug.indexOf("_9,") > -1) console.info(`Selective Debug 9 - Process Environment Vars: ${JSON.stringify(process.env)}`)
+
+    if (tcc.ProcessQueueQuiesce) 
+    {
+        console.info(`Work Process Queue Quiesce is in effect, no New Work will be Queued up in the SQS Process Queue.`)
+        return
+    }
+
+    if (tcc.QueueBucketPurgeCount > 0)
+    {
+        console.info(`Purge Requested, Only action will be to Purge ${tcc.QueueBucketPurge} of ${tcc.QueueBucketPurgeCount} Records. `)
+        const d = await purgeBucket(tcc.QueueBucketPurgeCount, tcc.QueueBucketPurge)
+        return d
+    }
+
+    if (tcc.reQueue !== '')
+    {
+        console.info(`ReQueue requested for all ${tcc.reQueue} updates on the Work Queue. `)
+        const d = await requeueWork(tcc.reQueue)
+        console.info(`ReQueue result: ${d}`)
+    }
+
+
+
+    // Backoff strategy for failed invocations
+
+    //When an invocation fails, Lambda attempts to retry the invocation while implementing a backoff strategy.
+    // The backoff strategy differs slightly depending on whether Lambda encountered the failure due to an error in
+    //  your function code, or due to throttling.
+
+    //If your function code caused the error, Lambda gradually backs off retries by reducing the amount of 
+    // concurrency allocated to your Amazon SQS event source mapping.If invocations continue to fail, Lambda eventually
+    //  drops the message without retrying.
+
+    //If the invocation fails due to throttling, Lambda gradually backs off retries by reducing the amount of 
+    // concurrency allocated to your Amazon SQS event source mapping.Lambda continues to retry the message until 
+    // the message's timestamp exceeds your queue's visibility timeout, at which point Lambda drops the message.
+
+
+    let postResult: string = 'false'
+
+    console.info(`Received SQS Events Batch of ${event.Records.length} records.`)
+
+    if (tcc.SelectiveDebug.indexOf("_4,") > -1) console.info(`Selective Debug 4 - Received ${event.Records.length} Work Queue Records. Records are: \n${JSON.stringify(event)}`)
+
+    // event.Records.forEach((i) => {
+    //     sqsBatchFail.batchItemFailures.push({ itemIdentifier: i.messageId })
+    // })
+
+    //Empty BatchFail array 
+    sqsBatchFail.batchItemFailures.forEach(() => {
+        sqsBatchFail.batchItemFailures.pop()
+    })
+
+    //Process this Inbound Batch 
+    for (const q of event.Records)
+    {
+        // event.Records.forEach(async (i: SQSRecord) => {
+        const tqm: tcQueueMessage = JSON.parse(q.body)
+
+        tqm.workKey = JSON.parse(q.body).workKey
+
+        //When Testing - get some actual work queued
+        if (tqm.workKey === 'process_2_pura_2023_10_27T15_11_40_732Z.csv')
+        {
+            tqm.workKey = await getAnS3ObjectforTesting('tricklercache-process')
+        }
+
+        console.info(`Processing Work Queue for ${tqm.workKey}`)
+        if (tcc.SelectiveDebug.indexOf("_11,") > -1) console.info(`Selective Debug 11 - SQS Events - Processing Batch Item ${JSON.stringify(q)}`)
+
+        try
+        {
+            const work = await getS3Work(tqm.workKey, "tricklercache-process")
+            if (work.length > 0)        //Retreive Contents of the Work File  
+            {
+                postResult = await postToCampaign(work, tqm.custconfig, tqm.updateCount)
+                if (tcc.SelectiveDebug.indexOf("_8,") > -1) console.info(`Selective Debug 8 - POST Result for ${tqm.workKey}: ${postResult}`)
+
+                if (postResult.indexOf('retry') > -1)
+                {
+                    console.warn(`Retry Marked for ${tqm.workKey} (Retry Report: ${sqsBatchFail.batchItemFailures.length + 1}) Returning Work Item ${q.messageId} to Process Queue.`)
+                    //Add to BatchFail array to Retry processing the work 
+                    sqsBatchFail.batchItemFailures.push({ itemIdentifier: q.messageId })
+                    if (tcc.SelectiveDebug.indexOf("_12,") > -1) console.info(`Selective Debug 12 - Added ${tqm.workKey} to SQS Events Retry \n${JSON.stringify(sqsBatchFail)}`)
+                }
+
+                if (postResult.toLowerCase().indexOf('unsuccessful post') > -1)
+                    console.error(`Error - Unsuccesful POST (Hard Failure) for ${tqm.workKey}: \n${postResult} \n Customer: ${tqm.custconfig.customer}, Pod: ${tqm.custconfig.pod}, ListId: ${tqm.custconfig.listId} \n${work}`)
+
+                if (postResult.toLowerCase().indexOf('successfully posted') > -1)
+                {
+                    console.info(`Work Successfully Posted to Campaign (${tqm.workKey}), Deleting Work from S3 Process Queue`)
+
+                    const d: string = await deleteS3Object(tqm.workKey, 'tricklercache-process')
+                    if (d === '204') console.info(`Successful Deletion of Work: ${tqm.workKey}`)
+                    else console.error(`Failed to Delete ${tqm.workKey}. Expected '204' but received ${d}`)
+                }
+
+
+            }
+            else throw new Error(`Failed to retrieve work file (${tqm.workKey}) `)
+
+        } catch (e)
+        {
+            console.error(`Exception - Processing a Work File (${tqm.workKey} - \n${e} \n${JSON.stringify(tqm)}`)
+        }
+
+    }
+
+    console.info(`Processed ${event.Records.length} Work Queue records. Items Fail Count: ${sqsBatchFail.batchItemFailures.length}\nItems Failed List: ${JSON.stringify(sqsBatchFail)}`)
+
+    //ToDo: Complete the Final Processing Outcomes messaging for Queue Processing 
+    // if (tcc.SelectiveDebug.indexOf("_21,") > -1) console.info(`Selective Debug 21 - \n${JSON.stringify(processS3ObjectStreamResolution)}`)
+
+    return sqsBatchFail
+
+    //For debugging - report no fails 
+    // return {
+    //     batchItemFailures: [
+    //         {
+    //             itemIdentifier: ''
+    //         }
+    //     ]
+    // }
+
+
+
+}
 
 
 
@@ -337,7 +480,7 @@ export const tricklerQueueProcessorHandler: Handler = async (event: SQSEvent, co
  * A Lambda function to process the Event payload received from S3.
  */
 
-export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Context) => {
+export const s3DropBucketHandler: Handler = async (event: S3Event, context: Context) => {
 
     //
     // INFO Started Processing inbound data(pura_2023_11_16T20_24_37_627Z.csv)
@@ -502,7 +645,7 @@ export const s3JsonLoggerHandler: Handler = async (event: S3Event, context: Cont
 }
 
 
-export default s3JsonLoggerHandler
+export default s3DropBucketHandler
 
 
 
