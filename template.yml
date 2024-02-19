@@ -136,7 +136,7 @@ Resources:
             FlexibleTimeWindow:
               Mode: FLEXIBLE
               MaximumWindowInMinutes: 5
-            StartDate: '2024-02-15T12:00:00.000Z'
+            # StartDate: '2024-02-15T12:00:00.000Z'
             EndDate: '2035-01-01T12:00:00.000Z'
             ScheduleExpressionTimezone: UTC
             RetryPolicy:
