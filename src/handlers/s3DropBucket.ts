@@ -198,7 +198,7 @@ export const s3DropBucketSFTPHandler: Handler = async (event: SQSEvent, context:
         tcc = await getValidateTricklerConfig()
     }
 
-    console.info(`The Selective Debug Set is: ${tcc.SelectiveDebug}`)
+    console.info(`SFTP Processsor - The Selective Debug Set is: ${tcc.SelectiveDebug}`)
 
     if (tcc.SelectiveDebug.indexOf("_9,") > -1) console.info(`Selective Debug 9 - Process Environment Vars: ${JSON.stringify(process.env)}`)
 
