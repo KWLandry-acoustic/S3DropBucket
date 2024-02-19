@@ -203,7 +203,34 @@ export const s3DropBucketSFTPHandler: Handler = async (event: SQSEvent, context:
     if (tcc.SelectiveDebug.indexOf("_9,") > -1) console.info(`Selective Debug 9 - Process Environment Vars: ${JSON.stringify(process.env)}`)
 
 
-    console.info(`Recieved Event: ${JSON.stringify(event)}`)
+    console.info(`SFTP  Received Event: ${JSON.stringify(event)}`)
+    //Existing Event Emit at every 1 minute 
+
+    //For all work defined confirm a Scheduler2 Event exists for that work
+    // If it does not exist Create a Scheduler2 event for the defined Schedule.
+    //Write all existing Scheduler2 Events as a Log Entry 
+    //
+    //Process all Scheduler2 Events in the current batch of events
+    //  Scheduler2 Events are 
+    // {
+    //     "version": "0",
+    //         "id": "d565d36f-a484-46ca-8ca8-ff01feb2c827",
+    //         "detail-type": "Scheduled Event",
+    //         "source": "aws.scheduler",
+    //         "account": "777957353822",
+    //         "time": "2024-02-19T15:11:32Z",
+    //         "region": "us-east-1",
+    //          "resources": [
+    //              "arn:aws:scheduler:us-east-1:777957353822:schedule/default/s3DropBucketSFTPFunctionComplexScheduleEvent"
+    //          ],
+    //       "detail": "{}"
+    // }
+    //
+
+
+
+
+
 
     return
 
@@ -1085,7 +1112,7 @@ async function getValidateTricklerConfig () {
         //     )        
 
 
-        if (tc.prefixFocus !== undefined)
+        if (tc.prefixFocus !== undefined && tc.prefixFocus != "")
         {
             process.env.TricklerProcessPrefix = tc.prefixFocus
             console.warn(`A Prefix Focus has been configured. Only DropBucket Objects with the prefix "${tc.prefixFocus}" will be processed.`)
