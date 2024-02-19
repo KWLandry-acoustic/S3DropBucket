@@ -16,7 +16,7 @@
 
       "reQueue": "",
 
-      "prefixFocus": "visualcrossing_",
+      "prefixFocus": "",
 
       "EventEmitterMaxListeners": 100,
 
