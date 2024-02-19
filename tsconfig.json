@@ -5,11 +5,11 @@
     ],
     "module": "nodenext",
     "moduleResolution": "Node16",
-    "resolveJsonModule": true,                        /* Enable importing .json files. */
+    "resolveJsonModule": true, /* Enable importing .json files. */
     "target": "es2022",
     "baseUrl": ".",
     // "sourceMap": true,
-    "inlineSourceMap": true,                          /* Include sourcemap files inside the emitted JavaScript. */
+    "inlineSourceMap": true, /* Include sourcemap files inside the emitted JavaScript. */
     "noEmit": true,
     "preserveConstEnums": true,
     "isolatedModules": true,
@@ -123,11 +123,11 @@
   "include": [
     "src/**/*.ts",
     "src/**/*.js"
-  ],
+    , "src/handlers/main.mjs", "scratchTests/src/main.ts" ],
   "exclude": [
     "node_modules",
     "**/*.test.ts",
     "__tests__/**/*"
-    
+
   ]
 }

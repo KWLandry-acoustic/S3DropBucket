@@ -128,6 +128,22 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       Description: A Lambda function triggered on a file sent to an S3 bucket.
+      Events:
+        ComplexScheduleEvent:
+          Type: ScheduleV2
+          Properties:
+            ScheduleExpression: rate(1 minute)
+            FlexibleTimeWindow:
+              Mode: FLEXIBLE
+              MaximumWindowInMinutes: 5
+            StartDate: '2024-02-15T12:00:00.000Z'
+            EndDate: '2035-01-01T12:00:00.000Z'
+            ScheduleExpressionTimezone: UTC
+            RetryPolicy:
+              MaximumRetryAttempts: 5
+              MaximumEventAgeInSeconds: 300
+            DeadLetterConfig:
+              Type: SQS
       Environment:
         Variables:
           Version: !Ref AppId 

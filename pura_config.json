@@ -14,5 +14,11 @@
         "map": {
                 "zip": "$.name",
                 "ColB": "$.*"
+        },
+        "sftp": {
+                "user": "",
+                "password": "",
+                "filepattern": "",
+                "schedule": "hourly"
         }
 }

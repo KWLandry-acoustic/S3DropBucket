@@ -233,3 +233,6 @@ customer_config_json.notes
 
 exampleJson-1.json
 tricklercache_config.json.notes
+scratchTests/src/main.ts
+scratchTests/out/main.js.map
+scratchTests/out/main.js
