@@ -202,9 +202,23 @@ export const s3DropBucketSFTPHandler: Handler = async (event: SQSEvent, context:
 
     if (tcc.SelectiveDebug.indexOf("_9,") > -1) console.info(`Selective Debug 9 - Process Environment Vars: ${JSON.stringify(process.env)}`)
 
+
+    console.info(`Recieved Event: ${JSON.stringify(event)}`)
+
+    return
+
+
+
+
+
+
+
     console.info(`Received SFTP SQS Events Batch of ${event.Records.length} records.`)
 
     if (tcc.SelectiveDebug.indexOf("_4,") > -1) console.info(`Selective Debug 4 - Received ${event.Records.length} SFTP Queue Records. Records are: \n${JSON.stringify(event)}`)
+
+
+
 
     // event.Records.forEach((i) => {
     //     sqsBatchFail.batchItemFailures.push({ itemIdentifier: i.messageId })
