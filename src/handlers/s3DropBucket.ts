@@ -987,7 +987,7 @@ function applyMap (chunk: JSON, map: Object) {
 
         } catch (e)
         {
-            console.error(`Error parsing JSONPath Statement ${k} ${v}, ${e} \n${chunk}`)
+            console.error(`Error parsing JSONPath Statement ${k} ${v}, ${e} \nTarget Data: \n${JSON.stringify(chunk)}`)
         }
 
         // const a1 = jsonpath.parse(value)
@@ -1317,7 +1317,7 @@ async function validateCustomerConfig (config: customerConfig) {
         }
         catch (e)
         {
-            console.error(`Error parsing JSONPath Statement for ${key}:"${value}", Invalid JSONPath - ${e}`)
+            console.error(`Error parsing a JSONPath statement in the Customer Config: ${key}:"${value}", \nInvalid JSONPath - ${e}`)
         }
         config.map = tmpMap
     })
