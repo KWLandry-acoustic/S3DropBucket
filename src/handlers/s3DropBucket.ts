@@ -5,8 +5,13 @@ import {
     PutObjectCommand, PutObjectCommandOutput, S3, S3Client, S3ClientConfig,
     GetObjectCommand, GetObjectCommandOutput, GetObjectCommandInput,
     DeleteObjectCommand, DeleteObjectCommandInput, DeleteObjectCommandOutput,
-    DeleteObjectOutput, DeleteObjectRequest, ObjectStorageClass, DeleteObjectsCommand, ListObjectVersionsCommand, ListObjectsCommandOutput
+    DeleteObjectOutput, DeleteObjectRequest, ObjectStorageClass, DeleteObjectsCommand,
+    ListObjectVersionsCommand, ListObjectsCommandOutput
 } from '@aws-sdk/client-s3'
+
+import { SchedulerClient, ListSchedulesCommand } from '@aws-sdk/client-scheduler' // ES Modules import
+// const { SchedulerClient, ListSchedulesCommand } = require("@aws-sdk/client-scheduler"); // CommonJS import
+
 
 import { Handler, S3Event, Context, SQSEvent, SQSRecord, S3EventRecord } from 'aws-lambda'
 
@@ -27,9 +32,12 @@ import {
     SendMessageCommandOutput,
 } from '@aws-sdk/client-sqs'
 
-import sftp, { ListFilterFunction } from 'ssh2-sftp-client'
-const sftpClient = new sftp()
 
+
+import sftp, { ListFilterFunction } from 'ssh2-sftp-client'
+
+
+const sftpClient = new sftp()
 
 import { close } from 'fs'
 
@@ -198,7 +206,7 @@ export const s3DropBucketSFTPHandler: Handler = async (event: SQSEvent, context:
         tcc = await getValidateTricklerConfig()
     }
 
-    console.info(`SFTP Processsor - The Selective Debug Set is: ${tcc.SelectiveDebug}`)
+    console.info(`S3 Dropbucket SFTP Processor Selective Debug Set is: ${tcc.SelectiveDebug}`)
 
     if (tcc.SelectiveDebug.indexOf("_9,") > -1) console.info(`Selective Debug 9 - Process Environment Vars: ${JSON.stringify(process.env)}`)
 
@@ -208,10 +216,10 @@ export const s3DropBucketSFTPHandler: Handler = async (event: SQSEvent, context:
 
     //For all work defined confirm a Scheduler2 Event exists for that work
     // If it does not exist Create a Scheduler2 event for the defined Schedule.
-    //Write all existing Scheduler2 Events as a Log Entry 
+    //Write all existing Scheduler2 Events as a Log Entry
     //
     //Process all Scheduler2 Events in the current batch of events
-    //  Scheduler2 Events are 
+    //  Scheduler2 Events are
     // {
     //     "version": "0",
     //         "id": "d565d36f-a484-46ca-8ca8-ff01feb2c827",
@@ -226,6 +234,39 @@ export const s3DropBucketSFTPHandler: Handler = async (event: SQSEvent, context:
     //       "detail": "{}"
     // }
     //
+
+
+
+    const client = new SchedulerClient(config)
+
+    const input = { // ListSchedulesInput
+        GroupName: "STRING_VALUE",
+        NamePrefix: "STRING_VALUE",
+        State: "STRING_VALUE",
+        NextToken: "STRING_VALUE",
+        MaxResults: Number("int"),
+    }
+
+    const command = new ListSchedulesCommand(input)
+
+    const response = await client.send(command)
+    // { // ListSchedulesOutput
+    //   NextToken: "STRING_VALUE",
+    //   Schedules: [ // ScheduleList // required
+    //     { // ScheduleSummary
+    //       Arn: "STRING_VALUE",
+    //       Name: "STRING_VALUE",
+    //       GroupName: "STRING_VALUE",
+    //       State: "STRING_VALUE",
+    //       CreationDate: new Date("TIMESTAMP"),
+    //       LastModificationDate: new Date("TIMESTAMP"),
+    //       Target: { // TargetSummary
+    //         Arn: "STRING_VALUE", // required
+    //       },
+    //     },
+    //   ],
+    // };
+
 
 
 
@@ -431,7 +472,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (event: SQSEvent
         tcc = await getValidateTricklerConfig()
     }
 
-    console.info(`The Selective Debug Set is: ${tcc.SelectiveDebug}`)
+    console.info(`S3 DropBucket Work Processor Selective Debug Set is: ${tcc.SelectiveDebug}`)
 
     if (tcc.SelectiveDebug.indexOf("_9,") > -1) console.info(`Selective Debug 9 - Process Environment Vars: ${JSON.stringify(process.env)}`)
 
@@ -591,7 +632,7 @@ export const s3DropBucketHandler: Handler = async (event: S3Event, context: Cont
         tcc = await getValidateTricklerConfig()
     }
 
-    console.info(`The Selective Debug Set is: ${tcc.SelectiveDebug}`)
+    console.info(`S3 DropBucket File Processor Selective Debug Set is: ${tcc.SelectiveDebug}`)
 
     if (tcc.SelectiveDebug.indexOf("_9,") > -1) console.info(`Selective Debug 9 - Process Environment Vars: ${JSON.stringify(process.env)}`)
 
@@ -946,7 +987,7 @@ function applyMap (chunk: JSON, map: Object) {
 
         } catch (e)
         {
-            console.error(`Error parsing JSONPath Statement ${k} ${v}, ${e}`)
+            console.error(`Error parsing JSONPath Statement ${k} ${v}, ${e} \n${chunk}`)
         }
 
         // const a1 = jsonpath.parse(value)

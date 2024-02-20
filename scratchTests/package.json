@@ -2,7 +2,8 @@
       "name": "vscode-typescript-debugging",
       "version": "1.0.0",
       "devDependencies": {
-            "typescript": "^2.7.2"
+            "@aws-sdk/client-scheduler": "^3.515.0",
+            "typescript": "^2.9.2"
       },
       "scripts": {
             "start": "node out/app.js",

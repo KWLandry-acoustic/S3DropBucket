@@ -1,6 +1,6 @@
 {
-  "name": "tricklercache_lambda_s3",
-  "description": "TricklerCache Lambda-S3 Project",
+  "name": "tricklercache_lambda_s3_dropbucket",
+  "description": "TricklerCache Lambda-S3 DropBucket Project",
   "version": "0.0.1",
   "private": true,
   "type": "module",
