@@ -1,6 +1,6 @@
 {
         "customer": "pura_",
-        "format": "csv",
+        "format": "json",
         "listId": "13097633",
         "listName": "Master_Database_KWLandry_keyed",
         "listType": "DBKeyed",
@@ -12,8 +12,8 @@
         "clientId": "1d99f8d8-0897-4090-983a-c517cc54032e",
         "clientSecret": "124bd238-0987-40a2-b8fb-879ddd4d3241",
         "map": {
-                "zip": "$.name",
-                "ColB": "$.*"
+                "email": "$.uniqueRecipient",
+                "zipcode": "$.context.traits.address.postalCode"
         },
         "sftp": {
                 "user": "",
