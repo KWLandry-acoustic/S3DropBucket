@@ -753,8 +753,9 @@ export const s3DropBucketHandler: Handler = async (event: S3Event, context: Cont
                     return processResult
                 })
                 .catch(e => {
-                    console.error(`Exception - Process S3 Object Stream exception \n${e}`)
-                    processResult += `Exception - Process S3 Object Stream exception \n${e}`
+                    const r = `Exception - Process S3 Object Stream exception \n${e}`
+                    console.error(r)
+                    processResult += r
                     return processResult
                 })
 
@@ -787,9 +788,9 @@ export default s3DropBucketHandler
 
 
 async function processS3ObjectContentStream (key: string, bucket: string, custConfig: customerConfig) {
-    let chunks: string[] = new Array()
-    let batchCount = 0
 
+    let batchCount = 0
+    let chunks: Object = {}
 
     if (tcLogDebug) console.info(`Processing S3 Content Stream for ${key}`)
 
@@ -866,9 +867,10 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
                         const errMessage = `An error has stopped Content Parsing at record ${recs} for s3 object ${key}.\n${err}`
                         console.error(errMessage)
 
-                        chunks = [] as string[]
+                        chunks = {}
                         batchCount = 0
                         recs = 0
+
                         throw new Error(`Error on Readable Stream for DropBucket Object ${key}. \nError Message: ${errMessage}`)
                         // reject(streamResult)
                     })
@@ -876,27 +878,25 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
                         recs++
                         if (recs > custConfig.updateMaxRows) throw new Error(`The number of Updates in this batch Exceeds Max Row Updates allowed ${recs} in the Customers Config. S3 Object ${key} will not be deleted to allow for review and possible restaging.`)
 
-                        if (tcc.SelectiveDebug.indexOf("_13,") > -1) console.info(`Selective Debug 13 - s3ContentStream OnData - Another chunk (ArrayLen:${chunks.length} Recs:${recs} Batch:${batchCount} from ${key} - ${JSON.stringify(s3Chunk)}`)
+                        if (tcc.SelectiveDebug.indexOf("_13,") > -1) console.info(`Selective Debug 13 - s3ContentStream OnData - Another chunk (ArrayLen:${Object.values(chunks).length} Recs:${recs} Batch:${batchCount} from ${key} - ${JSON.stringify(s3Chunk)}`)
 
 
                         const appliedMap = applyMap(s3Chunk, custConfig.map)
 
-                        // chunks.push(s3Chunk)
-                        chunks = { ...chunks, ...appliedMap } as string[]
+
+                        chunks = { ...chunks, ...appliedMap }
 
                         debugger
-                        if (chunks.length > 98)
+                        if (Object.values(chunks).length > 98)
                         {
                             batchCount++
-
-                            if (tcc.SelectiveDebug.indexOf('_99,') > -1) saveSampleJSON(JSON.stringify(chunks))
-
                             const d = chunks
-                            chunks = [] as string[]
+                            chunks = {}
+                            if (tcc.SelectiveDebug.indexOf('_99,') > -1) saveSampleJSON(JSON.stringify(d))
 
                             const sqwResult = await storeAndQueueWork(d, key, custConfig, batchCount)
 
-                            if (tcc.SelectiveDebug.indexOf("_2,") > -1) console.info(`Selective Debug 2: Content Stream OnData - Store And Queue Work for ${key} of ${batchCount + 1} Batches of ${d.length} records, Result: \n${JSON.stringify(sqwResult)}`)
+                            if (tcc.SelectiveDebug.indexOf("_2,") > -1) console.info(`Selective Debug 2: Content Stream OnData - Store And Queue Work for ${key} of ${batchCount + 1} Batches of ${Object.values(d).length} records, Result: \n${JSON.stringify(sqwResult)}`)
                             streamResult = { ...streamResult, "OnDataStoreQueueResult": sqwResult }
 
                             // console.info(`Another batch ${streamResult}`)
@@ -914,7 +914,7 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
                             ...streamResult, "OnEndStreamEndResult": streamEndResult
                         }
                         debugger
-                        if (recs < 1 && chunks.length < 1)
+                        if (recs < 1 && Object.values(chunks).length < 1)
                         {
                             streamResult = {
                                 ...streamResult, "Exception - ": `Exception - No records returned from parsing file. Check the content as well as the configured file format (${custConfig.format}) matches the content of the file.`
@@ -939,7 +939,7 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
                         }
 
                         if (tcLogDebug) console.info(`Store and Queue Work Result: ${storeQueueResult}`)
-                        if (tcc.SelectiveDebug.indexOf("_2,") > -1) console.info(`Selective Debug 2: Content Stream OnEnd for (${key}) - Store and Queue Work of ${batchCount + 1} Batches of ${d.length} records - Result: \n${JSON.stringify(storeQueueResult)}`)
+                        if (tcc.SelectiveDebug.indexOf("_2,") > -1) console.info(`Selective Debug 2: Content Stream OnEnd for (${key}) - Store and Queue Work of ${batchCount + 1} Batches of ${Object.values(d).length} records - Result: \n${JSON.stringify(storeQueueResult)}`)
                         // }
 
                         batchCount = 0
@@ -1365,7 +1365,7 @@ async function updateDatabase () {
 }
 
 
-async function storeAndQueueWork (chunks: string[], s3Key: string, config: customerConfig, batch: number) {
+async function storeAndQueueWork (chunks: {}, s3Key: string, config: customerConfig, batch: number) {
 
     if (batch > tcc.MaxBatchesWarning) console.warn(`Warning: Updates from the S3 Object(${s3Key}) are exceeding(${batch}) the Warning Limit of ${tcc.MaxBatchesWarning} Batches per Object.`)
     // throw new Error(`Updates from the S3 Object(${ s3Key }) Exceed(${ batch }) Safety Limit of 20 Batches of 99 Updates each.Exiting...`)
@@ -1386,7 +1386,7 @@ async function storeAndQueueWork (chunks: string[], s3Key: string, config: custo
     key = `${key}_update_${batch}.xml`
 
 
-    if (tcLogDebug) console.info(`Queuing Work for ${s3Key} - ${key}. (Batch ${batch} of ${chunks.length} records)`)
+    if (tcLogDebug) console.info(`Queuing Work for ${s3Key} - ${key}. (Batch ${batch} of ${Object.values(chunks).length} records)`)
 
     const AddWorkToS3ProcessBucketResults = await addWorkToS3ProcessStore(xmlRows, key)
     //     {
@@ -1394,7 +1394,7 @@ async function storeAndQueueWork (chunks: string[], s3Key: string, config: custo
     //         S3ProcessBucketResult: "200",
     // }
 
-    const AddWorkToSQSProcessQueueResults = await addWorkToSQSProcessQueue(config, key, batch.toString(), chunks.length.toString())
+    const AddWorkToSQSProcessQueueResults = await addWorkToSQSProcessQueue(config, key, batch.toString(), Object.values(chunks).length.toString())
     //     {
     //         sqsWriteResult: "200",
     //         workQueuedSuccess: true,
@@ -1406,16 +1406,15 @@ async function storeAndQueueWork (chunks: string[], s3Key: string, config: custo
     return { AddWorkToS3ProcessBucketResults, AddWorkToSQSProcessQueueResults }
 }
 
-function convertJSONToXML_RTUpdates (rows: string[], config: customerConfig) {
+function convertJSONToXML_RTUpdates (updates: {}, config: customerConfig) {
 
     xmlRows = `<Envelope> <Body> <InsertUpdateRelationalTable> <TABLE_ID> ${config.listId} </TABLE_ID><ROWS>`
 
     let r = 0
 
     debugger
-    console.info(`ConvertJSONToXMLRT - Rows Type: ${typeof (rows)}, rows: ${rows}`)
 
-    rows.forEach(jo => {
+    Object.keys(updates).forEach(jo => {
         r++
         xmlRows += `<ROW>`
         Object.entries(jo).forEach(([key, value]) => {
@@ -1428,22 +1427,22 @@ function convertJSONToXML_RTUpdates (rows: string[], config: customerConfig) {
     //Tidy up the XML
     xmlRows += `</ROWS></InsertUpdateRelationalTable></Body></Envelope>`
 
-    if (tcLogDebug) console.info(`Converting S3 Content to XML RT Updates. Packaging ${rows.length} rows as updates to ${config.customer}'s ${config.listName}`)
-    if (tcc.SelectiveDebug.indexOf("_6,") > -1) console.info(`Selective Debug 6 - JSON to be converted to XML RT Updates: ${JSON.stringify(rows)}`)
+    if (tcLogDebug) console.info(`Converting S3 Content to XML RT Updates. Packaging ${Object.values(updates).length} rows as updates to ${config.customer}'s ${config.listName}`)
+    if (tcc.SelectiveDebug.indexOf("_6,") > -1) console.info(`Selective Debug 6 - JSON to be converted to XML RT Updates: ${JSON.stringify(updates)}`)
     if (tcc.SelectiveDebug.indexOf("_17,") > -1) console.info(`Selective Debug 17 - XML from JSON for RT Updates: ${xmlRows}`)
 
 
     return xmlRows
 }
 
-function convertJSONToXML_DBUpdates (rows: string[], config: customerConfig) {
+function convertJSONToXML_DBUpdates (updates: {}, config: customerConfig) {
 
     xmlRows = `<Envelope><Body>`
     let r = 0
 
-    rows.forEach(jsonObj => {
+    Object.keys(updates).forEach(jo => {
         r++
-        const s = JSON.stringify(jsonObj)
+        const s = JSON.stringify(jo)
         const j = JSON.parse(s)
 
         xmlRows += `<AddRecipient><LIST_ID>${config.listId}</LIST_ID><CREATED_FROM>0</CREATED_FROM><UPDATE_IF_FOUND>true</UPDATE_IF_FOUND>`
@@ -1485,7 +1484,7 @@ function convertJSONToXML_DBUpdates (rows: string[], config: customerConfig) {
             //Don't need to do anything with DBKey, it's superfluous but documents the keys of the keyed DB
         }
 
-        Object.entries(jsonObj).forEach(([key, value]) => {
+        Object.entries(jo).forEach(([key, value]) => {
             // console.info(`Record ${r} as ${key}: ${value}`)
             xmlRows += `<COLUMN><NAME>${key}</NAME><VALUE><![CDATA[${value}]]></VALUE></COLUMN>`
         })
@@ -1499,8 +1498,8 @@ function convertJSONToXML_DBUpdates (rows: string[], config: customerConfig) {
 
     xmlRows += `</Body></Envelope>`
 
-    if (tcLogDebug) console.info(`Converting S3 Content to XML DB Updates. Packaging ${rows.length} rows as updates to ${config.customer}'s ${config.listName}`)
-    if (tcc.SelectiveDebug.indexOf("_16,") > -1) console.info(`Selective Debug 16 - JSON to be converted to XML DB Updates: ${JSON.stringify(rows)}`)
+    if (tcLogDebug) console.info(`Converting S3 Content to XML DB Updates. Packaging ${Object.values(updates).length} rows as updates to ${config.customer}'s ${config.listName}`)
+    if (tcc.SelectiveDebug.indexOf("_16,") > -1) console.info(`Selective Debug 16 - JSON to be converted to XML DB Updates: ${JSON.stringify(updates)}`)
     if (tcc.SelectiveDebug.indexOf("_17,") > -1) console.info(`Selective Debug 17 - XML from JSON for DB Updates: ${xmlRows}`)
 
 
