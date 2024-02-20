@@ -9,7 +9,7 @@ import {
     ListObjectVersionsCommand, ListObjectsCommandOutput
 } from '@aws-sdk/client-s3'
 
-import { SchedulerClient, ListSchedulesCommand } from '@aws-sdk/client-scheduler' // ES Modules import
+import { SchedulerClient, ListSchedulesCommand, ListSchedulesCommandInput } from '@aws-sdk/client-scheduler' // ES Modules import
 // const { SchedulerClient, ListSchedulesCommand } = require("@aws-sdk/client-scheduler"); // CommonJS import
 
 
@@ -237,15 +237,16 @@ export const s3DropBucketSFTPHandler: Handler = async (event: SQSEvent, context:
 
 
 
-    const client = new SchedulerClient(config)
+    // const client = new SchedulerClient(config)
+    const client = new SchedulerClient()
 
-    const input = { // ListSchedulesInput
-        GroupName: "STRING_VALUE",
+    const input = {
+        // GroupName: "STRING_VALUE",
         NamePrefix: "STRING_VALUE",
-        State: "STRING_VALUE",
+        // State: "STRING_VALUE",
         NextToken: "STRING_VALUE",
         MaxResults: Number("int"),
-    }
+    } as ListSchedulesCommandInput
 
     const command = new ListSchedulesCommand(input)
 
@@ -697,26 +698,25 @@ export const s3DropBucketHandler: Handler = async (event: S3Event, context: Cont
 
         try
         {
+            let processResult = "" as string
+
             processS3ObjectStreamResolution = await processS3ObjectContentStream(key, bucket, customersConfig)
-                .then(async (p) => {
+                .then(async (res) => {
 
-                    debugger
 
-                    const res: string = JSON.stringify(p)
+                    processResult = JSON.stringify(res)
 
-                    const m = res.substring(res.indexOf('Processed '), res.length)
+                    const m = processResult.substring(processResult.indexOf('Processed '), processResult.length)
                     // "S3 Content Stream Ended for pura_2024_01_27T15_24_31_911Z.csv. Processed 78 records as 1 batches."
 
                     console.info(`Completed processing all records of the S3 Object ${key}. ${m}`)
 
-
-
                     // "{\"OnEndStreamEndResult\":\"S3 Content Stream Ended for pura_2024_02_06T18_53_39_117Z.json. Processed 1 records as 1 batches.\",\"OnCloseResult\":\"S3 Content Stream Closed for pura_2024_02_06T18_53_39_117Z.json\",\"OnEndStoreQueueResult\":{\"AddWorkToS3ProcessBucketResults\":{\"S3ProcessBucketResult\":\"200\",\"AddWorkToS3ProcessBucket\":\"Wrote Work File (pura_2024_02_06T18_53_39_117Z_json_update_1.xml) to S3 Processing Bucket (Result 200)\"},\"AddWorkToSQSProcessQueueResults\":{\"SQSWriteResult\":\"200\",\"SQSQueued_Metadata\":\"{\\\"$metadata\\\":{\\\"httpStatusCode\\\":200,\\\"requestId\\\":\\\"09a22ec4-f4de-5ff3-9d64-70f85970c5e6\\\",\\\"attempts\\\":1,\\\"totalRetryDelay\\\":0},\\\"MD5OfMessageAttributes\\\":\\\"9e4190fa2a65416b50c4fb048df384d5\\\",\\\"MD5OfMessageBody\\\":\\\"d690df155f4c619dd1a10814054768b1\\\",\\\"MessageId\\\":\\\"6fed0be3-b323-4da5-b700-9492b105b297\\\"}\"}}}"
 
-                    if (tcc.SelectiveDebug.indexOf("_11,") > -1) console.info(`Selective Debug${res}`)
+                    if (tcc.SelectiveDebug.indexOf("_11,") > -1) console.info(`Selective Debug${processResult}`)
 
-                    if (res.indexOf('S3ProcessBucketResult":"200"') > -1 &&
-                        res.indexOf('SQSWriteResult":"200"') > -1)
+                    if (processResult.indexOf('S3ProcessBucketResult":"200"') > -1 &&
+                        processResult.indexOf('SQSWriteResult":"200"') > -1)
                     {
                         try
                         {
@@ -728,7 +728,8 @@ export const s3DropBucketHandler: Handler = async (event: S3Event, context: Cont
                             {
                                 const dr = `Successful Delete of ${key}  (Result ${delResultCode})`
                                 console.info(dr)
-                                processS3ObjectStreamResolution = { ...processS3ObjectStreamResolution, "DeleteResult": dr }
+                                // processS3ObjectStreamResolution = { ...processS3ObjectStreamResolution, "DeleteResult": dr }
+                                processResult += "DeleteResult: " + JSON.stringify(dr)
                             }
                         }
                         catch (e)
@@ -740,28 +741,34 @@ export const s3DropBucketHandler: Handler = async (event: S3Event, context: Cont
                     {
                         const dr = `UnSuccessful Processing of S3 DropBucket object ${key}. Object not deleted after processing contents.)`
                         console.error(dr)
-                        processS3ObjectStreamResolution = { ...processS3ObjectStreamResolution, "DeleteResult": dr }
-                        throw new Error(`Exception - Unsuccessful Cleanup - ${dr}`)
+
+                        // processS3ObjectStreamResolution = { ...processS3ObjectStreamResolution, "DeleteResult": dr }
+
+                        throw new Error(`Exception - Processing S3 Object - Unsuccessful Cleanup - ${dr}`)
                     }
+
 
                     debugger
 
-                    return p
-
+                    return processResult
                 })
                 .catch(e => {
                     console.error(`Exception - Process S3 Object Stream exception \n${e}`)
+                    processResult += `Exception - Process S3 Object Stream exception \n${e}`
+                    return processResult
                 })
 
-            if (tcc.SelectiveDebug.indexOf("_3,") > -1) console.info(`Selective Debug 3 - Returned from Processing S3 Object Content Stream for ${key}. Result: ${JSON.stringify(processS3ObjectStreamResolution)}`)
+
 
         } catch (e)
         {
             console.error(`Exception - Processing S3 Object Content Stream for ${key} \n${e}`)
         }
 
+        if (tcc.SelectiveDebug.indexOf("_3,") > -1) console.info(`Selective Debug 3 - Returned from Processing S3 Object Content Stream for ${key}. Result: ${JSON.stringify(processS3ObjectStreamResolution)}`)
 
-        debugger
+
+
 
     }
 
@@ -859,7 +866,7 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
                         const errMessage = `An error has stopped Content Parsing at record ${recs} for s3 object ${key}.\n${err}`
                         console.error(errMessage)
 
-                        chunks: JSON = {} as JSON
+                        chunks = [] as string[]
                         batchCount = 0
                         recs = 0
                         throw new Error(`Error on Readable Stream for DropBucket Object ${key}. \nError Message: ${errMessage}`)
@@ -875,7 +882,7 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
                         const appliedMap = applyMap(s3Chunk, custConfig.map)
 
                         // chunks.push(s3Chunk)
-                        chunks = { ...chunks, ...appliedMap }
+                        chunks = { ...chunks, ...appliedMap } as string[]
 
                         debugger
                         if (chunks.length > 98)
@@ -885,7 +892,7 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
                             if (tcc.SelectiveDebug.indexOf('_99,') > -1) saveSampleJSON(JSON.stringify(chunks))
 
                             const d = chunks
-                            chunks = []
+                            chunks = [] as string[]
 
                             const sqwResult = await storeAndQueueWork(d, key, custConfig, batchCount)
 
@@ -921,7 +928,7 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
                         debugger
 
                         const d = chunks
-                        chunks = []
+                        chunks = [] as string[]
 
                         // if (d.length > 0)
                         // {
@@ -946,7 +953,7 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
 
                         streamResult = { ...streamResult, "OnCloseResult": `S3 Content Stream Closed for ${key}` }
 
-                        chunks = []
+                        chunks = [] as string[]
                         batchCount = 0
                         recs = 0
 
@@ -983,6 +990,7 @@ function applyMap (chunk: JSON, map: Object) {
 
         try
         {
+            debugger
             Object.assign(chunk, { [k]: jsonpath.value(chunk, v) })
 
         } catch (e)
@@ -1403,6 +1411,9 @@ function convertJSONToXML_RTUpdates (rows: string[], config: customerConfig) {
     xmlRows = `<Envelope> <Body> <InsertUpdateRelationalTable> <TABLE_ID> ${config.listId} </TABLE_ID><ROWS>`
 
     let r = 0
+
+    debugger
+    console.info(`ConvertJSONToXMLRT - Rows Type: ${typeof (rows)}, rows: ${rows}`)
 
     rows.forEach(jo => {
         r++

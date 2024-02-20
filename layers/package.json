@@ -1,6 +1,6 @@
 {
-  "name": "tricklercache_lambda_s3",
-  "description": "TricklerCache Lambda-S3 Project",
+  "name": "tricklercache_lambda_s3_dropbucket",
+  "description": "TricklerCache Lambda-S3 DropBucket Project",
   "version": "0.0.1",
   "private": true,
   "type": "module",
@@ -17,7 +17,8 @@
     "lodash.get": "^4.4.2",
     "node-fetch": "^3.3.2",
     "papaparse": "^5.4.1",
-    "smithy": "^0.6.3"
+    "smithy": "^0.6.3",
+    "ssh2-sftp-client": "^8.1.0"
   },
   "browser": {
     "crypto": false
@@ -32,6 +33,7 @@
     "@types/lodash.get": "^4.4.7",
     "@types/node": "^20.5.0",
     "@types/papaparse": "^5.3.9",
+    "@types/ssh2-sftp-client": "^9.0.3",
     "@typescript-eslint/eslint-plugin": "^5.46.1",
     "@typescript-eslint/parser": "^5.46.1",
     "aws-lambda": "^1.0.7",
