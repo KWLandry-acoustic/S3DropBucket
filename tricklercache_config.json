@@ -9,6 +9,9 @@
       "restapiurl": "https://api-campaign-${config.region}-${config.pod}.goacoustic.com:443/rest",
       "authapiurl": "https://api-campaign-${config.region}-${config.pod}.goacoustic.com/oauth/token",
 
+      "DropBucket": "tricklercache",
+      "WorkBucket": "tricklercache-process",
+      "WorkQueue": "tricklercacheQueue",
 
       "DropBucketQuiesce": false,
       "ProcessQueueQuiesce": false,

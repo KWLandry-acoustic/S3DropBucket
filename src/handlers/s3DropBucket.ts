@@ -103,6 +103,9 @@ export interface tcConfig {
     LOGLEVEL: string
     AWS_REGION: string
     SQS_QUEUE_URL: string
+    s3DropBucket: string
+    s3DropBucketWorkBucket: string
+    s3DropBucketWorkQueue: string
     xmlapiurl: string
     restapiurl: string
     authapiurl: string
@@ -206,9 +209,9 @@ export const s3DropBucketSFTPHandler: Handler = async (event: SQSEvent, context:
         tcc = await getValidateTricklerConfig()
     }
 
-    console.info(`S3 Dropbucket SFTP Processor Selective Debug Set is: ${tcc.SelectiveDebug}`)
+    console.info(`S3 Dropbucket SFTP Processor Selective Debug Set is: ${process.env.SelectiveDebug!}`)
 
-    if (tcc.SelectiveDebug.indexOf("_9,") > -1) console.info(`Selective Debug 9 - Process Environment Vars: ${JSON.stringify(process.env)}`)
+    if (process.env.SelectiveDebug!!.indexOf("_9,") > -1) console.info(`Selective Debug 9 - Process Environment Vars: ${JSON.stringify(process.env)}`)
 
 
     console.info(`SFTP  Received Event: ${JSON.stringify(event)}`)
@@ -284,7 +287,7 @@ export const s3DropBucketSFTPHandler: Handler = async (event: SQSEvent, context:
 
     console.info(`Received SFTP SQS Events Batch of ${event.Records.length} records.`)
 
-    if (tcc.SelectiveDebug.indexOf("_4,") > -1) console.info(`Selective Debug 4 - Received ${event.Records.length} SFTP Queue Records. Records are: \n${JSON.stringify(event)}`)
+    if (process.env.SelectiveDebug!!.indexOf("_4,") > -1) console.info(`Selective Debug 4 - Received ${event.Records.length} SFTP Queue Records. Records are: \n${JSON.stringify(event)}`)
 
 
 
@@ -317,11 +320,11 @@ export const s3DropBucketSFTPHandler: Handler = async (event: SQSEvent, context:
         //When Testing - get some actual work queued
         if (tqm.workKey === 'process_2_pura_2023_10_27T15_11_40_732Z.csv')
         {
-            tqm.workKey = await getAnS3ObjectforTesting('tricklercache-process')
+            tqm.workKey = await getAnS3ObjectforTesting(process.env.s3DropBucket!)
         }
 
         console.info(`Processing Work Queue for ${tqm.workKey}`)
-        if (tcc.SelectiveDebug.indexOf("_11,") > -1) console.info(`Selective Debug 11 - SQS Events - Processing Batch Item ${JSON.stringify(q)}`)
+        if (process.env.SelectiveDebug!!.indexOf("_11,") > -1) console.info(`Selective Debug 11 - SQS Events - Processing Batch Item ${JSON.stringify(q)}`)
 
         // try
         // {
@@ -473,27 +476,28 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (event: SQSEvent
         tcc = await getValidateTricklerConfig()
     }
 
-    console.info(`S3 DropBucket Work Processor Selective Debug Set is: ${tcc.SelectiveDebug}`)
+    console.info(`S3 DropBucket Work Processor Selective Debug Set is: ${process.env.SelectiveDebug!}`)
 
-    if (tcc.SelectiveDebug.indexOf("_9,") > -1) console.info(`Selective Debug 9 - Process Environment Vars: ${JSON.stringify(process.env)}`)
+    if (process.env.SelectiveDebug!!.indexOf("_9,") > -1) console.info(`Selective Debug 9 - Process Environment Vars: ${JSON.stringify(process.env)}`)
 
-    if (tcc.ProcessQueueQuiesce) 
+
+    if (process.env.ProcessQueueQuiesce) 
     {
         console.info(`Work Process Queue Quiesce is in effect, no New Work will be Queued up in the SQS Process Queue.`)
         return
     }
 
-    if (tcc.QueueBucketPurgeCount > 0)
+    if (Number(process.env.QueueBucketPurgeCount!) > 0)
     {
-        console.info(`Purge Requested, Only action will be to Purge ${tcc.QueueBucketPurge} of ${tcc.QueueBucketPurgeCount} Records. `)
-        const d = await purgeBucket(tcc.QueueBucketPurgeCount, tcc.QueueBucketPurge)
+        console.info(`Purge Requested, Only action will be to Purge ${process.env.QueueBucketPurge} of ${process.env.QueueBucketPurgeCount} Records. `)
+        const d = await purgeBucket(Number(process.env.QueueBucketPurgeCount!), process.env.QueueBucketPurge!)
         return d
     }
 
-    if (tcc.reQueue !== '')
+    if (process.env.reQueue !== '')
     {
-        console.info(`ReQueue requested for all ${tcc.reQueue} updates on the Work Queue. `)
-        const d = await requeueWork(tcc.reQueue)
+        console.info(`ReQueue requested for all ${process.env.reQueue} updates on the Work Queue. `)
+        const d = await requeueWork(process.env.reQueue!)
         console.info(`ReQueue result: ${d}`)
     }
 
@@ -518,7 +522,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (event: SQSEvent
 
     console.info(`Received SQS Events Batch of ${event.Records.length} records.`)
 
-    if (tcc.SelectiveDebug.indexOf("_4,") > -1) console.info(`Selective Debug 4 - Received ${event.Records.length} Work Queue Records. Records are: \n${JSON.stringify(event)}`)
+    if (process.env.SelectiveDebug!!.indexOf("_4,") > -1) console.info(`Selective Debug 4 - Received ${event.Records.length} Work Queue Records. Records are: \n${JSON.stringify(event)}`)
 
     // event.Records.forEach((i) => {
     //     sqsBatchFail.batchItemFailures.push({ itemIdentifier: i.messageId })
@@ -540,11 +544,11 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (event: SQSEvent
         //When Testing - get some actual work queued
         if (tqm.workKey === 'process_2_pura_2023_10_27T15_11_40_732Z.csv')
         {
-            tqm.workKey = await getAnS3ObjectforTesting('tricklercache-process')
+            tqm.workKey = await getAnS3ObjectforTesting(process.env.s3DropBucketWorkBucket!)
         }
 
         console.info(`Processing Work Queue for ${tqm.workKey}`)
-        if (tcc.SelectiveDebug.indexOf("_11,") > -1) console.info(`Selective Debug 11 - SQS Events - Processing Batch Item ${JSON.stringify(q)}`)
+        if (process.env.SelectiveDebug!.indexOf("_11,") > -1) console.info(`Selective Debug 11 - SQS Events - Processing Batch Item ${JSON.stringify(q)}`)
 
         try
         {
@@ -552,14 +556,14 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (event: SQSEvent
             if (work.length > 0)        //Retreive Contents of the Work File  
             {
                 postResult = await postToCampaign(work, tqm.custconfig, tqm.updateCount)
-                if (tcc.SelectiveDebug.indexOf("_8,") > -1) console.info(`Selective Debug 8 - POST Result for ${tqm.workKey}: ${postResult}`)
+                if (process.env.SelectiveDebug!.indexOf("_8,") > -1) console.info(`Selective Debug 8 - POST Result for ${tqm.workKey}: ${postResult}`)
 
                 if (postResult.indexOf('retry') > -1)
                 {
                     console.warn(`Retry Marked for ${tqm.workKey} (Retry Report: ${sqsBatchFail.batchItemFailures.length + 1}) Returning Work Item ${q.messageId} to Process Queue.`)
                     //Add to BatchFail array to Retry processing the work 
                     sqsBatchFail.batchItemFailures.push({ itemIdentifier: q.messageId })
-                    if (tcc.SelectiveDebug.indexOf("_12,") > -1) console.info(`Selective Debug 12 - Added ${tqm.workKey} to SQS Events Retry \n${JSON.stringify(sqsBatchFail)}`)
+                    if (process.env.SelectiveDebug!.indexOf("_12,") > -1) console.info(`Selective Debug 12 - Added ${tqm.workKey} to SQS Events Retry \n${JSON.stringify(sqsBatchFail)}`)
                 }
 
                 if (postResult.toLowerCase().indexOf('unsuccessful post') > -1)
@@ -569,7 +573,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (event: SQSEvent
                 {
                     console.info(`Work Successfully Posted to Campaign (${tqm.workKey}), Deleting Work from S3 Process Queue`)
 
-                    const d: string = await deleteS3Object(tqm.workKey, 'tricklercache-process')
+                    const d: string = await deleteS3Object(tqm.workKey, process.env.s3DropBucketWorkBucket!)
                     if (d === '204') console.info(`Successful Deletion of Work: ${tqm.workKey}`)
                     else console.error(`Failed to Delete ${tqm.workKey}. Expected '204' but received ${d}`)
                 }
@@ -588,7 +592,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (event: SQSEvent
     console.info(`Processed ${event.Records.length} Work Queue records. Items Fail Count: ${sqsBatchFail.batchItemFailures.length}\nItems Failed List: ${JSON.stringify(sqsBatchFail)}`)
 
     //ToDo: Complete the Final Processing Outcomes messaging for Queue Processing 
-    // if (tcc.SelectiveDebug.indexOf("_21,") > -1) console.info(`Selective Debug 21 - \n${JSON.stringify(processS3ObjectStreamResolution)}`)
+    // if (process.env.SelectiveDebug!.indexOf("_21,") > -1) console.info(`Selective Debug 21 - \n${JSON.stringify(processS3ObjectStreamResolution)}`)
 
     return sqsBatchFail
 
@@ -633,9 +637,9 @@ export const s3DropBucketHandler: Handler = async (event: S3Event, context: Cont
         tcc = await getValidateTricklerConfig()
     }
 
-    console.info(`S3 DropBucket File Processor Selective Debug Set is: ${tcc.SelectiveDebug}`)
+    console.info(`S3 DropBucket File Processor Selective Debug Set is: ${process.env.SelectiveDebug!}`)
 
-    if (tcc.SelectiveDebug.indexOf("_9,") > -1) console.info(`Selective Debug 9 - Process Environment Vars: ${JSON.stringify(process.env)}`)
+    if (process.env.SelectiveDebug!.indexOf("_9,") > -1) console.info(`Selective Debug 9 - Process Environment Vars: ${JSON.stringify(process.env)}`)
 
     //When Local Testing - pull an S3 Object and so avoid the not-found error
     if (!event.Records[0].s3.object.key || event.Records[0].s3.object.key === 'devtest.csv')
@@ -645,14 +649,14 @@ export const s3DropBucketHandler: Handler = async (event: S3Event, context: Cont
     }
 
 
-    if (tcc.DropBucketPurgeCount > 0)
+    if (Number(process.env.DropBucketPurgeCount!) > 0)
     {
-        console.warn(`Purge Requested, Only action will be to Purge ${tcc.DropBucketPurge} of ${tcc.DropBucketPurgeCount} Records. `)
-        const d = await purgeBucket(tcc.DropBucketPurgeCount, tcc.DropBucketPurge)
+        console.warn(`Purge Requested, Only action will be to Purge ${process.env.DropBucketPurge} of ${process.env.DropBucketPurgeCount} Records. `)
+        const d = await purgeBucket(Number(process.env.DropBucketPurgeCount!), process.env.DropBucketPurge!)
         return d
     }
 
-    if (tcc.DropBucketQuiesce) 
+    if (process.env.DropBucketQuiesce) 
     {
         if (!localTesting)
         {
@@ -677,7 +681,7 @@ export const s3DropBucketHandler: Handler = async (event: S3Event, context: Cont
         key = r.s3.object.key
         const bucket = r.s3.bucket.name
 
-        if (!key.startsWith(tcc.prefixFocus)) return
+        if (!key.startsWith(process.env.prefixFocus!)) return
 
         //ToDo: Resolve Duplicates Issue - S3 allows Duplicate Object Names but Delete marks all Objects of same Name Deleted. 
         //   Which causes an issue with Key Not Found after an Object of Name A is processed and deleted, then another Object of Name A comes up in a Trigger.
@@ -713,7 +717,7 @@ export const s3DropBucketHandler: Handler = async (event: S3Event, context: Cont
 
                     // "{\"OnEndStreamEndResult\":\"S3 Content Stream Ended for pura_2024_02_06T18_53_39_117Z.json. Processed 1 records as 1 batches.\",\"OnCloseResult\":\"S3 Content Stream Closed for pura_2024_02_06T18_53_39_117Z.json\",\"OnEndStoreQueueResult\":{\"AddWorkToS3ProcessBucketResults\":{\"S3ProcessBucketResult\":\"200\",\"AddWorkToS3ProcessBucket\":\"Wrote Work File (pura_2024_02_06T18_53_39_117Z_json_update_1.xml) to S3 Processing Bucket (Result 200)\"},\"AddWorkToSQSProcessQueueResults\":{\"SQSWriteResult\":\"200\",\"SQSQueued_Metadata\":\"{\\\"$metadata\\\":{\\\"httpStatusCode\\\":200,\\\"requestId\\\":\\\"09a22ec4-f4de-5ff3-9d64-70f85970c5e6\\\",\\\"attempts\\\":1,\\\"totalRetryDelay\\\":0},\\\"MD5OfMessageAttributes\\\":\\\"9e4190fa2a65416b50c4fb048df384d5\\\",\\\"MD5OfMessageBody\\\":\\\"d690df155f4c619dd1a10814054768b1\\\",\\\"MessageId\\\":\\\"6fed0be3-b323-4da5-b700-9492b105b297\\\"}\"}}}"
 
-                    if (tcc.SelectiveDebug.indexOf("_11,") > -1) console.info(`Selective Debug${processResult}`)
+                    if (process.env.SelectiveDebug!.indexOf("_11,") > -1) console.info(`Selective Debug${processResult}`)
 
                     if (processResult.indexOf('S3ProcessBucketResult":"200"') > -1 &&
                         processResult.indexOf('SQSWriteResult":"200"') > -1)
@@ -766,7 +770,7 @@ export const s3DropBucketHandler: Handler = async (event: S3Event, context: Cont
             console.error(`Exception - Processing S3 Object Content Stream for ${key} \n${e}`)
         }
 
-        if (tcc.SelectiveDebug.indexOf("_3,") > -1) console.info(`Selective Debug 3 - Returned from Processing S3 Object Content Stream for ${key}. Result: ${JSON.stringify(processS3ObjectStreamResolution)}`)
+        if (process.env.SelectiveDebug!.indexOf("_3,") > -1) console.info(`Selective Debug 3 - Returned from Processing S3 Object Content Stream for ${key}. Result: ${JSON.stringify(processS3ObjectStreamResolution)}`)
 
 
 
@@ -777,7 +781,7 @@ export const s3DropBucketHandler: Handler = async (event: S3Event, context: Cont
     checkForTCConfigUpdates()
 
     console.info(`Completing S3 DropBucket Processing of Request Id ${event.Records[0].responseElements['x-amz-request-id']}`)
-    if (tcc.SelectiveDebug.indexOf("_20,") > -1) console.info(`Selective Debug 20 - \n${JSON.stringify(processS3ObjectStreamResolution)}`)
+    if (process.env.SelectiveDebug!.indexOf("_20,") > -1) console.info(`Selective Debug 20 - \n${JSON.stringify(processS3ObjectStreamResolution)}`)
 
     return JSON.stringify(processS3ObjectStreamResolution)
 }
@@ -849,7 +853,7 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
                 //#region
             }
 
-            s3ContentReadableStream.setMaxListeners(tcc.EventEmitterMaxListeners)
+            s3ContentReadableStream.setMaxListeners(Number(process.env.EventEmitterMaxListeners!))
 
 
             if (custConfig.format.toLowerCase() === 'json')
@@ -878,7 +882,7 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
                         recs++
                         if (recs > custConfig.updateMaxRows) throw new Error(`The number of Updates in this batch Exceeds Max Row Updates allowed ${recs} in the Customers Config. S3 Object ${key} will not be deleted to allow for review and possible restaging.`)
 
-                        if (tcc.SelectiveDebug.indexOf("_13,") > -1) console.info(`Selective Debug 13 - s3ContentStream OnData - Another chunk (ArrayLen:${Object.values(chunks).length} Recs:${recs} Batch:${batchCount} from ${key} - ${JSON.stringify(s3Chunk)}`)
+                        if (process.env.SelectiveDebug!.indexOf("_13,") > -1) console.info(`Selective Debug 13 - s3ContentStream OnData - Another chunk (ArrayLen:${Object.values(chunks).length} Recs:${recs} Batch:${batchCount} from ${key} - ${JSON.stringify(s3Chunk)}`)
 
 
                         const appliedMap = applyMap(s3Chunk, custConfig.map)
@@ -892,11 +896,11 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
                             batchCount++
                             const d = chunks
                             chunks = {}
-                            if (tcc.SelectiveDebug.indexOf('_99,') > -1) saveSampleJSON(JSON.stringify(d))
+                            if (process.env.SelectiveDebug!.indexOf('_99,') > -1) saveSampleJSON(JSON.stringify(d))
 
                             const sqwResult = await storeAndQueueWork(d, key, custConfig, batchCount)
 
-                            if (tcc.SelectiveDebug.indexOf("_2,") > -1) console.info(`Selective Debug 2: Content Stream OnData - Store And Queue Work for ${key} of ${batchCount + 1} Batches of ${Object.values(d).length} records, Result: \n${JSON.stringify(sqwResult)}`)
+                            if (process.env.SelectiveDebug!.indexOf("_2,") > -1) console.info(`Selective Debug 2: Content Stream OnData - Store And Queue Work for ${key} of ${batchCount + 1} Batches of ${Object.values(d).length} records, Result: \n${JSON.stringify(sqwResult)}`)
                             streamResult = { ...streamResult, "OnDataStoreQueueResult": sqwResult }
 
                             // console.info(`Another batch ${streamResult}`)
@@ -923,7 +927,7 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
                             throw new Error(`Exception - ${streamResult}`)
                         }
 
-                        if (tcc.SelectiveDebug.indexOf('_99,') > -1) saveSampleJSON(JSON.stringify(chunks))
+                        if (process.env.SelectiveDebug!.indexOf('_99,') > -1) saveSampleJSON(JSON.stringify(chunks))
 
                         debugger
 
@@ -939,7 +943,7 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
                         }
 
                         if (tcLogDebug) console.info(`Store and Queue Work Result: ${storeQueueResult}`)
-                        if (tcc.SelectiveDebug.indexOf("_2,") > -1) console.info(`Selective Debug 2: Content Stream OnEnd for (${key}) - Store and Queue Work of ${batchCount + 1} Batches of ${Object.values(d).length} records - Result: \n${JSON.stringify(storeQueueResult)}`)
+                        if (process.env.SelectiveDebug!.indexOf("_2,") > -1) console.info(`Selective Debug 2: Content Stream OnEnd for (${key}) - Store and Queue Work of ${batchCount + 1} Batches of ${Object.values(d).length} records - Result: \n${JSON.stringify(storeQueueResult)}`)
                         // }
 
                         batchCount = 0
@@ -1015,11 +1019,15 @@ function applyMap (chunk: JSON, map: Object) {
 async function checkForTCConfigUpdates () {
     if (tcLogDebug) console.info(`Checking for TricklerCache Config updates`)
     tcc = await getValidateTricklerConfig()
-    if (tcc.SelectiveDebug.indexOf("_1,") > -1) console.info(`Refreshed TricklerCache Config \n ${JSON.stringify(tcc)}`)
+    if (process.env.SelectiveDebug!.indexOf("_1,") > -1) console.info(`Refreshed TricklerCache Config \n ${JSON.stringify(tcc)}`)
 }
 
 async function getValidateTricklerConfig () {
-    //populate env vars with tricklercache config
+
+    //Article notes that Lambda runs faster referencing process.env vars, lets see.     
+    //Validate then populate env vars with tricklercache config
+
+
     const getObjectCmd = {
         Bucket: 'tricklercache-configs',
         Key: 'tricklercache_config.json',
@@ -1041,14 +1049,42 @@ async function getValidateTricklerConfig () {
     try
     {
 
-        if (tc.LOGLEVEL !== undefined && tc.LOGLEVEL.toLowerCase().indexOf('debug') > -1) tcLogDebug = true
-        if (tc.LOGLEVEL !== undefined && tc.LOGLEVEL.toLowerCase().indexOf('verbose') > -1) tcLogVerbose = true
+        if (tc.LOGLEVEL !== undefined && tc.LOGLEVEL.toLowerCase().indexOf('debug') > -1)
+        {
+            tcLogDebug = true
+            process.env.tcLogDebug = "true"
+        }
+
+        if (tc.LOGLEVEL !== undefined && tc.LOGLEVEL.toLowerCase().indexOf('verbose') > -1)
+        {
+            tcLogVerbose = true
+            process.env.tcLogVerbose = "true"
+        }
 
         if (tc.SelectiveDebug !== undefined) tcSelectiveDebug = tc.SelectiveDebug
 
 
-        if (tc.SQS_QUEUE_URL !== undefined) process.env.SQS_QUEUE_URL = tc.SQS_QUEUE_URL
-        else throw new Error(`Tricklercache Config invalid definition: SQS_QUEUE_URL - ${tc.SQS_QUEUE_URL}`)
+        if (!tc.s3DropBucket || tc.s3DropBucket === "")
+        {
+            throw new Error(`Exception - S3 DropBucket Configuration is not correct: ${tc.s3DropBucket}.`)
+        }
+        else process.env.s3DropBucket = tc.s3DropBucket
+
+        if (!tcc.s3DropBucketWorkBucket || tc.s3DropBucketWorkBucket === "")
+        {
+            throw new Error(`Exception - S3 DropBucket Work Bucket Configuration is not correct: ${tc.s3DropBucketWorkBucket}`)
+        }
+        else process.env.s3DropBucketWorkBucket = tc.s3DropBucketWorkBucket
+
+        if (!tc.s3DropBucketWorkQueue || tc.s3DropBucketWorkQueue === "")
+        {
+            throw new Error(`Exception - S3 DropBucket Work Queue Configuration is not correct: ${tc.s3DropBucketWorkQueue}`)
+        }
+        else process.env.s3DropBucketWorkQueue = tc.s3DropBucketWorkQueue
+
+
+        // if (tc.SQS_QUEUE_URL !== undefined) process.env.SQS_QUEUE_URL = tc.SQS_QUEUE_URL
+        // else throw new Error(`Tricklercache Config invalid definition: SQS_QUEUE_URL - ${tc.SQS_QUEUE_URL}`)
 
         if (tc.xmlapiurl != undefined) process.env.xmlapiurl = tc.xmlapiurl
         else throw new Error(`Tricklercache Config invalid definition: xmlapiurl - ${tc.xmlapiurl}`)
@@ -1069,6 +1105,7 @@ async function getValidateTricklerConfig () {
                 `Tricklercache Config invalid definition: ProcessQueueQuiesce - ${tc.ProcessQueueQuiesce}`,
             )
 
+        //deprecated in favor of using AWS interface to set these on the queue
         // if (tc.ProcessQueueVisibilityTimeout !== undefined)
         //     process.env.ProcessQueueVisibilityTimeout = tc.ProcessQueueVisibilityTimeout.toFixed()
         // else
@@ -1499,8 +1536,8 @@ function convertJSONToXML_DBUpdates (updates: {}, config: customerConfig) {
     xmlRows += `</Body></Envelope>`
 
     if (tcLogDebug) console.info(`Converting S3 Content to XML DB Updates. Packaging ${Object.values(updates).length} rows as updates to ${config.customer}'s ${config.listName}`)
-    if (tcc.SelectiveDebug.indexOf("_16,") > -1) console.info(`Selective Debug 16 - JSON to be converted to XML DB Updates: ${JSON.stringify(updates)}`)
-    if (tcc.SelectiveDebug.indexOf("_17,") > -1) console.info(`Selective Debug 17 - XML from JSON for DB Updates: ${xmlRows}`)
+    if (process.env.SelectiveDebug!.indexOf("_16,") > -1) console.info(`Selective Debug 16 - JSON to be converted to XML DB Updates: ${JSON.stringify(updates)}`)
+    if (process.env.SelectiveDebug!.indexOf("_17,") > -1) console.info(`Selective Debug 17 - XML from JSON for DB Updates: ${xmlRows}`)
 
 
     return xmlRows
@@ -1509,7 +1546,7 @@ function convertJSONToXML_DBUpdates (updates: {}, config: customerConfig) {
 async function addWorkToS3ProcessStore (queueContent: string, key: string) {
     //write to the S3 Process Bucket
 
-    if (tcc.QueueBucketQuiesce)
+    if (process.env.QueueBucketQuiesce)
     {
         console.warn(`Work/Process Bucket Quiesce is in effect, no New Work Files will be written to the S3 Queue Bucket.`)
         return
@@ -1518,7 +1555,7 @@ async function addWorkToS3ProcessStore (queueContent: string, key: string) {
 
     const s3PutInput = {
         Body: queueContent,
-        Bucket: 'tricklercache-process',
+        Bucket: process.env.s3DropBucketWorkQueue,
         Key: key,
     }
 
@@ -1536,7 +1573,7 @@ async function addWorkToS3ProcessStore (queueContent: string, key: string) {
                 if (S3ProcessBucketResult === '200')
                 {
                     AddWorkToS3ProcessBucket = `Wrote Work File (${key}) to S3 Processing Bucket (Result ${S3ProcessBucketResult})`
-                    if (tcc.SelectiveDebug.indexOf("_7,") > -1) console.info(`Selective Debug 7 - ${AddWorkToS3ProcessBucket}`)
+                    if (process.env.SelectiveDebug!.indexOf("_7,") > -1) console.info(`Selective Debug 7 - ${AddWorkToS3ProcessBucket}`)
                 }
                 else throw new Error(`Failed to write Work File to S3 Process Store (Result ${S3ProcessBucketResult}) for ${key}`)
             })
@@ -1563,7 +1600,7 @@ async function addWorkToSQSProcessQueue (config: customerConfig, key: string, ba
 
     const sqsParams = {
         MaxNumberOfMessages: 1,
-        QueueUrl: process.env.SQS_QUEUE_URL,
+        QueueUrl: process.env.s3DropBucketWorkQueue,
         VisibilityTimeout: parseInt(process.env.ProcessQueueVisibilityTimeout!),
         WaitTimeSeconds: parseInt(process.env.ProcessQueueWaitTimeSeconds!),
         MessageAttributes: {
@@ -1608,7 +1645,7 @@ async function addWorkToSQSProcessQueue (config: customerConfig, key: string, ba
                 }
                 SQSSendResult = JSON.stringify(sqsSendMessageResult)
 
-                if (tcc.SelectiveDebug.indexOf("_14,") > -1) console.info(`Selective Debug 14 - Queued Work to SQS Process Queue (${sqsQMsgBody.workKey}) - Result: ${sqsWriteResult} `)
+                if (process.env.SelectiveDebug!.indexOf("_14,") > -1) console.info(`Selective Debug 14 - Queued Work to SQS Process Queue (${sqsQMsgBody.workKey}) - Result: ${sqsWriteResult} `)
             })
             .catch(err => {
                 console.error(
@@ -1629,7 +1666,7 @@ async function addWorkToSQSProcessQueue (config: customerConfig, key: string, ba
 async function requeueWork (customer: string) {
     const cc = await getCustomerConfig(customer)
 
-    const bucket = 'tricklercache-process'
+    const bucket = process.env.s3DropBucketWorkBucket
 
     const listReq = {
         Bucket: bucket,
@@ -1854,7 +1891,7 @@ export async function postToCampaign (xmlCalls: string, config: customerConfig, 
     const host = `https://api-campaign-${config.region}-${config.pod}.goacoustic.com/XMLAPI`
 
 
-    if (tcc.SelectiveDebug.indexOf("_5,") > -1) console.info(`Selective Debug 5 - Updates to POST are: ${xmlCalls}`)
+    if (process.env.SelectiveDebug!.indexOf("_5,") > -1) console.info(`Selective Debug 5 - Updates to POST are: ${xmlCalls}`)
 
     let postRes
 
@@ -1998,7 +2035,7 @@ async function getAnS3ObjectforTesting (bucket: string) {
     const listReq = {
         Bucket: bucket,
         MaxKeys: 11,
-        Prefix: tcc.prefixFocus
+        Prefix: process.env.prefixFocus
     } as ListObjectsV2CommandInput
 
     let s3Key: string = ''
