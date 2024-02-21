@@ -102,7 +102,6 @@ export interface tcQueueMessage {
 export interface tcConfig {
     LOGLEVEL: string
     AWS_REGION: string
-    SQS_QUEUE_URL: string
     s3DropBucket: string
     s3DropBucketWorkBucket: string
     s3DropBucketWorkQueue: string
@@ -1558,7 +1557,7 @@ async function addWorkToS3ProcessStore (queueContent: string, key: string) {
 
     const s3PutInput = {
         Body: queueContent,
-        Bucket: tcc.s3DropBucketWorkQueue,
+        Bucket: tcc.s3DropBucketWorkBucket,
         Key: key,
     }
 
