@@ -705,15 +705,19 @@ export const s3DropBucketHandler: Handler = async (event: S3Event, context: Cont
 
             processS3ObjectStreamResolution = await processS3ObjectContentStream(key, bucket, customersConfig)
                 .then(async (res) => {
+                    let m
+                    try
+                    {
+                        processResult = JSON.stringify(res)
+                        m = processResult.substring(processResult.indexOf('Processed '), processResult.length)
+                        // "S3 Content Stream Ended for pura_2024_01_27T15_24_31_911Z.csv. Processed 78 records as 1 batches."
 
-
-                    processResult = JSON.stringify(res)
-
-                    const m = processResult.substring(processResult.indexOf('Processed '), processResult.length)
-                    // "S3 Content Stream Ended for pura_2024_01_27T15_24_31_911Z.csv. Processed 78 records as 1 batches."
-
-                    console.info(`Completed processing all records of the S3 Object ${key}. ${m}`)
-
+                        console.info(`Completed processing all records of the S3 Object ${key}. ${m}`)
+                    }
+                    catch (e)
+                    {
+                        console.error(`Exception parsing processResult string: ${processResult} `)
+                    }
                     // "{\"OnEndStreamEndResult\":\"S3 Content Stream Ended for pura_2024_02_06T18_53_39_117Z.json. Processed 1 records as 1 batches.\",\"OnCloseResult\":\"S3 Content Stream Closed for pura_2024_02_06T18_53_39_117Z.json\",\"OnEndStoreQueueResult\":{\"AddWorkToS3ProcessBucketResults\":{\"S3ProcessBucketResult\":\"200\",\"AddWorkToS3ProcessBucket\":\"Wrote Work File (pura_2024_02_06T18_53_39_117Z_json_update_1.xml) to S3 Processing Bucket (Result 200)\"},\"AddWorkToSQSProcessQueueResults\":{\"SQSWriteResult\":\"200\",\"SQSQueued_Metadata\":\"{\\\"$metadata\\\":{\\\"httpStatusCode\\\":200,\\\"requestId\\\":\\\"09a22ec4-f4de-5ff3-9d64-70f85970c5e6\\\",\\\"attempts\\\":1,\\\"totalRetryDelay\\\":0},\\\"MD5OfMessageAttributes\\\":\\\"9e4190fa2a65416b50c4fb048df384d5\\\",\\\"MD5OfMessageBody\\\":\\\"d690df155f4c619dd1a10814054768b1\\\",\\\"MessageId\\\":\\\"6fed0be3-b323-4da5-b700-9492b105b297\\\"}\"}}}"
 
                     if (tcc.SelectiveDebug.indexOf("_11,") > -1) console.info(`Selective Debug${processResult}`)
