@@ -967,12 +967,13 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
                     })
                 // #region
 
-                return { ...streamResult, "ReturnLocation": `Returning from ReadStream. ` }
+                // return { ...streamResult, "ReturnLocation": `Returning from ReadStream. ` }
 
             })
                 .then((r) => {
                     console.info(`${JSON.stringify(streamResult)} "ReturnLocation": "Returning from ReadStream Then Clause.\n${r}`)
-                    return { ...streamResult, "ReturnLocation": `Returning from ReadStream Then Clause. \n${r}` }
+                    const rs = { ...streamResult, "ReturnLocation": `Returning from ReadStream Then Clause. \n${r}` }
+                    return rs
                 })
                 .catch(e => {
                     const err = `Exception - ReadStream (catch) - Process S3 Object Content Stream for ${key}.\nResults: ${JSON.stringify(streamResult)}.\n${e} `
@@ -980,11 +981,10 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
                     throw new Error(err)
                 })
 
-            return readStream
+            return { ...readStream, "ReturnLocation": `...End of ReadStream Promise` }
         })
         .catch(e => {
             console.error(`Exception (error) - Process S3 Object Content Stream for ${key}.\nResults: ${JSON.stringify(streamResult)}.\n${e} `)
-
             throw new Error(`Exception (throw) - Process S3 Object Content Stream for ${key}.\nResults: ${JSON.stringify(streamResult)}.\n${e} `)
         })
 
