@@ -39,7 +39,7 @@ import sftp, { ListFilterFunction } from 'ssh2-sftp-client'
 
 const sftpClient = new sftp()
 
-import { close } from 'fs'
+import { ReadStream, close } from 'fs'
 
 const sqsClient = new SQSClient({})
 
@@ -706,6 +706,7 @@ export const s3DropBucketHandler: Handler = async (event: S3Event, context: Cont
             processS3ObjectStreamResolution = await processS3ObjectContentStream(key, bucket, customersConfig)
                 .then(async (res) => {
                     let m
+
                     try
                     {
                         processResult = JSON.stringify(res)
@@ -971,8 +972,9 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
 
             })
                 .then((r) => {
-                    console.info(`${JSON.stringify(streamResult)} "ReturnLocation": "Returning from ReadStream Then Clause.\n${r}`)
-                    const rs = { ...streamResult, "ReturnLocation": `Returning from ReadStream Then Clause. \n${r}` }
+                    const rm = `${JSON.stringify(streamResult)} "ReturnLocation": "Returning from ReadStream Then Clause.\n${JSON.stringify(r)}`
+                    console.info(rm)
+                    const rs = { ...streamResult, rm }
                     return rs
                 })
                 .catch(e => {
@@ -987,6 +989,8 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
             console.error(`Exception (error) - Process S3 Object Content Stream for ${key}.\nResults: ${JSON.stringify(streamResult)}.\n${e} `)
             throw new Error(`Exception (throw) - Process S3 Object Content Stream for ${key}.\nResults: ${JSON.stringify(streamResult)}.\n${e} `)
         })
+
+    return processS3Object
 
 }
 
