@@ -1070,7 +1070,7 @@ async function getValidateTricklerConfig () {
         }
         else process.env.s3DropBucket = tc.s3DropBucket
 
-        if (!tcc.s3DropBucketWorkBucket || tc.s3DropBucketWorkBucket === "")
+        if (!tc.s3DropBucketWorkBucket || tc.s3DropBucketWorkBucket === "")
         {
             throw new Error(`Exception - S3 DropBucket Work Bucket Configuration is not correct: ${tc.s3DropBucketWorkBucket}`)
         }
