@@ -209,7 +209,7 @@ export const s3DropBucketSFTPHandler: Handler = async (event: SQSEvent, context:
         tcc = await getValidateTricklerConfig()
     }
 
-    console.info(`S3 Dropbucket SFTP Processor Selective Debug Set is: ${process.env.SelectiveDebug!}`)
+    console.info(`S3 Dropbucket SFTP Processor Selective Debug Set is: ${tcc.SelectiveDebug!}`)
 
     if (tcc.SelectiveDebug.indexOf("_9,") > -1) console.info(`Selective Debug 9 - Process Environment Vars: ${JSON.stringify(process.env)}`)
 
@@ -320,7 +320,7 @@ export const s3DropBucketSFTPHandler: Handler = async (event: SQSEvent, context:
         //When Testing - get some actual work queued
         if (tqm.workKey === 'process_2_pura_2023_10_27T15_11_40_732Z.csv')
         {
-            tqm.workKey = await getAnS3ObjectforTesting(process.env.s3DropBucket!)
+            tqm.workKey = await getAnS3ObjectforTesting(tcc.s3DropBucket!)
         }
 
         console.info(`Processing Work Queue for ${tqm.workKey}`)
@@ -476,28 +476,28 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (event: SQSEvent
         tcc = await getValidateTricklerConfig()
     }
 
-    console.info(`S3 DropBucket Work Processor Selective Debug Set is: ${process.env.SelectiveDebug!}`)
+    console.info(`S3 DropBucket Work Processor Selective Debug Set is: ${tcc.SelectiveDebug!}`)
 
     if (tcc.SelectiveDebug.indexOf("_9,") > -1) console.info(`Selective Debug 9 - Process Environment Vars: ${JSON.stringify(process.env)}`)
 
 
-    if (process.env.ProcessQueueQuiesce) 
+    if (tcc.ProcessQueueQuiesce) 
     {
         console.info(`Work Process Queue Quiesce is in effect, no New Work will be Queued up in the SQS Process Queue.`)
         return
     }
 
-    if (Number(process.env.QueueBucketPurgeCount!) > 0)
+    if (tcc.QueueBucketPurgeCount > 0)
     {
-        console.info(`Purge Requested, Only action will be to Purge ${process.env.QueueBucketPurge} of ${process.env.QueueBucketPurgeCount} Records. `)
+        console.info(`Purge Requested, Only action will be to Purge ${tcc.QueueBucketPurge} of ${tcc.QueueBucketPurgeCount} Records. `)
         const d = await purgeBucket(Number(process.env.QueueBucketPurgeCount!), process.env.QueueBucketPurge!)
         return d
     }
 
-    if (process.env.reQueue !== '')
+    if (tcc.reQueue !== '')
     {
-        console.info(`ReQueue requested for all ${process.env.reQueue} updates on the Work Queue. `)
-        const d = await requeueWork(process.env.reQueue!)
+        console.info(`ReQueue requested for all ${tcc.reQueue} updates on the Work Queue. `)
+        const d = await requeueWork(tcc.reQueue!)
         console.info(`ReQueue result: ${d}`)
     }
 
@@ -544,7 +544,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (event: SQSEvent
         //When Testing - get some actual work queued
         if (tqm.workKey === 'process_2_pura_2023_10_27T15_11_40_732Z.csv')
         {
-            tqm.workKey = await getAnS3ObjectforTesting(process.env.s3DropBucketWorkBucket!)
+            tqm.workKey = await getAnS3ObjectforTesting(tcc.s3DropBucketWorkBucket!)
         }
 
         console.info(`Processing Work Queue for ${tqm.workKey}`)
@@ -1025,7 +1025,9 @@ async function checkForTCConfigUpdates () {
 
 async function getValidateTricklerConfig () {
 
-    //Article notes that Lambda runs faster referencing process.env vars, lets see.     
+    //Article notes that Lambda runs faster referencing process.env vars, lets see.  
+    //Did not pan out, with all the issues with conversions needed to actually use as primary reference, can't see it being faster
+    //Using process.env as a useful reference store, especially for accessToken, good across invocations
     //Validate then populate env vars with tricklercache config
 
 
@@ -1547,7 +1549,7 @@ function convertJSONToXML_DBUpdates (updates: {}, config: customerConfig) {
 async function addWorkToS3ProcessStore (queueContent: string, key: string) {
     //write to the S3 Process Bucket
 
-    if (process.env.QueueBucketQuiesce)
+    if (tcc.QueueBucketQuiesce)
     {
         console.warn(`Work/Process Bucket Quiesce is in effect, no New Work Files will be written to the S3 Queue Bucket.`)
         return
@@ -1556,7 +1558,7 @@ async function addWorkToS3ProcessStore (queueContent: string, key: string) {
 
     const s3PutInput = {
         Body: queueContent,
-        Bucket: process.env.s3DropBucketWorkQueue,
+        Bucket: tcc.s3DropBucketWorkQueue,
         Key: key,
     }
 
@@ -1601,9 +1603,10 @@ async function addWorkToSQSProcessQueue (config: customerConfig, key: string, ba
 
     const sqsParams = {
         MaxNumberOfMessages: 1,
-        QueueUrl: process.env.s3DropBucketWorkQueue,
-        VisibilityTimeout: parseInt(process.env.ProcessQueueVisibilityTimeout!),
-        WaitTimeSeconds: parseInt(process.env.ProcessQueueWaitTimeSeconds!),
+        QueueUrl: tcc.s3DropBucketWorkQueue,
+        //Defer to setting these on the Queue in AWS SQS Interface
+        // VisibilityTimeout: parseInt(tcc.ProcessQueueVisibilityTimeout),
+        // WaitTimeSeconds: parseInt(tcc.ProcessQueueWaitTimeSeconds),
         MessageAttributes: {
             FirstQueued: {
                 DataType: 'String',
@@ -1667,7 +1670,7 @@ async function addWorkToSQSProcessQueue (config: customerConfig, key: string, ba
 async function requeueWork (customer: string) {
     const cc = await getCustomerConfig(customer)
 
-    const bucket = process.env.s3DropBucketWorkBucket
+    const bucket = tcc.s3DropBucketWorkBucket
 
     const listReq = {
         Bucket: bucket,
@@ -1713,9 +1716,9 @@ async function requeueWork (customer: string) {
 
 //     const sqsParams = {
 //         MaxNumberOfMessages: 1,
-//         QueueUrl: process.env.SQS_QUEUE_URL,
-//         VisibilityTimeout: parseInt(process.env.ProcessQueueVisibilityTimeout!),
-//         WaitTimeSeconds: parseInt(process.env.ProcessQueueWaitTimeSeconds!),
+//         QueueUrl: tcc.SQS_QUEUE_URL,
+//         VisibilityTimeout: parseInt(tcc.ProcessQueueVisibilityTimeout!),
+//         WaitTimeSeconds: parseInt(tcc.ProcessQueueWaitTimeSeconds!),
 //         MessageAttributes: {
 //             FirstQueued: {
 //                 DataType: 'String',
@@ -1857,6 +1860,7 @@ export async function getAccessToken (config: customerConfig) {
 
 export async function postToCampaign (xmlCalls: string, config: customerConfig, count: string) {
 
+    //Store AccessAToken in process.env vars for reference across invocations, save requesting it repeatedly
     if (process.env.accessToken === undefined || process.env.accessToken === null || process.env.accessToken == '')
     {
         if (tcLogDebug) console.info(`POST to Campaign - Need AccessToken...`)
@@ -2036,7 +2040,7 @@ async function getAnS3ObjectforTesting (bucket: string) {
     const listReq = {
         Bucket: bucket,
         MaxKeys: 11,
-        Prefix: process.env.prefixFocus
+        Prefix: tcc.prefixFocus
     } as ListObjectsV2CommandInput
 
     let s3Key: string = ''
