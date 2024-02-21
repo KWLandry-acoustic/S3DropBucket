@@ -637,7 +637,7 @@ export const s3DropBucketHandler: Handler = async (event: S3Event, context: Cont
         tcc = await getValidateTricklerConfig()
     }
 
-    console.info(`S3 DropBucket File Processor Selective Debug Set is: ${process.env.SelectiveDebug!}`)
+    console.info(`S3 DropBucket File Processor Selective Debug Set is: ${String(process.env.SelectiveDebug!)}`)
 
     if (String(process.env.SelectiveDebug!).indexOf("_9,") > -1) console.info(`Selective Debug 9 - Process Environment Vars: ${JSON.stringify(process.env)}`)
 
@@ -656,7 +656,7 @@ export const s3DropBucketHandler: Handler = async (event: S3Event, context: Cont
         return d
     }
 
-    if (process.env.DropBucketQuiesce) 
+    if (Boolean(process.env.DropBucketQuiesce)) 
     {
         if (!localTesting)
         {
