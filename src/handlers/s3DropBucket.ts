@@ -882,11 +882,8 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
                 //Placeholder
             }
 
-
-            console.info(`S3 Content Stream Opened for ${key}`)
-
             const readStream = await new Promise(async (resolve, reject) => {
-                // #region
+
                 s3ContentReadableStream
                     .on('error', async function (err: string) {
                         const errMessage = `An error has stopped Content Parsing at record ${recs} for s3 object ${key}.\n${err}`
@@ -896,13 +893,13 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
                         batchCount = 0
                         recs = 0
 
-                        throw new Error(`Error on Readable Stream for DropBucket Object ${key}. \nError Message: ${errMessage}`)
+                        throw new Error(`Error on Readable Stream for s3DropBucket Object ${key}. \nError Message: ${errMessage}`)
                         // reject(streamResult)
                     })
                     .on('data', async function (s3Chunk: { key: number, value: JSON }) {
                         recs++
                         if (recs > custConfig.updateMaxRows) throw new Error(`The number of Updates in this batch Exceeds Max Row Updates allowed ${recs} in the Customers Config. S3 Object ${key} will not be deleted to allow for review and possible restaging.`)
-
+                        debugger
                         try
                         {
                             const d = s3Chunk.value
@@ -930,18 +927,18 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
                             }
                         } catch (e)
                         {
-                            console.error(`Exception - OnData Processing for ${key} \n${e}`)
+                            console.error(`Exception - Read Stream OnData Processing for ${key} \n${e}`)
                         }
                     })
 
                     .on('end', async function () {
                         batchCount++
-
+                        debugger
                         const streamEndResult = `S3 Content Stream Ended for ${key}. Processed ${recs} records as ${batchCount} batches.`
                         // "S3 Content Stream Ended for pura_2024_01_22T18_02_45_204Z.csv. Processed 33 records as 1 batches."
                         // console.info(`OnEnd - Stream End Result: ${streamEndResult}`)
                         streamResult = {
-                            ...streamResult, "OnEndStreamEndResult": streamEndResult
+                            ...streamResult, "OnEnd_StreamEndResult": streamEndResult
                         }
 
                         if (recs < 1 && Object.values(chunks).length < 1)
@@ -955,8 +952,6 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
 
                         if (tcc.SelectiveDebug.indexOf('_99,') > -1) saveSampleJSON(JSON.stringify(chunks))
 
-
-
                         const d = chunks
                         chunks = [] as string[]
 
@@ -965,7 +960,7 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
                         const storeQueueResult = await storeAndQueueWork(d, key, custConfig, batchCount)
                         // "{\"AddWorkToS3ProcessBucketResults\":{\"AddWorkToS3ProcessBucket\":\"Wrote Work File (process_0_pura_2024_01_22T18_02_46_119Z_csv.xml) to S3 Processing Bucket (Result 200)\",\"S3ProcessBucketResult\":\"200\"},\"AddWorkToSQSProcessQueueResults\":{\"sqsWriteResult\":\"200\",\"workQueuedSuccess\":true,\"SQSSendResult\":\"{\\\"$metadata\\\":{\\\"httpStatusCode\\\":200,\\\"requestId\\\":\\\"e70fba06-94f2-5608-b104-e42dc9574636\\\",\\\"attempts\\\":1,\\\"totalRetryDelay\\\":0},\\\"MD5OfMessageAttributes\\\":\\\"0bca0dfda87c206313963daab8ef354a\\\",\\\"MD5OfMessageBody\\\":\\\"940f4ed5927275bc93fc945e63943820\\\",\\\"MessageId\\\":\\\"cf025cb3-dce3-4564-89a5-23dcae86dd42\\\"}\"}}"
                         streamResult = {
-                            ...streamResult, "OnEndStoreQueueResult": storeQueueResult
+                            ...streamResult, "OnEnd_StoreQueueResult": storeQueueResult
                         }
 
                         if (tcLogDebug) console.info(`Store and Queue Work Result: ${storeQueueResult}`)
@@ -981,14 +976,15 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
 
                     .on('close', async function () {
 
-                        streamResult = { ...streamResult, "OnCloseResult": `S3 Content Stream Closed for ${key}` }
+                        streamResult = { ...streamResult, "OnClose_Result": `S3 Content Stream Closed for ${key}` }
 
                         chunks = [] as string[]
                         batchCount = 0
                         recs = 0
 
                     })
-                // #region
+
+                console.info(`S3 Content Stream Opened for ${key}`)
 
                 // return { ...streamResult, "ReturnLocation": `Returning from ReadStream. ` }
 
