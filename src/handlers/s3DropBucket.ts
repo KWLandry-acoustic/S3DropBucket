@@ -979,6 +979,7 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
 
                 console.info(`S3 Content Stream Opened for ${key}`)
                 console.info(`Process Environment Vars: ${JSON.stringify(process.env)}`)
+                console.info(`TCC Var: ${JSON.stringify(tcc)}`)
 
                 // return { ...streamResult, "ReturnLocation": `Returning from ReadStream. ` }
 
