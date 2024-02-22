@@ -864,7 +864,7 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
                 //#region
             }
 
-            s3ContentReadableStream = s3ContentReadableStream.pipe(jsonStreamValues)
+            // s3ContentReadableStream = s3ContentReadableStream.pipe(jsonStreamValues)
             // s3ContentReadableStream = s3ContentReadableStream.pipe(jsonBatch)
 
             s3ContentReadableStream.setMaxListeners(Number(tcc.EventEmitterMaxListeners))
