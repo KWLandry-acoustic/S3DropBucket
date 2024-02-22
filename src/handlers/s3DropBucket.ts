@@ -927,37 +927,47 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
                     .on('end', async function () {
                         batchCount++
                         debugger
-                        const streamEndResult = `S3 Content Stream Ended for ${key}. Processed ${recs} records as ${batchCount} batches.`
-                        // "S3 Content Stream Ended for pura_2024_01_22T18_02_45_204Z.csv. Processed 33 records as 1 batches."
-                        // console.info(`OnEnd - Stream End Result: ${streamEndResult}`)
-                        streamResult = {
-                            ...streamResult, "OnEnd_StreamEndResult": streamEndResult
-                        }
-
-                        if (recs < 1 && Object.values(chunks).length < 1)
+                        try
                         {
+                            const streamEndResult = `S3 Content Stream Ended for ${key}. Processed ${recs} records as ${batchCount} batches.`
+                            // "S3 Content Stream Ended for pura_2024_01_22T18_02_45_204Z.csv. Processed 33 records as 1 batches."
+                            // console.info(`OnEnd - Stream End Result: ${streamEndResult}`)
                             streamResult = {
-                                ...streamResult, "Exception - ": `Exception - No records returned from parsing file. Check the content as well as the configured file format (${custConfig.format}) matches the content of the file.`
+                                ...streamResult, "OnEnd_StreamEndResult": streamEndResult
                             }
-                            console.error(`Exception - ${JSON.stringify(streamResult)}`)
-                            throw new Error(`Exception - ${streamResult}`)
+
+                            if (recs < 1 && Object.values(chunks).length < 1)
+                            {
+                                streamResult = {
+                                    ...streamResult, "Exception - ": `Exception - No records returned from parsing file. Check the content as well as the configured file format (${custConfig.format}) matches the content of the file.`
+                                }
+                                console.error(`Exception - ${JSON.stringify(streamResult)}`)
+                                throw new Error(`Exception - ${streamResult}`)
+                            }
+
+                            if (tcc.SelectiveDebug.indexOf('_99,') > -1) saveSampleJSON(JSON.stringify(chunks))
+
+                            const d = chunks
+                            chunks = [] as string[]
+
+                            // if (d.length > 0)
+                            // {
+                            const storeQueueResult = await storeAndQueueWork(d, key, custConfig, batchCount)
+                            // "{\"AddWorkToS3ProcessBucketResults\":{\"AddWorkToS3ProcessBucket\":\"Wrote Work File (process_0_pura_2024_01_22T18_02_46_119Z_csv.xml) to S3 Processing Bucket (Result 200)\",\"S3ProcessBucketResult\":\"200\"},\"AddWorkToSQSProcessQueueResults\":{\"sqsWriteResult\":\"200\",\"workQueuedSuccess\":true,\"SQSSendResult\":\"{\\\"$metadata\\\":{\\\"httpStatusCode\\\":200,\\\"requestId\\\":\\\"e70fba06-94f2-5608-b104-e42dc9574636\\\",\\\"attempts\\\":1,\\\"totalRetryDelay\\\":0},\\\"MD5OfMessageAttributes\\\":\\\"0bca0dfda87c206313963daab8ef354a\\\",\\\"MD5OfMessageBody\\\":\\\"940f4ed5927275bc93fc945e63943820\\\",\\\"MessageId\\\":\\\"cf025cb3-dce3-4564-89a5-23dcae86dd42\\\"}\"}}"
+                            streamResult = {
+                                ...streamResult, "OnEnd_StoreQueueResult": storeQueueResult
+                            }
+
+                            console.info(`Content Stream OnEnd for (${key}) - Store and Queue Work of ${batchCount + 1} Batches of ${Object.values(d).length} records - Result: \n${JSON.stringify(streamResult)}`)
+
+                        } catch (e)
+                        {
+                            console.error(`Exception - ReadStream OnEnd Processing - \n${e}`)
                         }
 
-                        if (tcc.SelectiveDebug.indexOf('_99,') > -1) saveSampleJSON(JSON.stringify(chunks))
-
-                        const d = chunks
-                        chunks = [] as string[]
-
-                        // if (d.length > 0)
-                        // {
-                        const storeQueueResult = await storeAndQueueWork(d, key, custConfig, batchCount)
-                        // "{\"AddWorkToS3ProcessBucketResults\":{\"AddWorkToS3ProcessBucket\":\"Wrote Work File (process_0_pura_2024_01_22T18_02_46_119Z_csv.xml) to S3 Processing Bucket (Result 200)\",\"S3ProcessBucketResult\":\"200\"},\"AddWorkToSQSProcessQueueResults\":{\"sqsWriteResult\":\"200\",\"workQueuedSuccess\":true,\"SQSSendResult\":\"{\\\"$metadata\\\":{\\\"httpStatusCode\\\":200,\\\"requestId\\\":\\\"e70fba06-94f2-5608-b104-e42dc9574636\\\",\\\"attempts\\\":1,\\\"totalRetryDelay\\\":0},\\\"MD5OfMessageAttributes\\\":\\\"0bca0dfda87c206313963daab8ef354a\\\",\\\"MD5OfMessageBody\\\":\\\"940f4ed5927275bc93fc945e63943820\\\",\\\"MessageId\\\":\\\"cf025cb3-dce3-4564-89a5-23dcae86dd42\\\"}\"}}"
-                        streamResult = {
-                            ...streamResult, "OnEnd_StoreQueueResult": storeQueueResult
-                        }
 
                         if (tcLogDebug) console.info(`Store and Queue Work Result: ${storeQueueResult}`)
-                        if (tcc.SelectiveDebug.indexOf("_2,") > -1) console.info(`Selective Debug 2: Content Stream OnEnd for (${key}) - Store and Queue Work of ${batchCount + 1} Batches of ${Object.values(d).length} records - Result: \n${JSON.stringify(storeQueueResult)}`)
+                        if (tcc.SelectiveDebug.indexOf("_2,") > -1) console.info(`Selective Debug 2: Content Stream OnEnd for (${key}) - Store and Queue Work of ${batchCount + 1} Batches of ${Object.values(d).length} records - Result: \n${JSON.stringify(streamResult)}`)
                         // }
 
                         batchCount = 0
@@ -978,8 +988,6 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
                     })
 
                 console.info(`S3 Content Stream Opened for ${key}`)
-                console.info(`Process Environment Vars: ${JSON.stringify(process.env)}`)
-                console.info(`TCC Var: ${JSON.stringify(tcc)}`)
 
                 // return { ...streamResult, "ReturnLocation": `Returning from ReadStream. ` }
 
