@@ -927,6 +927,9 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
                     .on('end', async function () {
                         batchCount++
                         debugger
+
+                        const d = chunks
+
                         try
                         {
                             const streamEndResult = `S3 Content Stream Ended for ${key}. Processed ${recs} records as ${batchCount} batches.`
@@ -947,7 +950,7 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
 
                             if (tcc.SelectiveDebug.indexOf('_99,') > -1) saveSampleJSON(JSON.stringify(chunks))
 
-                            const d = chunks
+
                             chunks = [] as string[]
 
                             // if (d.length > 0)
@@ -958,6 +961,8 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
                                 ...streamResult, "OnEnd_StoreQueueResult": storeQueueResult
                             }
 
+                            if (tcLogDebug) console.info(`Store and Queue Work Result: ${storeQueueResult}`)
+
                             console.info(`Content Stream OnEnd for (${key}) - Store and Queue Work of ${batchCount + 1} Batches of ${Object.values(d).length} records - Result: \n${JSON.stringify(streamResult)}`)
 
                         } catch (e)
@@ -966,7 +971,6 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
                         }
 
 
-                        if (tcLogDebug) console.info(`Store and Queue Work Result: ${storeQueueResult}`)
                         if (tcc.SelectiveDebug.indexOf("_2,") > -1) console.info(`Selective Debug 2: Content Stream OnEnd for (${key}) - Store and Queue Work of ${batchCount + 1} Batches of ${Object.values(d).length} records - Result: \n${JSON.stringify(streamResult)}`)
                         // }
 
