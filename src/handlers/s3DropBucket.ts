@@ -641,13 +641,6 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (event: SQSEvent
 
 export const s3DropBucketHandler: Handler = async (event: S3Event, context: Context) => {
 
-    //
-    // INFO Started Processing inbound data(pura_2023_11_16T20_24_37_627Z.csv)
-    // INFO Completed processing inbound S3 Object Stream undefined
-    // INFO Successful Delete of pura_2023_11_16T20_24_37_627Z.csv(Result 204)
-    //
-
-
     let processS3ObjectStreamResolution = {}
     let delResultCode
 
@@ -985,6 +978,7 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
                     })
 
                 console.info(`S3 Content Stream Opened for ${key}`)
+                console.info(`Process Environment Vars: ${JSON.stringify(process.env)}`)
 
                 // return { ...streamResult, "ReturnLocation": `Returning from ReadStream. ` }
 
