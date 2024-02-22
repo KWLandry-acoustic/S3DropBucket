@@ -772,9 +772,6 @@ export const s3DropBucketHandler: Handler = async (event: S3Event, context: Cont
                         throw new Error(`Exception - Processing S3 Object - Unsuccessful Cleanup - ${dr}`)
                     }
 
-
-                    debugger
-
                     return processResult
                 })
                 .catch(e => {
@@ -906,29 +903,35 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
                         recs++
                         if (recs > custConfig.updateMaxRows) throw new Error(`The number of Updates in this batch Exceeds Max Row Updates allowed ${recs} in the Customers Config. S3 Object ${key} will not be deleted to allow for review and possible restaging.`)
 
-                        debugger
-                        const d = s3Chunk.value
-
-                        if (tcc.SelectiveDebug.indexOf("_13,") > -1) console.info(`Selective Debug 13 - s3ContentStream OnData - Another chunk (Num of Entries:${Object.values(s3Chunk).length} Recs:${recs} Batch:${batchCount} from ${key} - ${JSON.stringify(d)}`)
-
-                        const appliedMap = applyMap(d, custConfig.map)
-                        chunks = { ...chunks, ...appliedMap }
-
-                        if (Object.values(chunks).length > 98)
+                        try
                         {
-                            batchCount++
-                            const d = chunks
-                            chunks = {}
-                            if (tcc.SelectiveDebug.indexOf('_99,') > -1) saveSampleJSON(JSON.stringify(d))
+                            const d = s3Chunk.value
 
-                            const sqwResult = await storeAndQueueWork(d, key, custConfig, batchCount)
+                            if (tcc.SelectiveDebug.indexOf("_13,") > -1) console.info(`Selective Debug 13 - s3ContentStream OnData - Another chunk (Num of Entries:${Object.values(s3Chunk).length} Recs:${recs} Batch:${batchCount} from ${key} - ${JSON.stringify(d)}`)
 
-                            if (tcc.SelectiveDebug.indexOf("_2,") > -1) console.info(`Selective Debug 2: Content Stream OnData - Store And Queue Work for ${key} of ${batchCount + 1} Batches of ${Object.values(d).length} records, Result: \n${JSON.stringify(sqwResult)}`)
-                            streamResult = { ...streamResult, "OnDataStoreQueueResult": sqwResult }
+                            const appliedMap = applyMap(d, custConfig.map)
+                            chunks = { ...chunks, ...appliedMap }
 
-                            // console.info(`Another batch ${streamResult}`)
+                            if (Object.values(chunks).length > 98)
+                            {
+                                batchCount++
+                                const d = chunks
+                                chunks = {}
+                                if (tcc.SelectiveDebug.indexOf('_99,') > -1) saveSampleJSON(JSON.stringify(d))
+
+                                const sqwResult = await storeAndQueueWork(d, key, custConfig, batchCount)
+
+                                debugger
+
+                                if (tcc.SelectiveDebug.indexOf("_2,") > -1) console.info(`Selective Debug 2: Content Stream OnData - Store And Queue Work for ${key} of ${batchCount + 1} Batches of ${Object.values(d).length} records, Result: \n${JSON.stringify(sqwResult)}`)
+                                streamResult = { ...streamResult, "OnDataStoreQueueResult": sqwResult }
+
+                                // console.info(`Another batch ${streamResult}`)
+                            }
+                        } catch (e)
+                        {
+                            console.error(`Exception - OnData Processing for ${key} \n${e}`)
                         }
-
                     })
 
                     .on('end', async function () {
@@ -940,7 +943,7 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
                         streamResult = {
                             ...streamResult, "OnEndStreamEndResult": streamEndResult
                         }
-                        debugger
+
                         if (recs < 1 && Object.values(chunks).length < 1)
                         {
                             streamResult = {
@@ -952,7 +955,7 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
 
                         if (tcc.SelectiveDebug.indexOf('_99,') > -1) saveSampleJSON(JSON.stringify(chunks))
 
-                        debugger
+
 
                         const d = chunks
                         chunks = [] as string[]
@@ -1020,7 +1023,7 @@ function applyMap (chunk: JSON, map: Object) {
 
         try
         {
-            debugger
+
             Object.assign(chunk, { [k]: jsonpath.value(chunk, v) })
 
         } catch (e)
@@ -1478,7 +1481,7 @@ function convertJSONToXML_RTUpdates (updates: {}, config: customerConfig) {
 
     let r = 0
 
-    debugger
+
 
     Object.keys(updates).forEach(jo => {
         r++
@@ -1535,7 +1538,7 @@ function convertJSONToXML_DBUpdates (updates: {}, config: customerConfig) {
 
             xmlRows += `<SYNC_FIELDS>`
             lk.forEach(k => {
-                debugger
+
                 k = k.trim()
                 const sf = `<SYNC_FIELD><NAME>${k}</NAME><VALUE><![CDATA[${j[k]}]]></VALUE></SYNC_FIELD>`
                 xmlRows += sf
@@ -1707,7 +1710,7 @@ async function requeueWork (customer: string) {
     let q = 0
     let isTruncated: boolean | unknown = true
 
-    debugger
+
 
     try
     {
@@ -1967,7 +1970,7 @@ export async function postToCampaign (xmlCalls: string, config: customerConfig, 
             if (result.toLowerCase().indexOf("<failure ") > -1)
             {
                 let msg = ''
-                debugger
+
                 const m = result.match(/<FAILURE (.*)>$/gim)
 
                 if (m && m?.length > 0)
@@ -2013,7 +2016,7 @@ async function deleteS3Object (s3ObjKey: string, bucket: string) {
 
     let delRes = ''
 
-    // debugger
+    //  
     //ToDo: Attempt to uniquely delete one object with a duplicate name of another object (Yep, that's a thing in S3)
     // const listObjectCommand = {
     //     Bucket: bucket, // required
@@ -2027,10 +2030,10 @@ async function deleteS3Object (s3ObjKey: string, bucket: string) {
     // const locResponse = await s3.send(loc)
     //     .then(async (listResult: ListObjectsV2CommandOutput) => {
     //         console.info(`ListObject Response: ${JSON.stringify(listResult)}`)
-    //         debugger
+    //          
     //     })
 
-    // debugger
+    //  
 
 
     try
