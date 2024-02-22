@@ -21,6 +21,29 @@ import { parse } from 'csv-parse'
 
 import jsonpath from 'jsonpath'
 
+// import { parser } from 'stream-json/Parser.js'
+// import { parser } from 'stream-json'
+
+import pkg from 'stream-json'
+const { parser } = pkg
+
+import pkg2 from 'stream-json/streamers/StreamValues.js'
+const { streamValues } = pkg2
+
+import pkg3 from 'stream-json/utils/Batch.js'
+const { batch } = pkg3
+
+import chain from 'stream-chain'
+const jsonChain = chain
+
+// import { Stream } from 'stream'
+// import { parser } from 'stream-json/Parser.js'
+
+
+const jsonParser = new pkg.Parser()
+const jsonBatch = new pkg3.Duplex
+const jsonStreamValues = pkg2.withParser()
+
 import {
     SQSClient,
     ReceiveMessageCommand,
@@ -40,6 +63,8 @@ import sftp, { ListFilterFunction } from 'ssh2-sftp-client'
 const sftpClient = new sftp()
 
 import { ReadStream, close } from 'fs'
+
+
 
 const sqsClient = new SQSClient({})
 
@@ -849,6 +874,9 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
                 //#region
             }
 
+            s3ContentReadableStream = s3ContentReadableStream.pipe(jsonStreamValues)
+            // s3ContentReadableStream = s3ContentReadableStream.pipe(jsonBatch)
+
             s3ContentReadableStream.setMaxListeners(Number(tcc.EventEmitterMaxListeners))
 
 
@@ -874,19 +902,18 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
                         throw new Error(`Error on Readable Stream for DropBucket Object ${key}. \nError Message: ${errMessage}`)
                         // reject(streamResult)
                     })
-                    .on('data', async function (s3Chunk: JSON) {
+                    .on('data', async function (s3Chunk: { key: number, value: JSON }) {
                         recs++
                         if (recs > custConfig.updateMaxRows) throw new Error(`The number of Updates in this batch Exceeds Max Row Updates allowed ${recs} in the Customers Config. S3 Object ${key} will not be deleted to allow for review and possible restaging.`)
 
-                        if (tcc.SelectiveDebug.indexOf("_13,") > -1) console.info(`Selective Debug 13 - s3ContentStream OnData - Another chunk (ArrayLen:${Object.values(chunks).length} Recs:${recs} Batch:${batchCount} from ${key} - ${JSON.stringify(s3Chunk)}`)
+                        debugger
+                        const d = s3Chunk.value
 
+                        if (tcc.SelectiveDebug.indexOf("_13,") > -1) console.info(`Selective Debug 13 - s3ContentStream OnData - Another chunk (Num of Entries:${Object.values(s3Chunk).length} Recs:${recs} Batch:${batchCount} from ${key} - ${JSON.stringify(d)}`)
 
-                        const appliedMap = applyMap(s3Chunk, custConfig.map)
-
-
+                        const appliedMap = applyMap(d, custConfig.map)
                         chunks = { ...chunks, ...appliedMap }
 
-                        debugger
                         if (Object.values(chunks).length > 98)
                         {
                             batchCount++

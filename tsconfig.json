@@ -3,14 +3,15 @@
     "lib": [
       "es2023"
     ],
-    "module": "nodenext",
+    "noEmit": true,
+    "module": "Node16",
     "moduleResolution": "Node16",
     "resolveJsonModule": true, /* Enable importing .json files. */
     "target": "es2022",
     "baseUrl": ".",
     // "sourceMap": true,
     "inlineSourceMap": true, /* Include sourcemap files inside the emitted JavaScript. */
-    "noEmit": true,
+
     "preserveConstEnums": true,
     "isolatedModules": true,
     "strict": true,
@@ -43,7 +44,7 @@
     // "moduleDetection": "auto",                        /* Control what method is used to detect module-format JS files. */
     /* Modules */
     // "module": "commonjs",                                /* Specify what module code is generated. */
-    // "rootDir": "./",                                  /* Specify the root folder within your source files. */
+    // "rootDir": "./", /* Specify the root folder within your source files. */
     // "moduleResolution": "Node16",                        /* Specify how TypeScript looks up a file from a given module specifier. */
     // "baseUrl": "./",                                  /* Specify the base directory to resolve non-relative module names. */
     // "paths": {
@@ -65,7 +66,7 @@
     /* JavaScript Support */
     // "allowJs": true,                                  /* Allow JavaScript files to be a part of your program. Use the 'checkJS' option to get errors from these files. */
     // "checkJs": true,                                  /* Enable error reporting in type-checked JavaScript files. */
-    // "maxNodeModuleJsDepth": 1,                        /* Specify the maximum folder depth used for checking JavaScript files from 'node_modules'. Only applicable with 'allowJs'. */
+    // "maxNodeModuleJsDepth": 1, /* Specify the maximum folder depth used for checking JavaScript files from 'node_modules'. Only applicable with 'allowJs'. */
     /* Emit */
     // "declaration": true,                              /* Generate .d.ts files from TypeScript and JavaScript files in your project. */
     // "declarationMap": true,                           /* Create sourcemaps for d.ts files. */
@@ -123,7 +124,9 @@
   "include": [
     "src/**/*.ts",
     "src/**/*.js"
-    , "src/handlers/main.mjs", "scratchTests/src/main.ts" ],
+    // "src/handlers/main.mjs",
+    // "scratchTests/src/main.ts" 
+  ],
   "exclude": [
     "node_modules",
     "**/*.test.ts",
