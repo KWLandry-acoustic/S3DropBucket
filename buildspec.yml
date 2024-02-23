@@ -9,7 +9,6 @@ phases:
 
   pre_build:
     commands:
-      - rm -r ./tricklercache/.aws-sam/deps
       - cp package.json layers
       - cp package-lock.json layers
       - cd layers
