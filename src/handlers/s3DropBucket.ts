@@ -21,6 +21,51 @@ import { parse } from 'csv-parse'
 
 import jsonpath from 'jsonpath'
 
+//
+//StreamJSON Package
+//Emits a single line/Property at a time, rather than the complete Object,
+//
+
+// import { JSONParser } from '@streamparser/json'
+// const jsonParser = new JSONParser()
+
+//json-node Stream compatible package
+import { JSONParser, Tokenizer, TokenParser } from '@streamparser/json-node'
+// {
+//  stringBufferSize: <number>, // set to 0 to don't buffer. Min valid value is 4.
+//  numberBufferSize: <number>, // set to 0 to don't buffer.
+//  separator: <string>, // separator between object. For example `\n` for nd-js.
+//  emitPartialTokens: <boolean> // whether to emit tokens mid-parsing.
+// }
+
+const jsonParser = new JSONParser({ stringBufferSize: undefined, paths: ['$'] })
+
+//The following are what make up JSONParser but can be broken out to process data more granularly
+const jsonTZParser = new Tokenizer({
+    "stringBufferSize": 64,
+    "numberBufferSize": 64,
+    "separator": "",
+    "emitPartialTokens": false
+})
+// {
+//     paths: <string[]>,
+//     keepStack: <boolean>, // whether to keep all the properties in the stack
+//     separator: <string>, // separator between object. For example `\n` for nd-js. If left empty or set to undefined, the token parser will end after parsing the first object. To parse multiple object without any delimiter just set it to the empty string `''`.
+//     emitPartialValues: <boolean>, // whether to emit values mid-parsing.
+// }
+const jsonTParser = new TokenParser(
+    {
+        // paths: [''],                //JSONPath partial support see docs.
+        keepStack: true,            // whether to keep all the properties in the stack
+        separator: '',              // separator between object. For example `\n` for nd-js. If left empty or set to undefined, the token parser will end after parsing the first object. To parse multiple object without any delimiter just set it to the empty string `''`.
+        emitPartialValues: false,   // whether to emit values mid-parsing.
+    })
+
+
+//
+// stream-json Package - keeps failing (Silently) the Stream Pipeline, 
+//
+/**
 // import { parser } from 'stream-json/Parser.js'
 // import { parser } from 'stream-json'
 
@@ -43,6 +88,7 @@ const jsonChain = chain
 const jsonParser = new pkg.Parser()
 const jsonBatch = new pkg3.Duplex
 const jsonStreamValues = pkg2.withParser()
+ */
 
 import {
     SQSClient,
@@ -866,6 +912,8 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
 
             // s3ContentReadableStream = s3ContentReadableStream.pipe(jsonStreamValues)
             // s3ContentReadableStream = s3ContentReadableStream.pipe(jsonBatch)
+
+            s3ContentReadableStream = s3ContentReadableStream.pipe(jsonParser)
 
             s3ContentReadableStream.setMaxListeners(Number(tcc.EventEmitterMaxListeners))
 

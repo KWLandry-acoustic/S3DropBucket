@@ -8,6 +8,8 @@
     "@aws-sdk/client-scheduler": "^3.515.0",
     "@aws-sdk/fetch-http-handler": "^3.374.0",
     "@aws-sdk/protocol-http": "^3.374.0",
+    "@streamparser/json": "^0.0.20",
+    "@streamparser/json-node": "^0.0.20",
     "@types/node-fetch": "^2.6.4",
     "@types/stream-json": "^1.7.7",
     "csv-parse": "^5.5.0",
