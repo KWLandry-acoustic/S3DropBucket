@@ -939,6 +939,7 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
                     })
                     .on('data', async function (s3Chunk: { key: number, value: JSON }) {
                         recs++
+                        console.info("OnData")
                         if (recs > custConfig.updateMaxRows) throw new Error(`The number of Updates in this batch Exceeds Max Row Updates allowed ${recs} in the Customers Config. S3 Object ${key} will not be deleted to allow for review and possible restaging.`)
                         debugger
                         try
@@ -975,6 +976,7 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
                     .on('end', async function () {
                         batchCount++
                         debugger
+                        console.info("OnEnd")
 
                         const d = chunks
 
@@ -1626,18 +1628,18 @@ function convertJSONToXML_DBUpdates (updates: {}, config: customerConfig) {
     return xmlRows
 }
 
-async function addWorkToS3ProcessStore (queueContent: string, key: string) {
+async function addWorkToS3ProcessStore (queueUpdates: string, key: string) {
     //write to the S3 Process Bucket
 
     if (tcc.QueueBucketQuiesce)
     {
-        console.warn(`Work/Process Bucket Quiesce is in effect, no New Work Files will be written to the S3 Queue Bucket.`)
+        console.warn(`Work/Process Bucket Quiesce is in effect, no New Work Files are being written to the S3 Queue Bucket. This work file is for ${key}`)
         return
     }
 
 
     const s3PutInput = {
-        Body: queueContent,
+        Body: queueUpdates,
         Bucket: tcc.s3DropBucketWorkBucket,
         Key: key,
     }
@@ -1655,13 +1657,13 @@ async function addWorkToS3ProcessStore (queueContent: string, key: string) {
                 S3ProcessBucketResult = JSON.stringify(s3PutResult.$metadata.httpStatusCode, null, 2)
                 if (S3ProcessBucketResult === '200')
                 {
-                    AddWorkToS3ProcessBucket = `Wrote Work File (${key}) to S3 Processing Bucket (Result ${S3ProcessBucketResult})`
+                    AddWorkToS3ProcessBucket = `Wrote Work File (${key} of ${queueUpdates.length} characters) to S3 Processing Bucket (Result ${S3ProcessBucketResult})`
                     if (tcc.SelectiveDebug.indexOf("_7,") > -1) console.info(`Selective Debug 7 - ${AddWorkToS3ProcessBucket}`)
                 }
-                else throw new Error(`Failed to write Work File to S3 Process Store (Result ${S3ProcessBucketResult}) for ${key}`)
+                else throw new Error(`Failed to write Work File to S3 Process Store (Result ${S3ProcessBucketResult}) for ${key} of ${queueUpdates.length} characters`)
             })
             .catch(err => {
-                throw new Error(`PutObjectCommand Results Failed for (${key} to S3 Processing bucket: ${err}`)
+                throw new Error(`PutObjectCommand Results Failed for (${key} (of ${queueUpdates.length} characters) to S3 Processing bucket: ${err}`)
             })
     } catch (e)
     {

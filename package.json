@@ -11,7 +11,6 @@
     "@streamparser/json": "^0.0.20",
     "@streamparser/json-node": "^0.0.20",
     "@types/node-fetch": "^2.6.4",
-    "@types/stream-json": "^1.7.7",
     "csv-parse": "^5.5.0",
     "csv-stringify": "^6.4.2",
     "csvtojson": "^2.0.10",
@@ -23,7 +22,6 @@
     "papaparse": "^5.4.1",
     "smithy": "^0.6.3",
     "ssh2-sftp-client": "^8.1.0",
-    "stream-json": "^1.8.0"
   },
   "browser": {
     "crypto": false
@@ -39,7 +37,6 @@
     "@types/node": "^20.5.0",
     "@types/papaparse": "^5.3.9",
     "@types/ssh2-sftp-client": "^9.0.3",
-    "@types/stream-chain": "^2.0.4",
     "@typescript-eslint/eslint-plugin": "^5.46.1",
     "@typescript-eslint/parser": "^5.46.1",
     "aws-lambda": "^1.0.7",
