@@ -38,7 +38,7 @@ import { JSONParser, Tokenizer, TokenParser } from '@streamparser/json-node'
 //  emitPartialTokens: <boolean> // whether to emit tokens mid-parsing.
 // }
 
-const jsonParser = new JSONParser({ stringBufferSize: undefined, paths: ['$'] })
+
 
 //The following are what make up JSONParser but can be broken out to process data more granularly
 const jsonTZParser = new Tokenizer({
@@ -266,418 +266,6 @@ let tcLogDebug = false
 let tcLogVerbose = false
 let tcSelectiveDebug   //call out selective debug as an option
 
-
-
-export const s3DropBucketSFTPHandler: Handler = async (event: SQSEvent, context: Context) => {
-
-    if (
-        process.env.ProcessQueueVisibilityTimeout === undefined ||
-        process.env.ProcessQueueVisibilityTimeout === '' ||
-        process.env.ProcessQueueVisibilityTimeout === null
-    )
-    {
-        tcc = await getValidateTricklerConfig()
-    }
-
-    console.info(`S3 Dropbucket SFTP Processor Selective Debug Set is: ${tcc.SelectiveDebug!}`)
-
-    if (tcc.SelectiveDebug.indexOf("_9,") > -1) console.info(`Selective Debug 9 - Process Environment Vars: ${JSON.stringify(process.env)}`)
-
-
-    console.info(`SFTP  Received Event: ${JSON.stringify(event)}`)
-    //Existing Event Emit at every 1 minute 
-
-    //For all work defined confirm a Scheduler2 Event exists for that work
-    // If it does not exist Create a Scheduler2 event for the defined Schedule.
-    //Write all existing Scheduler2 Events as a Log Entry
-    //
-    //Process all Scheduler2 Events in the current batch of events
-    //  Scheduler2 Events are
-    // {
-    //     "version": "0",
-    //         "id": "d565d36f-a484-46ca-8ca8-ff01feb2c827",
-    //         "detail-type": "Scheduled Event",
-    //         "source": "aws.scheduler",
-    //         "account": "777957353822",
-    //         "time": "2024-02-19T15:11:32Z",
-    //         "region": "us-east-1",
-    //          "resources": [
-    //              "arn:aws:scheduler:us-east-1:777957353822:schedule/default/s3DropBucketSFTPFunctionComplexScheduleEvent"
-    //          ],
-    //       "detail": "{}"
-    // }
-    //
-
-
-
-    // const client = new SchedulerClient(config)
-    const client = new SchedulerClient()
-
-    const input = {
-        // GroupName: "STRING_VALUE",
-        NamePrefix: "STRING_VALUE",
-        // State: "STRING_VALUE",
-        NextToken: "STRING_VALUE",
-        MaxResults: Number("int"),
-    } as ListSchedulesCommandInput
-
-    const command = new ListSchedulesCommand(input)
-
-    const response = await client.send(command)
-    // { // ListSchedulesOutput
-    //   NextToken: "STRING_VALUE",
-    //   Schedules: [ // ScheduleList // required
-    //     { // ScheduleSummary
-    //       Arn: "STRING_VALUE",
-    //       Name: "STRING_VALUE",
-    //       GroupName: "STRING_VALUE",
-    //       State: "STRING_VALUE",
-    //       CreationDate: new Date("TIMESTAMP"),
-    //       LastModificationDate: new Date("TIMESTAMP"),
-    //       Target: { // TargetSummary
-    //         Arn: "STRING_VALUE", // required
-    //       },
-    //     },
-    //   ],
-    // };
-
-
-
-
-
-
-
-    return
-
-
-
-
-
-
-
-    console.info(`Received SFTP SQS Events Batch of ${event.Records.length} records.`)
-
-    if (tcc.SelectiveDebug.indexOf("_4,") > -1) console.info(`Selective Debug 4 - Received ${event.Records.length} SFTP Queue Records. Records are: \n${JSON.stringify(event)}`)
-
-
-
-
-    // event.Records.forEach((i) => {
-    //     sqsBatchFail.batchItemFailures.push({ itemIdentifier: i.messageId })
-    // })
-
-    //Empty BatchFail array 
-    sqsBatchFail.batchItemFailures.forEach(() => {
-        sqsBatchFail.batchItemFailures.pop()
-    })
-
-    //Process this Inbound Batch 
-    for (const q of event.Records)
-    {
-
-        //General Plan:
-        // Process SQS Events being emitted for Check FTP Directory for Customer X
-        // Process SQS Events being emitted for 
-        // Check  configs to emit another round of SQS Events for the next round of FTP Work.
-
-
-
-        // event.Records.forEach(async (i: SQSRecord) => {
-        const tqm: tcQueueMessage = JSON.parse(q.body)
-
-        tqm.workKey = JSON.parse(q.body).workKey
-
-        //When Testing - get some actual work queued
-        if (tqm.workKey === 'process_2_pura_2023_10_27T15_11_40_732Z.csv')
-        {
-            tqm.workKey = await getAnS3ObjectforTesting(tcc.s3DropBucket!)
-        }
-
-        console.info(`Processing Work Queue for ${tqm.workKey}`)
-        if (tcc.SelectiveDebug.indexOf("_11,") > -1) console.info(`Selective Debug 11 - SQS Events - Processing Batch Item ${JSON.stringify(q)}`)
-
-        // try
-        // {
-        //     const work = await getS3Work(tqm.workKey, "tricklercache-process")
-        //     if (work.length > 0)        //Retreive Contents of the Work File  
-        //     {
-        //         postResult = await postToCampaign(work, tqm.custconfig, tqm.updateCount)
-        //         if (tcc.SelectiveDebug.indexOf("_8,") > -1) console.info(`Selective Debug 8 - POST Result for ${tqm.workKey}: ${postResult}`)
-
-        //         if (postResult.indexOf('retry') > -1)
-        //         {
-        //             console.warn(`Retry Marked for ${tqm.workKey} (Retry Report: ${sqsBatchFail.batchItemFailures.length + 1}) Returning Work Item ${q.messageId} to Process Queue.`)
-        //             //Add to BatchFail array to Retry processing the work 
-        //             sqsBatchFail.batchItemFailures.push({ itemIdentifier: q.messageId })
-        //             if (tcc.SelectiveDebug.indexOf("_12,") > -1) console.info(`Selective Debug 12 - Added ${tqm.workKey} to SQS Events Retry \n${JSON.stringify(sqsBatchFail)}`)
-        //         }
-
-        //         if (postResult.toLowerCase().indexOf('unsuccessful post') > -1)
-        //             console.error(`Error - Unsuccesful POST (Hard Failure) for ${tqm.workKey}: \n${postResult} \n Customer: ${tqm.custconfig.customer}, Pod: ${tqm.custconfig.pod}, ListId: ${tqm.custconfig.listId} \n${work}`)
-
-        //         if (postResult.toLowerCase().indexOf('successfully posted') > -1)
-        //         {
-        //             console.info(`Work Successfully Posted to Campaign (${tqm.workKey}), Deleting Work from S3 Process Queue`)
-
-        //             const d: string = await deleteS3Object(tqm.workKey, 'tricklercache-process')
-        //             if (d === '204') console.info(`Successful Deletion of Work: ${tqm.workKey}`)
-        //             else console.error(`Failed to Delete ${tqm.workKey}. Expected '204' but received ${d}`)
-        //         }
-
-
-        //     }
-        //     else throw new Error(`Failed to retrieve work file (${tqm.workKey}) `)
-
-        // } catch (e)
-        // {
-        //     console.error(`Exception - Processing a Work File (${tqm.workKey} - \n${e} \n${JSON.stringify(tqm)}`)
-        // }
-
-    }
-
-    console.info(`Processed ${event.Records.length} SFTP Requests. Items Fail Count: ${sqsBatchFail.batchItemFailures.length}\nItems Failed List: ${JSON.stringify(sqsBatchFail)}`)
-
-    return sqsBatchFail
-
-    //For debugging - report no fails 
-    // return {
-    //     batchItemFailures: [
-    //         {
-    //             itemIdentifier: ''
-    //         }
-    //     ]
-    // }
-
-
-}
-
-async function sftpConnect (options: { host: any; port: any; username?: string; password?: string }) {
-    console.log(`Connecting to ${options.host}:${options.port}`)
-    try
-    {
-        await sftpClient.connect(options)
-    } catch (err)
-    {
-        console.log('Failed to connect:', err)
-    }
-}
-
-async function sftpDisconnect () {
-    await sftpClient.end()
-}
-
-async function sftpListFiles (remoteDir: string, fileGlob: ListFilterFunction) {
-    console.log(`Listing ${remoteDir} ...`)
-    let fileObjects: sftp.FileInfo[] = []
-    try
-    {
-        fileObjects = await sftpClient.list(remoteDir, fileGlob)
-    } catch (err)
-    {
-        console.log('Listing failed:', err)
-    }
-
-    const fileNames = []
-
-    for (const file of fileObjects)
-    {
-        if (file.type === 'd')
-        {
-            console.log(`${new Date(file.modifyTime).toISOString()} PRE ${file.name}`)
-        } else
-        {
-            console.log(`${new Date(file.modifyTime).toISOString()} ${file.size} ${file.name}`)
-        }
-
-        fileNames.push(file.name)
-    }
-
-    return fileNames
-}
-
-async function sftpUploadFile (localFile: string, remoteFile: string) {
-    console.log(`Uploading ${localFile} to ${remoteFile} ...`)
-    try
-    {
-        await sftpClient.put(localFile, remoteFile)
-    } catch (err)
-    {
-        console.error('Uploading failed:', err)
-    }
-}
-
-async function sftpDownloadFile (remoteFile: string, localFile: string) {
-    console.log(`Downloading ${remoteFile} to ${localFile} ...`)
-    try
-    {
-        await sftpClient.get(remoteFile, localFile)
-    } catch (err)
-    {
-        console.error('Downloading failed:', err)
-    }
-}
-
-async function sftpDeleteFile (remoteFile: string) {
-    console.log(`Deleting ${remoteFile}`)
-    try
-    {
-        await sftpClient.delete(remoteFile)
-    } catch (err)
-    {
-        console.error('Deleting failed:', err)
-    }
-}
-
-
-
-
-
-/**
- * A Lambda function to process the Event payload received from SQS - AWS Queues.
- */
-export const S3DropBucketQueueProcessorHandler: Handler = async (event: SQSEvent, context: Context) => {
-
-    if (
-        process.env.ProcessQueueVisibilityTimeout === undefined ||
-        process.env.ProcessQueueVisibilityTimeout === '' ||
-        process.env.ProcessQueueVisibilityTimeout === null
-    )
-    {
-        tcc = await getValidateTricklerConfig()
-    }
-
-    console.info(`S3 DropBucket Work Processor Selective Debug Set is: ${tcc.SelectiveDebug!}`)
-
-    if (tcc.SelectiveDebug.indexOf("_9,") > -1) console.info(`Selective Debug 9 - Process Environment Vars: ${JSON.stringify(process.env)}`)
-
-
-    if (tcc.ProcessQueueQuiesce) 
-    {
-        console.info(`Work Process Queue Quiesce is in effect, no New Work will be Queued up in the SQS Process Queue.`)
-        return
-    }
-
-    if (tcc.QueueBucketPurgeCount > 0)
-    {
-        console.info(`Purge Requested, Only action will be to Purge ${tcc.QueueBucketPurge} of ${tcc.QueueBucketPurgeCount} Records. `)
-        const d = await purgeBucket(Number(process.env.QueueBucketPurgeCount!), process.env.QueueBucketPurge!)
-        return d
-    }
-
-    if (tcc.reQueue !== '')
-    {
-        console.info(`ReQueue requested for all ${tcc.reQueue} updates on the Work Queue. `)
-        const d = await requeueWork(tcc.reQueue!)
-        console.info(`ReQueue result: ${d}`)
-    }
-
-
-
-    // Backoff strategy for failed invocations
-
-    //When an invocation fails, Lambda attempts to retry the invocation while implementing a backoff strategy.
-    // The backoff strategy differs slightly depending on whether Lambda encountered the failure due to an error in
-    //  your function code, or due to throttling.
-
-    //If your function code caused the error, Lambda gradually backs off retries by reducing the amount of 
-    // concurrency allocated to your Amazon SQS event source mapping.If invocations continue to fail, Lambda eventually
-    //  drops the message without retrying.
-
-    //If the invocation fails due to throttling, Lambda gradually backs off retries by reducing the amount of 
-    // concurrency allocated to your Amazon SQS event source mapping.Lambda continues to retry the message until 
-    // the message's timestamp exceeds your queue's visibility timeout, at which point Lambda drops the message.
-
-
-    let postResult: string = 'false'
-
-    console.info(`Received SQS Events Batch of ${event.Records.length} records.`)
-
-    if (tcc.SelectiveDebug.indexOf("_4,") > -1) console.info(`Selective Debug 4 - Received ${event.Records.length} Work Queue Records. Records are: \n${JSON.stringify(event)}`)
-
-    // event.Records.forEach((i) => {
-    //     sqsBatchFail.batchItemFailures.push({ itemIdentifier: i.messageId })
-    // })
-
-    //Empty BatchFail array 
-    sqsBatchFail.batchItemFailures.forEach(() => {
-        sqsBatchFail.batchItemFailures.pop()
-    })
-
-    //Process this Inbound Batch 
-    for (const q of event.Records)
-    {
-        // event.Records.forEach(async (i: SQSRecord) => {
-        const tqm: tcQueueMessage = JSON.parse(q.body)
-
-        tqm.workKey = JSON.parse(q.body).workKey
-
-        //When Testing - get some actual work queued
-        if (tqm.workKey === 'process_2_pura_2023_10_27T15_11_40_732Z.csv')
-        {
-            tqm.workKey = await getAnS3ObjectforTesting(tcc.s3DropBucketWorkBucket!)
-        }
-
-        console.info(`Processing Work Queue for ${tqm.workKey}`)
-        if (tcc.SelectiveDebug.indexOf("_11,") > -1) console.info(`Selective Debug 11 - SQS Events - Processing Batch Item ${JSON.stringify(q)}`)
-
-        try
-        {
-            const work = await getS3Work(tqm.workKey, "tricklercache-process")
-            if (work.length > 0)        //Retreive Contents of the Work File  
-            {
-                postResult = await postToCampaign(work, tqm.custconfig, tqm.updateCount)
-                if (tcc.SelectiveDebug.indexOf("_8,") > -1) console.info(`Selective Debug 8 - POST Result for ${tqm.workKey}: ${postResult}`)
-
-                if (postResult.indexOf('retry') > -1)
-                {
-                    console.warn(`Retry Marked for ${tqm.workKey} (Retry Report: ${sqsBatchFail.batchItemFailures.length + 1}) Returning Work Item ${q.messageId} to Process Queue.`)
-                    //Add to BatchFail array to Retry processing the work 
-                    sqsBatchFail.batchItemFailures.push({ itemIdentifier: q.messageId })
-                    if (tcc.SelectiveDebug.indexOf("_12,") > -1) console.info(`Selective Debug 12 - Added ${tqm.workKey} to SQS Events Retry \n${JSON.stringify(sqsBatchFail)}`)
-                }
-
-                if (postResult.toLowerCase().indexOf('unsuccessful post') > -1)
-                    console.error(`Error - Unsuccesful POST (Hard Failure) for ${tqm.workKey}: \n${postResult} \n Customer: ${tqm.custconfig.customer}, Pod: ${tqm.custconfig.pod}, ListId: ${tqm.custconfig.listId} \n${work}`)
-
-                if (postResult.toLowerCase().indexOf('successfully posted') > -1)
-                {
-                    console.info(`Work Successfully Posted to Campaign (${tqm.workKey}), Deleting Work from S3 Process Queue`)
-
-                    const d: string = await deleteS3Object(tqm.workKey, tcc.s3DropBucketWorkBucket!)
-                    if (d === '204') console.info(`Successful Deletion of Work: ${tqm.workKey}`)
-                    else console.error(`Failed to Delete ${tqm.workKey}. Expected '204' but received ${d}`)
-                }
-
-
-            }
-            else throw new Error(`Failed to retrieve work file (${tqm.workKey}) `)
-
-        } catch (e)
-        {
-            console.error(`Exception - Processing a Work File (${tqm.workKey} - \n${e} \n${JSON.stringify(tqm)}`)
-        }
-
-    }
-
-    console.info(`Processed ${event.Records.length} Work Queue records. Items Fail Count: ${sqsBatchFail.batchItemFailures.length}\nItems Failed List: ${JSON.stringify(sqsBatchFail)}`)
-
-    //ToDo: Complete the Final Processing Outcomes messaging for Queue Processing 
-    // if (tcc.SelectiveDebug.indexOf("_21,") > -1) console.info(`Selective Debug 21 - \n${JSON.stringify(processS3ObjectStreamResolution)}`)
-
-    return sqsBatchFail
-
-    //For debugging - report no fails 
-    // return {
-    //     batchItemFailures: [
-    //         {
-    //             itemIdentifier: ''
-    //         }
-    //     ]
-    // }
-
-
-
-}
 
 
 
@@ -913,6 +501,7 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
             // s3ContentReadableStream = s3ContentReadableStream.pipe(jsonStreamValues)
             // s3ContentReadableStream = s3ContentReadableStream.pipe(jsonBatch)
 
+            const jsonParser = new JSONParser({ stringBufferSize: undefined, paths: ['$'] })
             s3ContentReadableStream = s3ContentReadableStream.pipe(jsonParser)
 
             s3ContentReadableStream.setMaxListeners(Number(tcc.EventEmitterMaxListeners))
@@ -1072,6 +661,419 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
     return processS3Object
 
 }
+
+
+/**
+ * A Lambda function to process the Event payload received from SQS - AWS Queues.
+ */
+export const S3DropBucketQueueProcessorHandler: Handler = async (event: SQSEvent, context: Context) => {
+
+    if (
+        process.env.ProcessQueueVisibilityTimeout === undefined ||
+        process.env.ProcessQueueVisibilityTimeout === '' ||
+        process.env.ProcessQueueVisibilityTimeout === null
+    )
+    {
+        tcc = await getValidateTricklerConfig()
+    }
+
+    console.info(`S3 DropBucket Work Processor Selective Debug Set is: ${tcc.SelectiveDebug!}`)
+
+    if (tcc.SelectiveDebug.indexOf("_9,") > -1) console.info(`Selective Debug 9 - Process Environment Vars: ${JSON.stringify(process.env)}`)
+
+
+    if (tcc.ProcessQueueQuiesce) 
+    {
+        console.info(`Work Process Queue Quiesce is in effect, no New Work will be Queued up in the SQS Process Queue.`)
+        return
+    }
+
+    if (tcc.QueueBucketPurgeCount > 0)
+    {
+        console.info(`Purge Requested, Only action will be to Purge ${tcc.QueueBucketPurge} of ${tcc.QueueBucketPurgeCount} Records. `)
+        const d = await purgeBucket(Number(process.env.QueueBucketPurgeCount!), process.env.QueueBucketPurge!)
+        return d
+    }
+
+    if (tcc.reQueue !== '')
+    {
+        console.info(`ReQueue requested for all ${tcc.reQueue} updates on the Work Queue. `)
+        const d = await requeueWork(tcc.reQueue!)
+        console.info(`ReQueue result: ${d}`)
+    }
+
+
+
+    // Backoff strategy for failed invocations
+
+    //When an invocation fails, Lambda attempts to retry the invocation while implementing a backoff strategy.
+    // The backoff strategy differs slightly depending on whether Lambda encountered the failure due to an error in
+    //  your function code, or due to throttling.
+
+    //If your function code caused the error, Lambda gradually backs off retries by reducing the amount of 
+    // concurrency allocated to your Amazon SQS event source mapping.If invocations continue to fail, Lambda eventually
+    //  drops the message without retrying.
+
+    //If the invocation fails due to throttling, Lambda gradually backs off retries by reducing the amount of 
+    // concurrency allocated to your Amazon SQS event source mapping.Lambda continues to retry the message until 
+    // the message's timestamp exceeds your queue's visibility timeout, at which point Lambda drops the message.
+
+
+    let postResult: string = 'false'
+
+    console.info(`Received SQS Events Batch of ${event.Records.length} records.`)
+
+    if (tcc.SelectiveDebug.indexOf("_4,") > -1) console.info(`Selective Debug 4 - Received ${event.Records.length} Work Queue Records. Records are: \n${JSON.stringify(event)}`)
+
+    // event.Records.forEach((i) => {
+    //     sqsBatchFail.batchItemFailures.push({ itemIdentifier: i.messageId })
+    // })
+
+    //Empty BatchFail array 
+    sqsBatchFail.batchItemFailures.forEach(() => {
+        sqsBatchFail.batchItemFailures.pop()
+    })
+
+    //Process this Inbound Batch 
+    for (const q of event.Records)
+    {
+        // event.Records.forEach(async (i: SQSRecord) => {
+        const tqm: tcQueueMessage = JSON.parse(q.body)
+
+        tqm.workKey = JSON.parse(q.body).workKey
+
+        //When Testing - get some actual work queued
+        if (tqm.workKey === 'process_2_pura_2023_10_27T15_11_40_732Z.csv')
+        {
+            tqm.workKey = await getAnS3ObjectforTesting(tcc.s3DropBucketWorkBucket!)
+        }
+
+        console.info(`Processing Work Queue for ${tqm.workKey}`)
+        if (tcc.SelectiveDebug.indexOf("_11,") > -1) console.info(`Selective Debug 11 - SQS Events - Processing Batch Item ${JSON.stringify(q)}`)
+
+        try
+        {
+            const work = await getS3Work(tqm.workKey, "tricklercache-process")
+            if (work.length > 0)        //Retreive Contents of the Work File  
+            {
+                postResult = await postToCampaign(work, tqm.custconfig, tqm.updateCount)
+                if (tcc.SelectiveDebug.indexOf("_8,") > -1) console.info(`Selective Debug 8 - POST Result for ${tqm.workKey}: ${postResult}`)
+
+                if (postResult.indexOf('retry') > -1)
+                {
+                    console.warn(`Retry Marked for ${tqm.workKey} (Retry Report: ${sqsBatchFail.batchItemFailures.length + 1}) Returning Work Item ${q.messageId} to Process Queue.`)
+                    //Add to BatchFail array to Retry processing the work 
+                    sqsBatchFail.batchItemFailures.push({ itemIdentifier: q.messageId })
+                    if (tcc.SelectiveDebug.indexOf("_12,") > -1) console.info(`Selective Debug 12 - Added ${tqm.workKey} to SQS Events Retry \n${JSON.stringify(sqsBatchFail)}`)
+                }
+
+                if (postResult.toLowerCase().indexOf('unsuccessful post') > -1)
+                    console.error(`Error - Unsuccesful POST (Hard Failure) for ${tqm.workKey}: \n${postResult} \n Customer: ${tqm.custconfig.customer}, Pod: ${tqm.custconfig.pod}, ListId: ${tqm.custconfig.listId} \n${work}`)
+
+                if (postResult.toLowerCase().indexOf('successfully posted') > -1)
+                {
+                    console.info(`Work Successfully Posted to Campaign (${tqm.workKey}), Deleting Work from S3 Process Queue`)
+
+                    const d: string = await deleteS3Object(tqm.workKey, tcc.s3DropBucketWorkBucket!)
+                    if (d === '204') console.info(`Successful Deletion of Work: ${tqm.workKey}`)
+                    else console.error(`Failed to Delete ${tqm.workKey}. Expected '204' but received ${d}`)
+                }
+
+
+            }
+            else throw new Error(`Failed to retrieve work file (${tqm.workKey}) `)
+
+        } catch (e)
+        {
+            console.error(`Exception - Processing a Work File (${tqm.workKey} - \n${e} \n${JSON.stringify(tqm)}`)
+        }
+
+    }
+
+    console.info(`Processed ${event.Records.length} Work Queue records. Items Fail Count: ${sqsBatchFail.batchItemFailures.length}\nItems Failed List: ${JSON.stringify(sqsBatchFail)}`)
+
+    //ToDo: Complete the Final Processing Outcomes messaging for Queue Processing 
+    // if (tcc.SelectiveDebug.indexOf("_21,") > -1) console.info(`Selective Debug 21 - \n${JSON.stringify(processS3ObjectStreamResolution)}`)
+
+    return sqsBatchFail
+
+    //For debugging - report no fails 
+    // return {
+    //     batchItemFailures: [
+    //         {
+    //             itemIdentifier: ''
+    //         }
+    //     ]
+    // }
+
+
+
+}
+
+
+
+export const s3DropBucketSFTPHandler: Handler = async (event: SQSEvent, context: Context) => {
+
+    if (
+        process.env.ProcessQueueVisibilityTimeout === undefined ||
+        process.env.ProcessQueueVisibilityTimeout === '' ||
+        process.env.ProcessQueueVisibilityTimeout === null
+    )
+    {
+        tcc = await getValidateTricklerConfig()
+    }
+
+    console.info(`S3 Dropbucket SFTP Processor Selective Debug Set is: ${tcc.SelectiveDebug!}`)
+
+    if (tcc.SelectiveDebug.indexOf("_9,") > -1) console.info(`Selective Debug 9 - Process Environment Vars: ${JSON.stringify(process.env)}`)
+
+
+    console.info(`SFTP  Received Event: ${JSON.stringify(event)}`)
+    //Existing Event Emit at every 1 minute 
+
+    //For all work defined confirm a Scheduler2 Event exists for that work
+    // If it does not exist Create a Scheduler2 event for the defined Schedule.
+    //Write all existing Scheduler2 Events as a Log Entry
+    //
+    //Process all Scheduler2 Events in the current batch of events
+    //  Scheduler2 Events are
+    // {
+    //     "version": "0",
+    //         "id": "d565d36f-a484-46ca-8ca8-ff01feb2c827",
+    //         "detail-type": "Scheduled Event",
+    //         "source": "aws.scheduler",
+    //         "account": "777957353822",
+    //         "time": "2024-02-19T15:11:32Z",
+    //         "region": "us-east-1",
+    //          "resources": [
+    //              "arn:aws:scheduler:us-east-1:777957353822:schedule/default/s3DropBucketSFTPFunctionComplexScheduleEvent"
+    //          ],
+    //       "detail": "{}"
+    // }
+    //
+
+
+
+    // const client = new SchedulerClient(config)
+    const client = new SchedulerClient()
+
+    const input = {
+        // GroupName: "STRING_VALUE",
+        NamePrefix: "STRING_VALUE",
+        // State: "STRING_VALUE",
+        NextToken: "STRING_VALUE",
+        MaxResults: Number("int"),
+    } as ListSchedulesCommandInput
+
+    const command = new ListSchedulesCommand(input)
+
+    const response = await client.send(command)
+    // { // ListSchedulesOutput
+    //   NextToken: "STRING_VALUE",
+    //   Schedules: [ // ScheduleList // required
+    //     { // ScheduleSummary
+    //       Arn: "STRING_VALUE",
+    //       Name: "STRING_VALUE",
+    //       GroupName: "STRING_VALUE",
+    //       State: "STRING_VALUE",
+    //       CreationDate: new Date("TIMESTAMP"),
+    //       LastModificationDate: new Date("TIMESTAMP"),
+    //       Target: { // TargetSummary
+    //         Arn: "STRING_VALUE", // required
+    //       },
+    //     },
+    //   ],
+    // };
+
+
+
+
+
+
+
+    return
+
+
+
+
+
+
+
+    console.info(`Received SFTP SQS Events Batch of ${event.Records.length} records.`)
+
+    if (tcc.SelectiveDebug.indexOf("_4,") > -1) console.info(`Selective Debug 4 - Received ${event.Records.length} SFTP Queue Records. Records are: \n${JSON.stringify(event)}`)
+
+
+
+
+    // event.Records.forEach((i) => {
+    //     sqsBatchFail.batchItemFailures.push({ itemIdentifier: i.messageId })
+    // })
+
+    //Empty BatchFail array 
+    sqsBatchFail.batchItemFailures.forEach(() => {
+        sqsBatchFail.batchItemFailures.pop()
+    })
+
+    //Process this Inbound Batch 
+    for (const q of event.Records)
+    {
+
+        //General Plan:
+        // Process SQS Events being emitted for Check FTP Directory for Customer X
+        // Process SQS Events being emitted for 
+        // Check  configs to emit another round of SQS Events for the next round of FTP Work.
+
+
+
+        // event.Records.forEach(async (i: SQSRecord) => {
+        const tqm: tcQueueMessage = JSON.parse(q.body)
+
+        tqm.workKey = JSON.parse(q.body).workKey
+
+        //When Testing - get some actual work queued
+        if (tqm.workKey === 'process_2_pura_2023_10_27T15_11_40_732Z.csv')
+        {
+            tqm.workKey = await getAnS3ObjectforTesting(tcc.s3DropBucket!)
+        }
+
+        console.info(`Processing Work Queue for ${tqm.workKey}`)
+        if (tcc.SelectiveDebug.indexOf("_11,") > -1) console.info(`Selective Debug 11 - SQS Events - Processing Batch Item ${JSON.stringify(q)}`)
+
+        // try
+        // {
+        //     const work = await getS3Work(tqm.workKey, "tricklercache-process")
+        //     if (work.length > 0)        //Retreive Contents of the Work File  
+        //     {
+        //         postResult = await postToCampaign(work, tqm.custconfig, tqm.updateCount)
+        //         if (tcc.SelectiveDebug.indexOf("_8,") > -1) console.info(`Selective Debug 8 - POST Result for ${tqm.workKey}: ${postResult}`)
+
+        //         if (postResult.indexOf('retry') > -1)
+        //         {
+        //             console.warn(`Retry Marked for ${tqm.workKey} (Retry Report: ${sqsBatchFail.batchItemFailures.length + 1}) Returning Work Item ${q.messageId} to Process Queue.`)
+        //             //Add to BatchFail array to Retry processing the work 
+        //             sqsBatchFail.batchItemFailures.push({ itemIdentifier: q.messageId })
+        //             if (tcc.SelectiveDebug.indexOf("_12,") > -1) console.info(`Selective Debug 12 - Added ${tqm.workKey} to SQS Events Retry \n${JSON.stringify(sqsBatchFail)}`)
+        //         }
+
+        //         if (postResult.toLowerCase().indexOf('unsuccessful post') > -1)
+        //             console.error(`Error - Unsuccesful POST (Hard Failure) for ${tqm.workKey}: \n${postResult} \n Customer: ${tqm.custconfig.customer}, Pod: ${tqm.custconfig.pod}, ListId: ${tqm.custconfig.listId} \n${work}`)
+
+        //         if (postResult.toLowerCase().indexOf('successfully posted') > -1)
+        //         {
+        //             console.info(`Work Successfully Posted to Campaign (${tqm.workKey}), Deleting Work from S3 Process Queue`)
+
+        //             const d: string = await deleteS3Object(tqm.workKey, 'tricklercache-process')
+        //             if (d === '204') console.info(`Successful Deletion of Work: ${tqm.workKey}`)
+        //             else console.error(`Failed to Delete ${tqm.workKey}. Expected '204' but received ${d}`)
+        //         }
+
+
+        //     }
+        //     else throw new Error(`Failed to retrieve work file (${tqm.workKey}) `)
+
+        // } catch (e)
+        // {
+        //     console.error(`Exception - Processing a Work File (${tqm.workKey} - \n${e} \n${JSON.stringify(tqm)}`)
+        // }
+
+    }
+
+    console.info(`Processed ${event.Records.length} SFTP Requests. Items Fail Count: ${sqsBatchFail.batchItemFailures.length}\nItems Failed List: ${JSON.stringify(sqsBatchFail)}`)
+
+    return sqsBatchFail
+
+    //For debugging - report no fails 
+    // return {
+    //     batchItemFailures: [
+    //         {
+    //             itemIdentifier: ''
+    //         }
+    //     ]
+    // }
+
+
+}
+
+
+async function sftpConnect (options: { host: any; port: any; username?: string; password?: string }) {
+    console.log(`Connecting to ${options.host}:${options.port}`)
+    try
+    {
+        await sftpClient.connect(options)
+    } catch (err)
+    {
+        console.log('Failed to connect:', err)
+    }
+}
+
+async function sftpDisconnect () {
+    await sftpClient.end()
+}
+
+async function sftpListFiles (remoteDir: string, fileGlob: ListFilterFunction) {
+    console.log(`Listing ${remoteDir} ...`)
+    let fileObjects: sftp.FileInfo[] = []
+    try
+    {
+        fileObjects = await sftpClient.list(remoteDir, fileGlob)
+    } catch (err)
+    {
+        console.log('Listing failed:', err)
+    }
+
+    const fileNames = []
+
+    for (const file of fileObjects)
+    {
+        if (file.type === 'd')
+        {
+            console.log(`${new Date(file.modifyTime).toISOString()} PRE ${file.name}`)
+        } else
+        {
+            console.log(`${new Date(file.modifyTime).toISOString()} ${file.size} ${file.name}`)
+        }
+
+        fileNames.push(file.name)
+    }
+
+    return fileNames
+}
+
+async function sftpUploadFile (localFile: string, remoteFile: string) {
+    console.log(`Uploading ${localFile} to ${remoteFile} ...`)
+    try
+    {
+        await sftpClient.put(localFile, remoteFile)
+    } catch (err)
+    {
+        console.error('Uploading failed:', err)
+    }
+}
+
+async function sftpDownloadFile (remoteFile: string, localFile: string) {
+    console.log(`Downloading ${remoteFile} to ${localFile} ...`)
+    try
+    {
+        await sftpClient.get(remoteFile, localFile)
+    } catch (err)
+    {
+        console.error('Downloading failed:', err)
+    }
+}
+
+async function sftpDeleteFile (remoteFile: string) {
+    console.log(`Deleting ${remoteFile}`)
+    try
+    {
+        await sftpClient.delete(remoteFile)
+    } catch (err)
+    {
+        console.error('Deleting failed:', err)
+    }
+}
+
+
 
 
 function applyMap (chunk: JSON, map: Object) {
