@@ -578,8 +578,8 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
                             {
                                 //Looks like Amazon Firehose will do the job
 
-                                putToFirehose(d, custConfig)
-                                console.info(`Content Stream OnEnd for (${key}) - Singular Update put to Firehose aggregator pipe ${batchCount + 1} Batches of ${Object.values(d).length} records - Result: \n${JSON.stringify(streamResult)}`)
+                                const f = putToFirehose(d, custConfig)
+                                console.info(`Content Stream OnEnd for (${key}) - Singular Update put to Firehose aggregator pipe. \n${f} \n${batchCount + 1} Batches of ${Object.values(d).length} records - Result: \n${JSON.stringify(streamResult)}`)
 
                             }
                             else
@@ -669,7 +669,7 @@ async function putToFirehose (S3Obj: Object, custConfig: customerConfig) {
             //   Encrypted: true || false,
             // };
         })
-
+    return putFirehoseResp
 }
 
 /**
