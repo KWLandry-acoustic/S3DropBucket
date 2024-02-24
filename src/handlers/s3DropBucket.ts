@@ -1430,7 +1430,7 @@ async function validateCustomerConfig (config: customerConfig) {
     }
 
 
-    if (!config.format.toLowerCase().match(/^(?:singular|multiple)$/gim))
+    if (!config.updates.toLowerCase().match(/^(?:singular|multiple)$/gim))
     {
         throw new Error("Invalid Config - Updates is not 'Singular' or 'Multiple' ")
     }
