@@ -99,9 +99,19 @@ interface customerConfig {
     refreshToken: string // API Access
     clientId: string // API Access
     clientSecret: string // API Access
-    map: object
-    // colVals: { [idx: string]: string }
-    // columns: string[]
+    sftp: {
+        "user": string
+        "password": string
+        "filepattern": string
+        "schedule": string
+    }
+    jsonMap: {
+        destColumn: string
+        jsonPath: string
+    }
+    csvMap: {
+        destColumn: { [idx: string]: string }
+    }
 }
 
 let customersConfig = {} as customerConfig
@@ -517,7 +527,7 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
 
                             if (tcc.SelectiveDebug.indexOf("_13,") > -1) console.info(`Selective Debug 13 - s3ContentStream OnData - Another chunk (Num of Entries:${Object.values(s3Chunk).length} Recs:${recs} Batch:${batchCount} from ${key} - ${JSON.stringify(d)}`)
 
-                            const appliedMap = applyMap(d, custConfig.map)
+                            const appliedMap = applyMap(d, custConfig.jsonMap)
                             chunks = { ...chunks, ...appliedMap }
 
                             if (Object.values(chunks).length > 98)
@@ -1419,6 +1429,13 @@ async function validateCustomerConfig (config: customerConfig) {
         throw new Error("Invalid Config - Format is not 'CSV' or 'JSON' ")
     }
 
+
+    if (!config.format.toLowerCase().match(/^(?:singular|multiple)$/gim))
+    {
+        throw new Error("Invalid Config - Updates is not 'Singular' or 'Multiple' ")
+    }
+
+
     if (!config.pod.match(/^(?:0|1|2|3|4|5|6|7|8|9|a|b)$/gim))
     {
         throw new Error('Invalid Config - Pod is not 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, A, or B. ')
@@ -1449,29 +1466,36 @@ async function validateCustomerConfig (config: customerConfig) {
         throw new Error("Invalid Config - Update set as Database NonKeyed but lookupKeys is not defined. ")
     }
 
-    if (!config.map)
+
+    if (!config.sftp.user) { }
+    if (!config.sftp.user) { }
+    if (!config.sftp.user) { }
+    if (!config.sftp.user) { }
+
+    if (!config.jsonMap)
     {
-        config.map = {}
+        // config.jsonMap = [{
+        //     destColumn: "",
+        //     jsonPath: ""
+        // }]
+
+        let tmpMap: Record<string, string> = {}
+        Object.entries(config.jsonMap).forEach((key, value) => {
+            try
+            {
+                // const v = jsonpath.stringify(value)
+                // tmpMap[key] = value
+                //     destColumn: "",
+                //     jsonPath: ""
+            }
+            catch (e)
+            {
+                console.error(`Invalid JSONPath defined in Customer config: ${key}:"${value}", \nInvalid JSONPath - ${e}`)
+            }
+            // config.jsonMap = tmpMap
+
+        })
     }
-    // else
-    // {
-    //     config.map = { ...config.map}
-    // }
-
-    let tmpMap: Record<string, string> = {}
-    Object.entries(config.map).forEach(([key, value]) => {
-        try
-        {
-            const v = jsonpath.stringify(value)
-            tmpMap[key] = value
-
-        }
-        catch (e)
-        {
-            console.error(`Invalid JSONPath defined in Customer config: ${key}:"${value}", \nInvalid JSONPath - ${e}`)
-        }
-        config.map = tmpMap
-    })
 
     return config as customerConfig
 }
