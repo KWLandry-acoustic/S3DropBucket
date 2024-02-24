@@ -86,7 +86,7 @@ interface S3Object {
 interface customerConfig {
     customer: string
     format: string // CSV or JSON 
-    source: string // singular or multiple
+    updates: string // singular or multiple
     listId: string
     listName: string
     listType: string
@@ -570,11 +570,11 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
 
                             chunks = [] as string[]
 
-                            //If Singular updates coonfig 
+                            //If Singular updates config 
                             //  add this inbound update to a .partial file
                             // if this update is the 99th update to that file, delete from .partial bucket and write to s3DropBucket 
 
-                            if (customersConfig.source.toLowerCase() === 'singular')
+                            if (customersConfig.updates.toLowerCase() === 'singular')
                             {
                                 //Looks like Amazon Firehose will do the job
 
@@ -1388,6 +1388,10 @@ async function validateCustomerConfig (config: customerConfig) {
     if (!config.format)
     {
         throw new Error('Invalid Config - Format is not defined')
+    }
+    if (!config.updates)
+    {
+        throw new Error('Invalid Config - Updates is not defined')
     }
     if (!config.listId)
     {
