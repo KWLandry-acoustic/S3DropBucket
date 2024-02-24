@@ -9,9 +9,10 @@ import {
     ListObjectVersionsCommand, ListObjectsCommandOutput
 } from '@aws-sdk/client-s3'
 
+import { FirehoseClient, PutRecordCommand, PutRecordCommandInput, PutRecordCommandOutput } from "@aws-sdk/client-firehose"
+
 import { SchedulerClient, ListSchedulesCommand, ListSchedulesCommandInput } from '@aws-sdk/client-scheduler' // ES Modules import
 // const { SchedulerClient, ListSchedulesCommand } = require("@aws-sdk/client-scheduler"); // CommonJS import
-
 
 import { Handler, S3Event, Context, SQSEvent, SQSRecord, S3EventRecord } from 'aws-lambda'
 
@@ -39,57 +40,6 @@ import { JSONParser, Tokenizer, TokenParser } from '@streamparser/json-node'
 // }
 
 
-
-//The following are what make up JSONParser but can be broken out to process data more granularly
-const jsonTZParser = new Tokenizer({
-    "stringBufferSize": 64,
-    "numberBufferSize": 64,
-    "separator": "",
-    "emitPartialTokens": false
-})
-// {
-//     paths: <string[]>,
-//     keepStack: <boolean>, // whether to keep all the properties in the stack
-//     separator: <string>, // separator between object. For example `\n` for nd-js. If left empty or set to undefined, the token parser will end after parsing the first object. To parse multiple object without any delimiter just set it to the empty string `''`.
-//     emitPartialValues: <boolean>, // whether to emit values mid-parsing.
-// }
-const jsonTParser = new TokenParser(
-    {
-        // paths: [''],                //JSONPath partial support see docs.
-        keepStack: true,            // whether to keep all the properties in the stack
-        separator: '',              // separator between object. For example `\n` for nd-js. If left empty or set to undefined, the token parser will end after parsing the first object. To parse multiple object without any delimiter just set it to the empty string `''`.
-        emitPartialValues: false,   // whether to emit values mid-parsing.
-    })
-
-
-//
-// stream-json Package - keeps failing (Silently) the Stream Pipeline, 
-//
-/**
-// import { parser } from 'stream-json/Parser.js'
-// import { parser } from 'stream-json'
-
-import pkg from 'stream-json'
-const { parser } = pkg
-
-import pkg2 from 'stream-json/streamers/StreamValues.js'
-const { streamValues } = pkg2
-
-import pkg3 from 'stream-json/utils/Batch.js'
-const { batch } = pkg3
-
-import chain from 'stream-chain'
-const jsonChain = chain
-
-// import { Stream } from 'stream'
-// import { parser } from 'stream-json/Parser.js'
-
-
-const jsonParser = new pkg.Parser()
-const jsonBatch = new pkg3.Duplex
-const jsonStreamValues = pkg2.withParser()
- */
-
 import {
     SQSClient,
     ReceiveMessageCommand,
@@ -103,10 +53,8 @@ import {
 
 
 
-import sftp, { ListFilterFunction } from 'ssh2-sftp-client'
+import sftpClient, { ListFilterFunction } from 'ssh2-sftp-client'
 
-
-const sftpClient = new sftp()
 
 import { ReadStream, close } from 'fs'
 
@@ -122,6 +70,8 @@ export type sqsObject = {
 
 const s3 = new S3Client({ region: 'us-east-1' })
 
+const sftpCient = new sftpClient()
+
 
 let localTesting = false
 
@@ -136,6 +86,7 @@ interface S3Object {
 interface customerConfig {
     customer: string
     format: string // CSV or JSON 
+    source: string // singular or multiple
     listId: string
     listName: string
     listType: string
@@ -320,6 +271,8 @@ export const s3DropBucketHandler: Handler = async (event: S3Event, context: Cont
         `Received S3 DropBucket Event Batch. There are ${event.Records.length} S3 DropBucket Event Records in this batch. (Event Id: ${event.Records[0].responseElements['x-amz-request-id']}).`,
     )
 
+
+
     //Future: Left this for possible switch of Trigger to be an SQS Trigger of an S3 Write, 
     // Drive higher concurrency in each Lambda invocation by running batches of 10 files written at a time(SQS Batch) 
     for (const r of event.Records)
@@ -332,7 +285,7 @@ export const s3DropBucketHandler: Handler = async (event: S3Event, context: Cont
         key = r.s3.object.key
         const bucket = r.s3.bucket.name
 
-        if (!key.startsWith(tcc.prefixFocus!)) return
+        if (!key.startsWith(tcc.prefixFocus)) return
 
         //ToDo: Resolve Duplicates Issue - S3 allows Duplicate Object Names but Delete marks all Objects of same Name Deleted. 
         //   Which causes an issue with Key Not Found after an Object of Name A is processed and deleted, then another Object of Name A comes up in a Trigger.
@@ -349,6 +302,7 @@ export const s3DropBucketHandler: Handler = async (event: S3Event, context: Cont
         {
             console.error(`Exception - Retrieving Customer Config for ${key} \n${e}`)
         }
+
 
 
         try
@@ -498,8 +452,32 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
                 //#region
             }
 
-            // s3ContentReadableStream = s3ContentReadableStream.pipe(jsonStreamValues)
-            // s3ContentReadableStream = s3ContentReadableStream.pipe(jsonBatch)
+            /** 
+                        //The following are what make up StreamJSON JSONParser but can be broken out to process data more granularly
+                        //Might be helpful in future capabilities 
+
+                        const jsonTZParser = new Tokenizer({
+                            "stringBufferSize": 64,
+                            "numberBufferSize": 64,
+                            "separator": "",
+                            "emitPartialTokens": false
+                        })
+                        // {
+                        //     paths: <string[]>,
+                        //     keepStack: <boolean>, // whether to keep all the properties in the stack
+                        //     separator: <string>, // separator between object. For example `\n` for nd-js. If left empty or set to undefined, the token parser will end after parsing the first object. To parse multiple object without any delimiter just set it to the empty string `''`.
+                        //     emitPartialValues: <boolean>, // whether to emit values mid-parsing.
+                        // }
+                        const jsonTParser = new TokenParser(
+                            {
+                                // paths: [''],                //JSONPath partial support see docs.
+                                keepStack: true,            // whether to keep all the properties in the stack
+                                separator: '',              // separator between object. For example `\n` for nd-js. If left empty or set to undefined, the token parser will end after parsing the first object. To parse multiple object without any delimiter just set it to the empty string `''`.
+                                emitPartialValues: false,   // whether to emit values mid-parsing.
+                            })
+            */
+
+
 
             const jsonParser = new JSONParser({ stringBufferSize: undefined, paths: ['$'] })
             s3ContentReadableStream = s3ContentReadableStream.pipe(jsonParser)
@@ -529,8 +507,7 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
                     .on('data', async function (s3Chunk: { key: number, value: JSON }) {
                         recs++
 
-                        debugger
-                        console.info("OnData")
+
 
                         if (recs > custConfig.updateMaxRows) throw new Error(`The number of Updates in this batch Exceeds Max Row Updates allowed ${recs} in the Customers Config. S3 Object ${key} will not be deleted to allow for review and possible restaging.`)
 
@@ -552,7 +529,7 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
 
                                 const sqwResult = await storeAndQueueWork(d, key, custConfig, batchCount)
 
-                                debugger
+
 
                                 if (tcc.SelectiveDebug.indexOf("_2,") > -1) console.info(`Selective Debug 2: Content Stream OnData - Store And Queue Work for ${key} of ${batchCount + 1} Batches of ${Object.values(d).length} records, Result: \n${JSON.stringify(sqwResult)}`)
                                 streamResult = { ...streamResult, "OnDataStoreQueueResult": sqwResult }
@@ -567,9 +544,6 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
 
                     .on('end', async function () {
                         batchCount++
-
-                        debugger
-                        console.info("OnEnd")
 
                         const d = chunks
 
@@ -596,18 +570,30 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
 
                             chunks = [] as string[]
 
-                            // if (d.length > 0)
-                            // {
-                            const storeQueueResult = await storeAndQueueWork(d, key, custConfig, batchCount)
-                            // "{\"AddWorkToS3ProcessBucketResults\":{\"AddWorkToS3ProcessBucket\":\"Wrote Work File (process_0_pura_2024_01_22T18_02_46_119Z_csv.xml) to S3 Processing Bucket (Result 200)\",\"S3ProcessBucketResult\":\"200\"},\"AddWorkToSQSProcessQueueResults\":{\"sqsWriteResult\":\"200\",\"workQueuedSuccess\":true,\"SQSSendResult\":\"{\\\"$metadata\\\":{\\\"httpStatusCode\\\":200,\\\"requestId\\\":\\\"e70fba06-94f2-5608-b104-e42dc9574636\\\",\\\"attempts\\\":1,\\\"totalRetryDelay\\\":0},\\\"MD5OfMessageAttributes\\\":\\\"0bca0dfda87c206313963daab8ef354a\\\",\\\"MD5OfMessageBody\\\":\\\"940f4ed5927275bc93fc945e63943820\\\",\\\"MessageId\\\":\\\"cf025cb3-dce3-4564-89a5-23dcae86dd42\\\"}\"}}"
-                            streamResult = {
-                                ...streamResult, "OnEnd_StoreQueueResult": storeQueueResult
+                            //If Singular updates coonfig 
+                            //  add this inbound update to a .partial file
+                            // if this update is the 99th update to that file, delete from .partial bucket and write to s3DropBucket 
+
+                            if (customersConfig.source.toLowerCase() === 'singular')
+                            {
+                                //Looks like Amazon Firehose will do the job
+
+                                putToFirehose(d, custConfig)
+                                console.info(`Content Stream OnEnd for (${key}) - Singular Update put to Firehose aggregator pipe ${batchCount + 1} Batches of ${Object.values(d).length} records - Result: \n${JSON.stringify(streamResult)}`)
+
                             }
+                            else
+                            {
+                                const storeQueueResult = await storeAndQueueWork(d, key, custConfig, batchCount)
+                                // "{\"AddWorkToS3ProcessBucketResults\":{\"AddWorkToS3ProcessBucket\":\"Wrote Work File (process_0_pura_2024_01_22T18_02_46_119Z_csv.xml) to S3 Processing Bucket (Result 200)\",\"S3ProcessBucketResult\":\"200\"},\"AddWorkToSQSProcessQueueResults\":{\"sqsWriteResult\":\"200\",\"workQueuedSuccess\":true,\"SQSSendResult\":\"{\\\"$metadata\\\":{\\\"httpStatusCode\\\":200,\\\"requestId\\\":\\\"e70fba06-94f2-5608-b104-e42dc9574636\\\",\\\"attempts\\\":1,\\\"totalRetryDelay\\\":0},\\\"MD5OfMessageAttributes\\\":\\\"0bca0dfda87c206313963daab8ef354a\\\",\\\"MD5OfMessageBody\\\":\\\"940f4ed5927275bc93fc945e63943820\\\",\\\"MessageId\\\":\\\"cf025cb3-dce3-4564-89a5-23dcae86dd42\\\"}\"}}"
+                                streamResult = {
+                                    ...streamResult, "OnEnd_StoreQueueResult": storeQueueResult
+                                }
 
-                            if (tcLogDebug) console.info(`Store and Queue Work Result: ${storeQueueResult}`)
+                                if (tcLogDebug) console.info(`Store and Queue Work Result: ${storeQueueResult}`)
 
-                            console.info(`Content Stream OnEnd for (${key}) - Store and Queue Work of ${batchCount + 1} Batches of ${Object.values(d).length} records - Result: \n${JSON.stringify(streamResult)}`)
-
+                                console.info(`Content Stream OnEnd for (${key}) - Store and Queue Work of ${batchCount + 1} Batches of ${Object.values(d).length} records - Result: \n${JSON.stringify(streamResult)}`)
+                            }
                         } catch (e)
                         {
                             console.error(`Exception - ReadStream OnEnd Processing - \n${e}`)
@@ -662,6 +648,29 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
 
 }
 
+
+async function putToFirehose (S3Obj: Object, custConfig: customerConfig) {
+
+    const client = new FirehoseClient()
+    const fc = {
+        DeliveryStreamName: "S3DropBucket_FireHoseStream",
+        Record: {
+            Data: S3Obj,
+        },
+    } as PutRecordCommandInput
+
+    const command = new PutRecordCommand(fc)
+
+    const putFirehoseResp = await client.send(command)
+        .then((res: PutRecordCommandOutput) => {
+            console.info(`Out to Firehose Result: ${res.$metadata}, ${res.RecordId}`)
+            // { // PutRecordOutput
+            //   RecordId: "STRING_VALUE", // required
+            //   Encrypted: true || false,
+            // };
+        })
+
+}
 
 /**
  * A Lambda function to process the Event payload received from SQS - AWS Queues.
@@ -813,6 +822,8 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (event: SQSEvent
 
 
 export const s3DropBucketSFTPHandler: Handler = async (event: SQSEvent, context: Context) => {
+
+    // const sftpClient = new sftpClient()
 
     if (
         process.env.ProcessQueueVisibilityTimeout === undefined ||
@@ -1000,7 +1011,7 @@ async function sftpConnect (options: { host: any; port: any; username?: string; 
     console.log(`Connecting to ${options.host}:${options.port}`)
     try
     {
-        await sftpClient.connect(options)
+        // await sftpClient.connect(options)
     } catch (err)
     {
         console.log('Failed to connect:', err)
@@ -1008,15 +1019,15 @@ async function sftpConnect (options: { host: any; port: any; username?: string; 
 }
 
 async function sftpDisconnect () {
-    await sftpClient.end()
+    // await sftpClient.end()
 }
 
 async function sftpListFiles (remoteDir: string, fileGlob: ListFilterFunction) {
     console.log(`Listing ${remoteDir} ...`)
-    let fileObjects: sftp.FileInfo[] = []
+    let fileObjects: sftpClient.FileInfo[] = []
     try
     {
-        fileObjects = await sftpClient.list(remoteDir, fileGlob)
+        // fileObjects = await sftpClient.list(remoteDir, fileGlob)
     } catch (err)
     {
         console.log('Listing failed:', err)
@@ -1044,7 +1055,7 @@ async function sftpUploadFile (localFile: string, remoteFile: string) {
     console.log(`Uploading ${localFile} to ${remoteFile} ...`)
     try
     {
-        await sftpClient.put(localFile, remoteFile)
+        // await sftpClient.put(localFile, remoteFile)
     } catch (err)
     {
         console.error('Uploading failed:', err)
@@ -1055,7 +1066,7 @@ async function sftpDownloadFile (remoteFile: string, localFile: string) {
     console.log(`Downloading ${remoteFile} to ${localFile} ...`)
     try
     {
-        await sftpClient.get(remoteFile, localFile)
+        // await sftpClient.get(remoteFile, localFile)
     } catch (err)
     {
         console.error('Downloading failed:', err)
@@ -1066,7 +1077,7 @@ async function sftpDeleteFile (remoteFile: string) {
     console.log(`Deleting ${remoteFile}`)
     try
     {
-        await sftpClient.delete(remoteFile)
+        // await sftpClient.delete(remoteFile)
     } catch (err)
     {
         console.error('Deleting failed:', err)
@@ -1567,7 +1578,7 @@ function convertJSONToXML_DBUpdates (updates: {}, config: customerConfig) {
 
     xmlRows = `<Envelope><Body>`
     let r = 0
-
+    debugger
     Object.keys(updates).forEach(jo => {
         r++
         const s = JSON.stringify(jo)

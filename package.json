@@ -5,6 +5,7 @@
   "private": true,
   "type": "module",
   "dependencies": {
+    "@aws-sdk/client-firehose": "^3.521.0",
     "@aws-sdk/client-scheduler": "^3.515.0",
     "@aws-sdk/fetch-http-handler": "^3.374.0",
     "@aws-sdk/protocol-http": "^3.374.0",

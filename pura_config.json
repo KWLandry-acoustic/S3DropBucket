@@ -1,6 +1,7 @@
 {
         "customer": "pura_",
         "format": "json",
+        "source": "Singular",
         "listId": "13097633",
         "listName": "Master_Database_KWLandry_keyed",
         "listType": "DBKeyed",
