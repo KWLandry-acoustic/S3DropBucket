@@ -55,9 +55,8 @@ import {
 
 import sftpClient, { ListFilterFunction } from 'ssh2-sftp-client'
 
-
-import { ReadStream, close } from 'fs'
-
+//For when need to reference Lambda execution environment /tmp folder 
+// import { ReadStream, close } from 'fs'
 
 
 const sqsClient = new SQSClient({})
@@ -105,13 +104,8 @@ interface customerConfig {
         "filepattern": string
         "schedule": string
     }
-    jsonMap: {
-        destColumn: string
-        jsonPath: string
-    }
-    csvMap: {
-        destColumn: { [idx: string]: string }
-    }
+    jsonMap: { [key: string]: string }
+    csvMap: { [key: string]: string }
 }
 
 let customersConfig = {} as customerConfig
@@ -314,6 +308,16 @@ export const s3DropBucketHandler: Handler = async (event: S3Event, context: Cont
         }
 
 
+        //ToDo: Refactor messaging to reference Object properties versus stringifying and adding additional overhead
+        //ToDo: Refactor to be consistent in using the response object across all processes
+        //ToDo: Refactor messaging to be more consistent across all processes
+        //  {
+        //  OnEnd_StreamEndResult: "S3 Content Stream Ended for pura_2024_02_23T14_45_13_088Z.json. Processed 1 records as 1 batches.",
+        //  OnClose_Result: "S3 Content Stream Closed for pura_2024_02_23T14_45_13_088Z.json",
+        //  OnEnd_PutToFireHoseAggregator: "{\"$metadata\":{\"httpStatusCode\":200,\"requestId\":\"f74fbeb6-866c-a69a-a91a-0b657c3ff61d\",\"extendedRequestId\":\"B6bjH9UjMftk3PGllSXm4dtt3i1NDvVvTeNH5XzhGqITVntTH9BF0Oi1PZiHG1/Y9ms6WOV/GprTR4Zm0MM56BW6fPMWI7/w\",\"attempts\":1,\"totalRetryDelay\":0},\"Encrypted\":false,\"RecordId\":\"5RITXPmmXRpiquneYlAvpM2/d4tXAHu5z3T8ek646DWtfAjriiAFMCZFKP64s889oVN74gKCH/BnLzCItzinUU0gRf5uqSb7zOEKTurr1KjD54LLhqBePCXVufNENg6TqhweUzQuaqHH3iK3bbuMsJ4OXblqCf9vOfhItpKf/8z74vl6N6bk/J3/+nOHqIj2Z3wJ/ho+vHDaIZ/19579Tec+Tn7veOUd\",\"PutToFirehoseAggregator\":\"Successful Put to Firehose Aggregator\"}",
+        //  rm: "{\"OnEnd_StreamEndResult\":\"S3 Content Stream Ended for pura_2024_02_23T14_45_13_088Z.json. Processed 1 records as 1 batches.\",\"OnClose_Result\":\"S3 Content Stream Closed for pura_2024_02_23T14_45_13_088Z.json\",\"OnEnd_PutToFireHoseAggregator\":\"{\\\"$metadata\\\":{\\\"httpStatusCode\\\":200,\\\"requestId\\\":\\\"f74fbeb6-866c-a69a-a91a-0b657c3ff61d\\\",\\\"extendedRequestId\\\":\\\"B6bjH9UjMftk3PGllSXm4dtt3i1NDvVvTeNH5XzhGqITVntTH9BF0Oi1PZiHG1/Y9ms6WOV/GprTR4Zm0MM56BW6fPMWI7/w\\\",\\\"attempts\\\":1,\\\"totalRetryDelay\\\":0},\\\"Encrypted\\\":false,\\\"RecordId\\\":\\\"5RITXPmmXRpiquneYlAvpM2/d4tXAHu5z3T8ek646DWtfAjriiAFMCZFKP64s889oVN74gKCH/BnLzCItzinUU0gRf5uqSb7zOEKTurr1KjD54LLhqBePCXVufNENg6TqhweUzQuaqHH3iK3bbuMsJ4OXblqCf9vOfhItpKf/8z74vl6N6bk/J3/+nOHqIj2Z3wJ/ho+vHDaIZ/19579Tec+Tn7veOUd\\\",\\\"PutToFirehoseAggregator\\\":\\\"Successful Put to Firehose Aggregator\\\"}\"} \"ReturnLocation\": \"Returning from ReadStream Then Clause.\n{\"OnEnd_StreamEndResult\":\"S3 Content Stream Ended for pura_2024_02_23T14_45_13_088Z.json. Processed 1 records as 1 batches.\",\"OnClose_Result\":\"S3 Content Stream Closed for pura_2024_02_23T14_45_13_088Z.json\",\"OnEnd_PutToFireHoseAggregator\":\"{\\\"$metadata\\\":{\\\"httpStatusCode\\\":200,\\\"requestId\\\":\\\"f74fbeb6-866c-a69a-a91a-0b657c3ff61d\\\",\\\"extendedRequestId\\\":\\\"B6bjH9UjMftk3PGllSXm4dtt3i1NDvVvTeNH5XzhGqITVntTH9BF0Oi1PZiHG1/Y9ms6WOV/GprTR4Zm0MM56BW6fPMWI7/w\\\",\\\"attempts\\\":1,\\\"totalRetryDelay\\\":0},\\\"Encrypted\\\":false,\\\"RecordId\\\":\\\"5RITXPmmXRpiquneYlAvpM2/d4tXAHu5z3T8ek646DWtfAjriiAFMCZFKP64s889oVN74gKCH/BnLzCItzinUU0gRf5uqSb7zOEKTurr1KjD54LLhqBePCXVufNENg6TqhweUzQuaqHH3iK3bbuMsJ4OXblqCf9vOfhItpKf/8z74vl6N6bk/J3/+nOHqIj2Z3wJ/ho+vHDaIZ/19579Tec+Tn7veOUd\\\",\\\"PutToFirehoseAggregator\\\":\\\"Successful Put to Firehose Aggregator\\\"}\"}",
+        //  ReturnLocation: "...End of ReadStream Promise",
+        // }
 
         try
         {
@@ -331,9 +335,9 @@ export const s3DropBucketHandler: Handler = async (event: S3Event, context: Cont
 
                     if (tcc.SelectiveDebug.indexOf("_11,") > -1) console.info(`Selective Debug${processResult}`)
 
-                    if (processResult.indexOf('S3ProcessBucketResult":"200"') > -1 &&
-                        processResult.indexOf('SQSWriteResult":"200"') > -1)
+                    if (processResult.indexOf('PutToFireHoseAggregatorResult":"200"'))
                     {
+                        debugger
                         try
                         {
                             //Once successful delete the original S3 Object
@@ -354,14 +358,37 @@ export const s3DropBucketHandler: Handler = async (event: S3Event, context: Cont
                         }
                     }
                     else
-                    {
-                        const dr = `UnSuccessful Processing of S3 DropBucket object ${key}. Object not deleted after processing contents.)`
-                        console.error(dr)
+                        if (processResult.indexOf('S3ProcessBucketResult":"200"') > -1 &&
+                            processResult.indexOf('SQSWriteResult":"200"') > -1)
+                        {
+                            try
+                            {
+                                //Once successful delete the original S3 Object
+                                delResultCode = await deleteS3Object(key, bucket)
 
-                        // processS3ObjectStreamResolution = { ...processS3ObjectStreamResolution, "DeleteResult": dr }
+                                if (delResultCode !== '204') throw new Error(`Invalid Delete of ${key}, Expected 204 result code, received ${delResultCode}`)
+                                else
+                                {
+                                    const dr = `Successful Delete of ${key}  (Result ${delResultCode})`
+                                    console.info(dr)
+                                    // processS3ObjectStreamResolution = { ...processS3ObjectStreamResolution, "DeleteResult": dr }
+                                    processResult += "DeleteResult: " + JSON.stringify(dr)
+                                }
+                            }
+                            catch (e)
+                            {
+                                console.error(`Exception - Deleting S3 Object after successful processing of the Content Stream for ${key} \n${e}`)
+                            }
+                        }
+                        else
+                        {
+                            const dr = `UnSuccessful Processing of S3 DropBucket object ${key}. Object not deleted after processing contents.)`
+                            console.error(dr)
 
-                        throw new Error(`Exception - Processing S3 Object - Unsuccessful Cleanup - ${dr}`)
-                    }
+                            // processS3ObjectStreamResolution = { ...processS3ObjectStreamResolution, "DeleteResult": dr }
+
+                            throw new Error(`Exception - Processing S3 Object - Unsuccessful Cleanup - ${dr}`)
+                        }
 
                     return processResult
                 })
@@ -517,8 +544,6 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
                     .on('data', async function (s3Chunk: { key: number, value: JSON }) {
                         recs++
 
-
-
                         if (recs > custConfig.updateMaxRows) throw new Error(`The number of Updates in this batch Exceeds Max Row Updates allowed ${recs} in the Customers Config. S3 Object ${key} will not be deleted to allow for review and possible restaging.`)
 
                         try
@@ -527,8 +552,11 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
 
                             if (tcc.SelectiveDebug.indexOf("_13,") > -1) console.info(`Selective Debug 13 - s3ContentStream OnData - Another chunk (Num of Entries:${Object.values(s3Chunk).length} Recs:${recs} Batch:${batchCount} from ${key} - ${JSON.stringify(d)}`)
 
-                            const appliedMap = applyMap(d, custConfig.jsonMap)
-                            chunks = { ...chunks, ...appliedMap }
+                            if (custConfig.jsonMap)
+                            {
+                                const appliedMap = applyJSONMap(d, custConfig.jsonMap)
+                                chunks = { ...chunks, ...appliedMap }
+                            }
 
                             if (Object.values(chunks).length > 98)
                             {
@@ -538,8 +566,6 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
                                 if (tcc.SelectiveDebug.indexOf('_99,') > -1) saveSampleJSON(JSON.stringify(d))
 
                                 const sqwResult = await storeAndQueueWork(d, key, custConfig, batchCount)
-
-
 
                                 if (tcc.SelectiveDebug.indexOf("_2,") > -1) console.info(`Selective Debug 2: Content Stream OnData - Store And Queue Work for ${key} of ${batchCount + 1} Batches of ${Object.values(d).length} records, Result: \n${JSON.stringify(sqwResult)}`)
                                 streamResult = { ...streamResult, "OnDataStoreQueueResult": sqwResult }
@@ -587,10 +613,19 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
                             if (customersConfig.updates.toLowerCase() === 'singular')
                             {
                                 //Looks like Amazon Firehose will do the job
+                                try
+                                {
+                                    const f = await putToFirehose(d, custConfig.customer)
+                                    // S3DropBucketAggregate_BFSlE95VRhb_VhNbxLpw1mp_S3DropBucket_FireHoseStream - 2 - 2024-02 - 25 - 20 - 14 - 14 - 13c6a4ee - e529 - 4f19 - 8e45 - c335218922c8.json                                    console.info(`Content Stream OnEnd for (${key}) - Singular Update put to Firehose aggregator pipe. \n${JSON.stringify(f)} \n${batchCount + 1} Batches of ${Object.values(d).length} records - Result: \n${JSON.stringify(streamResult)}`)
 
-                                const f = putToFirehose(d, custConfig)
-                                console.info(`Content Stream OnEnd for (${key}) - Singular Update put to Firehose aggregator pipe. \n${f} \n${batchCount + 1} Batches of ${Object.values(d).length} records - Result: \n${JSON.stringify(streamResult)}`)
+                                    streamResult = {
+                                        ...streamResult, "OnEnd_PutToFireHoseAggregator": `${JSON.stringify(f)}`
+                                    }
 
+                                } catch (e)
+                                {
+                                    console.error(`Exception - PutToFirehose Call - \n${e}`)
+                                }
                             }
                             else
                             {
@@ -659,27 +694,56 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
 }
 
 
-async function putToFirehose (S3Obj: Object, custConfig: customerConfig) {
+async function putToFirehose (S3Obj: Object, cust: string) {
 
     const client = new FirehoseClient()
+
+    Object.assign(S3Obj, { "customer": cust })
+
+    // S3DropBucket_Aggregator 
+    // S3DropBucket_FireHoseStream
+
     const fc = {
-        DeliveryStreamName: "S3DropBucket_FireHoseStream",
+        DeliveryStreamName: "S3DropBucket_Aggregator",
         Record: {
-            Data: S3Obj,
+            Data: new TextEncoder().encode(JSON.stringify(S3Obj)),
         },
     } as PutRecordCommandInput
 
-    const command = new PutRecordCommand(fc)
+    const fireCommand = new PutRecordCommand(fc)
 
-    const putFirehoseResp = await client.send(command)
-        .then((res: PutRecordCommandOutput) => {
-            console.info(`Out to Firehose Result: ${res.$metadata}, ${res.RecordId}`)
-            // { // PutRecordOutput
-            //   RecordId: "STRING_VALUE", // required
-            //   Encrypted: true || false,
-            // };
-        })
-    return putFirehoseResp
+    if (tcc.SelectiveDebug.indexOf('_22,') > -1) console.info(`Put to Firehose - Pre-Send: \n${JSON.stringify(fc)}`)
+
+    try
+    {
+        const putFirehoseResp = await client.send(fireCommand)
+            .then((res: PutRecordCommandOutput) => {
+
+                console.info(`Put to Firehose result - RecordId: ${res.RecordId}, \n${JSON.stringify(res)}`)
+
+                let fres
+                if (res.$metadata.httpStatusCode === 200)
+                {
+                    'S3ProcessBucketResult":"200"'
+                    fres = { ...res, "PutToFirehoseAggregatorResult": `${res.$metadata.httpStatusCode}` }
+                }
+                else
+                {
+                    fres = { ...res, "PutToFirehoseAggregatorResult": `UnSuccessful Put to Firehose Aggregator` }
+                }
+                return fres
+            })
+            .catch((e) => {
+                console.error(`Exception - Put to Firehose (Promise-catch)  \n${e}`)
+            })
+
+        return putFirehoseResp
+
+    } catch (e)
+    {
+        console.error(`Exception - Put to Firehose (try-catch) ${e}`)
+    }
+
 }
 
 /**
@@ -1097,13 +1161,14 @@ async function sftpDeleteFile (remoteFile: string) {
 
 
 
-function applyMap (chunk: JSON, map: Object) {
+function applyJSONMap (chunk: JSON, map: Object) {
 
     Object.entries(map).forEach(([k, v]) => {
 
         try
         {
-
+            let j = jsonpath.value(chunk, v)
+            if (!j) j = 'JSONPathDataNotFound'
             Object.assign(chunk, { [k]: jsonpath.value(chunk, v) })
 
         } catch (e)
@@ -1468,33 +1533,35 @@ async function validateCustomerConfig (config: customerConfig) {
 
 
     if (!config.sftp.user) { }
-    if (!config.sftp.user) { }
-    if (!config.sftp.user) { }
-    if (!config.sftp.user) { }
+    if (!config.sftp.password) { }
+    if (!config.sftp.filepattern) { }
+    if (!config.sftp.schedule) { }
 
-    if (!config.jsonMap)
+    if (config.jsonMap)
     {
         // config.jsonMap = [{
         //     destColumn: "",
         //     jsonPath: ""
         // }]
 
-        let tmpMap: Record<string, string> = {}
-        Object.entries(config.jsonMap).forEach((key, value) => {
+        let tmpMap: { [key: string]: string } = {}
+        let tmpmap2: Record<string, string> = {}
+        const jm = config.jsonMap
+        for (const m in jm)
+        {
             try
             {
-                // const v = jsonpath.stringify(value)
-                // tmpMap[key] = value
-                //     destColumn: "",
-                //     jsonPath: ""
+                const p = jm[m]
+                const v = jsonpath.parse(p)
+                tmpMap[m] = jm[m]
+                tmpmap2.m = jm.m
             }
             catch (e)
             {
-                console.error(`Invalid JSONPath defined in Customer config: ${key}:"${value}", \nInvalid JSONPath - ${e}`)
+                console.error(`Invalid JSONPath defined in Customer config: ${m}:"${m}", \nInvalid JSONPath - ${e}`)
             }
-            // config.jsonMap = tmpMap
-
-        })
+        }
+        config.jsonMap = tmpMap
     }
 
     return config as customerConfig
@@ -2166,7 +2233,7 @@ function checkMetadata () {
 async function getAnS3ObjectforTesting (bucket: string) {
     const listReq = {
         Bucket: bucket,
-        MaxKeys: 11,
+        MaxKeys: 101,
         Prefix: tcc.prefixFocus
     } as ListObjectsV2CommandInput
 
@@ -2183,13 +2250,19 @@ async function getAnS3ObjectforTesting (bucket: string) {
             {
                 let kc: number = s3ListResult.KeyCount as number - 1
                 if (kc = 0) throw new Error("No S3 Objects to retrieve as Test Data, exiting")
+
                 if (kc > 10)
                 {
                     i = Math.floor(Math.random() * (10 - 1 + 1) + 1)
                 }
                 if (kc = 1) i = 0
-
                 s3Key = s3ListResult.Contents?.at(i)?.Key as string
+
+                while (s3Key.startsWith('S3DropBucketAggregate'))
+                {
+                    i++
+                    s3Key = s3ListResult.Contents?.at(i)?.Key as string
+                }
 
                 // console.info(`S3 List: \n${ JSON.stringify(s3ListResult.Contents) } `)
                 // if (tcLogDebug)
