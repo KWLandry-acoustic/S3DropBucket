@@ -1225,7 +1225,7 @@ async function getValidateTricklerConfig () {
 
     const getObjectCmd = {
         Bucket: 'tricklercache-configs',
-        Key: 'tricklercache_config.json',
+        Key: 'tricklercache_config.jsonc',
     }
 
     let tc = {} as tcConfig
@@ -1405,7 +1405,7 @@ async function getValidateTricklerConfig () {
         throw new Error(`Exception - Parsing TricklerCache Config File ${e}`)
     }
 
-    if (tc.SelectiveDebug.indexOf("_1,") > -1) console.info(`Selective Debug 1 - Pulled tricklercache_config.json: \n${JSON.stringify(tc)}`)
+    if (tc.SelectiveDebug.indexOf("_1,") > -1) console.info(`Selective Debug 1 - Pulled tricklercache_config.jsonc: \n${JSON.stringify(tc)}`)
 
     return tc
 }
@@ -1427,7 +1427,7 @@ async function getCustomerConfig (filekey: string) {
     // const configObjs = [new Uint8Array()]
 
     const getObjectCommand = {
-        Key: `${customer}config.json`,
+        Key: `${customer}config.jsonc`,
         Bucket: `tricklercache-configs`,
     }
 
@@ -1448,8 +1448,8 @@ async function getCustomerConfig (filekey: string) {
                 const err: string = JSON.stringify(e)
 
                 if (err.indexOf('NoSuchKey') > -1)
-                    throw new Error(`Exception - Customer Config Not Found (${customer}config.json) on S3 tricklercache-configs\nException ${e}`)
-                else throw new Error(`Exception - Retrieving Config (${customer}config.json) from S3 tricklercache-configs \nException ${e}`)
+                    throw new Error(`Exception - Customer Config Not Found (${customer}config.jsonc) on S3 tricklercache-configs\nException ${e}`)
+                else throw new Error(`Exception - Retrieving Config (${customer}config.jsonc) from S3 tricklercache-configs \nException ${e}`)
 
             })
     } catch (e)
