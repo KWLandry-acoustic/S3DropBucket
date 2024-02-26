@@ -1234,11 +1234,8 @@ async function getValidateTricklerConfig () {
         tc = await s3.send(new GetObjectCommand(getObjectCmd))
             .then(async (getConfigS3Result: GetObjectCommandOutput) => {
 
-                const cr = (await getConfigS3Result.Body?.transformToString('utf8')) as string
-
-                const re = new RegExp("(\/\/.*?,)", "g")
-                cr.replace(re, '')
-
+                let cr = (await getConfigS3Result.Body?.transformToString('utf8')) as string
+                cr = cr.replace(new RegExp(/(\/\/.*?,)/g), '')
                 return JSON.parse(cr)
             })
     } catch (e)
@@ -1442,14 +1439,12 @@ async function getCustomerConfig (filekey: string) {
     {
         await s3.send(new GetObjectCommand(getObjectCommand))
             .then(async (getConfigS3Result: GetObjectCommandOutput) => {
-                const ccr = await getConfigS3Result.Body?.transformToString('utf8') as string
+                let ccr = await getConfigS3Result.Body?.transformToString('utf8') as string
 
                 if (tcc.SelectiveDebug.indexOf("_10,") > -1) console.info(`Selective Debug 10 - Customers Config: \n ${ccr}`)
-                debugger
-                const re = new RegExp("(\/\/.*?,)", "g")
-                ccr.replace(re, '')
-
+                ccr = ccr.replace(new RegExp(/(\/\/.*?,)/g), '')
                 configJSON = JSON.parse(ccr)
+
             })
             .catch((e) => {
 
