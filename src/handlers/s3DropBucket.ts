@@ -1236,7 +1236,7 @@ async function getValidateTricklerConfig () {
 
                 const cr = (await getConfigS3Result.Body?.transformToString('utf8')) as string
 
-                const re = new RegExp("\/\/(.*)", "g")
+                const re = new RegExp("(\/\/.*)", "g")
                 cr.replace(re, '')
 
                 return JSON.parse(cr)
@@ -1445,8 +1445,8 @@ async function getCustomerConfig (filekey: string) {
                 const ccr = await getConfigS3Result.Body?.transformToString('utf8') as string
 
                 if (tcc.SelectiveDebug.indexOf("_10,") > -1) console.info(`Selective Debug 10 - Customers Config: \n ${ccr}`)
-
-                const re = new RegExp("\/\/(.*)", "g")
+                debugger
+                const re = new RegExp("(\/\/.*)", "g")
                 ccr.replace(re, '')
 
                 configJSON = JSON.parse(ccr)
