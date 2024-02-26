@@ -21,7 +21,7 @@
       "EventEmitterMaxListeners": 100,
 
       "MaxBatchesWarning": 200,
-      "SelectiveDebug": "_2,_3,_6,_13,_16,_17,",
+      "SelectiveDebug": ",_3,_6,_16,_17,",
 
 
       "DropBucketPurgeCount": 0,

@@ -1,7 +1,9 @@
 {
         "customer": "pura_",
-        "format": "json",
-        "updates": "Singular",
+        "testS3Key": "TestData/sampleJSON_1706644945740.json",
+        "testS3Bucket": "tricklercache-configs",
+        "format": "csv",
+        "updates": "multiple",
         "listId": "13097633",
         "listName": "Master_Database_KWLandry_keyed",
         "listType": "DBKeyed",

@@ -16,7 +16,7 @@ import { SchedulerClient, ListSchedulesCommand, ListSchedulesCommandInput } from
 
 import { Handler, S3Event, Context, SQSEvent, SQSRecord, S3EventRecord } from 'aws-lambda'
 
-import fetch, { Headers, RequestInit, Response } from 'node-fetch'
+import fetch, { fileFrom, Headers, RequestInit, Response } from 'node-fetch'
 
 import { parse } from 'csv-parse'
 
@@ -106,6 +106,8 @@ interface customerConfig {
     }
     jsonMap: { [key: string]: string }
     csvMap: { [key: string]: string }
+    testS3Key: string
+    testS3Bucket: string
 }
 
 let customersConfig = {} as customerConfig
@@ -282,12 +284,17 @@ export const s3DropBucketHandler: Handler = async (event: S3Event, context: Cont
     for (const r of event.Records)
     {
         let key = ''
+        let bucket = ''
+
+
         // {
         //     const contents = await fs.readFile(file, 'utf8')
         // }
         // event.Records.forEach(async (r: S3EventRecord) => {
+
+
         key = r.s3.object.key
-        const bucket = r.s3.bucket.name
+        bucket = r.s3.bucket.name
 
         if (!key.startsWith(tcc.prefixFocus)) return
 
@@ -306,6 +313,15 @@ export const s3DropBucketHandler: Handler = async (event: S3Event, context: Cont
         {
             console.error(`Exception - Retrieving Customer Config for ${key} \n${e}`)
         }
+
+
+        // get test files from the testdata folder of the tricklercache bucket
+        if (customersConfig.testS3Key !== '')
+        {
+            key = customersConfig.testS3Key
+            bucket = customersConfig.testS3Bucket
+        }
+
 
 
         //ToDo: Refactor messaging to reference Object properties versus stringifying and adding additional overhead
@@ -335,9 +351,11 @@ export const s3DropBucketHandler: Handler = async (event: S3Event, context: Cont
 
                     if (tcc.SelectiveDebug.indexOf("_11,") > -1) console.info(`Selective Debug${processResult}`)
 
+
+                    if (customersConfig.testS3Key !== '') key = 'TestS3Object_DoNotDelete'
+
                     if (processResult.indexOf('PutToFireHoseAggregatorResult":"200"'))
                     {
-                        debugger
                         try
                         {
                             //Once successful delete the original S3 Object
@@ -534,7 +552,7 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
                         const errMessage = `An error has stopped Content Parsing at record ${recs} for s3 object ${key}.\n${err}`
                         console.error(errMessage)
 
-                        chunks = {}
+                        chunks = []
                         batchCount = 0
                         recs = 0
 
@@ -562,7 +580,7 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
                             {
                                 batchCount++
                                 const d = chunks
-                                chunks = {}
+                                chunks = []
                                 if (tcc.SelectiveDebug.indexOf('_99,') > -1) saveSampleJSON(JSON.stringify(d))
 
                                 const sqwResult = await storeAndQueueWork(d, key, custConfig, batchCount)
@@ -604,7 +622,7 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
                             if (tcc.SelectiveDebug.indexOf('_99,') > -1) saveSampleJSON(JSON.stringify(chunks))
 
 
-                            chunks = [] as string[]
+                            chunks = []
 
                             //If Singular updates config 
                             //  add this inbound update to a .partial file
@@ -659,7 +677,7 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
 
                         streamResult = { ...streamResult, "OnClose_Result": `S3 Content Stream Closed for ${key}` }
 
-                        chunks = [] as string[]
+                        chunks = []
                         batchCount = 0
                         recs = 0
 
@@ -1568,37 +1586,6 @@ async function validateCustomerConfig (config: customerConfig) {
 }
 
 
-async function updateDatabase () {
-
-    const update = `<Envelope>
-          <Body>
-                <AddRecipient>
-                      <LIST_ID>${customersConfig.listId}</LIST_ID>
-                      <CREATED_FROM>${customersConfig.createdFrom}</CREATED_FROM>
-                      <UPDATE_IF_FOUND>true</UPDATE_IF_FOUND>
-                      ${customersConfig.lookupKeys}
-                      <COLUMN>
-                            <NAME>EMAIL</NAME>
-                            <VALUE>a.bundy@555shoe.com</VALUE>
-                      </COLUMN>
-                      <COLUMN>
-                            <NAME>city</NAME>
-                            <VALUE>Dallas</VALUE>
-                      </COLUMN>
-                      <COLUMN>
-                            <NAME>Column_Nonexistent</NAME>
-                            <VALUE>123-45-6789</VALUE>
-                      </COLUMN>
-                      <COLUMN>
-                            <NAME>Street_Address</NAME>
-                            <VALUE>123 New Street</VALUE>
-                      </COLUMN>
-                </AddRecipient>
-          </Body>
-    </Envelope>`
-}
-
-
 async function storeAndQueueWork (chunks: {}, s3Key: string, config: customerConfig, batch: number) {
 
     if (batch > tcc.MaxBatchesWarning) console.warn(`Warning: Updates from the S3 Object(${s3Key}) are exceeding(${batch}) the Warning Limit of ${tcc.MaxBatchesWarning} Batches per Object.`)
@@ -1673,7 +1660,7 @@ function convertJSONToXML_DBUpdates (updates: {}, config: customerConfig) {
 
     xmlRows = `<Envelope><Body>`
     let r = 0
-    debugger
+
     Object.keys(updates).forEach(jo => {
         r++
         const s = JSON.stringify(jo)
@@ -1691,6 +1678,8 @@ function convertJSONToXML_DBUpdates (updates: {}, config: customerConfig) {
         if (config.listType.toLowerCase() === 'dbnonkeyed')
         {
             const lk = config.lookupKeys.split(',')
+
+            debugger
 
             // < SYNC_FIELDS >
             // <SYNC_FIELD> <NAME> EMAIL < /NAME>
@@ -2231,16 +2220,15 @@ function checkMetadata () {
 }
 
 async function getAnS3ObjectforTesting (bucket: string) {
+
+    let s3Key: string = ''
+
     const listReq = {
         Bucket: bucket,
         MaxKeys: 101,
         Prefix: tcc.prefixFocus
     } as ListObjectsV2CommandInput
 
-    let s3Key: string = ''
-
-    // try
-    // {
     await s3.send(new ListObjectsV2Command(listReq))
         .then(async (s3ListResult: ListObjectsV2CommandOutput) => {
 
