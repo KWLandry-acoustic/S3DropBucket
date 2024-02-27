@@ -277,9 +277,7 @@ export const s3DropBucketHandler: Handler = async (event: S3Event, context: Cont
         `Received S3 DropBucket Event Batch. There are ${event.Records.length} S3 DropBucket Event Records in this batch. (Event Id: ${event.Records[0].responseElements['x-amz-request-id']}).`,
     )
 
-
-
-    //Future: Left this for possible switch of Trigger to be an SQS Trigger of an S3 Write, 
+    //Future: Left this for possible switch of the Trigger as an SQS Trigger of an S3 Write, 
     // Drive higher concurrency in each Lambda invocation by running batches of 10 files written at a time(SQS Batch) 
     for (const r of event.Records)
     {
@@ -316,11 +314,16 @@ export const s3DropBucketHandler: Handler = async (event: S3Event, context: Cont
 
 
         // get test files from the testdata folder of the tricklercache bucket
-        if (customersConfig.testS3Key !== '')
+        if (customersConfig.testS3Key && customersConfig.testS3Key !== '')
         {
             key = customersConfig.testS3Key
+            bucket = 'S3DropBucket'
+        }
+        if (customersConfig.testS3Bucket && customersConfig.testS3Bucket !== '')
+        {
             bucket = customersConfig.testS3Bucket
         }
+
 
 
 
@@ -351,7 +354,7 @@ export const s3DropBucketHandler: Handler = async (event: S3Event, context: Cont
 
                     if (tcc.SelectiveDebug.indexOf("_11,") > -1) console.info(`Selective Debug${processResult}`)
 
-
+                    //Don't delete the test data
                     if (customersConfig.testS3Key !== '') key = 'TestS3Object_DoNotDelete'
 
                     if (processResult.indexOf('PutToFireHoseAggregatorResult":"200"'))
@@ -563,7 +566,7 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
                         recs++
 
                         if (recs > custConfig.updateMaxRows) throw new Error(`The number of Updates in this batch Exceeds Max Row Updates allowed ${recs} in the Customers Config. S3 Object ${key} will not be deleted to allow for review and possible restaging.`)
-
+                        debugger
                         try
                         {
                             const d = s3Chunk.value
@@ -600,7 +603,7 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
                         batchCount++
 
                         const d = chunks
-
+                        debugger
                         try
                         {
                             const streamEndResult = `S3 Content Stream Ended for ${key}. Processed ${recs} records as ${batchCount} batches.`
@@ -1228,19 +1231,25 @@ async function getValidateTricklerConfig () {
         Key: 'tricklercache_config.jsonc',
     }
 
+    let tcr
     let tc = {} as tcConfig
     try
     {
         tc = await s3.send(new GetObjectCommand(getObjectCmd))
             .then(async (getConfigS3Result: GetObjectCommandOutput) => {
 
-                let cr = (await getConfigS3Result.Body?.transformToString('utf8')) as string
-                cr = cr.replace(new RegExp(/(\/\/.*?,)/g), '')
-                return JSON.parse(cr)
+                tcr = (await getConfigS3Result.Body?.transformToString('utf8')) as string
+
+                //Parse comments out of the json before parse
+                tcr = tcr.replaceAll(new RegExp(/[^:](\/\/.*(,|$|")?)/g), '')
+                tcr = tcr.replaceAll(' ', '')
+                tcr = tcr.replaceAll('\n', '')
+
+                return JSON.parse(tcr)
             })
     } catch (e)
     {
-        console.error(`Exception - Pulling TricklerConfig \n ${e}`)
+        console.error(`Exception - Pulling TricklerConfig \n${tcr} \n${e}`)
     }
 
     try
@@ -1433,16 +1442,22 @@ async function getCustomerConfig (filekey: string) {
         Bucket: `tricklercache-configs`,
     }
 
+    let ccr
     let cc = {} as customerConfig
 
     try
     {
         await s3.send(new GetObjectCommand(getObjectCommand))
             .then(async (getConfigS3Result: GetObjectCommandOutput) => {
-                let ccr = await getConfigS3Result.Body?.transformToString('utf8') as string
+                ccr = await getConfigS3Result.Body?.transformToString('utf8') as string
 
                 if (tcc.SelectiveDebug.indexOf("_10,") > -1) console.info(`Selective Debug 10 - Customers Config: \n ${ccr}`)
-                ccr = ccr.replace(new RegExp(/(\/\/.*?,)/g), '')
+
+                //Parse comments out of the json before parse
+                ccr = ccr.replaceAll(new RegExp(/[^:](\/\/.*(,|$|")?)/g), '')
+                ccr = ccr.replaceAll(' ', '')
+                ccr = ccr.replaceAll('\n', '')
+
                 configJSON = JSON.parse(ccr)
 
             })
@@ -1457,7 +1472,7 @@ async function getCustomerConfig (filekey: string) {
             })
     } catch (e)
     {
-        console.error(`Exception - Pulling Customer Config \n${e}`)
+        console.error(`Exception - Pulling Customer Config \n${ccr} \n${e}`)
     }
 
     customersConfig = await validateCustomerConfig(configJSON)
