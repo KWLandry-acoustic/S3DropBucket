@@ -312,7 +312,6 @@ export const s3DropBucketHandler: Handler = async (event: S3Event, context: Cont
             console.error(`Exception - Retrieving Customer Config for ${key} \n${e}`)
         }
 
-
         // get test files from the testdata folder of the tricklercache bucket
         if (customersConfig.testS3Key && customersConfig.testS3Key !== '')
         {
@@ -451,7 +450,7 @@ export default s3DropBucketHandler
 async function processS3ObjectContentStream (key: string, bucket: string, custConfig: customerConfig) {
 
     let batchCount = 0
-    let chunks: Object = {}
+    let chunks: Object[] = []
 
     if (tcLogDebug) console.info(`Processing S3 Content Stream for ${key}`)
 
@@ -562,31 +561,30 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
                         throw new Error(`Error on Readable Stream for s3DropBucket Object ${key}. \nError Message: ${errMessage}`)
                         // reject(streamResult)
                     })
-                    .on('data', async function (s3Chunk: { key: number, value: JSON }) {
+                    .on('data', async function (s3Chunk: { key: number, value: Object }) {
                         recs++
 
                         if (recs > custConfig.updateMaxRows) throw new Error(`The number of Updates in this batch Exceeds Max Row Updates allowed ${recs} in the Customers Config. S3 Object ${key} will not be deleted to allow for review and possible restaging.`)
-                        debugger
+
                         try
                         {
                             const d = s3Chunk.value
 
                             if (tcc.SelectiveDebug.indexOf("_13,") > -1) console.info(`Selective Debug 13 - s3ContentStream OnData - Another chunk (Num of Entries:${Object.values(s3Chunk).length} Recs:${recs} Batch:${batchCount} from ${key} - ${JSON.stringify(d)}`)
 
-                            if (custConfig.jsonMap)
-                            {
-                                const appliedMap = applyJSONMap(d, custConfig.jsonMap)
-                                chunks = { ...chunks, ...appliedMap }
-                            }
+                            debugger
 
-                            if (Object.values(chunks).length > 98)
+                            chunks.push(d)
+
+                            if (Object.entries(chunks).length > 98)
                             {
                                 batchCount++
-                                const d = chunks
-                                chunks = []
-                                if (tcc.SelectiveDebug.indexOf('_99,') > -1) saveSampleJSON(JSON.stringify(d))
 
-                                const sqwResult = await storeAndQueueWork(d, key, custConfig, batchCount)
+                                if (tcc.SelectiveDebug.indexOf('_99,') > -1) saveSampleJSON(JSON.stringify(chunks))
+
+                                const sqwResult = await storeAndQueueWork(chunks, key, custConfig, batchCount)
+
+                                chunks = []
 
                                 if (tcc.SelectiveDebug.indexOf("_2,") > -1) console.info(`Selective Debug 2: Content Stream OnData - Store And Queue Work for ${key} of ${batchCount + 1} Batches of ${Object.values(d).length} records, Result: \n${JSON.stringify(sqwResult)}`)
                                 streamResult = { ...streamResult, "OnDataStoreQueueResult": sqwResult }
@@ -603,7 +601,7 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
                         batchCount++
 
                         const d = chunks
-                        debugger
+
                         try
                         {
                             const streamEndResult = `S3 Content Stream Ended for ${key}. Processed ${recs} records as ${batchCount} batches.`
@@ -613,7 +611,7 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
                                 ...streamResult, "OnEnd_StreamEndResult": streamEndResult
                             }
 
-                            if (recs < 1 && Object.values(chunks).length < 1)
+                            if (recs < 1 && Object.entries(chunks).length < 1)
                             {
                                 streamResult = {
                                     ...streamResult, "Exception - ": `Exception - No records returned from parsing file. Check the content as well as the configured file format (${custConfig.format}) matches the content of the file.`
@@ -634,13 +632,21 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
                             if (customersConfig.updates.toLowerCase() === 'singular')
                             {
                                 //Looks like Amazon Firehose will do the job
-                                try
+                                //flatten chunks in case it's not a single element
+                                let l: Object = {}
+                                try 
                                 {
-                                    const f = await putToFirehose(d, custConfig.customer)
+                                    d.forEach((i: Object) => {
+                                        l = { ...l, ...i }
+                                    })
+
+                                    console.log(`Put To Firehose Object: ${JSON.stringify(l)}`)
+
+                                    const f = await putToFirehose(l, custConfig.customer)
                                     // S3DropBucketAggregate_BFSlE95VRhb_VhNbxLpw1mp_S3DropBucket_FireHoseStream - 2 - 2024-02 - 25 - 20 - 14 - 14 - 13c6a4ee - e529 - 4f19 - 8e45 - c335218922c8.json                                    console.info(`Content Stream OnEnd for (${key}) - Singular Update put to Firehose aggregator pipe. \n${JSON.stringify(f)} \n${batchCount + 1} Batches of ${Object.values(d).length} records - Result: \n${JSON.stringify(streamResult)}`)
 
                                     streamResult = {
-                                        ...streamResult, "OnEnd_PutToFireHoseAggregator": `${JSON.stringify(f)}`
+                                        ...streamResult, "OnEnd_PutToFireHoseAggregator": `${JSON.stringify(f)} \n${l}`
                                     }
 
                                 } catch (e)
@@ -650,8 +656,11 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
                             }
                             else
                             {
+                                debugger
+
                                 const storeQueueResult = await storeAndQueueWork(d, key, custConfig, batchCount)
                                 // "{\"AddWorkToS3ProcessBucketResults\":{\"AddWorkToS3ProcessBucket\":\"Wrote Work File (process_0_pura_2024_01_22T18_02_46_119Z_csv.xml) to S3 Processing Bucket (Result 200)\",\"S3ProcessBucketResult\":\"200\"},\"AddWorkToSQSProcessQueueResults\":{\"sqsWriteResult\":\"200\",\"workQueuedSuccess\":true,\"SQSSendResult\":\"{\\\"$metadata\\\":{\\\"httpStatusCode\\\":200,\\\"requestId\\\":\\\"e70fba06-94f2-5608-b104-e42dc9574636\\\",\\\"attempts\\\":1,\\\"totalRetryDelay\\\":0},\\\"MD5OfMessageAttributes\\\":\\\"0bca0dfda87c206313963daab8ef354a\\\",\\\"MD5OfMessageBody\\\":\\\"940f4ed5927275bc93fc945e63943820\\\",\\\"MessageId\\\":\\\"cf025cb3-dce3-4564-89a5-23dcae86dd42\\\"}\"}}"
+
                                 streamResult = {
                                     ...streamResult, "OnEnd_StoreQueueResult": storeQueueResult
                                 }
@@ -1182,7 +1191,7 @@ async function sftpDeleteFile (remoteFile: string) {
 
 
 
-function applyJSONMap (chunk: JSON, map: Object) {
+function applyJSONMap (chunk: Object, map: Object) {
 
     Object.entries(map).forEach(([k, v]) => {
 
@@ -1604,10 +1613,21 @@ async function validateCustomerConfig (config: customerConfig) {
 }
 
 
-async function storeAndQueueWork (chunks: {}, s3Key: string, config: customerConfig, batch: number) {
+async function storeAndQueueWork (chunks: Object[], s3Key: string, config: customerConfig, batch: number) {
 
     if (batch > tcc.MaxBatchesWarning) console.warn(`Warning: Updates from the S3 Object(${s3Key}) are exceeding(${batch}) the Warning Limit of ${tcc.MaxBatchesWarning} Batches per Object.`)
     // throw new Error(`Updates from the S3 Object(${ s3Key }) Exceed(${ batch }) Safety Limit of 20 Batches of 99 Updates each.Exiting...`)
+
+    //Apply the JSONMap - JSONPath statements
+    if (config.jsonMap)
+    {
+        const am: Object[] = []
+        chunks.forEach((o) => {
+            am.push(applyJSONMap(o, config.jsonMap))
+            chunks = am
+        })
+    }
+
 
     if (customersConfig.listType.toLowerCase() === 'dbkeyed' ||
         customersConfig.listType.toLowerCase() === 'dbnonkeyed')
@@ -1645,7 +1665,7 @@ async function storeAndQueueWork (chunks: {}, s3Key: string, config: customerCon
     return { AddWorkToS3ProcessBucketResults, AddWorkToSQSProcessQueueResults }
 }
 
-function convertJSONToXML_RTUpdates (updates: {}, config: customerConfig) {
+function convertJSONToXML_RTUpdates (updates: Object[], config: customerConfig) {
 
     xmlRows = `<Envelope> <Body> <InsertUpdateRelationalTable> <TABLE_ID> ${config.listId} </TABLE_ID><ROWS>`
 
@@ -1674,15 +1694,19 @@ function convertJSONToXML_RTUpdates (updates: {}, config: customerConfig) {
     return xmlRows
 }
 
-function convertJSONToXML_DBUpdates (updates: {}, config: customerConfig) {
+function convertJSONToXML_DBUpdates (updates: Object[], config: customerConfig) {
 
     xmlRows = `<Envelope><Body>`
     let r = 0
 
-    Object.keys(updates).forEach(jo => {
+    // Object.keys(updates).forEach(jo => {
+    updates.forEach((jo) => {
         r++
+
         const s = JSON.stringify(jo)
         const j = JSON.parse(s)
+
+        debugger
 
         xmlRows += `<AddRecipient><LIST_ID>${config.listId}</LIST_ID><CREATED_FROM>0</CREATED_FROM><UPDATE_IF_FOUND>true</UPDATE_IF_FOUND>`
 
@@ -1698,15 +1722,6 @@ function convertJSONToXML_DBUpdates (updates: {}, config: customerConfig) {
             const lk = config.lookupKeys.split(',')
 
             debugger
-
-            // < SYNC_FIELDS >
-            // <SYNC_FIELD> <NAME> EMAIL < /NAME>
-            // < VALUE > somebody@domain.com</VALUE> </SYNC_FIELD >
-            //     <SYNC_FIELD>
-            //     <NAME> Customer Id < /NAME>
-            //         < VALUE > 123 - 45 - 6789 < /VALUE> </SYNC_FIELD >
-            //         </SYNC_FIELDS>
-
 
             xmlRows += `<SYNC_FIELDS>`
             lk.forEach(k => {
@@ -1725,10 +1740,16 @@ function convertJSONToXML_DBUpdates (updates: {}, config: customerConfig) {
             //Don't need to do anything with DBKey, it's superfluous but documents the keys of the keyed DB
         }
 
+        debugger
         Object.entries(jo).forEach(([key, value]) => {
+            // for (const i in jo)
+            //    {
             // console.info(`Record ${r} as ${key}: ${value}`)
             xmlRows += `<COLUMN><NAME>${key}</NAME><VALUE><![CDATA[${value}]]></VALUE></COLUMN>`
+
         })
+
+
 
         //CRM Lead Source Update 
         //Todo: CRM Lead Source as a config option
@@ -2264,7 +2285,8 @@ async function getAnS3ObjectforTesting (bucket: string) {
                 if (kc = 1) i = 0
                 s3Key = s3ListResult.Contents?.at(i)?.Key as string
 
-                while (s3Key.startsWith('S3DropBucketAggregate'))
+                while (s3Key.startsWith('S3DropBucketAggregate') ||
+                    s3Key.startsWith('partitionKeyFromQuerymetadata'))
                 {
                     i++
                     s3Key = s3ListResult.Contents?.at(i)?.Key as string
