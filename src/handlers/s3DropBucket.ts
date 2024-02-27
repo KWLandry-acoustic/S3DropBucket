@@ -355,7 +355,7 @@ export const s3DropBucketHandler: Handler = async (event: S3Event, context: Cont
                     if (tcc.SelectiveDebug.indexOf("_11,") > -1) console.info(`Selective Debug${processResult}`)
 
                     //Don't delete the test data
-                    if (customersConfig.testS3Key !== '') key = 'TestS3Object_DoNotDelete'
+                    if (customersConfig.testS3Key && customersConfig.testS3Key !== '') key = 'TestS3Object_DoNotDelete'
 
                     if (processResult.indexOf('PutToFireHoseAggregatorResult":"200"'))
                     {
