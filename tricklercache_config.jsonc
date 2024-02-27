@@ -6,30 +6,110 @@
       "restapiurl": "https://api-campaign-${config.region}-${config.pod}.goacoustic.com:443/rest",
       "authapiurl": "https://api-campaign-${config.region}-${config.pod}.goacoustic.com/oauth/token",
 
+      //S3 Drop Bucket for this deployment of the Lambda function
       "s3DropBucket": "tricklercache",
+
+      //S3 Work Processor Bucket for this deployment of the Lambda function
       "s3DropBucketWorkBucket": "tricklercache-process",
+
+      //SQS Queue for this deployment of the Lambda function
       "s3DropBucketWorkQueue": "tricklercacheQueue",
 
+      //Quiesce Processing of the S3 Drop Bucket (Customer Facing Bucket for new Work) 
       "DropBucketQuiesce": false,
+
+      //Quiesce Processing of the SQS Process/Work Queue, the Queue that manages all Update work
       "ProcessQueueQuiesce": false,
+
+      //Quiesce Processing of the S3 Process/Work Bucket 
+      // (Where all new work arriving in the Customer-facing Bucket is staged for updating Campaign) 
       "QueueBucketQuiesce": false,
 
+
+      //ReProcess Work Queue Orphans - Useful in retrying work that fails due to a misconfigured Customer configuration. 
+      //Specify a Customer prefix to requeue all work found on the tricklercache-process bucket 
+      //reQueue = "customer_"            
+      //Provided as an aid, See documentation for examples using AWS CLI, a preferred method.  
       "reQueue": "",
 
+      //Prefix Focus - Focus on processing only inbound DropBucket Objects with the prefix xxx
+      //Provided as an aid, See documentation for discussions on managing 
+      // the S3 Buckets and SQS Queues of the DropBucket Solution.  
       "prefixFocus": "",
 
+      // Check S3 documentation for EventEmitterMaxListeners Tuning 
       "EventEmitterMaxListeners": 100,
 
+      // Check SQS documentation for ProcessQueueVisibilityTimeout Tuning 
+      //Deprecated-Left for Visibilty into Queue Tuning
+      // "ProcessQueueVisibilityTimeout": 15, 
+
+      //Check SQS Documentation for ProcessQueueWaitTimeSeconds Tuning 
+      //Deprecated-Left for Visibilty into Queue Tuning
+      // "ProcessQueueWaitTimeSeconds": 5,
+
+      //Check SQS Documentation for RetryQueueVisibilityTimeout Tuning
+      //Deprecated-Left for Visibilty into Queue Tuning
+      // "RetryQueueVisibilityTimeout": 30,
+
+      //Check SQS Documentation for RetryQueueInitialWaitTimeSeconds Tuning
+      //Deprecated-Left for Visibilty into Queue Tuning
+      // "RetryQueueInitialWaitTimeSeconds": 3,
+
+      //Set a Warning threshold of the number of Batches parsed from a single Customer-facing Bucket file. 
+      // New work arriving is parsed out in "Update Batches", if the number of batches exceeds this limit Logging 
+      // will include a warning for Alerting on a possible issue with that S3 Object (file). 
       "MaxBatchesWarning": 200,
-      "SelectiveDebug": ",_3,_6,_16,_17,",
 
 
+      //Useful for Troubleshooting or monitoring, each Selective Debug turns on a detailed message about 
+      //    various steps in the DropBucket Process.
+      //Selective Debug 1:  Log the current S3 DropBucket Config 
+      //Selective Debug 2:  Log the Batch and End packaging results of Parsing and Queueing the Work from Streaming an S3 DropBucket file, 
+      //Selective Debug 3:  Log the outcome of the Processing of the S3 DropBucket Object that is currently being processed in the batch.
+      //Selective Debug 4:  Log the Batch of SQS Queue Work received to be processed.  
+      //Selective Debug 5:  Log the Updates about to be POSTed to Campaign
+      //Selective Debug 6:  Log the JSON of RT updates to be packaged into XML Updates to Campaign
+      //Selective Debug 7:  Log the writes of Work Files (Batch of Updates) to the S3 Process Bucket
+      //Selective Debug 8:  Log the outcome of the Update POST to Campaign (also helpful to see events marked for Retry)
+      //Selective Debug 9:  Log Current Processing Environment Variables
+      //Selective Debug 10: Log Customer Configs 
+      //Selective Debug 11: Log the Current SQS Event Batch being processed 
+      //Selective Debug 12: Log BatchFail Array for SQS Events returned to the Queue for Retry 
+      //Selective Debug 13: Log each OnData record (chunk) parsed in Processing an S3 DropBucket Object Content Stream
+      //Selective Debug 14: Log the outcome of Adding Work to the SQS Queue - Queueing the Work
+      //Selective Debug 15: Log the outcome of Storing and Queing Updates to the Proces Bucket and Proces Queue respectively. 
+      //Selective Debug 16: Log the JSON of DB updates to be packaged into XML Updates to Campaign
+      //Selective Debug 17: Log the XML created from the JSON updates
+      //Selective Debug 18: 
+      //Selective Debug 19: 
+      //Selective Debug 20: Log the final outcome of all DropBox bucket processing 
+      //Selective Debug 21: Log the final outcome of all Work Process Bucket processing
+      //Selective Debug 22: Log the payload being sent to the AWS Firehose Aggregator
+      //Selective Debug 23: 
+      //Selective Debug 24: 
+      //Selective Debug 25: 
+      //Selective Debug 26: 
+      //Selective Debug 27:
+      //Selective Debug 28: 
+      //Selective Debug 29: 
+
+      // Selective MUST have a preceding underscore and trailing comma, as shown: 
+      "SelectiveDebug": "_3,_16,_17,",
+
+      //Useful for cleaning out the S3 DropBucket. 
+      //DropBucketPurgeCount sets the number to purge at one time (Max 1000) 
+      //DropBucketPurge provides the means to name a custom-version of the DropBucket 
+      //Provided as an aid, See documentation for examples using AWS CLI, a preferred method. 
       "DropBucketPurgeCount": 0,
       "DropBucketPurge": "tricklercache",
 
+      //Useful for cleaning out the  TricklerCache Work Queue Bucket. 
+      //QueueBucketPurgeCount sets the number to purge at one time (Max 1000) 
+      //QueueBucketPurge provides the means to name a custom-version of the DropBucket Work Queue Bucket
+      //Provided as an aid, See documentation for examples using AWS CLI, a preferred method. 
       "QueueBucketPurgeCount": 0,
       "QueueBucketPurge": "tricklercache-process"
-
 
 }
 

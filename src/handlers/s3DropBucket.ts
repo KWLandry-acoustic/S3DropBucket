@@ -83,15 +83,14 @@ interface S3Object {
 }
 
 interface customerConfig {
-    customer: string
+    Customer: string
     format: string // CSV or JSON 
     updates: string // singular or multiple
     listId: string
     listName: string
     listType: string
-    dbKey: string
-    lookupKeys: string
-    createdFrom: string
+    DBKey: string
+    LookupKeys: string
     pod: string // 1,2,3,4,5,6,7
     region: string // US, EU, AP
     updateMaxRows: number //Safety to avoid run away data inbound and parsing it all
@@ -305,7 +304,7 @@ export const s3DropBucketHandler: Handler = async (event: S3Event, context: Cont
         try
         {
             customersConfig = await getCustomerConfig(key)
-            console.info(`Processing inbound data for ${key}, Customer is ${customersConfig.customer}`)
+            console.info(`Processing inbound data for ${key}, Customer is ${customersConfig.Customer}`)
         }
         catch (e)
         {
@@ -642,7 +641,7 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
 
                                     console.log(`Put To Firehose Object: ${JSON.stringify(l)}`)
 
-                                    const f = await putToFirehose(l, custConfig.customer)
+                                    const f = await putToFirehose(l, custConfig.Customer)
                                     // S3DropBucketAggregate_BFSlE95VRhb_VhNbxLpw1mp_S3DropBucket_FireHoseStream - 2 - 2024-02 - 25 - 20 - 14 - 14 - 13c6a4ee - e529 - 4f19 - 8e45 - c335218922c8.json                                    console.info(`Content Stream OnEnd for (${key}) - Singular Update put to Firehose aggregator pipe. \n${JSON.stringify(f)} \n${batchCount + 1} Batches of ${Object.values(d).length} records - Result: \n${JSON.stringify(streamResult)}`)
 
                                     streamResult = {
@@ -881,7 +880,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (event: SQSEvent
                 }
 
                 if (postResult.toLowerCase().indexOf('unsuccessful post') > -1)
-                    console.error(`Error - Unsuccesful POST (Hard Failure) for ${tqm.workKey}: \n${postResult} \n Customer: ${tqm.custconfig.customer}, Pod: ${tqm.custconfig.pod}, ListId: ${tqm.custconfig.listId} \n${work}`)
+                    console.error(`Error - Unsuccesful POST (Hard Failure) for ${tqm.workKey}: \n${postResult} \n Customer: ${tqm.custconfig.Customer}, Pod: ${tqm.custconfig.pod}, ListId: ${tqm.custconfig.listId} \n${work}`)
 
                 if (postResult.toLowerCase().indexOf('successfully posted') > -1)
                 {
@@ -1072,7 +1071,7 @@ export const s3DropBucketSFTPHandler: Handler = async (event: SQSEvent, context:
         //         }
 
         //         if (postResult.toLowerCase().indexOf('unsuccessful post') > -1)
-        //             console.error(`Error - Unsuccesful POST (Hard Failure) for ${tqm.workKey}: \n${postResult} \n Customer: ${tqm.custconfig.customer}, Pod: ${tqm.custconfig.pod}, ListId: ${tqm.custconfig.listId} \n${work}`)
+        //             console.error(`Error - Unsuccesful POST (Hard Failure) for ${tqm.workKey}: \n${postResult} \n Customer: ${tqm.custconfig.Customer}, Pod: ${tqm.custconfig.pod}, ListId: ${tqm.custconfig.listId} \n${work}`)
 
         //         if (postResult.toLowerCase().indexOf('successfully posted') > -1)
         //         {
@@ -1493,10 +1492,18 @@ async function validateCustomerConfig (config: customerConfig) {
     {
         throw new Error('Invalid Config - empty or null config')
     }
-    if (!config.customer)
+    if (!config.Customer)
     {
         throw new Error('Invalid Config - Customer is not defined')
     }
+    else if (config.Customer.length < 4 ||
+        !config.Customer.endsWith('_')
+    )
+    {
+        throw new Error(`Invalid Config - Customer string is not valid, must be at least 3 characters and a trailing underscore, '_'`)
+    }
+
+
     if (!config.clientId)
     {
         throw new Error('Invalid Config - ClientId is not defined')
@@ -1566,12 +1573,12 @@ async function validateCustomerConfig (config: customerConfig) {
         throw new Error("Invalid Config - ListType must be either 'Relational', 'DBKeyed' or 'DBNonKeyed'. ")
     }
 
-    if (config.listType.toLowerCase() == 'dbkeyed' && !config.dbKey)
+    if (config.listType.toLowerCase() == 'dbkeyed' && !config.DBKey)
     {
         throw new Error("Invalid Config - Update set as Database Keyed but DBKey is not defined. ")
     }
 
-    if (config.listType.toLowerCase() == 'dbnonkeyed' && !config.lookupKeys)
+    if (config.listType.toLowerCase() == 'dbnonkeyed' && !config.LookupKeys)
     {
         throw new Error("Invalid Config - Update set as Database NonKeyed but lookupKeys is not defined. ")
     }
@@ -1686,7 +1693,7 @@ function convertJSONToXML_RTUpdates (updates: Object[], config: customerConfig) 
     //Tidy up the XML
     xmlRows += `</ROWS></InsertUpdateRelationalTable></Body></Envelope>`
 
-    if (tcLogDebug) console.info(`Converting S3 Content to XML RT Updates. Packaging ${Object.values(updates).length} rows as updates to ${config.customer}'s ${config.listName}`)
+    if (tcLogDebug) console.info(`Converting S3 Content to XML RT Updates. Packaging ${Object.values(updates).length} rows as updates to ${config.Customer}'s ${config.listName}`)
     if (tcc.SelectiveDebug.indexOf("_6,") > -1) console.info(`Selective Debug 6 - JSON to be converted to XML RT Updates: ${JSON.stringify(updates)}`)
     if (tcc.SelectiveDebug.indexOf("_17,") > -1) console.info(`Selective Debug 17 - XML from JSON for RT Updates: ${xmlRows}`)
 
@@ -1719,7 +1726,7 @@ function convertJSONToXML_DBUpdates (updates: Object[], config: customerConfig) 
         //Only needed on non-keyed(In Campaign use DB -> Settings -> LookupKeys to find what fields are Lookup Keys)
         if (config.listType.toLowerCase() === 'dbnonkeyed')
         {
-            const lk = config.lookupKeys.split(',')
+            const lk = config.LookupKeys.split(',')
 
             debugger
 
@@ -1760,7 +1767,7 @@ function convertJSONToXML_DBUpdates (updates: Object[], config: customerConfig) 
 
     xmlRows += `</Body></Envelope>`
 
-    if (tcLogDebug) console.info(`Converting S3 Content to XML DB Updates. Packaging ${Object.values(updates).length} rows as updates to ${config.customer}'s ${config.listName}`)
+    if (tcLogDebug) console.info(`Converting S3 Content to XML DB Updates. Packaging ${Object.values(updates).length} rows as updates to ${config.Customer}'s ${config.listName}`)
     if (tcc.SelectiveDebug.indexOf("_16,") > -1) console.info(`Selective Debug 16 - JSON to be converted to XML DB Updates: ${JSON.stringify(updates)}`)
     if (tcc.SelectiveDebug.indexOf("_17,") > -1) console.info(`Selective Debug 17 - XML from JSON for DB Updates: ${xmlRows}`)
 
