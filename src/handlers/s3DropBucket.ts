@@ -745,7 +745,7 @@ async function putToFirehose (S3Obj: Object, cust: string) {
 
     const client = new FirehoseClient()
 
-    Object.assign(S3Obj, { "customer": cust })
+    Object.assign(S3Obj, { "Customer": cust })
 
     // S3DropBucket_Aggregator 
     // S3DropBucket_FireHoseStream
