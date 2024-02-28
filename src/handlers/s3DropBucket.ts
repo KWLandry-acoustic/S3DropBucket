@@ -1603,10 +1603,10 @@ async function validateCustomerConfig (config: customerConfig) {
     }
 
 
-    if (!config.sftp.user) { }
-    if (!config.sftp.password) { }
-    if (!config.sftp.filepattern) { }
-    if (!config.sftp.schedule) { }
+    if (config.sftp.user && config.sftp.user !== '') { }
+    if (config.sftp.password && config.sftp.password !== '') { }
+    if (config.sftp.filepattern && config.sftp.filepattern !== '') { }
+    if (config.sftp.schedule && config.sftp.schedule !== '') { }
 
 
     if (!config.testS3Key)
@@ -1636,7 +1636,7 @@ async function validateCustomerConfig (config: customerConfig) {
                 const p = jm[m]
                 const v = jsonpath.parse(p)
                 tmpMap[m] = jm[m]
-                tmpmap2.m = jm.m
+                // tmpmap2.m = jm.m
             }
             catch (e)
             {
