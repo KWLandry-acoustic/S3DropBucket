@@ -84,6 +84,8 @@ interface S3Object {
 
 interface customerConfig {
     Customer: string
+    testS3Key: string
+    testS3Bucket: string
     format: string // CSV or JSON 
     updates: string // singular or multiple
     listId: string
@@ -105,9 +107,7 @@ interface customerConfig {
     }
     jsonMap: { [key: string]: string }
     csvMap: { [key: string]: string }
-    Ignore: {string[]}
-testS3Key: string
-testS3Bucket: string
+    Ignore: string[]
 }
 
 let customersConfig = {} as customerConfig
@@ -1504,6 +1504,7 @@ async function validateCustomerConfig (config: customerConfig) {
     {
         throw new Error('Invalid Config - empty or null config')
     }
+
     if (!config.Customer)
     {
         throw new Error('Invalid Config - Customer is not defined')
@@ -1600,6 +1601,17 @@ async function validateCustomerConfig (config: customerConfig) {
     if (!config.sftp.password) { }
     if (!config.sftp.filepattern) { }
     if (!config.sftp.schedule) { }
+
+
+    if (!config.testS3Key)
+    {
+        config.testS3Key = ''
+    }
+
+    if (!config.testS3Bucket)
+    {
+        config.testS3Bucket = ''
+    }
 
     if (config.jsonMap)
     {
