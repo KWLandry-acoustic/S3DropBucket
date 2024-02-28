@@ -36,6 +36,7 @@
       // "listType": "DBNonKeyed",
       // "listId": "999999999",
       // "listName": "Master_Database_KWLandry_NonKeyed",
+      //
       // If DBNonKeyed need LookupKeys - comma separated list
       "LookupKeys": "Email, City, State",
 
@@ -67,13 +68,13 @@
             "Col_DF": 3
       },
 
-      "Ignore": {
-            "Col_BA": "ignore", //Ignore this column if it exists in the data
-            "Col_BB": "ignore",
-            "Col_BC": "ignore"
-      },
+      "Ignore": [ //Ignore column if it exists in the data
+            "Col_BA",
+            "Col_BB",
+            "Col_BC"
+      ],
 
-
-      "zip": ".zip" // Future: Files are in zip format (.zip) as they arrive (will be unzipped before procesing) 
+      // Future:
+      "zip": ".zip" //Files are in zip format (.zip) as they arrive (will be unzipped before procesing) 
 
 }

@@ -88,14 +88,14 @@
       //Selective Debug 22: Log the payload being sent to the AWS Firehose Aggregator
       //Selective Debug 23: 
       //Selective Debug 24: 
-      //Selective Debug 25: 
+      //Selective Debug 25: Log the Processing of an Aggregate (Firehose Aggregated) file via S3DropBucket
       //Selective Debug 26: 
       //Selective Debug 27:
       //Selective Debug 28: 
       //Selective Debug 29: 
 
       // Selective MUST have a preceding underscore and trailing comma, as shown: 
-      "SelectiveDebug": "_3,_16,_17,",
+      "SelectiveDebug": "_3,_16,_17,_25,",
 
       //Useful for cleaning out the S3 DropBucket. 
       //DropBucketPurgeCount sets the number to purge at one time (Max 1000) 

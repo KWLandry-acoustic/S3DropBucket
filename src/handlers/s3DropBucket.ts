@@ -105,8 +105,9 @@ interface customerConfig {
     }
     jsonMap: { [key: string]: string }
     csvMap: { [key: string]: string }
-    testS3Key: string
-    testS3Bucket: string
+    Ignore: {string[]}
+testS3Key: string
+testS3Bucket: string
 }
 
 let customersConfig = {} as customerConfig
@@ -246,7 +247,18 @@ export const s3DropBucketHandler: Handler = async (event: S3Event, context: Cont
 
     console.info(`S3 DropBucket File Processor Selective Debug Set is: ${tcc.SelectiveDebug}`)
 
+
     if (tcc.SelectiveDebug.indexOf("_9,") > -1) console.info(`Selective Debug 9 - Process Environment Vars: ${JSON.stringify(process.env)}`)
+
+
+    if (event.Records[0].s3.object.key.indexOf('aggregate_') > -1)
+    {
+        // pura_aggregate_S3DropBucket_Aggregator-3-2024-02-27-22-42-50-894dede9-dca4-36f7-b621-e0ea2b80bef2.json
+        // if (tcc.SelectiveDebug.indexOf("_25,") > -1) console.info(`Selective Debug 25 - Aggregate File ${event.Records}`)
+        console.info(`Processing an Aggregate File ${event.Records[0].s3.object.key}`)
+    }
+
+
 
     //When Local Testing - pull an S3 Object and so avoid the not-found error
     if (!event.Records[0].s3.object.key || event.Records[0].s3.object.key === 'devtest.csv')
