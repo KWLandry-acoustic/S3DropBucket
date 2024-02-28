@@ -1601,7 +1601,7 @@ async function validateCustomerConfig (config: customerConfig) {
     {
         throw new Error("Invalid Config - Update set as Database NonKeyed but lookupKeys is not defined. ")
     }
-
+    debugger
     if (!config.sftp.user) { config.sftp.user = '' }
     if (!config.sftp.password) { config.sftp.password = '' }
     if (!config.sftp.filepattern) { config.sftp.filepattern = '' }
