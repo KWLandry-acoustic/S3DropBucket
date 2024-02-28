@@ -547,7 +547,12 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
 
 
 
-            const jsonParser = new JSONParser({ stringBufferSize: undefined, paths: ['$'] })
+            const jsonParser = new JSONParser({
+                numberBufferSize: undefined, // set to 0 to don't buffer.
+                separator: '\n',    // separator between object. For example `\n` for nd-js.
+                stringBufferSize: undefined, paths: ['$'],
+                emitPartialTokens: false // whether to emit tokens mid-parsing.
+            })
             s3ContentReadableStream = s3ContentReadableStream.pipe(jsonParser)
 
             s3ContentReadableStream.setMaxListeners(Number(tcc.EventEmitterMaxListeners))
