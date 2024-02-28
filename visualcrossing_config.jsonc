@@ -1,17 +1,19 @@
 {
-        "customer": "visualcrossing_",
+        //Visual Crossing for Clorox 
+        "Customer": "visualcrossing_",
         "format": "csv",
+        "updates": "multiple",
         "listId": "13262176",
         "listName": "WeatherForecast2",
         "listType": "Relational",
-        "dbKey": "zip",
+        "DBKey": "zip",
         "pod": "2",
         "region": "us",
         "updateMaxRows": 100,
         "refreshToken": "rD-7E2r8BynGDaapr13oJV9BxQr20lsYGN9RPkbrtPtAS1",
         "clientId": "1d99f8d8-0897-4090-983a-c517cc54032e",
         "clientSecret": "124bd238-0987-40a2-b8fb-879ddd4d3241",
-        "map": {
-                "zip": "$.name"
+        "csvMap": { //Mapping when processing CSV files
+                "Col_AA": "COL_XYZ" //Write Col_AA with data from Col_XYZ in the CSV file
         }
 }

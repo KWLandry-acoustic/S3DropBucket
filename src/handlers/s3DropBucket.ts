@@ -320,7 +320,7 @@ export const s3DropBucketHandler: Handler = async (event: S3Event, context: Cont
         }
         catch (e)
         {
-            console.error(`Exception - Retrieving Customer Config for ${key} \n${e}`)
+            throw new Error(`Exception - Retrieving Customer Config for ${key} \n${e}`)
         }
 
         // get test files from the testdata folder of the tricklercache bucket
@@ -645,7 +645,7 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
                             //  add this inbound update to a .partial file
                             // if this update is the 99th update to that file, delete from .partial bucket and write to s3DropBucket 
 
-                            if (customersConfig.updates.toLowerCase() === 'singular' &&
+                            if (customersConfig.updates && customersConfig.updates.toLowerCase() === 'singular' &&
                                 key.indexOf('aggregate_') < 0)
                             {
                                 //Looks like Amazon Firehose will do the job
@@ -1498,7 +1498,7 @@ async function getCustomerConfig (filekey: string) {
             })
     } catch (e)
     {
-        console.error(`Exception - Pulling Customer Config \n${ccr} \n${e}`)
+        throw new Error(`Exception - Pulling Customer Config \n${ccr} \n${e}`)
     }
 
     customersConfig = await validateCustomerConfig(configJSON)
