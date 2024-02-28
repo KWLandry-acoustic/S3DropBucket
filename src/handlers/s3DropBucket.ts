@@ -580,7 +580,7 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
                     .on('data', async function (s3Chunk: { key: number, value: Object }) {
                         recs++
 
-                        if (recs > custConfig.updateMaxRows) throw new Error(`The number of Updates in this batch Exceeds Max Row Updates allowed ${recs} in the Customers Config. S3 Object ${key} will not be deleted to allow for review and possible restaging.`)
+                        if (recs > custConfig.updateMaxRows && key.indexOf('aggregate_') < 0) throw new Error(`The number of Updates in this batch Exceeds Max Row Updates allowed ${recs} in the Customers Config. S3 Object ${key} will not be deleted to allow for review and possible restaging.`)
 
                         try
                         {
