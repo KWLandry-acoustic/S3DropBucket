@@ -640,7 +640,8 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
                             //  add this inbound update to a .partial file
                             // if this update is the 99th update to that file, delete from .partial bucket and write to s3DropBucket 
 
-                            if (customersConfig.updates.toLowerCase() === 'singular')
+                            if (customersConfig.updates.toLowerCase() === 'singular' &&
+                                key.indexOf('aggregate_') < 0)
                             {
                                 //Looks like Amazon Firehose will do the job
                                 //flatten chunks in case it's not a single element
