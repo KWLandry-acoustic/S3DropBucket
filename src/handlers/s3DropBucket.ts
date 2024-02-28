@@ -304,7 +304,7 @@ export const s3DropBucketHandler: Handler = async (event: S3Event, context: Cont
 
         key = r.s3.object.key
         bucket = r.s3.bucket.name
-
+        debugger
         if (!key.startsWith(tcc.prefixFocus)) return
 
         //ToDo: Resolve Duplicates Issue - S3 allows Duplicate Object Names but Delete marks all Objects of same Name Deleted. 
@@ -1451,7 +1451,7 @@ async function getCustomerConfig (filekey: string) {
 
     // Retrieve file's prefix as Customer Name
     if (!filekey) throw new Error(`Exception - Cannot resolve Customer Config without a valid Customer Prefix (file prefix is ${filekey})`)
-
+    debugger
 
     const customer = filekey.split('_')[0] + '_'
 
@@ -1602,23 +1602,20 @@ async function validateCustomerConfig (config: customerConfig) {
         throw new Error("Invalid Config - Update set as Database NonKeyed but lookupKeys is not defined. ")
     }
 
+    if (!config.sftp.user) { config.sftp.user = '' }
+    if (!config.sftp.password) { config.sftp.password = '' }
+    if (!config.sftp.filepattern) { config.sftp.filepattern = '' }
+    if (!config.sftp.schedule) { config.sftp.schedule = '' }
 
     if (config.sftp.user && config.sftp.user !== '') { }
     if (config.sftp.password && config.sftp.password !== '') { }
     if (config.sftp.filepattern && config.sftp.filepattern !== '') { }
     if (config.sftp.schedule && config.sftp.schedule !== '') { }
 
+    if (!config.testS3Key) { config.testS3Key = '' }
+    if (!config.testS3Bucket) { config.testS3Bucket = '' }
 
-    if (!config.testS3Key)
-    {
-        config.testS3Key = ''
-    }
-
-    if (!config.testS3Bucket)
-    {
-        config.testS3Bucket = ''
-    }
-
+    if (!config.jsonMap) config.jsonMap = {}
     if (config.jsonMap)
     {
         // config.jsonMap = [{
@@ -2321,9 +2318,8 @@ async function getAnS3ObjectforTesting (bucket: string) {
                 }
                 if (kc = 1) i = 0
                 s3Key = s3ListResult.Contents?.at(i)?.Key as string
-
-                while (s3Key.startsWith('S3DropBucketAggregate') ||
-                    s3Key.startsWith('partitionKeyFromQuerymetadata'))
+                debugger
+                while (s3Key.toLowerCase().indexOf('aggregat') > -1)
                 {
                     i++
                     s3Key = s3ListResult.Contents?.at(i)?.Key as string
