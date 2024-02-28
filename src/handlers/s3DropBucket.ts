@@ -76,7 +76,6 @@ let localTesting = false
 
 let xmlRows: string = ''
 
-
 interface S3Object {
     Bucket: string
     Key: string
@@ -565,6 +564,12 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
 
             const readStream = await new Promise(async (resolve, reject) => {
 
+                // interface jsonparserOnly { key: number, value: Object }
+                // interface CSVtojsonparser { Buffer: Uint8Array }
+                // type CSVOrJSONParser = jsonparserOnly & CSVtojsonparser
+
+                let d: any
+
                 s3ContentReadableStream
                     .on('error', async function (err: string) {
                         const errMessage = `An error has stopped Content Parsing at record ${recs} for s3 object ${key}.\n${err}`
@@ -577,14 +582,17 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
                         throw new Error(`Error on Readable Stream for s3DropBucket Object ${key}. \nError Message: ${errMessage}`)
                         // reject(streamResult)
                     })
-                    .on('data', async function (s3Chunk: { key: number, value: Object }) {
+                    .on('data', async function (s3Chunk: any) {
                         recs++
 
                         if (recs > custConfig.updateMaxRows && key.indexOf('aggregate_') < 0) throw new Error(`The number of Updates in this batch Exceeds Max Row Updates allowed ${recs} in the Customers Config. S3 Object ${key} will not be deleted to allow for review and possible restaging.`)
 
                         try
                         {
-                            const d = s3Chunk.value
+
+                            if (custConfig.format.toLowerCase() === 'json') { d = s3Chunk.value as { key: number, value: Object } }
+                            if (custConfig.format.toLowerCase() === 'csv') { d = s3Chunk as Buffer }
+
 
                             if (tcc.SelectiveDebug.indexOf("_13,") > -1) console.info(`Selective Debug 13 - s3ContentStream OnData - Another chunk (Num of Entries:${Object.values(s3Chunk).length} Recs:${recs} Batch:${batchCount} from ${key} - ${JSON.stringify(d)}`)
 
