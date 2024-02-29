@@ -582,7 +582,7 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
                         throw new Error(`Error on Readable Stream for s3DropBucket Object ${key}. \nError Message: ${errMessage}`)
                         // reject(streamResult)
                     })
-                    .on('data', async function (s3Chunk: any) {
+                    .on('data', async function (s3Chunk: string) {
                         recs++
 
                         if (recs > custConfig.updateMaxRows && key.indexOf('aggregate_') < 0) throw new Error(`The number of Updates in this batch Exceeds Max Row Updates allowed ${recs} in the Customers Config. S3 Object ${key} will not be deleted to allow for review and possible restaging.`)
@@ -590,8 +590,8 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
                         try
                         {
 
-                            if (custConfig.format.toLowerCase() === 'json') { d = s3Chunk.value as { key: number, value: Object } }
-                            if (custConfig.format.toLowerCase() === 'csv') { d = s3Chunk as Buffer }
+                            if (custConfig.format.toLowerCase() === 'json') { d = s3Chunk as unknown as { key: number, value: Object } }
+                            if (custConfig.format.toLowerCase() === 'csv') { d = s3Chunk }
 
 
                             if (tcc.SelectiveDebug.indexOf("_13,") > -1) console.info(`Selective Debug 13 - s3ContentStream OnData - Another chunk (Num of Entries:${Object.values(s3Chunk).length} Recs:${recs} Batch:${batchCount} from ${key} - ${JSON.stringify(d)}`)
