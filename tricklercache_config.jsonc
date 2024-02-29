@@ -35,7 +35,7 @@
       //Prefix Focus - Focus on processing only inbound DropBucket Objects with the prefix xxx
       //Provided as an aid, See documentation for discussions on managing 
       // the S3 Buckets and SQS Queues of the DropBucket Solution.  
-      "prefixFocus": "",
+      "prefixFocus": "visualcrossing_",
 
       // Check S3 documentation for EventEmitterMaxListeners Tuning 
       "EventEmitterMaxListeners": 100,

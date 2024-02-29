@@ -54,6 +54,7 @@ import {
 
 
 import sftpClient, { ListFilterFunction } from 'ssh2-sftp-client'
+import { Transform } from 'node:stream'
 
 //For when need to reference Lambda execution environment /tmp folder 
 // import { ReadStream, close } from 'fs'
@@ -303,7 +304,7 @@ export const s3DropBucketHandler: Handler = async (event: S3Event, context: Cont
 
         key = r.s3.object.key
         bucket = r.s3.bucket.name
-        debugger
+
         if (!key.startsWith(tcc.prefixFocus)) return
 
         //ToDo: Resolve Duplicates Issue - S3 allows Duplicate Object Names but Delete marks all Objects of same Name Deleted. 
@@ -549,10 +550,14 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
             const jsonParser = new JSONParser({
                 numberBufferSize: undefined, // set to 0 to don't buffer.
                 separator: '\n',    // separator between object. For example `\n` for nd-js.
-                stringBufferSize: undefined, paths: ['$'],
+                stringBufferSize: undefined,
+                paths: ['$'],
                 emitPartialTokens: false // whether to emit tokens mid-parsing.
             })
-            s3ContentReadableStream = s3ContentReadableStream.pipe(jsonParser)
+
+            const t = new Transform({ objectMode: true })
+
+            s3ContentReadableStream = s3ContentReadableStream.pipe(t).pipe(jsonParser)
 
             s3ContentReadableStream.setMaxListeners(Number(tcc.EventEmitterMaxListeners))
 
@@ -582,7 +587,7 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
                         throw new Error(`Error on Readable Stream for s3DropBucket Object ${key}. \nError Message: ${errMessage}`)
                         // reject(streamResult)
                     })
-                    .on('data', async function (s3Chunk: string) {
+                    .on('data', async function (s3Chunk: String) {
                         recs++
 
                         if (recs > custConfig.updateMaxRows && key.indexOf('aggregate_') < 0) throw new Error(`The number of Updates in this batch Exceeds Max Row Updates allowed ${recs} in the Customers Config. S3 Object ${key} will not be deleted to allow for review and possible restaging.`)
@@ -1459,7 +1464,6 @@ async function getCustomerConfig (filekey: string) {
 
     // Retrieve file's prefix as Customer Name
     if (!filekey) throw new Error(`Exception - Cannot resolve Customer Config without a valid Customer Prefix (file prefix is ${filekey})`)
-    debugger
 
     const customer = filekey.split('_')[0] + '_'
 
@@ -1609,7 +1613,7 @@ async function validateCustomerConfig (config: customerConfig) {
     {
         throw new Error("Invalid Config - Update set as Database NonKeyed but lookupKeys is not defined. ")
     }
-    debugger
+
     if (!config.sftp) { config.sftp = { user: "", password: "", filepattern: "", schedule: "" } }
     // if (!config.sftp.user) { config.sftp.user = '' }
     // if (!config.sftp.password) { config.sftp.password = '' }
@@ -2327,7 +2331,7 @@ async function getAnS3ObjectforTesting (bucket: string) {
                 }
                 if (kc = 1) i = 0
                 s3Key = s3ListResult.Contents?.at(i)?.Key as string
-                debugger
+
                 while (s3Key.toLowerCase().indexOf('aggregat') > -1)
                 {
                     i++
