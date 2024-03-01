@@ -36,6 +36,7 @@
       //Provided as an aid, See documentation for discussions on managing 
       // the S3 Buckets and SQS Queues of the DropBucket Solution.  
       "prefixFocus": "visualcrossing_",
+      // "prefixFocus": "",
 
       // Check S3 documentation for EventEmitterMaxListeners Tuning 
       "EventEmitterMaxListeners": 100,

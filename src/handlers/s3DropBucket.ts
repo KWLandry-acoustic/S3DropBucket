@@ -18,9 +18,7 @@ import { Handler, S3Event, Context, SQSEvent, SQSRecord, S3EventRecord } from 'a
 
 import fetch, { fileFrom, Headers, RequestInit, Response } from 'node-fetch'
 
-import { parse } from 'csv-parse'
 
-import jsonpath from 'jsonpath'
 
 //
 //StreamJSON Package
@@ -29,16 +27,18 @@ import jsonpath from 'jsonpath'
 
 // import { JSONParser } from '@streamparser/json'
 // const jsonParser = new JSONParser()
-
 //json-node Stream compatible package
 import { JSONParser, Tokenizer, TokenParser } from '@streamparser/json-node'
-// {
-//  stringBufferSize: <number>, // set to 0 to don't buffer. Min valid value is 4.
-//  numberBufferSize: <number>, // set to 0 to don't buffer.
-//  separator: <string>, // separator between object. For example `\n` for nd-js.
-//  emitPartialTokens: <boolean> // whether to emit tokens mid-parsing.
-// }
+import JSONParserTransform from '@streamparser/json-node/jsonparser.js'
+import { Transform } from 'node:stream'
+import { TransformStream } from 'node:stream/web'
 
+
+import { parse } from 'csv-parse'
+
+import { transform } from 'stream-transform'
+
+import jsonpath from 'jsonpath'
 
 import {
     SQSClient,
@@ -54,7 +54,8 @@ import {
 
 
 import sftpClient, { ListFilterFunction } from 'ssh2-sftp-client'
-import { Transform } from 'node:stream'
+
+// import { Object } from 'lodash'
 
 //For when need to reference Lambda execution environment /tmp folder 
 // import { ReadStream, close } from 'fs'
@@ -67,7 +68,7 @@ export type sqsObject = {
     objectKey: string
 }
 
-
+//ToDo: Make AWS Region Config Option for portabilty/infrastruct dedication
 const s3 = new S3Client({ region: 'us-east-1' })
 
 const sftpCient = new sftpClient()
@@ -461,7 +462,7 @@ export default s3DropBucketHandler
 async function processS3ObjectContentStream (key: string, bucket: string, custConfig: customerConfig) {
 
     let batchCount = 0
-    let chunks: Object[] = []
+    let chunks: string[] = []
 
     if (tcLogDebug) console.info(`Processing S3 Content Stream for ${key}`)
 
@@ -494,7 +495,32 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
                     skip_records_with_error: true,
                 },
                 )
-                s3ContentReadableStream = s3ContentReadableStream.pipe(csvParser)
+
+                const tr = new Transform({ objectMode: true })
+
+                const tr2 = new Transform({
+                    transform (chunk, encoding, callback) {
+                        callback(null, chunk)
+                    },
+                })
+
+                // const transformer = transform((record, callback) => {
+                //     setTimeout(() => {
+                //         callback(null, record.join(' ') + '\n')
+                //     }, 500)
+                // }, {
+                //     parallel: 5
+                // })
+
+                const t = transform(function (data) {
+                    // data.push(data.shift())
+                    // debugger
+                    return JSON.stringify(data)
+                })
+
+                s3ContentReadableStream = s3ContentReadableStream.pipe(csvParser).pipe(t)
+
+
                 //#region
                 // s3ContentReadableStream = s3ContentReadableStream.pipe(csvParser), { end: false })
                 // .on('error', function (err) {
@@ -546,18 +572,26 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
             */
 
 
+            // {
+            //  stringBufferSize: <number>, // set to 0 to don't buffer. Min valid value is 4.
+            //  numberBufferSize: <number>, // set to 0 to don't buffer.
+            //  separator: <string>, // separator between object. For example `\n` for nd-js.
+            //  emitPartialTokens: <boolean> // whether to emit tokens mid-parsing.
+            // }
+
 
             const jsonParser = new JSONParser({
-                numberBufferSize: undefined, // set to 0 to don't buffer.
-                separator: '\n',    // separator between object. For example `\n` for nd-js.
-                stringBufferSize: undefined,
+                numberBufferSize: undefined,       //64, //0, //undefined, // set to 0 to don't buffer.
+                separator: '',            // separator between object. For example `\n` for nd-js.
+                stringBufferSize: undefined,    //64, //0, //undefined,
                 paths: ['$'],
                 emitPartialTokens: false // whether to emit tokens mid-parsing.
-            })
+            })               //, { objectMode: true })
 
-            const t = new Transform({ objectMode: true })
+            // const t = new Transform({ objectMode: true })
 
-            s3ContentReadableStream = s3ContentReadableStream.pipe(t).pipe(jsonParser)
+            // s3ContentReadableStream = s3ContentReadableStream.pipe(t).pipe(jsonParser)
+            s3ContentReadableStream = s3ContentReadableStream.pipe(jsonParser)
 
             s3ContentReadableStream.setMaxListeners(Number(tcc.EventEmitterMaxListeners))
 
@@ -595,15 +629,15 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
                         try
                         {
 
-                            if (custConfig.format.toLowerCase() === 'json') { d = s3Chunk as unknown as { key: number, value: Object } }
-                            if (custConfig.format.toLowerCase() === 'csv') { d = s3Chunk }
-
+                            // if (custConfig.format.toLowerCase() === 'json') { d = s3Chunk as unknown as { key: number, value: Object } }
+                            // if (custConfig.format.toLowerCase() === 'csv') { d = s3Chunk }
+                            d = s3Chunk
 
                             if (tcc.SelectiveDebug.indexOf("_13,") > -1) console.info(`Selective Debug 13 - s3ContentStream OnData - Another chunk (Num of Entries:${Object.values(s3Chunk).length} Recs:${recs} Batch:${batchCount} from ${key} - ${JSON.stringify(d)}`)
 
                             debugger
 
-                            chunks.push(d)
+                            chunks.push(d.value)
 
                             if (Object.entries(chunks).length > 98)
                             {
@@ -663,20 +697,21 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
                             {
                                 //Looks like Amazon Firehose will do the job
                                 //flatten chunks in case it's not a single element
-                                let l: Object = {}
+                                // let l: Object = {}
                                 try 
                                 {
-                                    d.forEach((i: Object) => {
-                                        l = { ...l, ...i }
-                                    })
+                                    // d.forEach((i: Object) => {
+                                    //     l = { ...l, ...i }
+                                    // })
 
-                                    console.log(`Put To Firehose Object: ${JSON.stringify(l)}`)
+                                    // console.log(`Put To Firehose Object: ${JSON.stringify(l)}`)
 
-                                    const f = await putToFirehose(l, custConfig.Customer)
+                                    // const f = await putToFirehose(l, custConfig.Customer)
+                                    const f = await putToFirehose(d, custConfig.Customer)
                                     // S3DropBucketAggregate_BFSlE95VRhb_VhNbxLpw1mp_S3DropBucket_FireHoseStream - 2 - 2024-02 - 25 - 20 - 14 - 14 - 13c6a4ee - e529 - 4f19 - 8e45 - c335218922c8.json                                    console.info(`Content Stream OnEnd for (${key}) - Singular Update put to Firehose aggregator pipe. \n${JSON.stringify(f)} \n${batchCount + 1} Batches of ${Object.values(d).length} records - Result: \n${JSON.stringify(streamResult)}`)
 
                                     streamResult = {
-                                        ...streamResult, "OnEnd_PutToFireHoseAggregator": `${JSON.stringify(f)} \n${l}`
+                                        ...streamResult, "OnEnd_PutToFireHoseAggregator": `${JSON.stringify(f)} \n${d}`
                                     }
 
                                 } catch (e)
@@ -754,7 +789,7 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
 }
 
 
-async function putToFirehose (S3Obj: Object, cust: string) {
+async function putToFirehose (S3Obj: string[], cust: string) {
 
     const client = new FirehoseClient()
 
@@ -1221,7 +1256,7 @@ async function sftpDeleteFile (remoteFile: string) {
 
 
 
-function applyJSONMap (chunk: Object, map: Object) {
+function applyJSONMap (chunk: string[], map: { [key: string]: string }) {
 
     Object.entries(map).forEach(([k, v]) => {
 
@@ -1660,7 +1695,7 @@ async function validateCustomerConfig (config: customerConfig) {
 }
 
 
-async function storeAndQueueWork (chunks: Object[], s3Key: string, config: customerConfig, batch: number) {
+async function storeAndQueueWork (chunks: string[], s3Key: string, config: customerConfig, batch: number) {
 
     if (batch > tcc.MaxBatchesWarning) console.warn(`Warning: Updates from the S3 Object(${s3Key}) are exceeding(${batch}) the Warning Limit of ${tcc.MaxBatchesWarning} Batches per Object.`)
     // throw new Error(`Updates from the S3 Object(${ s3Key }) Exceed(${ batch }) Safety Limit of 20 Batches of 99 Updates each.Exiting...`)
@@ -1668,9 +1703,10 @@ async function storeAndQueueWork (chunks: Object[], s3Key: string, config: custo
     //Apply the JSONMap - JSONPath statements
     if (config.jsonMap)
     {
-        const am: Object[] = []
+        const am: string[] = []
         chunks.forEach((o) => {
-            am.push(applyJSONMap(o, config.jsonMap))
+            const a = applyJSONMap([o], config.jsonMap)
+            // am.push(a)
             chunks = am
         })
     }
@@ -1712,7 +1748,7 @@ async function storeAndQueueWork (chunks: Object[], s3Key: string, config: custo
     return { AddWorkToS3ProcessBucketResults, AddWorkToSQSProcessQueueResults }
 }
 
-function convertJSONToXML_RTUpdates (updates: Object[], config: customerConfig) {
+function convertJSONToXML_RTUpdates (updates: string[], config: customerConfig) {
 
     xmlRows = `<Envelope> <Body> <InsertUpdateRelationalTable> <TABLE_ID> ${config.listId} </TABLE_ID><ROWS>`
 
@@ -1741,7 +1777,7 @@ function convertJSONToXML_RTUpdates (updates: Object[], config: customerConfig) 
     return xmlRows
 }
 
-function convertJSONToXML_DBUpdates (updates: Object[], config: customerConfig) {
+function convertJSONToXML_DBUpdates (updates: string[], config: customerConfig) {
 
     xmlRows = `<Envelope><Body>`
     let r = 0
