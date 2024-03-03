@@ -19,11 +19,12 @@ import { Handler, S3Event, Context, SQSEvent, SQSRecord, S3EventRecord } from 'a
 import fetch, { fileFrom, Headers, RequestInit, Response } from 'node-fetch'
 
 
-
-// const testS3Key = "TestData/pura_2024_02_26T05_53_26_084Z.json",
-// const testS3Key = "TestData/visualcrossing_00213.csv"
-// const testS3Key = "TestData/pura_2024_02_25T00_00_00_090Z.json"
-// const testS3Bucket = "tricklercache-configs"
+let testS3Key: string
+let testS3Bucket: string
+// testS3Key = "TestData/pura_2024_02_26T05_53_26_084Z.json",
+// testS3Key = "TestData/visualcrossing_00213.csv"
+// testS3Key = "TestData/pura_2024_02_25T00_00_00_090Z.json"
+// testS3Bucket = "tricklercache-configs"
 
 
 
@@ -269,7 +270,8 @@ export const s3DropBucketHandler: Handler = async (event: S3Event, context: Cont
     //When Local Testing - pull an S3 Object and so avoid the not-found error
     if (!event.Records[0].s3.object.key || event.Records[0].s3.object.key === 'devtest.csv')
     {
-        if (testS3Key !== null)
+        if (testS3Key !== undefined && testS3Key !== null &&
+            testS3Bucket !== undefined && testS3Bucket !== null)
         {
             event.Records[0].s3.object.key = testS3Key
             event.Records[0].s3.bucket.name = testS3Bucket
