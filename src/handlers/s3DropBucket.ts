@@ -20,6 +20,13 @@ import fetch, { fileFrom, Headers, RequestInit, Response } from 'node-fetch'
 
 
 
+// const testS3Key = "TestData/pura_2024_02_26T05_53_26_084Z.json",
+// const testS3Key = "TestData/visualcrossing_00213.csv"
+const testS3Key = "TestData/pura_2024_02_25T00_00_00_090Z.json"
+const testS3Bucket = "tricklercache-configs"
+
+
+
 //
 //StreamJSON Package
 //Emits a single line/Property at a time, rather than the complete Object,
@@ -85,8 +92,6 @@ interface S3Object {
 
 interface customerConfig {
     Customer: string
-    testS3Key: string
-    testS3Bucket: string
     format: string // CSV or JSON 
     updates: string // singular or multiple
     listId: string
@@ -264,7 +269,16 @@ export const s3DropBucketHandler: Handler = async (event: S3Event, context: Cont
     //When Local Testing - pull an S3 Object and so avoid the not-found error
     if (!event.Records[0].s3.object.key || event.Records[0].s3.object.key === 'devtest.csv')
     {
-        event.Records[0].s3.object.key = await getAnS3ObjectforTesting(event.Records[0].s3.bucket.name)
+        if (testS3Key !== null)
+        {
+            event.Records[0].s3.object.key = testS3Key
+            event.Records[0].s3.bucket.name = testS3Bucket
+        }
+        else
+        {
+
+            event.Records[0].s3.object.key = await getAnS3ObjectforTesting(event.Records[0].s3.bucket.name) ?? ""
+        }
         localTesting = true
     }
 
@@ -306,7 +320,13 @@ export const s3DropBucketHandler: Handler = async (event: S3Event, context: Cont
         key = r.s3.object.key
         bucket = r.s3.bucket.name
 
-        if (!key.startsWith(tcc.prefixFocus)) return
+        if (!key.startsWith(tcc.prefixFocus))
+        {
+            console.warn(`File Key ${key} is not within focus restricted by the configured PrefixFocus ${tcc.prefixFocus}`)
+            return
+        }
+
+
 
         //ToDo: Resolve Duplicates Issue - S3 allows Duplicate Object Names but Delete marks all Objects of same Name Deleted. 
         //   Which causes an issue with Key Not Found after an Object of Name A is processed and deleted, then another Object of Name A comes up in a Trigger.
@@ -325,14 +345,14 @@ export const s3DropBucketHandler: Handler = async (event: S3Event, context: Cont
         }
 
         // get test files from the testdata folder of the tricklercache bucket
-        if (customersConfig.testS3Key && customersConfig.testS3Key !== '')
+        if (testS3Key && testS3Key !== null)
         {
-            key = customersConfig.testS3Key
+            key = testS3Key
             bucket = 'S3DropBucket'
         }
-        if (customersConfig.testS3Bucket && customersConfig.testS3Bucket !== '')
+        if (testS3Bucket && testS3Bucket !== null)
         {
-            bucket = customersConfig.testS3Bucket
+            bucket = testS3Bucket
         }
 
 
@@ -366,7 +386,7 @@ export const s3DropBucketHandler: Handler = async (event: S3Event, context: Cont
                     if (tcc.SelectiveDebug.indexOf("_11,") > -1) console.info(`Selective Debug${processResult}`)
 
                     //Don't delete the test data
-                    if (customersConfig.testS3Key && customersConfig.testS3Key !== '') key = 'TestS3Object_DoNotDelete'
+                    if (testS3Key && testS3Key !== null) key = 'TestS3Object_DoNotDelete'
 
                     if (processResult.indexOf('PutToFireHoseAggregatorResult":"200"'))
                     {
@@ -635,17 +655,17 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
 
                             if (tcc.SelectiveDebug.indexOf("_13,") > -1) console.info(`Selective Debug 13 - s3ContentStream OnData - Another chunk (Num of Entries:${Object.values(s3Chunk).length} Recs:${recs} Batch:${batchCount} from ${key} - ${JSON.stringify(d)}`)
 
-                            debugger
-
                             chunks.push(d.value)
 
                             if (Object.entries(chunks).length > 98)
                             {
                                 batchCount++
 
+                                const updates = Object.entries(chunks).length
+
                                 if (tcc.SelectiveDebug.indexOf('_99,') > -1) saveSampleJSON(JSON.stringify(chunks))
 
-                                const sqwResult = await storeAndQueueWork(chunks, key, custConfig, batchCount)
+                                const sqwResult = await storeAndQueueWork(chunks, key, custConfig, updates, batchCount)
 
                                 chunks = []
 
@@ -705,7 +725,7 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
                                     // })
 
                                     // console.log(`Put To Firehose Object: ${JSON.stringify(l)}`)
-
+                                    debugger
                                     // const f = await putToFirehose(l, custConfig.Customer)
                                     const f = await putToFirehose(d, custConfig.Customer)
                                     // S3DropBucketAggregate_BFSlE95VRhb_VhNbxLpw1mp_S3DropBucket_FireHoseStream - 2 - 2024-02 - 25 - 20 - 14 - 14 - 13c6a4ee - e529 - 4f19 - 8e45 - c335218922c8.json                                    console.info(`Content Stream OnEnd for (${key}) - Singular Update put to Firehose aggregator pipe. \n${JSON.stringify(f)} \n${batchCount + 1} Batches of ${Object.values(d).length} records - Result: \n${JSON.stringify(streamResult)}`)
@@ -723,7 +743,9 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
                             {
                                 debugger
 
-                                const storeQueueResult = await storeAndQueueWork(d, key, custConfig, batchCount)
+                                const updates = Object.entries(d).length
+
+                                const storeQueueResult = await storeAndQueueWork(d, key, custConfig, updates, batchCount)
                                 // "{\"AddWorkToS3ProcessBucketResults\":{\"AddWorkToS3ProcessBucket\":\"Wrote Work File (process_0_pura_2024_01_22T18_02_46_119Z_csv.xml) to S3 Processing Bucket (Result 200)\",\"S3ProcessBucketResult\":\"200\"},\"AddWorkToSQSProcessQueueResults\":{\"sqsWriteResult\":\"200\",\"workQueuedSuccess\":true,\"SQSSendResult\":\"{\\\"$metadata\\\":{\\\"httpStatusCode\\\":200,\\\"requestId\\\":\\\"e70fba06-94f2-5608-b104-e42dc9574636\\\",\\\"attempts\\\":1,\\\"totalRetryDelay\\\":0},\\\"MD5OfMessageAttributes\\\":\\\"0bca0dfda87c206313963daab8ef354a\\\",\\\"MD5OfMessageBody\\\":\\\"940f4ed5927275bc93fc945e63943820\\\",\\\"MessageId\\\":\\\"cf025cb3-dce3-4564-89a5-23dcae86dd42\\\"}\"}}"
 
                                 streamResult = {
@@ -793,24 +815,29 @@ async function putToFirehose (S3Obj: string[], cust: string) {
 
     const client = new FirehoseClient()
 
-    Object.assign(S3Obj, { "Customer": cust })
-
     // S3DropBucket_Aggregator 
     // S3DropBucket_FireHoseStream
 
-    const fc = {
-        DeliveryStreamName: "S3DropBucket_Aggregator",
-        Record: {
-            Data: new TextEncoder().encode(JSON.stringify(S3Obj)),
-        },
-    } as PutRecordCommandInput
-
-    const fireCommand = new PutRecordCommand(fc)
-
-    if (tcc.SelectiveDebug.indexOf('_22,') > -1) console.info(`Put to Firehose - Pre-Send: \n${JSON.stringify(fc)}`)
+    debugger
 
     try
     {
+        const u = S3Obj[0]
+
+        Object.assign(u, { "Customer": cust })
+
+        const fc = {
+            DeliveryStreamName: "S3DropBucket_Aggregator",
+            Record: {
+                Data: new TextEncoder().encode(JSON.stringify(u)),
+            },
+        } as PutRecordCommandInput
+
+        const fireCommand = new PutRecordCommand(fc)
+
+        if (tcc.SelectiveDebug.indexOf('_22,') > -1) console.info(`Put to Firehose - Pre-Send: \n${JSON.stringify(fc)}`)
+
+
         const putFirehoseResp = await client.send(fireCommand)
             .then((res: PutRecordCommandOutput) => {
 
@@ -920,11 +947,15 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (event: SQSEvent
 
         tqm.workKey = JSON.parse(q.body).workKey
 
+
+
         //When Testing - get some actual work queued
         if (tqm.workKey === 'process_2_pura_2023_10_27T15_11_40_732Z.csv')
         {
-            tqm.workKey = await getAnS3ObjectforTesting(tcc.s3DropBucketWorkBucket!)
+            tqm.workKey = await getAnS3ObjectforTesting(tcc.s3DropBucketWorkBucket!) ?? ""
         }
+
+
 
         console.info(`Processing Work Queue for ${tqm.workKey}`)
         if (tcc.SelectiveDebug.indexOf("_11,") > -1) console.info(`Selective Debug 11 - SQS Events - Processing Batch Item ${JSON.stringify(q)}`)
@@ -1114,7 +1145,7 @@ export const s3DropBucketSFTPHandler: Handler = async (event: SQSEvent, context:
         //When Testing - get some actual work queued
         if (tqm.workKey === 'process_2_pura_2023_10_27T15_11_40_732Z.csv')
         {
-            tqm.workKey = await getAnS3ObjectforTesting(tcc.s3DropBucket!)
+            tqm.workKey = await getAnS3ObjectforTesting(tcc.s3DropBucket!) ?? ""
         }
 
         console.info(`Processing Work Queue for ${tqm.workKey}`)
@@ -1500,6 +1531,7 @@ async function getCustomerConfig (filekey: string) {
     // Retrieve file's prefix as Customer Name
     if (!filekey) throw new Error(`Exception - Cannot resolve Customer Config without a valid Customer Prefix (file prefix is ${filekey})`)
 
+    filekey = filekey.split('/')[1]
     const customer = filekey.split('_')[0] + '_'
 
     if (customer === '_' || customer.length < 4)
@@ -1660,9 +1692,6 @@ async function validateCustomerConfig (config: customerConfig) {
     if (config.sftp.filepattern && config.sftp.filepattern !== '') { }
     if (config.sftp.schedule && config.sftp.schedule !== '') { }
 
-    if (!config.testS3Key) { config.testS3Key = '' }
-    if (!config.testS3Bucket) { config.testS3Bucket = '' }
-
     if (!config.jsonMap) config.jsonMap = {}
     if (config.jsonMap)
     {
@@ -1695,7 +1724,7 @@ async function validateCustomerConfig (config: customerConfig) {
 }
 
 
-async function storeAndQueueWork (chunks: string[], s3Key: string, config: customerConfig, batch: number) {
+async function storeAndQueueWork (chunks: string[], s3Key: string, config: customerConfig, recs: number, batch: number) {
 
     if (batch > tcc.MaxBatchesWarning) console.warn(`Warning: Updates from the S3 Object(${s3Key}) are exceeding(${batch}) the Warning Limit of ${tcc.MaxBatchesWarning} Batches per Object.`)
     // throw new Error(`Updates from the S3 Object(${ s3Key }) Exceed(${ batch }) Safety Limit of 20 Batches of 99 Updates each.Exiting...`)
@@ -1725,7 +1754,7 @@ async function storeAndQueueWork (chunks: string[], s3Key: string, config: custo
 
 
     let key = s3Key.replace('.', '_')
-    key = `${key}_update_${batch}.xml`
+    key = `${key}_update_${batch}_${recs}.xml`
 
 
     if (tcLogDebug) console.info(`Queuing Work for ${s3Key} - ${key}. (Batch ${batch} of ${Object.values(chunks).length} records)`)
@@ -2344,6 +2373,8 @@ function checkMetadata () {
 async function getAnS3ObjectforTesting (bucket: string) {
 
     let s3Key: string = ''
+
+    if (testS3Key !== null) return
 
     const listReq = {
         Bucket: bucket,
