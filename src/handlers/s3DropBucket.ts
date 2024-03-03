@@ -21,9 +21,9 @@ import fetch, { fileFrom, Headers, RequestInit, Response } from 'node-fetch'
 
 
 // const testS3Key = "TestData/pura_2024_02_26T05_53_26_084Z.json",
-const testS3Key = "TestData/visualcrossing_00213.csv"
+// const testS3Key = "TestData/visualcrossing_00213.csv"
 // const testS3Key = "TestData/pura_2024_02_25T00_00_00_090Z.json"
-const testS3Bucket = "tricklercache-configs"
+// const testS3Bucket = "tricklercache-configs"
 
 
 
