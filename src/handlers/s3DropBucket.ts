@@ -24,7 +24,8 @@ let testS3Bucket: string
 // testS3Key = "TestData/pura_2024_02_26T05_53_26_084Z.json",
 // testS3Key = "TestData/visualcrossing_00213.csv"
 // testS3Key = "TestData/pura_2024_02_25T00_00_00_090Z.json"
-// testS3Bucket = "tricklercache-configs"
+testS3Key = "TestData/pura_aggregate_S3DropBucket_Aggregator-6-2024-03-03-06-34-51-2014bbe3-a1a5-3efa-adf8-35d4cbce51c3.json"
+testS3Bucket = "tricklercache-configs"
 
 
 
@@ -536,7 +537,7 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
 
                 const t = transform(function (data) {
                     // data.push(data.shift())
-                    // debugger
+                    //  
                     return JSON.stringify(data)
                 })
 
@@ -663,11 +664,11 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
                             {
                                 batchCount++
 
-                                const updates = Object.entries(chunks).length
+                                const updCount = Object.entries(chunks).length
 
                                 if (tcc.SelectiveDebug.indexOf('_99,') > -1) saveSampleJSON(JSON.stringify(chunks))
 
-                                const sqwResult = await storeAndQueueWork(chunks, key, custConfig, updates, batchCount)
+                                const sqwResult = await storeAndQueueWork(chunks, key, custConfig, updCount, batchCount)
 
                                 chunks = []
 
@@ -727,7 +728,7 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
                                     // })
 
                                     // console.log(`Put To Firehose Object: ${JSON.stringify(l)}`)
-                                    debugger
+
                                     // const f = await putToFirehose(l, custConfig.Customer)
                                     const f = await putToFirehose(d, custConfig.Customer)
                                     // S3DropBucketAggregate_BFSlE95VRhb_VhNbxLpw1mp_S3DropBucket_FireHoseStream - 2 - 2024-02 - 25 - 20 - 14 - 14 - 13c6a4ee - e529 - 4f19 - 8e45 - c335218922c8.json                                    console.info(`Content Stream OnEnd for (${key}) - Singular Update put to Firehose aggregator pipe. \n${JSON.stringify(f)} \n${batchCount + 1} Batches of ${Object.values(d).length} records - Result: \n${JSON.stringify(streamResult)}`)
@@ -743,7 +744,7 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
                             }
                             else
                             {
-                                debugger
+
 
                                 const updates = Object.entries(d).length
 
@@ -820,7 +821,7 @@ async function putToFirehose (S3Obj: string[], cust: string) {
     // S3DropBucket_Aggregator 
     // S3DropBucket_FireHoseStream
 
-    debugger
+
 
     try
     {
@@ -837,13 +838,13 @@ async function putToFirehose (S3Obj: string[], cust: string) {
 
         const fireCommand = new PutRecordCommand(fc)
 
-        if (tcc.SelectiveDebug.indexOf('_22,') > -1) console.info(`Put to Firehose - Pre-Send: \n${JSON.stringify(fc)}`)
+        if (tcc.SelectiveDebug.indexOf('_22,') > -1) console.info(`Put to Firehose Aggregator - Pre-Send: \n${JSON.stringify(fc)}`)
 
 
         const putFirehoseResp = await client.send(fireCommand)
             .then((res: PutRecordCommandOutput) => {
 
-                console.info(`Put to Firehose result - RecordId: ${res.RecordId}, \n${JSON.stringify(res)}`)
+                console.info(`Put to Firehose Aggregator result - RecordId: ${res.RecordId}, \n${JSON.stringify(res)}`)
 
                 let fres
                 if (res.$metadata.httpStatusCode === 200)
@@ -858,14 +859,14 @@ async function putToFirehose (S3Obj: string[], cust: string) {
                 return fres
             })
             .catch((e) => {
-                console.error(`Exception - Put to Firehose (Promise-catch)  \n${e}`)
+                console.error(`Exception - Put to Firehose Aggregator (Promise-catch)  \n${e}`)
             })
 
         return putFirehoseResp
 
     } catch (e)
     {
-        console.error(`Exception - Put to Firehose (try-catch) ${e}`)
+        console.error(`Exception - Put to Firehose Aggregator (try-catch) ${e}`)
     }
 
 }
@@ -1735,16 +1736,16 @@ async function storeAndQueueWork (chunks: string[], s3Key: string, config: custo
     if (batch > tcc.MaxBatchesWarning) console.warn(`Warning: Updates from the S3 Object(${s3Key}) are exceeding(${batch}) the Warning Limit of ${tcc.MaxBatchesWarning} Batches per Object.`)
     // throw new Error(`Updates from the S3 Object(${ s3Key }) Exceed(${ batch }) Safety Limit of 20 Batches of 99 Updates each.Exiting...`)
 
-    //Apply the JSONMap - JSONPath statements
-    if (config.jsonMap)
-    {
-        const am: string[] = []
-        chunks.forEach((o) => {
-            const a = applyJSONMap([o], config.jsonMap)
-            // am.push(a)
-            chunks = am
-        })
-    }
+    // //Apply the JSONMap - JSONPath statements
+    // if (config.jsonMap)
+    // {
+    //     const am: string[] = []
+    //     chunks.forEach((o) => {
+    //         const a = applyJSONMap([o], config.jsonMap)
+    //         // am.push(a)
+    //         chunks = am
+    //     })
+    // }
 
 
     if (customersConfig.listType.toLowerCase() === 'dbkeyed' ||
@@ -1758,6 +1759,10 @@ async function storeAndQueueWork (chunks: string[], s3Key: string, config: custo
         xmlRows = convertJSONToXML_RTUpdates(chunks, config)
     }
 
+    if (s3Key.indexOf('TestData') > -1)
+    {
+        s3Key = s3Key.split('/').at(-1) ?? s3Key
+    }
 
     let key = s3Key.replace('.', '_')
     key = `${key}_update_${batch}_${recs}.xml`
@@ -1817,6 +1822,8 @@ function convertJSONToXML_DBUpdates (updates: string[], config: customerConfig) 
     xmlRows = `<Envelope><Body>`
     let r = 0
 
+
+
     // Object.keys(updates).forEach(jo => {
     updates.forEach((jo) => {
         r++
@@ -1824,7 +1831,7 @@ function convertJSONToXML_DBUpdates (updates: string[], config: customerConfig) 
         const s = JSON.stringify(jo)
         const j = JSON.parse(s)
 
-        debugger
+
 
         xmlRows += `<AddRecipient><LIST_ID>${config.listId}</LIST_ID><CREATED_FROM>0</CREATED_FROM><UPDATE_IF_FOUND>true</UPDATE_IF_FOUND>`
 
@@ -1839,7 +1846,7 @@ function convertJSONToXML_DBUpdates (updates: string[], config: customerConfig) 
         {
             const lk = config.LookupKeys.split(',')
 
-            debugger
+
 
             xmlRows += `<SYNC_FIELDS>`
             lk.forEach(k => {
@@ -1858,7 +1865,7 @@ function convertJSONToXML_DBUpdates (updates: string[], config: customerConfig) 
             //Don't need to do anything with DBKey, it's superfluous but documents the keys of the keyed DB
         }
 
-        debugger
+
         Object.entries(jo).forEach(([key, value]) => {
             // for (const i in jo)
             //    {
@@ -1874,6 +1881,9 @@ function convertJSONToXML_DBUpdates (updates: string[], config: customerConfig) 
         xmlRows += `<COLUMN><NAME>CRM Lead Source</NAME><VALUE><![CDATA[S3DropBucket]]></VALUE></COLUMN>`
 
         xmlRows += `</AddRecipient>`
+
+        debugger
+
     })
 
     xmlRows += `</Body></Envelope>`
@@ -1882,6 +1892,7 @@ function convertJSONToXML_DBUpdates (updates: string[], config: customerConfig) 
     if (tcc.SelectiveDebug.indexOf("_16,") > -1) console.info(`Selective Debug 16 - JSON to be converted to XML DB Updates: ${JSON.stringify(updates)}`)
     if (tcc.SelectiveDebug.indexOf("_17,") > -1) console.info(`Selective Debug 17 - XML from JSON for DB Updates: ${xmlRows}`)
 
+    debugger
 
     return xmlRows
 }

@@ -59,7 +59,7 @@
       //Set a Warning threshold of the number of Batches parsed from a single Customer-facing Bucket file. 
       // New work arriving is parsed out in "Update Batches", if the number of batches exceeds this limit Logging 
       // will include a warning for Alerting on a possible issue with that S3 Object (file). 
-      "MaxBatchesWarning": 200,
+      "MaxBatchesWarning": 2000,
 
 
       //Useful for Troubleshooting or monitoring, each Selective Debug turns on a detailed message about 
