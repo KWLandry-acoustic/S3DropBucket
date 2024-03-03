@@ -1531,9 +1531,11 @@ async function getCustomerConfig (filekey: string) {
     // Retrieve file's prefix as Customer Name
     if (!filekey) throw new Error(`Exception - Cannot resolve Customer Config without a valid Customer Prefix (file prefix is ${filekey})`)
 
-    console.warn(`Resolve Customer COnfig Exception on visualcrossing files: ${filekey}`)
+    if (filekey.indexOf('/') > -1)
+    {
+        filekey = filekey.split('/').at(-1) ?? filekey
+    }
 
-    filekey = filekey.split('/')[1]
     const customer = filekey.split('_')[0] + '_'
 
     if (customer === '_' || customer.length < 4)
