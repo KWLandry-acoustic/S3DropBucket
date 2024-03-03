@@ -21,8 +21,8 @@ import fetch, { fileFrom, Headers, RequestInit, Response } from 'node-fetch'
 
 
 // const testS3Key = "TestData/pura_2024_02_26T05_53_26_084Z.json",
-// const testS3Key = "TestData/visualcrossing_00213.csv"
-const testS3Key = "TestData/pura_2024_02_25T00_00_00_090Z.json"
+const testS3Key = "TestData/visualcrossing_00213.csv"
+// const testS3Key = "TestData/pura_2024_02_25T00_00_00_090Z.json"
 const testS3Bucket = "tricklercache-configs"
 
 
@@ -1530,6 +1530,8 @@ async function getCustomerConfig (filekey: string) {
 
     // Retrieve file's prefix as Customer Name
     if (!filekey) throw new Error(`Exception - Cannot resolve Customer Config without a valid Customer Prefix (file prefix is ${filekey})`)
+
+    console.warn(`Resolve Customer COnfig Exception on visualcrossing files: ${filekey}`)
 
     filekey = filekey.split('/')[1]
     const customer = filekey.split('_')[0] + '_'
