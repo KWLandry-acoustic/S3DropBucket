@@ -2067,6 +2067,7 @@ async function getS3Work (s3Key: string, bucket: string) {
     const getObjectCmd = {
         Bucket: bucket,
         Key: s3Key,
+        VersionId: vid
     } as GetObjectCommandInput
 
     let work: string = ''
@@ -2075,15 +2076,15 @@ async function getS3Work (s3Key: string, bucket: string) {
         await s3.send(new GetObjectCommand(getObjectCmd))
             .then(async (getS3Result: GetObjectCommandOutput) => {
                 work = (await getS3Result.Body?.transformToString('utf8')) as string
-                if (tcLogDebug) console.info(`Work Pulled (${work.length} chars): ${s3Key}`)
+                if (tcLogDebug) console.info(`Work Pulled (${work.length} chars): ${s3Key} (versionId: ${vid})`)
             })
     } catch (e)
     {
         const err: string = JSON.stringify(e)
 
         if (err.indexOf('NoSuchKey') > -1)
-            throw new Error(`Exception - Work Not Found on S3 Process Queue (${s3Key}) Work will not be marked for Retry. \n${e}`)
-        else throw new Error(`Exception - Retrieving Work from S3 Process Queue for ${s3Key}. \n ${e}`)
+            throw new Error(`Exception - Work Not Found on S3 Process Queue (${s3Key} (versionId: ${vid})) Work will not be marked for Retry. \n${e}`)
+        else throw new Error(`Exception - Retrieving Work from S3 Process Queue for ${s3Key} (versionId: ${vid}). \n ${e}`)
     }
     return work
 }
