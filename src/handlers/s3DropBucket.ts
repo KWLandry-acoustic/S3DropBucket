@@ -22,10 +22,10 @@ import fetch, { fileFrom, Headers, RequestInit, Response } from 'node-fetch'
 let testS3Key: string
 let testS3Bucket: string
 // testS3Key = "TestData/pura_2024_02_26T05_53_26_084Z.json",
-// testS3Key = "TestData/visualcrossing_00213.csv"
+testS3Key = "TestData/visualcrossing_00213.csv"
 // testS3Key = "TestData/pura_2024_02_25T00_00_00_090Z.json"
 // testS3Key = "TestData/pura_aggregate_S3DropBucket_Aggregator-6-2024-03-03-06-34-51-2014bbe3-a1a5-3efa-adf8-35d4cbce51c3.json"
-// testS3Bucket = "tricklercache-configs"
+testS3Bucket = "tricklercache-configs"
 
 
 
@@ -1747,6 +1747,7 @@ async function storeAndQueueWork (chunks: string[], s3Key: string, config: custo
     //     })
     // }
 
+    debugger
 
     if (customersConfig.listType.toLowerCase() === 'dbkeyed' ||
         customersConfig.listType.toLowerCase() === 'dbnonkeyed')
@@ -1796,7 +1797,7 @@ function convertJSONToXML_RTUpdates (updates: string[], config: customerConfig) 
 
 
 
-    Object.keys(updates).forEach(jo => {
+    updates.forEach(jo => {
         r++
         xmlRows += `<ROW>`
         Object.entries(jo).forEach(([key, value]) => {
@@ -2278,7 +2279,7 @@ export async function postToCampaign (xmlCalls: string, config: customerConfig, 
                     // result.toLowerCase().indexOf('max number of concurrent') > -1 ||
                 )
                 {
-                    console.error(`POST of the Updates - Temporary Failure - Marked for Retry. \n${result}`)
+                    console.error(`Temporary Failure - POST of the Updates - Marked for Retry. \n${result}`)
                     return 'retry'
                 }
                 else return `Error - Unsuccessful POST of the Updates (${count}) - Response : ${result}`
@@ -2304,8 +2305,8 @@ export async function postToCampaign (xmlCalls: string, config: customerConfig, 
                         msg += l
                     }
 
-                    console.error(`Unsuccessful POST of the Updates (${count}) - \nFailures: ${JSON.stringify(msg)}`)
-                    return `Error - Unsuccessful POST of the Updates (${count}) - \nFailures: ${JSON.stringify(msg)}`
+                    console.error(`Unsuccessful POST of the Updates (${count}) - \nFailure Msg: ${JSON.stringify(msg)}`)
+                    return `Error - Unsuccessful POST of the Updates (${count}) - \nFailure Msg: ${JSON.stringify(msg)}`
                 }
             }
 

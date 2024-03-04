@@ -7,7 +7,7 @@
 
       "format": "json", // CSV or JSON
 
-      "updates": "singular", // Singular/Multiple - For performance reasons data files should contain more than 99 updates, 
+      "updates": "Multiple", // Singular/Multiple - For performance reasons data files should contain more than 99 updates, 
       // If the data being loaded to the S3Bucket has a single update per file, use Singular
       // each file contains a single update, or Multiple, several updates contained in each file.
       // When Singular, the individual files will be aggregated and processed as a larger set of updates
