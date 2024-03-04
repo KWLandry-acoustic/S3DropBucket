@@ -444,7 +444,7 @@ export const s3DropBucketHandler: Handler = async (event: S3Event, context: Cont
             console.error(`Exception - Processing S3 Object Content Stream for ${key} \n${e}`)
         }
 
-        if (tcc.SelectiveDebug.indexOf("_3,") > -1) console.info(`Selective Debug 3 - Returned from Processing S3 Object Content Stream for ${key}. Result: ${JSON.stringify(processS3ObjectStreamResolution)}`)
+        if (tcc.SelectiveDebug.indexOf("_3,") > -1) console.info(`Selective Debug 3 - Returned from Processing S3 Object Content Stream for ${key}. Result: ${processS3ObjectStreamResolution}`)
 
     }
 
@@ -680,7 +680,7 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
                                     // S3DropBucketAggregate_BFSlE95VRhb_VhNbxLpw1mp_S3DropBucket_FireHoseStream - 2 - 2024-02 - 25 - 20 - 14 - 14 - 13c6a4ee - e529 - 4f19 - 8e45 - c335218922c8.json                                    console.info(`Content Stream OnEnd for (${key}) - Singular Update put to Firehose aggregator pipe. \n${JSON.stringify(f)} \n${batchCount + 1} Batches of ${Object.values(d).length} records - Result: \n${JSON.stringify(streamResult)}`)
 
                                     streamResult = {
-                                        ...streamResult, "OnEnd_PutToFireHoseAggregator": `${JSON.stringify(f)} \n${JSON.stringify(d)}`
+                                        ...streamResult, "OnEnd_PutToFireHoseAggregator": `${JSON.stringify(f)}`
                                     }
 
                                 } catch (e)
@@ -765,7 +765,7 @@ async function putToFirehose (S3Obj: string[], key: string, cust: string) {
     // S3DropBucket_Aggregator 
     // S3DropBucket_FireHoseStream
 
-    let putFirehoseResp: {}
+    let putFirehoseResp: {} = {}
 
     try
     {
@@ -805,12 +805,13 @@ async function putToFirehose (S3Obj: string[], key: string, cust: string) {
                     putFirehoseResp = { ...putFirehoseResp, "PutToFirehoseAggregatorResult": `UnSuccessful Put to Firehose Aggregator for ${key} \n ${e}` }
                     return putFirehoseResp
                 })
-            return putFirehoseResp
+            // return putFirehoseResp
         })
     } catch (e)
     {
         console.error(`Exception - Put to Firehose Aggregator (try-catch) for ${key} \n${e}`)
     }
+    return putFirehoseResp
 }
 
 /**
