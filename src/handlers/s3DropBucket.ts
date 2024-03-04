@@ -60,6 +60,7 @@ import sftpClient, { ListFilterFunction } from 'ssh2-sftp-client'
 
 let vid: string
 let et: string
+let tqmVid: string
 
 const sqsClient = new SQSClient({})
 
@@ -120,6 +121,7 @@ export interface accessResp {
 
 export interface tcQueueMessage {
     workKey: string
+    versionId: string
     attempts: number
     updateCount: string
     custconfig: customerConfig
@@ -364,7 +366,7 @@ export const s3DropBucketHandler: Handler = async (event: S3Event, context: Cont
         {
             let processResult: string = ""
 
-            processS3ObjectStreamResolution = await processS3ObjectContentStream(key, bucket, customersConfig)
+            processS3ObjectStreamResolution = await processS3ObjectContentStream(key, vid, bucket, customersConfig)
                 .then(async (res) => {
                     processResult = JSON.stringify(res)
                     const m = processResult.substring(processResult.indexOf('Processed '), processResult.indexOf('.",') - 2)
@@ -384,7 +386,7 @@ export const s3DropBucketHandler: Handler = async (event: S3Event, context: Cont
                         try
                         {
                             //Once successful delete the original S3 Object
-                            delResultCode = await deleteS3Object(key, bucket)
+                            delResultCode = await deleteS3Object(key, vid, bucket)
 
                             if (delResultCode !== '204') throw new Error(`Invalid Delete of ${key}, Expected 204 result code, received ${delResultCode}`)
                             else
@@ -405,7 +407,7 @@ export const s3DropBucketHandler: Handler = async (event: S3Event, context: Cont
                             try
                             {
                                 //Once successful delete the original S3 Object
-                                delResultCode = await deleteS3Object(key, bucket)
+                                delResultCode = await deleteS3Object(key, vid, bucket)
 
                                 if (delResultCode !== '204') throw new Error(`Invalid Delete of ${key}, Expected 204 result code, received ${delResultCode}`)
                                 else
@@ -461,7 +463,7 @@ export default s3DropBucketHandler
 
 
 
-async function processS3ObjectContentStream (key: string, bucket: string, custConfig: customerConfig) {
+async function processS3ObjectContentStream (key: string, version: string, bucket: string, custConfig: customerConfig) {
 
     let batchCount = 0
     let chunks: string[] = []
@@ -471,7 +473,8 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
 
     processS3Object = await s3.send(new GetObjectCommand({
         Key: key,
-        Bucket: bucket
+        Bucket: bucket,
+        VersionId: version
     })
     )
         .then(async (getS3StreamResult: GetObjectCommandOutput) => {
@@ -837,12 +840,14 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (event: SQSEvent
         return d
     }
 
-    if (tcc.reQueue !== '')
-    {
-        console.info(`ReQueue requested for all ${tcc.reQueue} updates on the Work Queue. `)
-        const d = await requeueWork(tcc.reQueue!)
-        console.info(`ReQueue result: ${d}`)
-    }
+    //Deprecated in favor of AWS CLI commands 
+    //
+    // if (tcc.reQueue !== '')
+    // {
+    //     console.info(`ReQueue requested for all ${tcc.reQueue} updates on the Work Queue. `)
+    //     const d = await requeueWork(tcc.reQueue!)
+    //     console.info(`ReQueue result: ${d}`)
+    // }
 
 
 
@@ -882,8 +887,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (event: SQSEvent
         // event.Records.forEach(async (i: SQSRecord) => {
         const tqm: tcQueueMessage = JSON.parse(q.body)
 
-        tqm.workKey = JSON.parse(q.body).workKey
-
+        // tqm.workKey = JSON.parse(q.body).workKey
 
 
         //When Testing - get some actual work queued
@@ -892,39 +896,37 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (event: SQSEvent
             tqm.workKey = await getAnS3ObjectforTesting(tcc.s3DropBucketWorkBucket!) ?? ""
         }
 
-
-
-        console.info(`Processing Work off the Queue - ${tqm.workKey}`)
+        console.info(`Processing Work off the Queue - ${tqm.workKey}  (versionId: ${tqm.versionId})`)
         if (tcc.SelectiveDebug.indexOf("_11,") > -1) console.info(`Selective Debug 11 - SQS Events - Processing Batch Item ${JSON.stringify(q)}`)
 
         try
         {
-            const work = await getS3Work(tqm.workKey, "tricklercache-process")
+            const work = await getS3Work(tqm.workKey, tqm.versionId, "tricklercache-process")
 
             if (work.length > 0)        //Retreive Contents of the Work File  
             {
                 postResult = await postToCampaign(work, tqm.custconfig, tqm.updateCount)
 
-                if (tcc.SelectiveDebug.indexOf("_8,") > -1) console.info(`Selective Debug 8 - POST Result for ${tqm.workKey}: ${postResult}`)
+                if (tcc.SelectiveDebug.indexOf("_8,") > -1) console.info(`Selective Debug 8 - POST Result for ${tqm.workKey} (versionId: ${tqm.versionId}): ${postResult}`)
 
                 if (postResult.indexOf('retry') > -1)
                 {
-                    console.warn(`Retry Marked for ${tqm.workKey} (Retry Report: ${sqsBatchFail.batchItemFailures.length + 1}) Returning Work Item ${q.messageId} to Process Queue.`)
+                    console.warn(`Retry Marked for ${tqm.workKey} (versionId: ${tqm.versionId}) (Retry Report: ${sqsBatchFail.batchItemFailures.length + 1}) Returning Work Item ${q.messageId} to Process Queue.`)
                     //Add to BatchFail array to Retry processing the work 
                     sqsBatchFail.batchItemFailures.push({ itemIdentifier: q.messageId })
-                    if (tcc.SelectiveDebug.indexOf("_12,") > -1) console.info(`Selective Debug 12 - Added ${tqm.workKey} to SQS Events Retry \n${JSON.stringify(sqsBatchFail)}`)
+                    if (tcc.SelectiveDebug.indexOf("_12,") > -1) console.info(`Selective Debug 12 - Added ${tqm.workKey} (versionId: ${tqm.versionId}) to SQS Events Retry \n${JSON.stringify(sqsBatchFail)}`)
                 }
 
                 if (postResult.toLowerCase().indexOf('unsuccessful post') > -1)
-                    console.error(`Error - Unsuccesful POST (Hard Failure) for ${tqm.workKey}: \n${postResult} \n Customer: ${tqm.custconfig.Customer}, Pod: ${tqm.custconfig.pod}, ListId: ${tqm.custconfig.listId} \n${work}`)
+                    console.error(`Error - Unsuccesful POST (Hard Failure) for ${tqm.workKey} (versionId: ${tqm.versionId}): \n${postResult} \n Customer: ${tqm.custconfig.Customer}, Pod: ${tqm.custconfig.pod}, ListId: ${tqm.custconfig.listId} \n${work}`)
 
                 if (postResult.toLowerCase().indexOf('successfully posted') > -1)
                 {
-                    console.info(`Work Successfully Posted to Campaign (${tqm.workKey}), will now Delete the Work from the S3 Process Queue`)
+                    console.info(`Work Successfully Posted to Campaign (${tqm.workKey} - versionId: ${tqm.versionId}), will now Delete the Work from the S3 Process Queue`)
 
-                    const d: string = await deleteS3Object(tqm.workKey, tcc.s3DropBucketWorkBucket!)
-                    if (d === '204') console.info(`Successful Deletion of Work: ${tqm.workKey} - ${vid}`)
-                    else console.error(`Failed to Delete ${tqm.workKey}. Expected '204' but received ${d}`)
+                    const d: string = await deleteS3Object(tqm.workKey, tqm.versionId, tcc.s3DropBucketWorkBucket!)
+                    if (d === '204') console.info(`Successful Deletion of Work: ${tqm.workKey} (versionId: ${tqm.versionId})`)
+                    else console.error(`Failed to Delete ${tqm.workKey} (versionId: ${tqm.versionId}). Expected '204' but received ${d}`)
                 }
 
 
@@ -1713,7 +1715,9 @@ async function storeAndQueueWork (chunks: string[], s3Key: string, config: custo
     //         S3ProcessBucketResult: "200",
     // }
 
-    const AddWorkToSQSProcessQueueResults = await addWorkToSQSProcessQueue(config, key, batch.toString(), Object.values(chunks).length.toString())
+    const v = AddWorkToS3ProcessBucketResults?.versionId ?? ""
+
+    const AddWorkToSQSProcessQueueResults = await addWorkToSQSProcessQueue(config, key, v, batch.toString(), Object.values(chunks).length.toString())
     //     {
     //         sqsWriteResult: "200",
     //         workQueuedSuccess: true,
@@ -1851,6 +1855,7 @@ async function addWorkToS3ProcessStore (queueUpdates: string, key: string) {
     }
 
 
+
     const s3PutInput = {
         Body: queueUpdates,
         Bucket: tcc.s3DropBucketWorkBucket,
@@ -1861,6 +1866,7 @@ async function addWorkToS3ProcessStore (queueUpdates: string, key: string) {
 
     let AddWorkToS3ProcessBucket
     let S3ProcessBucketResult
+    let versionid: string = ""
 
     try
     {
@@ -1870,27 +1876,29 @@ async function addWorkToS3ProcessStore (queueUpdates: string, key: string) {
                 S3ProcessBucketResult = JSON.stringify(s3PutResult.$metadata.httpStatusCode, null, 2)
                 if (S3ProcessBucketResult === '200')
                 {
-                    AddWorkToS3ProcessBucket = `Wrote Work File (${key} of ${queueUpdates.length} characters) to S3 Processing Bucket (Result ${S3ProcessBucketResult})`
+                    versionid = s3PutResult.VersionId ?? ""
+                    AddWorkToS3ProcessBucket = `Wrote Work File (${key} (versionId: ${versionid}) of ${queueUpdates.length} characters) to S3 Processing Bucket (Result ${S3ProcessBucketResult})`
                     if (tcc.SelectiveDebug.indexOf("_7,") > -1) console.info(`Selective Debug 7 - ${AddWorkToS3ProcessBucket}`)
                 }
-                else throw new Error(`Failed to write Work File to S3 Process Store (Result ${S3ProcessBucketResult}) for ${key} of ${queueUpdates.length} characters`)
+                else throw new Error(`Failed to write Work File to S3 Process Store (Result ${S3ProcessBucketResult}) for ${key} (versionId: ${versionid}) of ${queueUpdates.length} characters`)
             })
             .catch(err => {
-                throw new Error(`PutObjectCommand Results Failed for (${key} (of ${queueUpdates.length} characters) to S3 Processing bucket: ${err}`)
+                throw new Error(`PutObjectCommand Results Failed for (${key} of ${queueUpdates.length} characters) to S3 Processing bucket: ${err}`)
             })
     } catch (e)
     {
         throw new Error(`Exception - Put Object Command for writing work(${key} to S3 Processing bucket: ${e}`)
     }
 
-    return { S3ProcessBucketResult, AddWorkToS3ProcessBucket }
+    return { versionId: versionid, S3ProcessBucketResult, AddWorkToS3ProcessBucket }
 }
 
 
-async function addWorkToSQSProcessQueue (config: customerConfig, key: string, batch: string, recCount: string) {
+async function addWorkToSQSProcessQueue (config: customerConfig, key: string, versionId: string, batch: string, recCount: string) {
 
     const sqsQMsgBody = {} as tcQueueMessage
     sqsQMsgBody.workKey = key
+    sqsQMsgBody.versionId = versionId
     sqsQMsgBody.attempts = 1
     sqsQMsgBody.updateCount = recCount
     sqsQMsgBody.custconfig = config
@@ -1962,48 +1970,52 @@ async function addWorkToSQSProcessQueue (config: customerConfig, key: string, ba
 }
 
 
-async function requeueWork (customer: string) {
-    const cc = await getCustomerConfig(customer)
 
-    const bucket = tcc.s3DropBucketWorkBucket
+// Deprecated in favor of AWS CLI commands
+//
+// async function requeueWork (customer: string) {
+//     const cc = await getCustomerConfig(customer)
 
-    const listReq = {
-        Bucket: bucket,
-        MaxKeys: 1000,
-        ifMatch: customer
-    } as ListObjectsV2CommandInput
+//     const bucket = tcc.s3DropBucketWorkBucket
 
-    let q = 0
-    let isTruncated: boolean | unknown = true
+//     const listReq = {
+//         Bucket: bucket,
+//         MaxKeys: 1000,
+//         ifMatch: customer
+//     } as ListObjectsV2CommandInput
+
+//     let q = 0
+//     let isTruncated: boolean | unknown = true
+
+//     try
+//     {
+//         while (isTruncated)
+//         {
+//             await s3.send(new ListObjectsV2Command(listReq))
+//                 .then(async (s3ListResult: ListObjectsV2CommandOutput) => {
+
+//                     listReq.ContinuationToken = s3ListResult?.NextContinuationToken
+//                     isTruncated = s3ListResult?.IsTruncated
+
+//                     s3ListResult.Contents?.forEach(async (listItem) => {
+//                         q++
+//                         const r = await addWorkToSQSProcessQueue(cc, listItem.Key as string, vid, "", "")
+//                         if (r.SQSWriteResult !== '200') console.error(`Non Successful return, received ${r} ) on ReQueue of ${listItem.Key} `)
+//                     })
+//                 })
+//         }
+//     } catch (e)
+//     {
+//         console.error(`Exception - While Requeuing ${customer} Updates from Process bucket: \n${e} `)
+//     }
+
+//     console.info(`Requeued ${q} Updates of ${customer} from Process bucket`)
+
+//     return `Requeued ${q} Updates of ${customer} from Process bucket`
+// }
 
 
 
-    try
-    {
-        while (isTruncated)
-        {
-            await s3.send(new ListObjectsV2Command(listReq))
-                .then(async (s3ListResult: ListObjectsV2CommandOutput) => {
-
-                    listReq.ContinuationToken = s3ListResult?.NextContinuationToken
-                    isTruncated = s3ListResult?.IsTruncated
-
-                    s3ListResult.Contents?.forEach(async (listItem) => {
-                        q++
-                        const r = await addWorkToSQSProcessQueue(cc, listItem.Key as string, "", "")
-                        if (r.SQSWriteResult !== '200') console.error(`Non Successful return, received ${r} ) on ReQueue of ${listItem.Key} `)
-                    })
-                })
-        }
-    } catch (e)
-    {
-        console.error(`Exception - While Requeuing ${customer} Updates from Process bucket: \n${e} `)
-    }
-
-    console.info(`Requeued ${q} Updates of ${customer} from Process bucket`)
-
-    return `Requeued ${q} Updates of ${customer} from Process bucket`
-}
 
 // async function reQueue (sqsevent: SQSEvent, queued: tcQueueMessage) {
 
@@ -2060,14 +2072,14 @@ async function requeueWork (customer: string) {
 
 
 
-async function getS3Work (s3Key: string, bucket: string) {
+async function getS3Work (s3Key: string, version: string, bucket: string) {
 
     if (tcLogDebug) console.info(`Debug - GetS3Work Key: ${s3Key}`)
 
     const getObjectCmd = {
         Bucket: bucket,
         Key: s3Key,
-        VersionId: vid
+        VersionId: version
     } as GetObjectCommandInput
 
     let work: string = ''
@@ -2117,7 +2129,7 @@ async function saveS3Work (s3Key: string, body: string, bucket: string) {
     return save
 }
 
-async function deleteS3Object (s3ObjKey: string, bucket: string) {
+async function deleteS3Object (s3ObjKey: string, version: string, bucket: string) {
 
     let delRes = ''
 
@@ -2144,7 +2156,7 @@ async function deleteS3Object (s3ObjKey: string, bucket: string) {
     const d = new DeleteObjectCommand({
         Key: s3ObjKey,
         Bucket: bucket,
-        VersionId: vid
+        VersionId: version
     })
 
     // d.setMatchingETagConstraints(Collections.singletonList(et));
@@ -2423,7 +2435,7 @@ async function purgeBucket (count: number, bucket: string) {
         await s3.send(new ListObjectsV2Command(listReq)).then(async (s3ListResult: ListObjectsV2CommandOutput) => {
             s3ListResult.Contents?.forEach(async (listItem) => {
                 d++
-                r = await deleteS3Object(listItem.Key as string, bucket)
+                r = await deleteS3Object(listItem.Key as string, "", bucket)
                 if (r !== '204') console.error(`Non Successful return (Expected 204 but received ${r} ) on Delete of ${listItem.Key} `)
             })
         })
