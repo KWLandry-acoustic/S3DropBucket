@@ -940,7 +940,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (event: SQSEvent
 
         } catch (e)
         {
-            console.error(`Exception - Processing a Work File (${tqm.workKey} - \n${e} \n${JSON.stringify(tqm)}`)
+            console.error(`Exception - Processing a Work File (${tqm.workKey} - \n${e}}`)
         }
 
     }
