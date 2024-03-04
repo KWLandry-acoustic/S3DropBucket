@@ -895,7 +895,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (event: SQSEvent
 
 
 
-        console.info(`Processing Work Queue for ${tqm.workKey}`)
+        console.info(`Processing Work off the Queue - ${tqm.workKey}`)
         if (tcc.SelectiveDebug.indexOf("_11,") > -1) console.info(`Selective Debug 11 - SQS Events - Processing Batch Item ${JSON.stringify(q)}`)
 
         try
@@ -919,7 +919,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (event: SQSEvent
 
                 if (postResult.toLowerCase().indexOf('successfully posted') > -1)
                 {
-                    console.info(`Work Successfully Posted to Campaign (${tqm.workKey}), Deleting Work from S3 Process Queue`)
+                    console.info(`Work Successfully Posted to Campaign (${tqm.workKey}), will now Delete the Work from the S3 Process Queue`)
 
                     const d: string = await deleteS3Object(tqm.workKey, tcc.s3DropBucketWorkBucket!)
                     if (d === '204') console.info(`Successful Deletion of Work: ${tqm.workKey}`)
@@ -2283,6 +2283,7 @@ async function deleteS3Object (s3ObjKey: string, bucket: string) {
 
     //  
     //ToDo: Attempt to uniquely delete one object with a duplicate name of another object (Yep, that's a thing in S3)
+    //
     // const listObjectCommand = {
     //     Bucket: bucket, // required
     //     // KeyMarker: s3ObjKey,
@@ -2297,7 +2298,7 @@ async function deleteS3Object (s3ObjKey: string, bucket: string) {
     //         console.info(`ListObject Response: ${JSON.stringify(listResult)}`)
     //          
     //     })
-
+    //
     //  
 
 
@@ -2311,11 +2312,10 @@ async function deleteS3Object (s3ObjKey: string, bucket: string) {
                 }),
             )
             .then(async (s3DelResult: DeleteObjectCommandOutput) => {
-                // if (tcLogDebug) console.info("Received the following Object: \n", data.Body?.toString());
-
                 delRes = JSON.stringify(s3DelResult.$metadata.httpStatusCode, null, 2)
-
-                if (tcLogDebug) console.info(`Result from Delete of ${s3ObjKey}: ${delRes} `)
+            })
+            .catch((e) => {
+                console.error(`Exception - Attempting S3 Delete Command for ${s3ObjKey}: \n ${e} `)
             })
     } catch (e)
     {
