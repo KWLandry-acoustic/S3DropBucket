@@ -2316,12 +2316,13 @@ async function deleteS3Object (s3ObjKey: string, bucket: string) {
             })
             .catch((e) => {
                 console.error(`Exception - Attempting S3 Delete Command for ${s3ObjKey}: \n ${e} `)
+                return delRes
             })
     } catch (e)
     {
         console.error(`Exception - Attempting S3 Delete Command for ${s3ObjKey}: \n ${e} `)
     }
-    return delRes as string
+    return delRes
 }
 
 function checkMetadata () {
