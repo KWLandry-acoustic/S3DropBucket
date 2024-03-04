@@ -352,13 +352,13 @@ export const s3DropBucketHandler: Handler = async (event: S3Event, context: Cont
         //ToDo: Refactor messaging to reference Object properties versus stringifying and adding additional overhead
         //ToDo: Refactor to be consistent in using the response object across all processes
         //ToDo: Refactor messaging to be more consistent across all processes
-        //  {
-        //  OnEnd_StreamEndResult: "S3 Content Stream Ended for pura_2024_02_23T14_45_13_088Z.json. Processed 1 records as 1 batches.",
-        //  OnClose_Result: "S3 Content Stream Closed for pura_2024_02_23T14_45_13_088Z.json",
-        //  OnEnd_PutToFireHoseAggregator: "{\"$metadata\":{\"httpStatusCode\":200,\"requestId\":\"f74fbeb6-866c-a69a-a91a-0b657c3ff61d\",\"extendedRequestId\":\"B6bjH9UjMftk3PGllSXm4dtt3i1NDvVvTeNH5XzhGqITVntTH9BF0Oi1PZiHG1/Y9ms6WOV/GprTR4Zm0MM56BW6fPMWI7/w\",\"attempts\":1,\"totalRetryDelay\":0},\"Encrypted\":false,\"RecordId\":\"5RITXPmmXRpiquneYlAvpM2/d4tXAHu5z3T8ek646DWtfAjriiAFMCZFKP64s889oVN74gKCH/BnLzCItzinUU0gRf5uqSb7zOEKTurr1KjD54LLhqBePCXVufNENg6TqhweUzQuaqHH3iK3bbuMsJ4OXblqCf9vOfhItpKf/8z74vl6N6bk/J3/+nOHqIj2Z3wJ/ho+vHDaIZ/19579Tec+Tn7veOUd\",\"PutToFirehoseAggregator\":\"Successful Put to Firehose Aggregator\"}",
-        //  rm: "{\"OnEnd_StreamEndResult\":\"S3 Content Stream Ended for pura_2024_02_23T14_45_13_088Z.json. Processed 1 records as 1 batches.\",\"OnClose_Result\":\"S3 Content Stream Closed for pura_2024_02_23T14_45_13_088Z.json\",\"OnEnd_PutToFireHoseAggregator\":\"{\\\"$metadata\\\":{\\\"httpStatusCode\\\":200,\\\"requestId\\\":\\\"f74fbeb6-866c-a69a-a91a-0b657c3ff61d\\\",\\\"extendedRequestId\\\":\\\"B6bjH9UjMftk3PGllSXm4dtt3i1NDvVvTeNH5XzhGqITVntTH9BF0Oi1PZiHG1/Y9ms6WOV/GprTR4Zm0MM56BW6fPMWI7/w\\\",\\\"attempts\\\":1,\\\"totalRetryDelay\\\":0},\\\"Encrypted\\\":false,\\\"RecordId\\\":\\\"5RITXPmmXRpiquneYlAvpM2/d4tXAHu5z3T8ek646DWtfAjriiAFMCZFKP64s889oVN74gKCH/BnLzCItzinUU0gRf5uqSb7zOEKTurr1KjD54LLhqBePCXVufNENg6TqhweUzQuaqHH3iK3bbuMsJ4OXblqCf9vOfhItpKf/8z74vl6N6bk/J3/+nOHqIj2Z3wJ/ho+vHDaIZ/19579Tec+Tn7veOUd\\\",\\\"PutToFirehoseAggregator\\\":\\\"Successful Put to Firehose Aggregator\\\"}\"} \"ReturnLocation\": \"Returning from ReadStream Then Clause.\n{\"OnEnd_StreamEndResult\":\"S3 Content Stream Ended for pura_2024_02_23T14_45_13_088Z.json. Processed 1 records as 1 batches.\",\"OnClose_Result\":\"S3 Content Stream Closed for pura_2024_02_23T14_45_13_088Z.json\",\"OnEnd_PutToFireHoseAggregator\":\"{\\\"$metadata\\\":{\\\"httpStatusCode\\\":200,\\\"requestId\\\":\\\"f74fbeb6-866c-a69a-a91a-0b657c3ff61d\\\",\\\"extendedRequestId\\\":\\\"B6bjH9UjMftk3PGllSXm4dtt3i1NDvVvTeNH5XzhGqITVntTH9BF0Oi1PZiHG1/Y9ms6WOV/GprTR4Zm0MM56BW6fPMWI7/w\\\",\\\"attempts\\\":1,\\\"totalRetryDelay\\\":0},\\\"Encrypted\\\":false,\\\"RecordId\\\":\\\"5RITXPmmXRpiquneYlAvpM2/d4tXAHu5z3T8ek646DWtfAjriiAFMCZFKP64s889oVN74gKCH/BnLzCItzinUU0gRf5uqSb7zOEKTurr1KjD54LLhqBePCXVufNENg6TqhweUzQuaqHH3iK3bbuMsJ4OXblqCf9vOfhItpKf/8z74vl6N6bk/J3/+nOHqIj2Z3wJ/ho+vHDaIZ/19579Tec+Tn7veOUd\\\",\\\"PutToFirehoseAggregator\\\":\\\"Successful Put to Firehose Aggregator\\\"}\"}",
-        //  ReturnLocation: "...End of ReadStream Promise",
+        // {
+        //     "OnEnd_StreamEndResult": "S3 Content Stream Ended for pura_2024_03_04T20_42_23_797Z.json. Processed 1 records as 1 batches.",
+        //         "OnClose_Result": "S3 Content Stream Closed for pura_2024_03_04T20_42_23_797Z.json",
+        //             "OnEnd_PutToFireHoseAggregator": "{}",
+        //                 "ReturnLocation": "...End of ReadStream Promise"
         // }
+        // DeleteResult: "Successful Delete of pura_2024_03_04T20_42_23_797Z.json  (Result 204)"
 
         try
         {
@@ -762,7 +762,6 @@ async function putToFirehose (S3Obj: string[], key: string, cust: string) {
 
     try
     {
-
         S3Obj.forEach(async (fo) => {
 
             Object.assign(fo, { "Customer": cust })
@@ -781,15 +780,15 @@ async function putToFirehose (S3Obj: string[], key: string, cust: string) {
 
                     console.info(`Put to Firehose Aggregator result for ${key} - RecordId: ${res.RecordId}, \n${JSON.stringify(res.$metadata.httpStatusCode)}`)
 
-                    if (tcc.SelectiveDebug.indexOf('_22,') > -1) console.info(`Put to Firehose Aggregator for ${key} - \n${JSON.stringify(fc)} - ${JSON.stringify(res)}`)
+                    if (tcc.SelectiveDebug.indexOf('_22,') > -1) console.info(`Put to Firehose Aggregator for ${key} - \n${JSON.stringify(fc)} \nResult: ${JSON.stringify(res)}`)
 
                     if (res.$metadata.httpStatusCode === 200)
                     {
-                        putFirehoseResp = { ...putFirehoseResp, "PutToFirehoseAggregatorResult": `Successful Put to Firehose Aggregator for ${key} - ${res.$metadata.httpStatusCode}` }
+                        putFirehoseResp = { ...putFirehoseResp, "PutToFirehoseAggregatorResult": `Successful Put to Firehose Aggregator for ${key} - ${res.$metadata.httpStatusCode}\n${res.RecordId}` }
                     }
                     else
                     {
-                        putFirehoseResp = { ...putFirehoseResp, "PutToFirehoseAggregatorResult": `UnSuccessful Put to Firehose Aggregator for ${key} \n ${res}` }
+                        putFirehoseResp = { ...putFirehoseResp, "PutToFirehoseAggregatorResult": `UnSuccessful Put to Firehose Aggregator for ${key} \n ${JSON.stringify(res)}` }
                     }
                     return putFirehoseResp
                 })
@@ -798,7 +797,6 @@ async function putToFirehose (S3Obj: string[], key: string, cust: string) {
                     putFirehoseResp = { ...putFirehoseResp, "PutToFirehoseAggregatorResult": `UnSuccessful Put to Firehose Aggregator for ${key} \n ${e}` }
                     return putFirehoseResp
                 })
-            // return putFirehoseResp
         })
     } catch (e)
     {
