@@ -698,10 +698,6 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
                                 streamResult = {
                                     ...streamResult, "OnEnd_StoreQueueResult": storeQueueResult
                                 }
-
-                                if (tcLogDebug) console.info(`Store and Queue Work Result: ${storeQueueResult}`)
-
-                                console.info(`Content Stream OnEnd for (${key}) - Store and Queue Work of ${batchCount + 1} Batches of ${Object.values(d).length} records - Result: \n${JSON.stringify(streamResult)}`)
                             }
                         } catch (e)
                         {
