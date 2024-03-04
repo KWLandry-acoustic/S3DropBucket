@@ -923,7 +923,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (event: SQSEvent
                     console.info(`Work Successfully Posted to Campaign (${tqm.workKey}), will now Delete the Work from the S3 Process Queue`)
 
                     const d: string = await deleteS3Object(tqm.workKey, tcc.s3DropBucketWorkBucket!)
-                    if (d === '204') console.info(`Successful Deletion of Work: ${tqm.workKey}`)
+                    if (d === '204') console.info(`Successful Deletion of Work: ${tqm.workKey} - ${vid}`)
                     else console.error(`Failed to Delete ${tqm.workKey}. Expected '204' but received ${d}`)
                 }
 
