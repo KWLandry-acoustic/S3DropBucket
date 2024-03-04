@@ -22,9 +22,9 @@ let testS3Key: string
 let testS3Bucket: string
 testS3Bucket = "tricklercache-configs"
 // testS3Key = "TestData/pura_2024_02_26T05_53_26_084Z.json",
-// testS3Key = "TestData/visualcrossing_00213.csv"
+testS3Key = "TestData/visualcrossing_00213.csv"
 // testS3Key = "TestData/pura_2024_02_25T00_00_00_090Z.json"
-testS3Key = "TestData/pura_aggregate_S3DropBucket_Aggregator-6-2024-03-03-06-34-51-2014bbe3-a1a5-3efa-adf8-35d4cbce51c3.json"
+// testS3Key = "TestData/pura_aggregate_S3DropBucket_Aggregator-6-2024-03-03-06-34-51-2014bbe3-a1a5-3efa-adf8-35d4cbce51c3.json"
 
 
 
@@ -1737,17 +1737,22 @@ function convertJSONToXML_RTUpdates (updates: string[], config: customerConfig) 
 
     let r = 0
 
+    // updates.forEach(jo => {
+    for (const jo in updates)
+    {
+        debugger
 
-
-    updates.forEach(jo => {
+        const j = JSON.parse(updates[jo])
         r++
         xmlRows += `<ROW>`
-        Object.entries(jo).forEach(([key, value]) => {
+        // Object.entries(jo).forEach(([key, value]) => {
+        for (const l in j)
+        {
             // console.info(`Record ${r} as ${key}: ${value}`)
-            xmlRows += `<COLUMN name="${key}"> <![CDATA[${value}]]> </COLUMN>`
-        })
+            xmlRows += `<COLUMN name="${l}"> <![CDATA[${j[l]}]]> </COLUMN>`
+        }
         xmlRows += `</ROW>`
-    })
+    }
 
     //Tidy up the XML
     xmlRows += `</ROWS></InsertUpdateRelationalTable></Body></Envelope>`
