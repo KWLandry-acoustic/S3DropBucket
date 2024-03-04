@@ -58,6 +58,8 @@ import sftpClient, { ListFilterFunction } from 'ssh2-sftp-client'
 //For when needed to reference Lambda execution environment /tmp folder 
 // import { ReadStream, close } from 'fs'
 
+let vid: string
+let et: string
 
 const sqsClient = new SQSClient({})
 
@@ -322,8 +324,8 @@ export const s3DropBucketHandler: Handler = async (event: S3Event, context: Cont
 
         //ToDo: Resolve Duplicates Issue - S3 allows Duplicate Object Names but Delete marks all Objects of same Name Deleted. 
         //   Which causes an issue with Key Not Found after an Object of Name A is processed and deleted, then another Object of Name A comes up in a Trigger.
-        const vid = r.s3.object.versionId
-        const et = r.s3.object.eTag
+        vid = r.s3.object.versionId ?? ""
+        et = r.s3.object.eTag ?? ""
 
         try
         {
@@ -2116,6 +2118,63 @@ async function saveS3Work (s3Key: string, body: string, bucket: string) {
     return save
 }
 
+async function deleteS3Object (s3ObjKey: string, bucket: string) {
+
+    let delRes = ''
+
+    //  
+    //ToDo: Attempt to uniquely delete one object with a duplicate name of another object (Yep, that's a thing in S3)
+    //
+    // const listObjectCommand = {
+    //     Bucket: bucket, // required
+    //     // KeyMarker: s3ObjKey,
+    //     Prefix: s3ObjKey,
+    //     // versionId: ver,
+    //     IfMatch: entity
+    // }
+    // // console.info("Debug: ", entity, "Debug: ", ver)
+    // const loc = new ListObjectVersionsCommand(listObjectCommand)
+    // const locResponse = await s3.send(loc)
+    //     .then(async (listResult: ListObjectsV2CommandOutput) => {
+    //         console.info(`ListObject Response: ${JSON.stringify(listResult)}`)
+    //
+    //     })
+    //
+    //
+
+    const d = new DeleteObjectCommand({
+        Key: s3ObjKey,
+        Bucket: bucket,
+        VersionId: vid
+    })
+
+    // d.setMatchingETagConstraints(Collections.singletonList(et));
+
+    try
+    {
+        await s3.send(d)
+            // .send(
+            //     new DeleteObjectCommand({
+            //         Key: s3ObjKey,
+            //         Bucket: bucket
+            //     }),
+            // )
+            .then(async (s3DelResult: DeleteObjectCommandOutput) => {
+                delRes = JSON.stringify(s3DelResult.$metadata.httpStatusCode, null, 2)
+            })
+            .catch((e) => {
+                console.error(`Exception - Attempting S3 Delete Command for ${s3ObjKey}: \n ${e} `)
+                return delRes
+            })
+    } catch (e)
+    {
+        console.error(`Exception - Attempting S3 Delete Command for ${s3ObjKey}: \n ${e} `)
+    }
+    return delRes
+}
+
+
+
 export async function getAccessToken (config: customerConfig) {
     try
     {
@@ -2278,53 +2337,6 @@ export async function postToCampaign (xmlCalls: string, config: customerConfig, 
     return postRes
 }
 
-async function deleteS3Object (s3ObjKey: string, bucket: string) {
-
-    let delRes = ''
-
-    //  
-    //ToDo: Attempt to uniquely delete one object with a duplicate name of another object (Yep, that's a thing in S3)
-    //
-    // const listObjectCommand = {
-    //     Bucket: bucket, // required
-    //     // KeyMarker: s3ObjKey,
-    //     Prefix: s3ObjKey,
-    //     // versionId: ver,
-    //     IfMatch: entity
-    // }
-    // // console.info("Debug: ", entity, "Debug: ", ver)
-    // const loc = new ListObjectVersionsCommand(listObjectCommand)
-    // const locResponse = await s3.send(loc)
-    //     .then(async (listResult: ListObjectsV2CommandOutput) => {
-    //         console.info(`ListObject Response: ${JSON.stringify(listResult)}`)
-    //          
-    //     })
-    //
-    //  
-
-
-    try
-    {
-        await s3
-            .send(
-                new DeleteObjectCommand({
-                    Key: s3ObjKey,
-                    Bucket: bucket
-                }),
-            )
-            .then(async (s3DelResult: DeleteObjectCommandOutput) => {
-                delRes = JSON.stringify(s3DelResult.$metadata.httpStatusCode, null, 2)
-            })
-            .catch((e) => {
-                console.error(`Exception - Attempting S3 Delete Command for ${s3ObjKey}: \n ${e} `)
-                return delRes
-            })
-    } catch (e)
-    {
-        console.error(`Exception - Attempting S3 Delete Command for ${s3ObjKey}: \n ${e} `)
-    }
-    return delRes
-}
 
 function checkMetadata () {
     //Pull metadata for table/db defined in config
