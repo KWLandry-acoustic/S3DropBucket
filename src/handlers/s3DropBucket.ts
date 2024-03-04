@@ -233,7 +233,7 @@ let tcSelectiveDebug   //call out selective debug as an option
 
 export const s3DropBucketHandler: Handler = async (event: S3Event, context: Context) => {
 
-    let processS3ObjectStreamResolution = {}
+    let processS3ObjectStreamResolution: string = ""
     let delResultCode
 
 
@@ -352,8 +352,6 @@ export const s3DropBucketHandler: Handler = async (event: S3Event, context: Cont
         }
 
 
-
-
         //ToDo: Refactor messaging to reference Object properties versus stringifying and adding additional overhead
         //ToDo: Refactor to be consistent in using the response object across all processes
         //ToDo: Refactor messaging to be more consistent across all processes
@@ -367,7 +365,7 @@ export const s3DropBucketHandler: Handler = async (event: S3Event, context: Cont
 
         try
         {
-            let processResult = "" as string
+            let processResult: string = ""
 
             processS3ObjectStreamResolution = await processS3ObjectContentStream(key, bucket, customersConfig)
                 .then(async (res) => {
@@ -396,7 +394,6 @@ export const s3DropBucketHandler: Handler = async (event: S3Event, context: Cont
                             {
                                 const dr = `Successful Delete of ${key}  (Result ${delResultCode})`
                                 console.info(dr)
-                                // processS3ObjectStreamResolution = { ...processS3ObjectStreamResolution, "DeleteResult": dr }
                                 processResult += "DeleteResult: " + JSON.stringify(dr)
                             }
                         }
@@ -419,7 +416,6 @@ export const s3DropBucketHandler: Handler = async (event: S3Event, context: Cont
                                 {
                                     const dr = `Successful Delete of ${key}  (Result ${delResultCode})`
                                     console.info(dr)
-                                    // processS3ObjectStreamResolution = { ...processS3ObjectStreamResolution, "DeleteResult": dr }
                                     processResult += "DeleteResult: " + JSON.stringify(dr)
                                 }
                             }
@@ -432,8 +428,6 @@ export const s3DropBucketHandler: Handler = async (event: S3Event, context: Cont
                         {
                             const dr = `UnSuccessful Processing of S3 DropBucket object ${key}. Object not deleted after processing contents.)`
                             console.error(dr)
-
-                            // processS3ObjectStreamResolution = { ...processS3ObjectStreamResolution, "DeleteResult": dr }
 
                             throw new Error(`Exception - Processing S3 Object - Unsuccessful Cleanup - ${dr}`)
                         }
@@ -456,18 +450,15 @@ export const s3DropBucketHandler: Handler = async (event: S3Event, context: Cont
 
         if (tcc.SelectiveDebug.indexOf("_3,") > -1) console.info(`Selective Debug 3 - Returned from Processing S3 Object Content Stream for ${key}. Result: ${JSON.stringify(processS3ObjectStreamResolution)}`)
 
-
-
-
     }
 
     //Check for important Config updates (which caches the config in Lambdas long-running cache)
     checkForTCConfigUpdates()
 
     console.info(`Completing S3 DropBucket Processing of Request Id ${event.Records[0].responseElements['x-amz-request-id']}`)
-    if (tcc.SelectiveDebug.indexOf("_20,") > -1) console.info(`Selective Debug 20 - \n${JSON.stringify(processS3ObjectStreamResolution)}`)
+    if (tcc.SelectiveDebug.indexOf("_20,") > -1) console.info(`Selective Debug 20 - \n${processS3ObjectStreamResolution}`)
 
-    return JSON.stringify(processS3ObjectStreamResolution)
+    return processS3ObjectStreamResolution
 }
 
 
@@ -479,10 +470,11 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
 
     let batchCount = 0
     let chunks: string[] = []
+    let processS3Object: {} = {}
 
     if (tcLogDebug) console.info(`Processing S3 Content Stream for ${key}`)
 
-    let processS3Object = await s3.send(new GetObjectCommand({
+    processS3Object = await s3.send(new GetObjectCommand({
         Key: key,
         Bucket: bucket
     })
@@ -596,12 +588,12 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
 
             if (custConfig.format.toLowerCase() === 'json')
             {
-                //Placeholder
+                //Placeholder - Everything should be JSON by the time we get here 
             }
 
             const readStream = await new Promise(async (resolve, reject) => {
 
-                let d: any
+                let d: { key: number, value: string }
 
                 s3ContentReadableStream
                     .on('error', async function (err: string) {
@@ -615,14 +607,14 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
                         throw new Error(`Error on Readable Stream for s3DropBucket Object ${key}. \nError Message: ${errMessage}`)
                         // reject(streamResult)
                     })
-                    .on('data', async function (s3Chunk: String) {
+                    .on('data', async function (s3Chunk: string) {
                         recs++
 
-                        if (recs > custConfig.updateMaxRows && key.indexOf('aggregate_') < 0) throw new Error(`The number of Updates in this batch Exceeds Max Row Updates allowed ${recs} in the Customers Config. S3 Object ${key} will not be deleted to allow for review and possible restaging.`)
+                        if (key.indexOf('aggregate_') < 0 && recs > custConfig.updateMaxRows) throw new Error(`The number of Updates in this batch Exceeds Max Row Updates allowed ${recs} in the Customers Config. S3 Object ${key} will not be deleted to allow for review and possible restaging.`)
 
                         try
                         {
-                            d = s3Chunk
+                            d = JSON.parse(s3Chunk)
 
                             if (tcc.SelectiveDebug.indexOf("_13,") > -1) console.info(`Selective Debug 13 - s3ContentStream OnData - Another chunk (Num of Entries:${Object.values(s3Chunk).length} Recs:${recs} Batch:${batchCount} from ${key} - ${JSON.stringify(d)}`)
 
@@ -776,13 +768,12 @@ async function putToFirehose (S3Obj: string[], key: string, cust: string) {
     // S3DropBucket_Aggregator 
     // S3DropBucket_FireHoseStream
 
-    let putFirehoseResp: string
+    let putFirehoseResp: {}
 
     try
     {
 
         S3Obj.forEach(async (fo) => {
-
 
             Object.assign(fo, { "Customer": cust })
 
@@ -797,32 +788,32 @@ async function putToFirehose (S3Obj: string[], key: string, cust: string) {
 
             if (tcc.SelectiveDebug.indexOf('_22,') > -1) console.info(`Put to Firehose Aggregator for ${key} - Pre-Send: \n${JSON.stringify(fc)}`)
 
-
             putFirehoseResp = await client.send(fireCommand)
                 .then((res: PutRecordCommandOutput) => {
 
                     console.info(`Put to Firehose Aggregator result for ${key} - RecordId: ${res.RecordId}, \n${JSON.stringify(res)}`)
 
-                    let fres
                     if (res.$metadata.httpStatusCode === 200)
                     {
-                        fres = { ...res, "PutToFirehoseAggregatorResult": `${res.$metadata.httpStatusCode} for ${key}` }
+                        putFirehoseResp = { ...putFirehoseResp, "PutToFirehoseAggregatorResult": `Successful Put to Firehose Aggregator for ${key} - ${res.$metadata.httpStatusCode}` }
                     }
                     else
                     {
-                        fres = { ...res, "PutToFirehoseAggregatorResult": `UnSuccessful Put to Firehose Aggregator for ${key}` }
+                        putFirehoseResp = { ...putFirehoseResp, "PutToFirehoseAggregatorResult": `UnSuccessful Put to Firehose Aggregator for ${key} \n ${res}` }
                     }
-                    putFirehoseResp = fres
+                    return putFirehoseResp
                 })
                 .catch((e) => {
                     console.error(`Exception - Put to Firehose Aggregator (Promise-catch) for ${key} \n${e}`)
+                    putFirehoseResp = { ...putFirehoseResp, "PutToFirehoseAggregatorResult": `UnSuccessful Put to Firehose Aggregator for ${key} \n ${e}` }
+                    return putFirehoseResp
                 })
+            return putFirehoseResp
         })
     } catch (e)
     {
         console.error(`Exception - Put to Firehose Aggregator (try-catch) for ${key} \n${e}`)
     }
-    return putFirehoseResp
 }
 
 /**
