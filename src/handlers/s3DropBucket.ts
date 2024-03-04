@@ -691,7 +691,7 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
                                     // S3DropBucketAggregate_BFSlE95VRhb_VhNbxLpw1mp_S3DropBucket_FireHoseStream - 2 - 2024-02 - 25 - 20 - 14 - 14 - 13c6a4ee - e529 - 4f19 - 8e45 - c335218922c8.json                                    console.info(`Content Stream OnEnd for (${key}) - Singular Update put to Firehose aggregator pipe. \n${JSON.stringify(f)} \n${batchCount + 1} Batches of ${Object.values(d).length} records - Result: \n${JSON.stringify(streamResult)}`)
 
                                     streamResult = {
-                                        ...streamResult, "OnEnd_PutToFireHoseAggregator": `${JSON.stringify(f)} \n${d}`
+                                        ...streamResult, "OnEnd_PutToFireHoseAggregator": `${JSON.stringify(f)} \n${JSON.stringify(d)}`
                                     }
 
                                 } catch (e)
@@ -780,7 +780,6 @@ async function putToFirehose (S3Obj: string[], key: string, cust: string) {
 
     try
     {
-        const u = S3Obj[0]
 
         S3Obj.forEach(async (fo) => {
 
@@ -807,14 +806,13 @@ async function putToFirehose (S3Obj: string[], key: string, cust: string) {
                     let fres
                     if (res.$metadata.httpStatusCode === 200)
                     {
-                        'S3ProcessBucketResult":"200"'
                         fres = { ...res, "PutToFirehoseAggregatorResult": `${res.$metadata.httpStatusCode} for ${key}` }
                     }
                     else
                     {
                         fres = { ...res, "PutToFirehoseAggregatorResult": `UnSuccessful Put to Firehose Aggregator for ${key}` }
                     }
-                    return fres
+                    putFirehoseResp = fres
                 })
                 .catch((e) => {
                     console.error(`Exception - Put to Firehose Aggregator (Promise-catch) for ${key} \n${e}`)
