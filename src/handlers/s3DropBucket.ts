@@ -776,7 +776,7 @@ async function putToFirehose (S3Obj: string[], key: string, cust: string) {
     // S3DropBucket_Aggregator 
     // S3DropBucket_FireHoseStream
 
-    let putFirehoseResp
+    let putFirehoseResp: string
 
     try
     {
@@ -818,14 +818,11 @@ async function putToFirehose (S3Obj: string[], key: string, cust: string) {
                     console.error(`Exception - Put to Firehose Aggregator (Promise-catch) for ${key} \n${e}`)
                 })
         })
-
-        return putFirehoseResp
-
     } catch (e)
     {
         console.error(`Exception - Put to Firehose Aggregator (try-catch) for ${key} \n${e}`)
     }
-
+    return putFirehoseResp
 }
 
 /**
