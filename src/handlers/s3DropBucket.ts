@@ -325,11 +325,10 @@ export const s3DropBucketHandler: Handler = async (event: S3Event, context: Cont
         const vid = r.s3.object.versionId
         const et = r.s3.object.eTag
 
-
         try
         {
             customersConfig = await getCustomerConfig(key)
-            console.info(`Processing inbound data for ${key}, Customer is ${customersConfig.Customer}`)
+            console.info(`Processing inbound data for ${customersConfig.Customer} Object: ${key} \nS3 Object Details: VID: ${vid}, ETag: ${et}`)
         }
         catch (e)
         {
@@ -901,9 +900,11 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (event: SQSEvent
         try
         {
             const work = await getS3Work(tqm.workKey, "tricklercache-process")
+
             if (work.length > 0)        //Retreive Contents of the Work File  
             {
                 postResult = await postToCampaign(work, tqm.custconfig, tqm.updateCount)
+
                 if (tcc.SelectiveDebug.indexOf("_8,") > -1) console.info(`Selective Debug 8 - POST Result for ${tqm.workKey}: ${postResult}`)
 
                 if (postResult.indexOf('retry') > -1)
@@ -932,7 +933,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (event: SQSEvent
 
         } catch (e)
         {
-            console.error(`Exception - Processing a Work File (${tqm.workKey} - \n${e}}`)
+            console.error(`Exception - Processing a Work File (${tqm.workKey} off the Work Queue - \n${e}}`)
         }
 
     }
@@ -1146,13 +1147,13 @@ export const s3DropBucketSFTPHandler: Handler = async (event: SQSEvent, context:
 
 
 async function sftpConnect (options: { host: any; port: any; username?: string; password?: string }) {
-    console.log(`Connecting to ${options.host}:${options.port}`)
+    console.info(`Connecting to ${options.host}:${options.port}`)
     try
     {
         // await sftpClient.connect(options)
     } catch (err)
     {
-        console.log('Failed to connect:', err)
+        console.info('Failed to connect:', err)
     }
 }
 
@@ -1161,14 +1162,14 @@ async function sftpDisconnect () {
 }
 
 async function sftpListFiles (remoteDir: string, fileGlob: ListFilterFunction) {
-    console.log(`Listing ${remoteDir} ...`)
+    console.info(`Listing ${remoteDir} ...`)
     let fileObjects: sftpClient.FileInfo[] = []
     try
     {
         // fileObjects = await sftpClient.list(remoteDir, fileGlob)
     } catch (err)
     {
-        console.log('Listing failed:', err)
+        console.info('Listing failed:', err)
     }
 
     const fileNames = []
@@ -1177,10 +1178,10 @@ async function sftpListFiles (remoteDir: string, fileGlob: ListFilterFunction) {
     {
         if (file.type === 'd')
         {
-            console.log(`${new Date(file.modifyTime).toISOString()} PRE ${file.name}`)
+            console.info(`${new Date(file.modifyTime).toISOString()} PRE ${file.name}`)
         } else
         {
-            console.log(`${new Date(file.modifyTime).toISOString()} ${file.size} ${file.name}`)
+            console.info(`${new Date(file.modifyTime).toISOString()} ${file.size} ${file.name}`)
         }
 
         fileNames.push(file.name)
@@ -1190,7 +1191,7 @@ async function sftpListFiles (remoteDir: string, fileGlob: ListFilterFunction) {
 }
 
 async function sftpUploadFile (localFile: string, remoteFile: string) {
-    console.log(`Uploading ${localFile} to ${remoteFile} ...`)
+    console.info(`Uploading ${localFile} to ${remoteFile} ...`)
     try
     {
         // await sftpClient.put(localFile, remoteFile)
@@ -1201,7 +1202,7 @@ async function sftpUploadFile (localFile: string, remoteFile: string) {
 }
 
 async function sftpDownloadFile (remoteFile: string, localFile: string) {
-    console.log(`Downloading ${remoteFile} to ${localFile} ...`)
+    console.info(`Downloading ${remoteFile} to ${localFile} ...`)
     try
     {
         // await sftpClient.get(remoteFile, localFile)
@@ -1212,7 +1213,7 @@ async function sftpDownloadFile (remoteFile: string, localFile: string) {
 }
 
 async function sftpDeleteFile (remoteFile: string) {
-    console.log(`Deleting ${remoteFile}`)
+    console.info(`Deleting ${remoteFile}`)
     try
     {
         // await sftpClient.delete(remoteFile)
@@ -1248,7 +1249,7 @@ function applyJSONMap (chunk: string[], map: { [key: string]: string }) {
 
         //Confirms Update was accomplished 
         // const j = jsonpath.query(s3Chunk, v)
-        // console.log(`${j}`)
+        // console.info(`${j}`)
     })
     return chunk
 }
@@ -2081,7 +2082,7 @@ async function getS3Work (s3Key: string, bucket: string) {
         const err: string = JSON.stringify(e)
 
         if (err.indexOf('NoSuchKey') > -1)
-            throw new Error(`Exception - Work Not Found on S3 Process Queue (${s3Key}) Check Process Queue Management Policy Deleting Work before Processing can be accomplished. Work not returned for Retry. \n${e}`)
+            throw new Error(`Exception - Work Not Found on S3 Process Queue (${s3Key}) Work will not be marked for Retry. \n${e}`)
         else throw new Error(`Exception - Retrieving Work from S3 Process Queue for ${s3Key}. \n ${e}`)
     }
     return work
