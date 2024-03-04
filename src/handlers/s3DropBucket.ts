@@ -735,9 +735,7 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
 
             })
                 .then((r) => {
-                    const rm = `${JSON.stringify(streamResult)} "ReturnLocation": "Returning from ReadStream Then Clause.\n${JSON.stringify(r)}`
-                    // console.info("Quick debug info: ", rm)
-                    const rs = { ...streamResult, rm }
+                    const rs = { ...streamResult, "ReturnLocation": "Returning from ReadStream Then Clause." }
                     return rs
                 })
                 .catch(e => {
