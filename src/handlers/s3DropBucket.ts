@@ -410,7 +410,6 @@ export const s3DropBucketHandler: Handler = async (event: S3Event, context: Cont
                                 else
                                 {
                                     const dr = `Successful Delete of ${key}  (Result ${delResultCode})`
-                                    console.info(dr)
                                     processResult += "DeleteResult: " + JSON.stringify(dr)
                                 }
                             }
