@@ -15,26 +15,24 @@ import { SchedulerClient, ListSchedulesCommand, ListSchedulesCommandInput } from
 
 import { Handler, S3Event, Context, SQSEvent, SQSRecord, S3EventRecord } from 'aws-lambda'
 
-import fetch, { fileFrom, Headers, RequestInit, Response } from 'node-fetch'
+import fetch, { Headers, RequestInit, Response } from 'node-fetch'
 
 
 let testS3Key: string
 let testS3Bucket: string
+testS3Bucket = "tricklercache-configs"
 // testS3Key = "TestData/pura_2024_02_26T05_53_26_084Z.json",
 // testS3Key = "TestData/visualcrossing_00213.csv"
 // testS3Key = "TestData/pura_2024_02_25T00_00_00_090Z.json"
-// testS3Key = "TestData/pura_aggregate_S3DropBucket_Aggregator-6-2024-03-03-06-34-51-2014bbe3-a1a5-3efa-adf8-35d4cbce51c3.json"
-// testS3Bucket = "tricklercache-configs"
+testS3Key = "TestData/pura_aggregate_S3DropBucket_Aggregator-6-2024-03-03-06-34-51-2014bbe3-a1a5-3efa-adf8-35d4cbce51c3.json"
+
 
 
 // import { JSONParser } from '@streamparser/json'
 // const jsonParser = new JSONParser()
 //json-node Stream compatible package
 import { JSONParser, Tokenizer, TokenParser } from '@streamparser/json-node'
-import JSONParserTransform from '@streamparser/json-node/jsonparser.js'
-import { Transform } from 'node:stream'
-import { TransformStream } from 'node:stream/web'
-
+// import JSONParserTransform from '@streamparser/json-node/jsonparser.js'
 
 import { parse } from 'csv-parse'
 
@@ -57,9 +55,7 @@ import {
 
 import sftpClient, { ListFilterFunction } from 'ssh2-sftp-client'
 
-// import { Object } from 'lodash'
-
-//For when need to reference Lambda execution environment /tmp folder 
+//For when needed to reference Lambda execution environment /tmp folder 
 // import { ReadStream, close } from 'fs'
 
 
@@ -73,7 +69,7 @@ export type sqsObject = {
 //ToDo: Make AWS Region Config Option for portabilty/infrastruct dedication
 const s3 = new S3Client({ region: 'us-east-1' })
 
-const sftpCient = new sftpClient()
+const SFTPClient = new sftpClient()
 
 
 let localTesting = false
@@ -593,7 +589,7 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
 
             const readStream = await new Promise(async (resolve, reject) => {
 
-                let d: { key: number, value: string }
+                let d: string
 
                 s3ContentReadableStream
                     .on('error', async function (err: string) {
@@ -607,18 +603,19 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
                         throw new Error(`Error on Readable Stream for s3DropBucket Object ${key}. \nError Message: ${errMessage}`)
                         // reject(streamResult)
                     })
-                    .on('data', async function (s3Chunk: string) {
+                    .on('data', async function (s3Chunk: { key: string, value: object }) {
                         recs++
 
                         if (key.indexOf('aggregate_') < 0 && recs > custConfig.updateMaxRows) throw new Error(`The number of Updates in this batch Exceeds Max Row Updates allowed ${recs} in the Customers Config. S3 Object ${key} will not be deleted to allow for review and possible restaging.`)
 
                         try
                         {
-                            d = JSON.parse(s3Chunk)
 
-                            if (tcc.SelectiveDebug.indexOf("_13,") > -1) console.info(`Selective Debug 13 - s3ContentStream OnData - Another chunk (Num of Entries:${Object.values(s3Chunk).length} Recs:${recs} Batch:${batchCount} from ${key} - ${JSON.stringify(d)}`)
+                            d = JSON.stringify(s3Chunk.value)
 
-                            chunks.push(d.value)
+                            if (tcc.SelectiveDebug.indexOf("_13,") > -1) console.info(`Selective Debug 13 - s3ContentStream OnData - Another chunk (Num of Entries:${Object.values(s3Chunk).length} Recs:${recs} Batch:${batchCount} from ${key} - ${d}`)
+
+                            chunks.push(d)
 
                             if (Object.entries(chunks).length > 98)
                             {
@@ -1768,77 +1765,79 @@ function convertJSONToXML_DBUpdates (updates: string[], config: customerConfig) 
     xmlRows = `<Envelope><Body>`
     let r = 0
 
-
-
-    // Object.keys(updates).forEach(jo => {
-    updates.forEach((jo) => {
-        r++
-
-        const s = JSON.stringify(jo)
-        const j = JSON.parse(s)
-
-
-
-        xmlRows += `<AddRecipient><LIST_ID>${config.listId}</LIST_ID><CREATED_FROM>0</CREATED_FROM><UPDATE_IF_FOUND>true</UPDATE_IF_FOUND>`
-
-        // If Keyed, then Column that is the key must be present in Column Set
-        // If Not Keyed must use Lookup Fields
-        // Use SyncFields as 'Lookup" values,
-        //   Columns hold the Updates while SyncFields hold the 'lookup' values.
-
-
-        //Only needed on non-keyed(In Campaign use DB -> Settings -> LookupKeys to find what fields are Lookup Keys)
-        if (config.listType.toLowerCase() === 'dbnonkeyed')
+    try
+    {
+        // Object.keys(updates).forEach(jo => {
+        // updates.forEach((jo) => {
+        debugger
+        for (const jo in updates)
         {
-            const lk = config.LookupKeys.split(',')
+            r++
+            const j = JSON.parse(updates[jo])
+            const s = JSON.stringify(j)
 
 
+            xmlRows += `<AddRecipient><LIST_ID>${config.listId}</LIST_ID><CREATED_FROM>0</CREATED_FROM><UPDATE_IF_FOUND>true</UPDATE_IF_FOUND>`
 
-            xmlRows += `<SYNC_FIELDS>`
-            lk.forEach(k => {
-
-                k = k.trim()
-                const sf = `<SYNC_FIELD><NAME>${k}</NAME><VALUE><![CDATA[${j[k]}]]></VALUE></SYNC_FIELD>`
-                xmlRows += sf
-            })
-
-            xmlRows += `</SYNC_FIELDS>`
-        }
-
-        if (config.listType.toLowerCase() === 'dbkeyed')
-        {
-            //Placeholder
-            //Don't need to do anything with DBKey, it's superfluous but documents the keys of the keyed DB
-        }
+            // If Keyed, then Column that is the key must be present in Column Set
+            // If Not Keyed must use Lookup Fields
+            // Use SyncFields as 'Lookup" values,
+            //   Columns hold the Updates while SyncFields hold the 'lookup' values.
 
 
-        Object.entries(jo).forEach(([key, value]) => {
+            //Only needed on non-keyed(In Campaign use DB -> Settings -> LookupKeys to find what fields are Lookup Keys)
+            if (config.listType.toLowerCase() === 'dbnonkeyed')
+            {
+                const lk = config.LookupKeys.split(',')
+
+                xmlRows += `<SYNC_FIELDS>`
+                lk.forEach(k => {
+                    debugger
+                    k = k.trim()
+                    const sf = `<SYNC_FIELD><NAME>${k}</NAME><VALUE><![CDATA[${j[k]}]]></VALUE></SYNC_FIELD>`
+                    xmlRows += sf
+                })
+
+                xmlRows += `</SYNC_FIELDS>`
+            }
+
+            if (config.listType.toLowerCase() === 'dbkeyed')
+            {
+                //Placeholder
+                //Don't need to do anything with DBKey, it's superfluous but documents the keys of the keyed DB
+            }
+
+            debugger
+            // Object.entries(j).forEach(function ([key, value]) {
+
             // for (const i in jo)
             //    {
             // console.info(`Record ${r} as ${key}: ${value}`)
-            xmlRows += `<COLUMN><NAME>${key}</NAME><VALUE><![CDATA[${value}]]></VALUE></COLUMN>`
+            // Object.entries(j).forEach(([key, value]) => {
+            for (const pv in j)
+            {
+                xmlRows += `<COLUMN><NAME>${pv}</NAME><VALUE><![CDATA[${j[pv]}]]></VALUE></COLUMN>`
+            }
 
-        })
 
+            //CRM Lead Source Update 
+            //Todo: CRM Lead Source as a config option
+            xmlRows += `<COLUMN><NAME>CRM Lead Source</NAME><VALUE><![CDATA[S3DropBucket]]></VALUE></COLUMN>`
 
+            xmlRows += `</AddRecipient>`
 
-        //CRM Lead Source Update 
-        //Todo: CRM Lead Source as a config option
-        xmlRows += `<COLUMN><NAME>CRM Lead Source</NAME><VALUE><![CDATA[S3DropBucket]]></VALUE></COLUMN>`
-
-        xmlRows += `</AddRecipient>`
-
-        debugger
-
-    })
+            // })
+        }
+    } catch (e)
+    {
+        console.error(`Exception - ConvertJSONtoXML_DBUpdates - \n${e}`)
+    }
 
     xmlRows += `</Body></Envelope>`
 
     if (tcLogDebug) console.info(`Converting S3 Content to XML DB Updates. Packaging ${Object.values(updates).length} rows as updates to ${config.Customer}'s ${config.listName}`)
     if (tcc.SelectiveDebug.indexOf("_16,") > -1) console.info(`Selective Debug 16 - JSON to be converted to XML DB Updates: ${JSON.stringify(updates)}`)
     if (tcc.SelectiveDebug.indexOf("_17,") > -1) console.info(`Selective Debug 17 - XML from JSON for DB Updates: ${xmlRows}`)
-
-    debugger
 
     return xmlRows
 }
