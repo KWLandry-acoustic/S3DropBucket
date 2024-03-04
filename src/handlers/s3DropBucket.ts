@@ -781,12 +781,12 @@ async function putToFirehose (S3Obj: string[], key: string, cust: string) {
 
             const fireCommand = new PutRecordCommand(fc)
 
-            if (tcc.SelectiveDebug.indexOf('_22,') > -1) console.info(`Put to Firehose Aggregator for ${key} - Pre-Send: \n${JSON.stringify(fc)}`)
-
             putFirehoseResp = await client.send(fireCommand)
                 .then((res: PutRecordCommandOutput) => {
 
-                    console.info(`Put to Firehose Aggregator result for ${key} - RecordId: ${res.RecordId}, \n${JSON.stringify(res)}`)
+                    console.info(`Put to Firehose Aggregator result for ${key} - RecordId: ${res.RecordId}, \n${JSON.stringify(res.$metadata.httpStatusCode)}`)
+
+                    if (tcc.SelectiveDebug.indexOf('_22,') > -1) console.info(`Put to Firehose Aggregator for ${key} - \n${JSON.stringify(fc)} - ${JSON.stringify(res)}`)
 
                     if (res.$metadata.httpStatusCode === 200)
                     {

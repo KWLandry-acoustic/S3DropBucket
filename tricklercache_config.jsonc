@@ -62,6 +62,15 @@
       "MaxBatchesWarning": 2000,
 
 
+
+      //
+      //   CAUTION:   
+      //               Some of the following Selective Debug options create significant Logging volume and can 
+      //               cause significant Logging Costs in AWS
+      //   CAUTION:
+      // 
+
+
       //Useful for Troubleshooting or monitoring, each Selective Debug turns on a detailed message about 
       //    various steps in the DropBucket Process.
       //Selective Debug 1:  Log the current S3 DropBucket Config 
@@ -85,10 +94,10 @@
       //Selective Debug 19: 
       //Selective Debug 20: Log the final outcome of all DropBox bucket processing 
       //Selective Debug 21: Log the final outcome of all Work Process Bucket processing
-      //Selective Debug 22: Log the payload being sent to the AWS Firehose Aggregator
+      //Selective Debug 22: Log the payload and result of send to Firehose Aggregator
       //Selective Debug 23: 
       //Selective Debug 24: 
-      //Selective Debug 25: Log the Processing of an Aggregate (Firehose Aggregated) file via S3DropBucket
+      //Selective Debug 25: Log the Processing of an Aggregated file (Firehose Aggregated) from the S3DropBucket
       //Selective Debug 26: 
       //Selective Debug 27:
       //Selective Debug 28: 
