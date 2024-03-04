@@ -12,7 +12,6 @@ import {
 import { FirehoseClient, PutRecordCommand, PutRecordCommandInput, PutRecordCommandOutput } from "@aws-sdk/client-firehose"
 
 import { SchedulerClient, ListSchedulesCommand, ListSchedulesCommandInput } from '@aws-sdk/client-scheduler' // ES Modules import
-// const { SchedulerClient, ListSchedulesCommand } = require("@aws-sdk/client-scheduler"); // CommonJS import
 
 import { Handler, S3Event, Context, SQSEvent, SQSRecord, S3EventRecord } from 'aws-lambda'
 
@@ -27,12 +26,6 @@ let testS3Bucket: string
 // testS3Key = "TestData/pura_aggregate_S3DropBucket_Aggregator-6-2024-03-03-06-34-51-2014bbe3-a1a5-3efa-adf8-35d4cbce51c3.json"
 // testS3Bucket = "tricklercache-configs"
 
-
-
-//
-//StreamJSON Package
-//Emits a single line/Property at a time, rather than the complete Object,
-//
 
 // import { JSONParser } from '@streamparser/json'
 // const jsonParser = new JSONParser()
@@ -588,9 +581,9 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
 
             const jsonParser = new JSONParser({
                 numberBufferSize: undefined,        //64, //0, //undefined, // set to 0 to don't buffer.
-                separator: '',                      // separator between object. For example `\n` for nd-js.
                 stringBufferSize: undefined,        //64, //0, //undefined,
-                paths: ['$'],
+                separator: '',                      // separator between object. For example `\n` for nd-js.
+                paths: ['$'],               //ToDo: Possible data transform oppty
                 emitPartialTokens: false // whether to emit tokens mid-parsing.
             })               //, { objectMode: true })
 
@@ -650,7 +643,6 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
                                 if (tcc.SelectiveDebug.indexOf("_2,") > -1) console.info(`Selective Debug 2: Content Stream OnData - Store And Queue Work for ${key} of ${batchCount + 1} Batches of ${Object.values(d).length} records, Result: \n${JSON.stringify(sqwResult)}`)
                                 streamResult = { ...streamResult, "OnDataStoreQueueResult": sqwResult }
 
-                                // console.info(`Another batch ${streamResult}`)
                             }
                         } catch (e)
                         {
@@ -784,46 +776,50 @@ async function putToFirehose (S3Obj: string[], cust: string) {
     // S3DropBucket_Aggregator 
     // S3DropBucket_FireHoseStream
 
-
+    let putFirehoseResp
 
     try
     {
         const u = S3Obj[0]
 
-        Object.assign(u, { "Customer": cust })
-
-        const fc = {
-            DeliveryStreamName: "S3DropBucket_Aggregator",
-            Record: {
-                Data: new TextEncoder().encode(JSON.stringify(u)),
-            },
-        } as PutRecordCommandInput
-
-        const fireCommand = new PutRecordCommand(fc)
-
-        if (tcc.SelectiveDebug.indexOf('_22,') > -1) console.info(`Put to Firehose Aggregator - Pre-Send: \n${JSON.stringify(fc)}`)
+        S3Obj.forEach(async (fo) => {
 
 
-        const putFirehoseResp = await client.send(fireCommand)
-            .then((res: PutRecordCommandOutput) => {
+            Object.assign(fo, { "Customer": cust })
 
-                console.info(`Put to Firehose Aggregator result - RecordId: ${res.RecordId}, \n${JSON.stringify(res)}`)
+            const fc = {
+                DeliveryStreamName: "S3DropBucket_Aggregator",
+                Record: {
+                    Data: new TextEncoder().encode(JSON.stringify(fo)),
+                },
+            } as PutRecordCommandInput
 
-                let fres
-                if (res.$metadata.httpStatusCode === 200)
-                {
-                    'S3ProcessBucketResult":"200"'
-                    fres = { ...res, "PutToFirehoseAggregatorResult": `${res.$metadata.httpStatusCode}` }
-                }
-                else
-                {
-                    fres = { ...res, "PutToFirehoseAggregatorResult": `UnSuccessful Put to Firehose Aggregator` }
-                }
-                return fres
-            })
-            .catch((e) => {
-                console.error(`Exception - Put to Firehose Aggregator (Promise-catch)  \n${e}`)
-            })
+            const fireCommand = new PutRecordCommand(fc)
+
+            if (tcc.SelectiveDebug.indexOf('_22,') > -1) console.info(`Put to Firehose Aggregator - Pre-Send: \n${JSON.stringify(fc)}`)
+
+
+            putFirehoseResp = await client.send(fireCommand)
+                .then((res: PutRecordCommandOutput) => {
+
+                    console.info(`Put to Firehose Aggregator result - RecordId: ${res.RecordId}, \n${JSON.stringify(res)}`)
+
+                    let fres
+                    if (res.$metadata.httpStatusCode === 200)
+                    {
+                        'S3ProcessBucketResult":"200"'
+                        fres = { ...res, "PutToFirehoseAggregatorResult": `${res.$metadata.httpStatusCode}` }
+                    }
+                    else
+                    {
+                        fres = { ...res, "PutToFirehoseAggregatorResult": `UnSuccessful Put to Firehose Aggregator` }
+                    }
+                    return fres
+                })
+                .catch((e) => {
+                    console.error(`Exception - Put to Firehose Aggregator (Promise-catch)  \n${e}`)
+                })
+        })
 
         return putFirehoseResp
 
