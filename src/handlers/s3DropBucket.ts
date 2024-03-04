@@ -508,7 +508,7 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
 
             let s3ContentReadableStream = getS3StreamResult.Body as NodeJS.ReadableStream
 
-            if (custConfig.format.toLowerCase() === 'csv')
+            if (key.indexOf('aggregat') < 0 && custConfig.format.toLowerCase() === 'csv')
             {
                 const csvParser = parse({
                     delimiter: ',',
@@ -516,24 +516,7 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
                     comment: '#',
                     trim: true,
                     skip_records_with_error: true,
-                },
-                )
-
-                const tr = new Transform({ objectMode: true })
-
-                const tr2 = new Transform({
-                    transform (chunk, encoding, callback) {
-                        callback(null, chunk)
-                    },
                 })
-
-                // const transformer = transform((record, callback) => {
-                //     setTimeout(() => {
-                //         callback(null, record.join(' ') + '\n')
-                //     }, 500)
-                // }, {
-                //     parallel: 5
-                // })
 
                 const t = transform(function (data) {
                     // data.push(data.shift())
@@ -604,14 +587,13 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
 
 
             const jsonParser = new JSONParser({
-                numberBufferSize: undefined,       //64, //0, //undefined, // set to 0 to don't buffer.
-                separator: '',            // separator between object. For example `\n` for nd-js.
-                stringBufferSize: undefined,    //64, //0, //undefined,
+                numberBufferSize: undefined,        //64, //0, //undefined, // set to 0 to don't buffer.
+                separator: '',                      // separator between object. For example `\n` for nd-js.
+                stringBufferSize: undefined,        //64, //0, //undefined,
                 paths: ['$'],
                 emitPartialTokens: false // whether to emit tokens mid-parsing.
             })               //, { objectMode: true })
 
-            // const t = new Transform({ objectMode: true })
 
             // s3ContentReadableStream = s3ContentReadableStream.pipe(t).pipe(jsonParser)
             s3ContentReadableStream = s3ContentReadableStream.pipe(jsonParser)
@@ -625,10 +607,6 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
             }
 
             const readStream = await new Promise(async (resolve, reject) => {
-
-                // interface jsonparserOnly { key: number, value: Object }
-                // interface CSVtojsonparser { Buffer: Uint8Array }
-                // type CSVOrJSONParser = jsonparserOnly & CSVtojsonparser
 
                 let d: any
 
@@ -651,9 +629,6 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
 
                         try
                         {
-
-                            // if (custConfig.format.toLowerCase() === 'json') { d = s3Chunk as unknown as { key: number, value: Object } }
-                            // if (custConfig.format.toLowerCase() === 'csv') { d = s3Chunk }
                             d = s3Chunk
 
                             if (tcc.SelectiveDebug.indexOf("_13,") > -1) console.info(`Selective Debug 13 - s3ContentStream OnData - Another chunk (Num of Entries:${Object.values(s3Chunk).length} Recs:${recs} Batch:${batchCount} from ${key} - ${JSON.stringify(d)}`)
@@ -718,18 +693,8 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
                             if (customersConfig.updates && customersConfig.updates.toLowerCase() === 'singular' &&
                                 key.indexOf('aggregate_') < 0)
                             {
-                                //Looks like Amazon Firehose will do the job
-                                //flatten chunks in case it's not a single element
-                                // let l: Object = {}
                                 try 
                                 {
-                                    // d.forEach((i: Object) => {
-                                    //     l = { ...l, ...i }
-                                    // })
-
-                                    // console.log(`Put To Firehose Object: ${JSON.stringify(l)}`)
-
-                                    // const f = await putToFirehose(l, custConfig.Customer)
                                     const f = await putToFirehose(d, custConfig.Customer)
                                     // S3DropBucketAggregate_BFSlE95VRhb_VhNbxLpw1mp_S3DropBucket_FireHoseStream - 2 - 2024-02 - 25 - 20 - 14 - 14 - 13c6a4ee - e529 - 4f19 - 8e45 - c335218922c8.json                                    console.info(`Content Stream OnEnd for (${key}) - Singular Update put to Firehose aggregator pipe. \n${JSON.stringify(f)} \n${batchCount + 1} Batches of ${Object.values(d).length} records - Result: \n${JSON.stringify(streamResult)}`)
 
@@ -744,8 +709,6 @@ async function processS3ObjectContentStream (key: string, bucket: string, custCo
                             }
                             else
                             {
-
-
                                 const updates = Object.entries(d).length
 
                                 const storeQueueResult = await storeAndQueueWork(d, key, custConfig, updates, batchCount)
