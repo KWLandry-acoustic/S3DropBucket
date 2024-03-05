@@ -772,12 +772,21 @@ async function putToFirehose (S3Obj: string[], key: string, cust: string) {
 
             Object.assign(fo, { "Customer": cust })
 
-            const f = Buffer.from(JSON.stringify(fo), "base64")
+            const f1 = JSON.stringify(fo)
+
+            const f2 = Buffer.from(f1, 'utf-8')
+            const f3 = f2.toString('base64')
+
+            const f4 = f2.toString('utf8')
+            const f5 = Buffer.from(f4, "base64")
+
+
+
 
             const fc = {
                 DeliveryStreamName: "S3DropBucket_Aggregator",
                 Record: {
-                    Data: f
+                    Data: f2
                 }
             } as PutRecordCommandInput
 
