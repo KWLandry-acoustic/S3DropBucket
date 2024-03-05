@@ -21,7 +21,7 @@ import fetch, { Headers, RequestInit, Response } from 'node-fetch'
 let testS3Key: string
 let testS3Bucket: string
 // testS3Bucket = "tricklercache-configs"
-// testS3Key = "TestData/pura_2024_02_26T05_53_26_084Z.json",
+// testS3Key = "TestData/pura_2024_02_26T05_53_26_084Z.json"
 // testS3Key = "TestData/visualcrossing_00213.csv"
 // testS3Key = "TestData/pura_2024_02_25T00_00_00_090Z.json"
 // testS3Key = "TestData/pura_aggregate_S3DropBucket_Aggregator-6-2024-03-03-06-34-51-2014bbe3-a1a5-3efa-adf8-35d4cbce51c3.json"
@@ -476,11 +476,24 @@ async function processS3ObjectContentStream (key: string, version: string, bucke
 
     if (tcLogDebug) console.info(`Processing S3 Content Stream for ${key}`)
 
-    processS3Object = await s3.send(new GetObjectCommand({
-        Key: key,
-        Bucket: bucket,
-        VersionId: version
-    })
+    let s3C: GetObjectCommandInput
+    if (version !== '')
+    {
+        s3C = {
+            Key: key,
+            Bucket: bucket,
+            VersionId: version
+        }
+    }
+    else
+    {
+        s3C = {
+            Key: key,
+            Bucket: bucket
+        }
+    }
+
+    processS3Object = await s3.send(new GetObjectCommand(s3C)
     )
         .then(async (getS3StreamResult: GetObjectCommandOutput) => {
 
@@ -541,7 +554,7 @@ async function processS3ObjectContentStream (key: string, version: string, bucke
             /** 
                         //The following are what make up StreamJSON JSONParser but can be broken out to process data more granularly
                         //Might be helpful in future capabilities 
-
+ 
                         const jsonTZParser = new Tokenizer({
                             "stringBufferSize": 64,
                             "numberBufferSize": 64,
@@ -770,23 +783,21 @@ async function putToFirehose (S3Obj: string[], key: string, cust: string) {
     {
         S3Obj.forEach(async (fo) => {
 
-            Object.assign(fo, { "Customer": cust })
+            const f1 = JSON.parse(fo)
 
-            const f1 = JSON.stringify(fo)
+            Object.assign(f1, { "Customer": cust })
 
-            const f2 = Buffer.from(f1, 'utf-8')
-            const f3 = f2.toString('base64')
+            const f = Buffer.from(JSON.stringify(f1), 'utf-8')
 
-            const f4 = f2.toString('utf8')
-            const f5 = Buffer.from(f4, "base64")
-
-
-
+            // const f3 = f2.toString('base64')
+            // const f4 = f2.toString('utf8')
+            // const f5 = Buffer.from(f4, "base64")
+            debugger
 
             const fc = {
                 DeliveryStreamName: "S3DropBucket_Aggregator",
                 Record: {
-                    Data: f2
+                    Data: f
                 }
             } as PutRecordCommandInput
 
