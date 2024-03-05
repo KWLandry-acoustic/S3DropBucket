@@ -20,9 +20,9 @@ import fetch, { Headers, RequestInit, Response } from 'node-fetch'
 
 let testS3Key: string
 let testS3Bucket: string
-// testS3Bucket = "tricklercache-configs"
+testS3Bucket = "tricklercache-configs"
 // testS3Key = "TestData/pura_2024_02_26T05_53_26_084Z.json",
-// testS3Key = "TestData/visualcrossing_00213.csv"
+testS3Key = "TestData/visualcrossing_00213.csv"
 // testS3Key = "TestData/pura_2024_02_25T00_00_00_090Z.json"
 // testS3Key = "TestData/pura_aggregate_S3DropBucket_Aggregator-6-2024-03-03-06-34-51-2014bbe3-a1a5-3efa-adf8-35d4cbce51c3.json"
 
@@ -183,7 +183,6 @@ export interface SQSBatchItemFails {
 //     DeleteResult: string,
 // }
 
-let streamResult = {}
 
 // let streamResult = {
 //     "OnDataStoreQueueResult": {},
@@ -326,6 +325,7 @@ export const s3DropBucketHandler: Handler = async (event: S3Event, context: Cont
 
         //ToDo: Resolve Duplicates Issue - S3 allows Duplicate Object Names but Delete marks all Objects of same Name Deleted. 
         //   Which causes an issue with Key Not Found after an Object of Name A is processed and deleted, then another Object of Name A comes up in a Trigger.
+        debugger
         vid = r.s3.object.versionId ?? ""
         et = r.s3.object.eTag ?? ""
 
@@ -468,6 +468,7 @@ async function processS3ObjectContentStream (key: string, version: string, bucke
     let batchCount = 0
     let chunks: string[] = []
     let processS3Object: {} = {}
+    let streamResult = {}
 
     if (tcLogDebug) console.info(`Processing S3 Content Stream for ${key}`)
 
@@ -478,8 +479,6 @@ async function processS3ObjectContentStream (key: string, version: string, bucke
     })
     )
         .then(async (getS3StreamResult: GetObjectCommandOutput) => {
-
-            if (tcLogDebug) console.info(`Get S3 Object - Object returned ${key}`)
 
             if (getS3StreamResult.$metadata.httpStatusCode != 200)
             {
@@ -903,7 +902,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (event: SQSEvent
         {
             const work = await getS3Work(tqm.workKey, tqm.versionId, "tricklercache-process")
 
-            if (work.length > 0)        //Retreive Contents of the Work File  
+            if (work.length > 0)        //Retrieve Contents of the Work File  
             {
                 postResult = await postToCampaign(work, tqm.custconfig, tqm.updateCount)
 
@@ -1685,7 +1684,6 @@ async function storeAndQueueWork (chunks: string[], s3Key: string, config: custo
     //     })
     // }
 
-    debugger
 
     if (customersConfig.listType.toLowerCase() === 'dbkeyed' ||
         customersConfig.listType.toLowerCase() === 'dbnonkeyed')
@@ -1708,6 +1706,8 @@ async function storeAndQueueWork (chunks: string[], s3Key: string, config: custo
 
 
     if (tcLogDebug) console.info(`Queuing Work for ${s3Key} - ${key}. (Batch ${batch} of ${Object.values(chunks).length} records)`)
+
+    debugger
 
     const AddWorkToS3ProcessBucketResults = await addWorkToS3ProcessStore(xmlRows, key)
     //     {
@@ -1738,7 +1738,6 @@ function convertJSONToXML_RTUpdates (updates: string[], config: customerConfig) 
     // updates.forEach(jo => {
     for (const jo in updates)
     {
-        debugger
 
         const j = JSON.parse(updates[jo])
         r++
@@ -1770,9 +1769,6 @@ function convertJSONToXML_DBUpdates (updates: string[], config: customerConfig) 
 
     try
     {
-        // Object.keys(updates).forEach(jo => {
-        // updates.forEach((jo) => {
-        debugger
         for (const jo in updates)
         {
             r++
@@ -1810,13 +1806,6 @@ function convertJSONToXML_DBUpdates (updates: string[], config: customerConfig) 
                 //Don't need to do anything with DBKey, it's superfluous but documents the keys of the keyed DB
             }
 
-            debugger
-            // Object.entries(j).forEach(function ([key, value]) {
-
-            // for (const i in jo)
-            //    {
-            // console.info(`Record ${r} as ${key}: ${value}`)
-            // Object.entries(j).forEach(([key, value]) => {
             for (const pv in j)
             {
                 xmlRows += `<COLUMN><NAME>${pv}</NAME><VALUE><![CDATA[${j[pv]}]]></VALUE></COLUMN>`
@@ -1903,6 +1892,8 @@ async function addWorkToSQSProcessQueue (config: customerConfig, key: string, ve
     sqsQMsgBody.updateCount = recCount
     sqsQMsgBody.custconfig = config
     sqsQMsgBody.lastQueued = Date.now().toString()
+
+    debugger
 
     const sqsParams = {
         MaxNumberOfMessages: 1,
@@ -2082,21 +2073,23 @@ async function getS3Work (s3Key: string, version: string, bucket: string) {
         VersionId: version
     } as GetObjectCommandInput
 
+    debugger
+
     let work: string = ''
     try
     {
         await s3.send(new GetObjectCommand(getObjectCmd))
             .then(async (getS3Result: GetObjectCommandOutput) => {
                 work = (await getS3Result.Body?.transformToString('utf8')) as string
-                if (tcLogDebug) console.info(`Work Pulled (${work.length} chars): ${s3Key} (versionId: ${vid})`)
+                if (tcLogDebug) console.info(`Work Pulled (${work.length} chars): ${s3Key} (versionId: ${version})`)
             })
     } catch (e)
     {
         const err: string = JSON.stringify(e)
 
         if (err.indexOf('NoSuchKey') > -1)
-            throw new Error(`Exception - Work Not Found on S3 Process Queue (${s3Key} (versionId: ${vid})) Work will not be marked for Retry. \n${e}`)
-        else throw new Error(`Exception - Retrieving Work from S3 Process Queue for ${s3Key} (versionId: ${vid}). \n ${e}`)
+            throw new Error(`Exception - Work Not Found on S3 Process Queue (${s3Key} (versionId: ${version})) Work will not be marked for Retry. \n${e}`)
+        else throw new Error(`Exception - Retrieving Work from S3 Process Queue for ${s3Key} (versionId: ${version}). \n ${e}`)
     }
     return work
 }
@@ -2114,19 +2107,19 @@ async function saveS3Work (s3Key: string, body: string, bucket: string) {
         // ContentLength: Number(`${body.length}`),
     } as GetObjectCommandInput
 
-    let save: string = ''
+    let saveS3: string = ''
     try
     {
         await s3.send(new PutObjectCommand(putObjectCmd))
             .then(async (getS3Result: GetObjectCommandOutput) => {
-                save = (await getS3Result.Body?.transformToString('utf8')) as string
-                if (tcLogDebug) console.info(`Work Saved (${save.length} chars): ${s3Key}`)
+                saveS3 = (await getS3Result.Body?.transformToString('utf8')) as string
+                if (tcLogDebug) console.info(`Work Saved (${saveS3.length} chars): ${s3Key}`)
             })
     } catch (e)
     {
         throw new Error(`Exception - Saving Work for ${s3Key}. \n ${e}`)
     }
-    return save
+    return saveS3
 }
 
 async function deleteS3Object (s3ObjKey: string, version: string, bucket: string) {

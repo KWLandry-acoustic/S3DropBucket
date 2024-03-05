@@ -29,8 +29,8 @@ Resources:
       Runtime: nodejs18.x
       Architectures:
       - x86_64
-      MemorySize: 624
-      Timeout: 899
+      # MemorySize: 624
+      # Timeout: 899
       Policies:
       - S3ReadPolicy:
           BucketName:
@@ -68,8 +68,8 @@ Resources:
       Runtime: nodejs18.x
       Architectures:
       - x86_64
-      MemorySize: 624
-      Timeout: 899
+      # MemorySize: 624
+      # Timeout: 899
       Policies:
       - S3ReadPolicy:
           BucketName:
@@ -107,8 +107,8 @@ Resources:
       Runtime: nodejs18.x
       Architectures:
       - x86_64
-      MemorySize: 624
-      Timeout: 899
+      # MemorySize: 624
+      # Timeout: 899
       Policies:
       - S3ReadPolicy:
           BucketName:
