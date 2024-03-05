@@ -29,8 +29,8 @@ Resources:
       Runtime: nodejs18.x
       Architectures:
       - x86_64
-      # MemorySize: 624
-      # Timeout: 899
+      MemorySize: 752   #Set these in the Interface
+      Timeout: 330       #Set these in the Interface //5 mins 30 seconds
       Policies:
       - S3ReadPolicy:
           BucketName:
@@ -68,8 +68,8 @@ Resources:
       Runtime: nodejs18.x
       Architectures:
       - x86_64
-      # MemorySize: 624
-      # Timeout: 899
+      MemorySize: 128   #Set these in the Interface
+      Timeout: 330       #Set these in the Interface //5 mins 30 seconds
       Policies:
       - S3ReadPolicy:
           BucketName:
@@ -107,8 +107,8 @@ Resources:
       Runtime: nodejs18.x
       Architectures:
       - x86_64
-      # MemorySize: 624
-      # Timeout: 899
+      MemorySize: 128   #Set these in the Interface
+      Timeout: 330       #Set these in the Interface //5 mins 30 seconds
       Policies:
       - S3ReadPolicy:
           BucketName:

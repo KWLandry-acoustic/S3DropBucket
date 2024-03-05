@@ -67,10 +67,9 @@
       //   CAUTION:   
       //               Some of the following Selective Debug options create significant Logging volume and can 
       //               cause significant Logging Costs in AWS
+      //               Be Sure to remove as soon as possible after the Logging needed has been achieved
       //   CAUTION:
       // 
-
-
       //Useful for Troubleshooting or monitoring, each Selective Debug turns on a detailed message about 
       //    various steps in the DropBucket Process.
       //Selective Debug 1:  Log the current S3 DropBucket Config 

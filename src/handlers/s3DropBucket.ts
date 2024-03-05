@@ -783,15 +783,12 @@ async function putToFirehose (S3Obj: string[], key: string, cust: string) {
     {
         S3Obj.forEach(async (fo) => {
 
-            const f1 = JSON.parse(fo)
+            const j = JSON.parse(fo)
 
-            Object.assign(f1, { "Customer": cust })
+            Object.assign(j, { "Customer": cust })
 
-            const f = Buffer.from(JSON.stringify(f1), 'utf-8')
+            const f = Buffer.from(JSON.stringify(j), 'utf-8')
 
-            // const f3 = f2.toString('base64')
-            // const f4 = f2.toString('utf8')
-            // const f5 = Buffer.from(f4, "base64")
             debugger
 
             const fc = {
