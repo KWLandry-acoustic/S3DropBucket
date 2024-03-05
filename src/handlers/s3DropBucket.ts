@@ -232,6 +232,11 @@ let tcSelectiveDebug   //call out selective debug as an option
 
 export const s3DropBucketHandler: Handler = async (event: S3Event, context: Context) => {
 
+
+
+    if (event.Records[0].s3.object.key.indexOf('AggregationError') > -1) return ""
+
+
     let processS3ObjectStreamResolution: string = ""
     let delResultCode
 
@@ -320,7 +325,6 @@ export const s3DropBucketHandler: Handler = async (event: S3Event, context: Cont
             console.warn(`File Key ${key} is not within focus restricted by the configured PrefixFocus ${tcc.prefixFocus}`)
             return
         }
-
 
 
         //ToDo: Resolve Duplicates Issue - S3 allows Duplicate Object Names but Delete marks all Objects of same Name Deleted. 
