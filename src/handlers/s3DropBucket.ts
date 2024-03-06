@@ -58,7 +58,7 @@ let testS3Bucket: string
 // testS3Key = "TestData/pura_aggregate_S3DropBucket_Aggregator-7-2024-03-05-20-07-28-ae512353-e614-348c-86ac-43aa1236f117.json"
 
 
-
+// let csvChunks: string[]
 
 let vid: string
 let et: string
@@ -338,7 +338,7 @@ export const s3DropBucketHandler: Handler = async (event: S3Event, context: Cont
         try
         {
             customersConfig = await getCustomerConfig(key)
-            console.info(`Processing inbound data for ${customersConfig.Customer} Object: ${key} \nS3 Object Details: VID: ${vid}, ETag: ${et}`)
+            console.info(`Processing inbound data for ${customersConfig.Customer} - ${key} \nS3 Object Details: VID: ${vid}, ETag: ${et}`)
         }
         catch (e)
         {
@@ -522,9 +522,9 @@ async function processS3ObjectContentStream (key: string, version: string, bucke
                 })
 
                 const t = transform(function (data) {
-                    // data.push(data.shift())
-                    //  
-                    return JSON.stringify(data)
+                    debugger
+                    // csvChunks = { ...csvChunks, ...data }
+                    return JSON.stringify(data) + '\n'
                 })
 
                 s3ContentReadableStream = s3ContentReadableStream.pipe(csvParser).pipe(t)
@@ -643,7 +643,7 @@ async function processS3ObjectContentStream (key: string, version: string, bucke
                     .on('error', async function (err: string) {
                         const errMessage = `An error has stopped Content Parsing at record ${recs} for s3 object ${key}.\n${err}`
                         console.error(errMessage)
-
+                        debugger
                         chunks = []
                         batchCount = 0
                         recs = 0
@@ -676,11 +676,10 @@ async function processS3ObjectContentStream (key: string, version: string, bucke
 
                                 debugger
 
-                                while (i != 99)
+                                while (updates.length < 99)
                                 {
                                     const c = chunks.pop() ?? ""
                                     updates.push(c)
-                                    i++
                                 }
 
                                 sqwResult = putToStoreQueue(updates, batchCount, key, custConfig)
@@ -696,7 +695,7 @@ async function processS3ObjectContentStream (key: string, version: string, bucke
 
                             //     const sqwResult = await storeAndQueueWork(chunks, key, custConfig, updCount, batchCount)
 
-                            chunks = []
+                            // chunks = []
 
                             if (tcc.SelectiveDebug.indexOf("_2,") > -1) console.info(`Selective Debug 2: Content Stream OnData - Store And Queue Work for ${key} of ${batchCount + 1} Batches of ${Object.values(d).length} records, Result: \n${JSON.stringify(sqwResult)}`)
                             streamResult = { ...streamResult, "OnDataStoreQueueResult": sqwResult }
