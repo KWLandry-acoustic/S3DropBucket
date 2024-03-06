@@ -18,20 +18,12 @@ import { Handler, S3Event, Context, SQSEvent, SQSRecord, S3EventRecord } from 'a
 import fetch, { Headers, RequestInit, Response } from 'node-fetch'
 
 
-let testS3Key: string
-let testS3Bucket: string
-// testS3Bucket = "tricklercache-configs"
-// testS3Key = "TestData/pura_2024_02_26T05_53_26_084Z.json"
-// testS3Key = "TestData/visualcrossing_00213.csv"
-// testS3Key = "TestData/pura_2024_02_25T00_00_00_090Z.json"
-// testS3Key = "TestData/pura_aggregate_S3DropBucket_Aggregator-7-2024-03-05-20-07-28-ae512353-e614-348c-86ac-43aa1236f117.json"
-
-
 // import { JSONParser } from '@streamparser/json'
 // const jsonParser = new JSONParser()
 //json-node Stream compatible package
 import { JSONParser, Tokenizer, TokenParser } from '@streamparser/json-node'
 // import JSONParserTransform from '@streamparser/json-node/jsonparser.js'
+
 
 import { parse } from 'csv-parse'
 
@@ -50,12 +42,25 @@ import {
     SendMessageCommandOutput,
 } from '@aws-sdk/client-sqs'
 
-
-
 import sftpClient, { ListFilterFunction } from 'ssh2-sftp-client'
 
 //For when needed to reference Lambda execution environment /tmp folder 
 // import { ReadStream, close } from 'fs'
+
+
+
+let testS3Key: string
+let testS3Bucket: string
+// testS3Bucket = "tricklercache-configs"
+// testS3Key = "TestData/pura_2024_02_26T05_53_26_084Z.json"
+// testS3Key = "TestData/visualcrossing_00213.csv"
+// testS3Key = "TestData/pura_2024_02_25T00_00_00_090Z.json"
+// testS3Key = "TestData/pura_aggregate_S3DropBucket_Aggregator-7-2024-03-05-20-07-28-ae512353-e614-348c-86ac-43aa1236f117.json"
+
+
+
+
+
 
 let vid: string
 let et: string
@@ -553,6 +558,16 @@ async function processS3ObjectContentStream (key: string, version: string, bucke
             }
 
 
+            //Placeholder - Everything should be JSON by the time we get here 
+            if (custConfig.format.toLowerCase() === 'json')
+            {
+            }
+
+            //Options to Handling Large JSON Files
+            // Send the JSON objects formatted without newlines and use a newline as the delimiter.
+            // Send the JSON objects concatenated with a record separator control character as the delimiter.
+            // Send the JSON objects concatenated with no delimiters and rely on a streaming parser to extract them.
+            // Send the JSON objects prefixed with their length and rely on a streaming parser to extract them.
 
             /** 
                         //The following are what make up StreamJSON JSONParser but can be broken out to process data more granularly
@@ -580,10 +595,6 @@ async function processS3ObjectContentStream (key: string, version: string, bucke
             */
 
 
-            //Placeholder - Everything should be JSON by the time we get here 
-            if (custConfig.format.toLowerCase() === 'json')
-            {
-            }
 
 
             // {
@@ -597,12 +608,15 @@ async function processS3ObjectContentStream (key: string, version: string, bucke
 
 
             const jsonParser = new JSONParser({
-                numberBufferSize: 64,        //64, //0, //undefined, // set to 0 to don't buffer.
-                stringBufferSize: 64,        //64, //0, //undefined,
-                separator: '',                      // separator between object. For example `\n` for nd-js.
-                paths: ['$'],               //ToDo: Possible data transform oppty
-                emitPartialTokens: false // whether to emit tokens mid-parsing.
+                // numberBufferSize: 64,        //64, //0, //undefined, // set to 0 to don't buffer.
+                stringBufferSize: undefined,        //64, //0, //undefined,
+                separator: '',               // separator between object. For example `\n` for nd-js.
+                paths: ['$.*'],              //ToDo: Possible data transform oppty
+                keepStack: false,
+                emitPartialTokens: false    // whether to emit tokens mid-parsing.
             })               //, { objectMode: true })
+
+
 
 
             // s3ContentReadableStream = s3ContentReadableStream.pipe(t).pipe(jsonParser)
