@@ -51,13 +51,11 @@ import sftpClient, { ListFilterFunction } from 'ssh2-sftp-client'
 
 let testS3Key: string
 let testS3Bucket: string
-// testS3Bucket = "tricklercache-configs"
+testS3Bucket = "tricklercache-configs"
 // testS3Key = "TestData/pura_2024_02_26T05_53_26_084Z.json"
 // testS3Key = "TestData/visualcrossing_00213.csv"
 // testS3Key = "TestData/pura_2024_02_25T00_00_00_090Z.json"
-// testS3Key = "TestData/pura_aggregate_S3DropBucket_Aggregator-7-2024-03-05-20-07-28-ae512353-e614-348c-86ac-43aa1236f117.json"
-
-
+testS3Key = "TestData/pura_aggregate_S3DropBucket_Aggregator-7-2024-03-05-20-07-28-ae512353-e614-348c-86ac-43aa1236f117.json"
 
 
 
@@ -73,7 +71,7 @@ export type sqsObject = {
     objectKey: string
 }
 
-//ToDo: Make AWS Region Config Option for portabilty/infrastruct dedication
+//ToDo: Make AWS Region Config Option for portability/infrastruct dedication
 const s3 = new S3Client({ region: 'us-east-1' })
 
 const SFTPClient = new sftpClient()
@@ -610,8 +608,8 @@ async function processS3ObjectContentStream (key: string, version: string, bucke
             const jsonParser = new JSONParser({
                 // numberBufferSize: 64,        //64, //0, //undefined, // set to 0 to don't buffer.
                 stringBufferSize: undefined,        //64, //0, //undefined,
-                separator: '',               // separator between object. For example `\n` for nd-js.
-                paths: ['$.*'],              //ToDo: Possible data transform oppty
+                separator: '\n',               // separator between object. For example `\n` for nd-js.
+                paths: ['$'],              //ToDo: Possible data transform oppty
                 keepStack: false,
                 emitPartialTokens: false    // whether to emit tokens mid-parsing.
             })               //, { objectMode: true })
@@ -642,7 +640,7 @@ async function processS3ObjectContentStream (key: string, version: string, bucke
                         throw new Error(`Error on Readable Stream for s3DropBucket Object ${key}. \nError Message: ${errMessage}`)
                         // reject(streamResult)
                     })
-                    .on('data', async function (s3Chunk: { key: string, value: object }) {
+                    .on('data', async function (s3Chunk: { key: string, parent: object, stack: object, value: object }) {
                         recs++
 
                         try
@@ -652,6 +650,8 @@ async function processS3ObjectContentStream (key: string, version: string, bucke
                             d = JSON.stringify(s3Chunk.value)
 
                             if (tcc.SelectiveDebug.indexOf("_13,") > -1) console.info(`Selective Debug 13 - s3ContentStream OnData - Another chunk (Num of Entries:${Object.values(s3Chunk).length} Recs:${recs} Batch:${batchCount} from ${key} - ${d}`)
+
+                            debugger
 
                             chunks.push(d)
 
@@ -756,6 +756,8 @@ async function processS3ObjectContentStream (key: string, version: string, bucke
                             else
                             {
                                 const updates = Object.entries(d).length
+
+                                debugger
 
                                 const storeQueueResult = await storeAndQueueWork(d, key, custConfig, updates, batchCount)
                                 // "{\"AddWorkToS3ProcessBucketResults\":{\"AddWorkToS3ProcessBucket\":\"Wrote Work File (process_0_pura_2024_01_22T18_02_46_119Z_csv.xml) to S3 Processing Bucket (Result 200)\",\"S3ProcessBucketResult\":\"200\"},\"AddWorkToSQSProcessQueueResults\":{\"sqsWriteResult\":\"200\",\"workQueuedSuccess\":true,\"SQSSendResult\":\"{\\\"$metadata\\\":{\\\"httpStatusCode\\\":200,\\\"requestId\\\":\\\"e70fba06-94f2-5608-b104-e42dc9574636\\\",\\\"attempts\\\":1,\\\"totalRetryDelay\\\":0},\\\"MD5OfMessageAttributes\\\":\\\"0bca0dfda87c206313963daab8ef354a\\\",\\\"MD5OfMessageBody\\\":\\\"940f4ed5927275bc93fc945e63943820\\\",\\\"MessageId\\\":\\\"cf025cb3-dce3-4564-89a5-23dcae86dd42\\\"}\"}}"
