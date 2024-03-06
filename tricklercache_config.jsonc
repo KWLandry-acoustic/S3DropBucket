@@ -13,7 +13,9 @@
       "s3DropBucketWorkBucket": "tricklercache-process",
 
       //SQS Queue for this deployment of the Lambda function
-      "s3DropBucketWorkQueue": "tricklercacheQueue",
+      // "s3DropBucketWorkQueue": "tricklercacheQueue",
+      "s3DropBucketWorkQueue": "https://sqs.us-east-1.amazonaws.com/777957353822/tricklercacheQueue",
+
 
       //Quiesce Processing of the S3 Drop Bucket (Customer Facing Bucket for new Work) 
       "DropBucketQuiesce": false,
