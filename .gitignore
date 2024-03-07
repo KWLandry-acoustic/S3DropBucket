@@ -236,3 +236,5 @@ tricklercache_config.json.notes
 scratchTests/src/main.ts
 scratchTests/out/main.js.map
 scratchTests/out/main.js
+.todo
+

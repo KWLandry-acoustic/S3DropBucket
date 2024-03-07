@@ -2,19 +2,32 @@ Future:
   ToDo: Periodic URL call - pull data - VisualCrossing Weather Data
     Notes: Using AWS Example - 
 
-  ToDo: Look into using AWS Transfer Family Solution (SFTP, et. al.) 
-  ToDo: Extract Data from the SFTP Download folder 
+  ☐ ToDo: Look into using AWS Transfer Family Solution (SFTP, et. al.) @created(24-03-06 20:51)
+  ☐ ToDo: Extract Data from the SFTP Download folder @created(24-03-06 20:51)
+  ☐ ToDo: Add UnZip capability @created(24-02-14 12:12) @started(24-02-14 12:12)
 
 
 Documentation DropBucket: 
   ToDo: Word Template
 
 Documentation Data Cookbook - Ingesting and Transforming Data using S3 DropBucket and other methods:
-  ToDo: Word Template
+  ✔ ToDo: Word Template @created(24-03-06 20:53) @done(24-03-06 20:53)
+  ToDo: OPs Chapter
+  ToDo: Troubleshooting Chapter 
+  ToDo: Core Setup/Configuration Options 
+  ToDo: Customer Configuration Options
+  ToDo: Helpful AWS CLI Commands
 
 DropBucket S3 Processor: 
+  ☐ ToDo: Confirm Relational Table update is correct/works @created(24-03-06 20:49)
+  ☐ ToDo: Confirm Keyed DB update is correct/works @created(24-03-06 20:49)
+  ☐ ToDo: Confirm NonKeyed DB update is correct/works @created(24-03-06 20:49)
 
-  ☐ Debug: Unknown application error occurred @created(24-03-06 11:45)
+  ☐ ToDo: Fix messaging for Firehose results @created(24-03-06 17:45)
+
+  ☐ Debug: fix file naming 1_1 for Recs and Batch @created(24-03-06 17:44)
+
+  ✔ Debug: Unknown application error occurred @created(24-03-06 11:45) @done(24-03-06 20:49)
 
   ☐ Debug: S3 Event delivered to Lambda but Lambda then reports File Key Not Found.... @created(24-01-31 12:35)
     Turns out S3 allows duplicate Objects without means to delete a specific Object (ETag and Version not working well at all) 
@@ -38,8 +51,6 @@ DropBucket S3 Processor:
       ☐ The number of Updates in this batch Exceeds Max Row Updates allowed 101 in the Customers Config", @created(24-02-02 13:47)
         ☐ *Can see "Unhandled" in Logs* @created(24-02-02 13:47)
 
-
-  ☐ ToDo: Add UnZip capability @created(24-02-14 12:12) @started(24-02-14 12:12)
 
   ☐ ToDo: Add JSON Path to Map capability for JSON files in DropBucket @created(24-01-31 12:55) @started(24-02-14 12:12)
   
