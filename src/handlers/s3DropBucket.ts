@@ -52,10 +52,10 @@ import sftpClient, { ListFilterFunction } from 'ssh2-sftp-client'
 let testS3Key: string
 let testS3Bucket: string
 testS3Bucket = "tricklercache-configs"
-// testS3Key = "TestData/pura_2024_02_26T05_53_26_084Z.json"
+testS3Key = "TestData/pura_2024_02_26T05_53_26_084Z.json"
 // testS3Key = "TestData/visualcrossing_00213.csv"
 // testS3Key = "TestData/pura_2024_02_25T00_00_00_090Z.json"
-testS3Key = "TestData/pura_aggregate_S3DropBucket_Aggregator-7-2024-03-05-20-07-28-ae512353-e614-348c-86ac-43aa1236f117.json"
+// testS3Key = "TestData/pura_aggregate_S3DropBucket_Aggregator-7-2024-03-05-20-07-28-ae512353-e614-348c-86ac-43aa1236f117.json"
 
 
 let vid: string
@@ -696,52 +696,45 @@ async function processS3ObjectContentStream (key: string, version: string, bucke
 
                     .on('end', async function () {
 
-                        // const d = chunks
+                        if (recs < 1 && chunks.length < 1)
+                        {
+                            streamResult = {
+                                ...streamResult, "Exception - ": `Exception - No records returned from parsing file. Check the content as well as the configured file format (${custConfig.format}) matches the content of the file.`
+                            }
+                            // console.error(`Exception - ${JSON.stringify(streamResult)}`)
+                            throw new Error(`Exception - onEnd ${JSON.stringify(streamResult)}`)
+                        }
 
+                        let sqwResult
                         try
                         {
-                            let sqwResult
-                            if (chunks.length > 0)
+                            if (chunks.length > 0 &&
+                                custConfig.format.toLowerCase() !== 'singular')
                             {
                                 batchCount++
+                                recs = chunks.length
                                 sqwResult = await storeAndQueueWork(chunks, key, custConfig, chunks.length, batchCount)
 
                                 // sqwResult = putToStoreQueue(chunks, batchCount, key, custConfig)
                                 streamResult = { ...streamResult, "OnEndStoreQueueResult": sqwResult }
                             }
 
-                            const streamEndResult = `S3 Content Stream Ended for ${key}. Processed ${recs} records as ${batchCount} batches.`
-                            // "S3 Content Stream Ended for pura_2024_01_22T18_02_45_204Z.csv. Processed 33 records as 1 batches."
-                            // console.info(`OnEnd - Stream End Result: ${streamEndResult}`)
-                            streamResult = {
-                                ...streamResult, "OnEnd_StreamEndResult": streamEndResult
-                            }
-
-                            if (recs < 1 && Object.entries(chunks).length < 1)
-                            {
-                                streamResult = {
-                                    ...streamResult, "Exception - ": `Exception - No records returned from parsing file. Check the content as well as the configured file format (${custConfig.format}) matches the content of the file.`
-                                }
-                                console.error(`Exception - ${JSON.stringify(streamResult)}`)
-                                throw new Error(`Exception - ${streamResult}`)
-                            }
-
-                            if (tcc.SelectiveDebug.indexOf('_99,') > -1) saveSampleJSON(JSON.stringify(chunks))
-
                             debugger
 
                             //Next Process Step is Queue Work or Aggregate Small single Update files to improve performance?
-                            if (customersConfig.updates &&
-                                customersConfig.updates.toLowerCase() === 'singular' &&
+                            if (chunks.length > 0 &&
+                                custConfig.updates.toLowerCase() === 'singular' &&
                                 key.indexOf('Aggregator') < 0)
                             {
+                                batchCount++
                                 try 
                                 {
                                     const f = await putToFirehose(chunks, key, custConfig.Customer)
-                                    // S3DropBucketAggregate_BFSlE95VRhb_VhNbxLpw1mp_S3DropBucket_FireHoseStream - 2 - 2024-02 - 25 - 20 - 14 - 14 - 13c6a4ee - e529 - 4f19 - 8e45 - c335218922c8.json                                    console.info(`Content Stream OnEnd for (${key}) - Singular Update put to Firehose aggregator pipe. \n${JSON.stringify(f)} \n${batchCount + 1} Batches of ${Object.values(d).length} records - Result: \n${JSON.stringify(streamResult)}`)
+                                    // S3DropBucketAggregate_BFSlE95VRhb_VhNbxLpw1mp_S3DropBucket_FireHoseStream - 2 - 2024-02 - 25 - 20 - 14 - 14 - 13c6a4ee - e529 - 4f19 - 8e45 - c335218922c8.json                                    
+                                    console.info(`Content Stream OnEnd for (${key}) - Singular Update put to Firehose aggregator pipe. \n${JSON.stringify(f)} \n${batchCount} Batches of ${chunks.length} records - Result: \n${JSON.stringify(streamResult)}`)
 
                                     streamResult = {
-                                        ...streamResult, "OnEnd_PutToFireHoseAggregator": `${JSON.stringify(f)}`
+                                        ...streamResult, "OnEnd_PutToFireHoseAggregator": `${chunks.length} Records with Result: ${JSON.stringify(f)}`
                                     }
 
                                 } catch (e)
@@ -749,26 +742,37 @@ async function processS3ObjectContentStream (key: string, version: string, bucke
                                     console.error(`Exception - PutToFirehose Call - \n${e}`)
                                 }
                             }
-                            else
-                            {
-                                const updates = chunks.length
+                            // else
+                            // {
+                            //     const updates = chunks.length
 
-                                debugger
+                            //     debugger
 
-                                const storeQueueResult = await storeAndQueueWork(chunks, key, custConfig, updates, batchCount)
-                                // "{\"AddWorkToS3ProcessBucketResults\":{\"AddWorkToS3ProcessBucket\":\"Wrote Work File (process_0_pura_2024_01_22T18_02_46_119Z_csv.xml) to S3 Processing Bucket (Result 200)\",\"S3ProcessBucketResult\":\"200\"},\"AddWorkToSQSProcessQueueResults\":{\"sqsWriteResult\":\"200\",\"workQueuedSuccess\":true,\"SQSSendResult\":\"{\\\"$metadata\\\":{\\\"httpStatusCode\\\":200,\\\"requestId\\\":\\\"e70fba06-94f2-5608-b104-e42dc9574636\\\",\\\"attempts\\\":1,\\\"totalRetryDelay\\\":0},\\\"MD5OfMessageAttributes\\\":\\\"0bca0dfda87c206313963daab8ef354a\\\",\\\"MD5OfMessageBody\\\":\\\"940f4ed5927275bc93fc945e63943820\\\",\\\"MessageId\\\":\\\"cf025cb3-dce3-4564-89a5-23dcae86dd42\\\"}\"}}"
+                            //     const storeQueueResult = await storeAndQueueWork(chunks, key, custConfig, updates, batchCount)
+                            //     // "{\"AddWorkToS3ProcessBucketResults\":{\"AddWorkToS3ProcessBucket\":\"Wrote Work File (process_0_pura_2024_01_22T18_02_46_119Z_csv.xml) to S3 Processing Bucket (Result 200)\",\"S3ProcessBucketResult\":\"200\"},\"AddWorkToSQSProcessQueueResults\":{\"sqsWriteResult\":\"200\",\"workQueuedSuccess\":true,\"SQSSendResult\":\"{\\\"$metadata\\\":{\\\"httpStatusCode\\\":200,\\\"requestId\\\":\\\"e70fba06-94f2-5608-b104-e42dc9574636\\\",\\\"attempts\\\":1,\\\"totalRetryDelay\\\":0},\\\"MD5OfMessageAttributes\\\":\\\"0bca0dfda87c206313963daab8ef354a\\\",\\\"MD5OfMessageBody\\\":\\\"940f4ed5927275bc93fc945e63943820\\\",\\\"MessageId\\\":\\\"cf025cb3-dce3-4564-89a5-23dcae86dd42\\\"}\"}}"
 
-                                streamResult = {
-                                    ...streamResult, "OnEnd_StoreQueueResult": storeQueueResult
-                                }
-                            }
+                            //     streamResult = {
+                            //         ...streamResult, "OnEnd_StoreQueueResult": storeQueueResult
+                            //     }
+                            // }
                         } catch (e)
                         {
                             console.error(`Exception - ReadStream OnEnd Processing - \n${e}`)
                         }
 
+
+
+                        if (tcc.SelectiveDebug.indexOf('_99,') > -1) saveSampleJSON(JSON.stringify(chunks))
+
                         if (tcc.SelectiveDebug.indexOf("_2,") > -1) console.info(`Selective Debug 2: Content Stream OnEnd for (${key}) - Store and Queue Work of ${batchCount + 1} Batches of ${Object.values(d).length} records - Result: \n${JSON.stringify(streamResult)}`)
-                        // }
+
+                        const streamEndResult = `S3 Content Stream Ended for ${key}. Processed ${recs} records as ${batchCount} batches.`
+                        // "S3 Content Stream Ended for pura_2024_01_22T18_02_45_204Z.csv. Processed 33 records as 1 batches."
+                        // console.info(`OnEnd - Stream End Result: ${streamEndResult}`)
+                        streamResult = {
+                            ...streamResult, "OnEnd_StreamEndResult": streamEndResult
+                        }
+
 
                         chunks = []
                         batchCount = 0
