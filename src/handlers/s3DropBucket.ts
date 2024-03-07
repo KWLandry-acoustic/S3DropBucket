@@ -51,14 +51,12 @@ import sftpClient, { ListFilterFunction } from 'ssh2-sftp-client'
 
 let testS3Key: string
 let testS3Bucket: string
-// testS3Bucket = "tricklercache-configs"
+testS3Bucket = "tricklercache-configs"
 // testS3Key = "TestData/pura_2024_02_26T05_53_26_084Z.json"
 // testS3Key = "TestData/visualcrossing_00213.csv"
 // testS3Key = "TestData/pura_2024_02_25T00_00_00_090Z.json"
-// testS3Key = "TestData/pura_aggregate_S3DropBucket_Aggregator-7-2024-03-05-20-07-28-ae512353-e614-348c-86ac-43aa1236f117.json"
+testS3Key = "TestData/pura_aggregate_S3DropBucket_Aggregator-7-2024-03-05-20-07-28-ae512353-e614-348c-86ac-43aa1236f117.json"
 
-
-// let csvChunks: string[]
 
 let vid: string
 let et: string
@@ -258,11 +256,11 @@ export const s3DropBucketHandler: Handler = async (event: S3Event, context: Cont
     if (tcc.SelectiveDebug.indexOf("_9,") > -1) console.info(`Selective Debug 9 - Process Environment Vars: ${JSON.stringify(process.env)}`)
 
 
-    if (event.Records[0].s3.object.key.indexOf('aggregate_') > -1)
+    if (event.Records[0].s3.object.key.indexOf('Aggregator') > -1)
     {
         // pura_aggregate_S3DropBucket_Aggregator-3-2024-02-27-22-42-50-894dede9-dca4-36f7-b621-e0ea2b80bef2.json
         // if (tcc.SelectiveDebug.indexOf("_25,") > -1) console.info(`Selective Debug 25 - Aggregate File ${event.Records}`)
-        console.info(`Processing an Aggregate File ${event.Records[0].s3.object.key}`)
+        console.info(`Processing an Aggregated File ${event.Records[0].s3.object.key}`)
     }
 
 
@@ -282,6 +280,12 @@ export const s3DropBucketHandler: Handler = async (event: S3Event, context: Cont
             event.Records[0].s3.object.key = await getAnS3ObjectforTesting(event.Records[0].s3.bucket.name) ?? ""
         }
         localTesting = true
+    }
+    else
+    {
+        testS3Key = ''
+        testS3Bucket = ''
+        localTesting = false
     }
 
 
@@ -664,7 +668,7 @@ async function processS3ObjectContentStream (key: string, version: string, bucke
                             if (chunks.length > 98)
                             {
                                 batchCount++
-                                debugger
+
                                 const updates: string[] = []
 
                                 while (chunks.length > 0 && updates.length < 100)
@@ -677,6 +681,7 @@ async function processS3ObjectContentStream (key: string, version: string, bucke
 
                                 sqwResult = await storeAndQueueWork(updates, key, custConfig, updates.length, batchCount)
                                 // sqwResult = putToStoreQueue(updates, batchCount, key, custConfig)
+                                debugger
                             }
 
                             if (tcc.SelectiveDebug.indexOf("_2,") > -1) console.info(`Selective Debug 2: Content Stream OnData - Store And Queue Work for ${key} of ${batchCount + 1} Batches of ${Object.values(d).length} records, Result: \n${JSON.stringify(sqwResult)}`)
@@ -723,13 +728,12 @@ async function processS3ObjectContentStream (key: string, version: string, bucke
 
                             if (tcc.SelectiveDebug.indexOf('_99,') > -1) saveSampleJSON(JSON.stringify(chunks))
 
-                            //If Singular updates config 
-                            //  add this inbound update to a .partial file
-                            // if this update is the 99th update to that file, delete from .partial bucket and write to s3DropBucket 
+                            debugger
 
+                            //Next Process Step is Queue Work or Aggregate Small single Update files to improve performance?
                             if (customersConfig.updates &&
                                 customersConfig.updates.toLowerCase() === 'singular' &&
-                                key.indexOf('aggregate_') < 0)
+                                key.indexOf('Aggregator') < 0)
                             {
                                 try 
                                 {
@@ -747,7 +751,7 @@ async function processS3ObjectContentStream (key: string, version: string, bucke
                             }
                             else
                             {
-                                const updates = Object.entries(chunks).length
+                                const updates = chunks.length
 
                                 debugger
 
@@ -877,6 +881,7 @@ async function putToFirehose (S3Obj: string[], key: string, cust: string) {
  */
 export const S3DropBucketQueueProcessorHandler: Handler = async (event: SQSEvent, context: Context) => {
 
+    //Populate Config Options in process.env as a means of Caching the config across invocations occurring within 15 secs of each other.
     if (
         process.env.ProcessQueueVisibilityTimeout === undefined ||
         process.env.ProcessQueueVisibilityTimeout === '' ||
@@ -936,10 +941,6 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (event: SQSEvent
 
     if (tcc.SelectiveDebug.indexOf("_4,") > -1) console.info(`Selective Debug 4 - Received ${event.Records.length} Work Queue Records. Records are: \n${JSON.stringify(event)}`)
 
-    // event.Records.forEach((i) => {
-    //     sqsBatchFail.batchItemFailures.push({ itemIdentifier: i.messageId })
-    // })
-
     //Empty BatchFail array 
     sqsBatchFail.batchItemFailures.forEach(() => {
         sqsBatchFail.batchItemFailures.pop()
@@ -954,11 +955,20 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (event: SQSEvent
         // tqm.workKey = JSON.parse(q.body).workKey
 
 
-        //When Testing - get some actual work queued
+        //When Testing (Launch config has pre-stored payload) - get some actual work queued
         if (tqm.workKey === 'process_2_pura_2023_10_27T15_11_40_732Z.csv')
         {
             tqm.workKey = await getAnS3ObjectforTesting(tcc.s3DropBucketWorkBucket!) ?? ""
+            localTesting = true
         }
+        else
+        {
+            testS3Key = ''
+            testS3Bucket = ''
+            localTesting = false
+        }
+
+
 
         console.info(`Processing Work off the Queue - ${tqm.workKey}  (versionId: ${tqm.versionId})`)
         if (tcc.SelectiveDebug.indexOf("_11,") > -1) console.info(`Selective Debug 11 - SQS Events - Processing Batch Item ${JSON.stringify(q)}`)
@@ -1876,7 +1886,6 @@ function convertJSONToXML_DBUpdates (updates: string[], config: customerConfig) 
 
                 xmlRows += `<SYNC_FIELDS>`
                 lk.forEach(k => {
-                    debugger
                     k = k.trim()
                     const sf = `<SYNC_FIELD><NAME>${k}</NAME><VALUE><![CDATA[${j[k]}]]></VALUE></SYNC_FIELD>`
                     xmlRows += sf
