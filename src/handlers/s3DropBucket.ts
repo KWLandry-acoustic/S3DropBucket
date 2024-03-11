@@ -54,10 +54,10 @@ import { freemem } from 'os'
 let testS3Key: string
 let testS3Bucket: string
 testS3Bucket = "tricklercache-configs"
-testS3Key = "TestData/pura_2024_02_26T05_53_26_084Z.json"
 // testS3Key = "TestData/visualcrossing_00213.csv"
+// testS3Key = "TestData/pura_2024_02_26T05_53_26_084Z.json"
 // testS3Key = "TestData/pura_2024_02_25T00_00_00_090Z.json"
-// testS3Key = "TestData/pura_aggregate_S3DropBucket_Aggregator-7-2024-03-05-20-07-28-ae512353-e614-348c-86ac-43aa1236f117.json"
+testS3Key = "TestData/pura_aggregate_S3DropBucket_Aggregator-7-2024-03-05-20-07-28-ae512353-e614-348c-86ac-43aa1236f117.json"
 
 
 let vid: string
@@ -813,10 +813,6 @@ async function processS3ObjectContentStream (key: string, version: string, bucke
                     .on('close', async function () {
 
                         streamResult = { ...streamResult, OnClose_Result: `S3 Content Stream Closed for ${key}` }
-
-                        chunks = []
-                        batchCount = 0
-                        recs = 0
 
                     })
 
