@@ -444,7 +444,7 @@ export const s3DropBucketHandler: Handler = async (event: S3Event, context: Cont
             console.error(`Exception - Processing S3 Object Content Stream for ${key} \n${e}`)
         }
 
-        if (tcc.SelectiveDebug.indexOf("_3,") > -1) console.info(`Selective Debug 3 - Returned from Processing S3 Object Content Stream for ${key}. Result: ${processS3ObjectStreamResolution}`)
+        if (tcc.SelectiveDebug.indexOf("_3,") > -1) console.info(`Selective Debug 3 - Returned from Processing S3 Object Content Stream for ${key}. Result: ${JSON.stringify(processS3ObjectStreamResolution)}`)
 
     }
 
@@ -769,7 +769,7 @@ async function processS3ObjectContentStream (key: string, version: string, bucke
                                     pfRes = await putToFirehose(chunks, key, custConfig.Customer)
                                         .then((res) => {
                                             // S3DropBucketAggregate_BFSlE95VRhb_VhNbxLpw1mp_S3DropBucket_FireHoseStream - 2 - 2024-02 - 25 - 20 - 14 - 14 - 13c6a4ee - e529 - 4f19 - 8e45 - c335218922c8.json
-                                            console.info(`Content Stream OnEnd for (${key}) - Singular Update put to Firehose aggregator pipe. \n${JSON.stringify(res)} \n${batchCount} Batches of ${chunks.length} records - Result: \n${JSON.stringify(streamResult)}`)
+                                            const su = ` Singular Update (${key}) put to Firehose aggregator pipe - \n${JSON.stringify(res)} \n${batchCount} Batches of ${chunks.length} records - Result: \n${JSON.stringify(res)}`
                                             debugger
 
                                             streamResult = {
