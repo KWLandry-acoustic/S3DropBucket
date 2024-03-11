@@ -1888,7 +1888,7 @@ async function storeAndQueueWork (chunks: string[], s3Key: string, config: custo
 
 function convertJSONToXML_RTUpdates (updates: string[], config: customerConfig) {
 
-    xmlRows = `< Envelope > <Body> <InsertUpdateRelationalTable> <TABLE_ID> ${config.listId} </TABLE_ID><ROWS>`
+    xmlRows = `<Envelope> <Body> <InsertUpdateRelationalTable> <TABLE_ID> ${config.listId} </TABLE_ID><ROWS>`
 
     let r = 0
 
