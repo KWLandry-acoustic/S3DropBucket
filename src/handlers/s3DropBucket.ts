@@ -1020,7 +1020,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (event: SQSEvent
                 }
 
                 if (postResult.toLowerCase().indexOf('unsuccessful post') > -1)
-                    console.error(`Error - Unsuccesful POST(Hard Failure) for ${tqm.workKey}(versionId: ${tqm.versionId}): \n${postResult} \n Customer: ${tqm.custconfig.Customer}, Pod: ${tqm.custconfig.pod}, ListId: ${tqm.custconfig.listId} \n${work} `)
+                    console.error(`Error - Unsuccesful POST(Hard Failure) for ${tqm.workKey}(versionId: ${tqm.versionId}): \n${postResult} \n Customer: ${tqm.custconfig.Customer}, Pod: ${tqm.custconfig.pod}, ListId: ${tqm.custconfig.listId} `)
 
                 if (postResult.toLowerCase().indexOf('successfully posted') > -1)
                 {
