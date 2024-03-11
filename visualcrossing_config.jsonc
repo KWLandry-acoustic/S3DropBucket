@@ -2,7 +2,7 @@
         //Visual Crossing for Clorox 
         "Customer": "visualcrossing_",
         "format": "csv",
-        "updates": "multiple",
+        "updates": "Bulk",
         "listId": "13262176",
         "listName": "WeatherForecast2",
         "listType": "Relational",
