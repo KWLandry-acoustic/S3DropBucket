@@ -7,8 +7,8 @@
 
       "format": "json", // CSV or JSON
 
-      "updates": "singular", // Singular/Multiple - For performance reasons data files should contain multiple updates, preferably more than 99 updates per file, 
-      // However, if the data being loaded to the S3Bucket is a single update per file, use Singular to invoke an aggregator that will wait up to 5 mins to collect 
+      "updates": "singular", // Singular/Bulk - For performance reasons data files should contain multiple updates, preferably more than 99 updates per file, 
+      // However, if the data dropped on the S3Bucket is a single update per file, use Singular to invoke an aggregator that will wait up to 5 mins to collect 
       //  additional files and aggregate the singular updates into a bulk update to improve performance overall. 
 
       "updateMaxRows": 100, // Max fields per record/update. Safety - Don't allow runaway Updates, can set this higher if needed and then
@@ -35,7 +35,7 @@
       // "listType": "DBNonKeyed",
       // "listId": "13242696",
       // "listName": "Master_Database_KWLandry_4",
-      // If DBNonKeyed need LookupKeys - comma separated list, inbound dat must provide the field(s) and data 
+      // If DBNonKeyed need LookupKeys - comma separated list, inbound data must provide the field(s) and data 
       // "LookupKeys": "City, State, Zip",
 
       //Campaign S3DropBucket Application Definition for the S3DropBucket Process
