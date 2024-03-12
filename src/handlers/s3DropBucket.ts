@@ -54,10 +54,10 @@ import { freemem } from 'os'
 let testS3Key: string
 let testS3Bucket: string
 testS3Bucket = "tricklercache-configs"
-testS3Key = "TestData/visualcrossing_00213.csv"
+// testS3Key = "TestData/visualcrossing_00213.csv"
 // testS3Key = "TestData/pura_2024_02_26T05_53_26_084Z.json"
 // testS3Key = "TestData/pura_2024_02_25T00_00_00_090Z.json"
-// testS3Key = "TestData/pura_aggregate_S3DropBucket_Aggregator-7-2024-03-05-20-07-28-ae512353-e614-348c-86ac-43aa1236f117.json"
+testS3Key = "TestData/pura_aggregate_S3DropBucket_Aggregator-7-2024-03-05-20-07-28-ae512353-e614-348c-86ac-43aa1236f117.json"
 
 
 let vid: string
@@ -271,9 +271,8 @@ export const s3DropBucketHandler: Handler = async (event: S3Event, context: Cont
 
     if (event.Records[0].s3.object.key.indexOf('Aggregator') > -1)
     {
-        // pura_aggregate_S3DropBucket_Aggregator-3-2024-02-27-22-42-50-894dede9-dca4-36f7-b621-e0ea2b80bef2.json
         if (tcc.SelectiveDebug.indexOf("_25,") > -1) console.info(`Selective Debug 25 - Processing an Aggregated File ${event.Records[0].s3.object.key}`)
-        // console.info(`Processing an Aggregated File ${event.Records[0].s3.object.key}`)
+
     }
 
 
@@ -668,7 +667,8 @@ async function processS3ObjectContentStream (key: string, version: string, bucke
 
                         try
                         {
-                            if (key.indexOf('aggregate_') < 0 && recs > custConfig.updateMaxRows) throw new Error(`The number of Updates in this batch Exceeds Max Row Updates allowed ${recs} in the Customers Config. S3 Object ${key} will not be deleted to allow for review and possible restaging.`)
+                            if (key.toLowerCase().indexOf('aggregat') < 0
+                                && recs > custConfig.updateMaxRows) throw new Error(`The number of Updates in this batch Exceeds Max Row Updates allowed ${recs} in the Customers Config. S3 Object ${key} will not be deleted to allow for review and possible restaging.`)
 
                             if (tcc.SelectiveDebug.indexOf("_13,") > -1) console.info(`Selective Debug 13 - s3ContentStream OnData - Another chunk (Num of Entries:${Object.values(s3Chunk).length} Recs:${recs} Batch:${batchCount} from ${key} - ${d}`)
 
@@ -795,8 +795,6 @@ async function processS3ObjectContentStream (key: string, version: string, bucke
                         batchCount = 0
                         recs = 0
 
-                        debugger
-
                         resolve({ ...streamResult })
 
                         // return streamResult
@@ -877,7 +875,7 @@ async function putToFirehose (S3Obj: string[], key: string, cust: string) {
                             //     OnEnd_PutToFireHoseAggregator: '',
                             //     PutToFirehoseException: '',
                             fr = { ...fr, PutToFirehoseAggregatorResult: `${res.$metadata.httpStatusCode} ` }
-                            fr = { ...fr, OnEnd_PutToFireHoseAggregator: `Successful Put to Firehose Aggregator for ${key} - ${res} \n${res.RecordId} ` }
+                            fr = { ...fr, OnEnd_PutToFireHoseAggregator: `Successful Put to Firehose Aggregator for ${key}. \n${JSON.stringify(res)} \n${res.RecordId} ` }
                         }
                         else
                         {
@@ -1777,23 +1775,6 @@ async function validateCustomerConfig (config: customerConfig) {
 
 async function storeAndQueueWork (chunks: string[], s3Key: string, config: customerConfig, recs: number, batch: number) {
 
-    // let sqw = {
-    //     OnEndStoreQueueResult: {
-    //         AddWorkToS3ProcessBucketResults: {
-    //             versionId: '',
-    //             S3ProcessBucketResult: '',
-    //             AddWorkToS3ProcessBucket: {}
-    //         },
-    //         AddWorkToSQSProcessQueueResults: {
-    //             SQSWriteResult: '',
-    //             AddWorkToSQSQueueResult: ''
-
-    //         },
-    //         StoreQueueWorkException: '',
-    //         StoreS3WorkException: '',
-    //     }
-    // }
-
     if (batch > tcc.MaxBatchesWarning) console.warn(`Warning: Updates from the S3 Object(${s3Key}) are exceeding(${batch}) the Warning Limit of ${tcc.MaxBatchesWarning} Batches per Object.`)
     // throw new Error(`Updates from the S3 Object(${ s3Key }) Exceed(${ batch }) Safety Limit of 20 Batches of 99 Updates each.Exiting...`)
 
@@ -1824,6 +1805,8 @@ async function storeAndQueueWork (chunks: string[], s3Key: string, config: custo
     {
         s3Key = s3Key.split('/').at(-1) ?? s3Key
     }
+
+    debugger
 
     let key = s3Key.replace('.', '_')
     key = `${key}_update_${batch}_${recs}.xml`
