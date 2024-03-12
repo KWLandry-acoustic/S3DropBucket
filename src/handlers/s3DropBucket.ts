@@ -387,7 +387,6 @@ export const s3DropBucketHandler: Handler = async (event: S3Event, context: Cont
 
         try
         {
-
             processS3ObjectStreamResolution = await processS3ObjectContentStream(key, vid, bucket, customersConfig)
                 .then(async (res) => {
                     let delResultCode
@@ -796,9 +795,11 @@ async function processS3ObjectContentStream (key: string, version: string, bucke
                         batchCount = 0
                         recs = 0
 
-                        // resolve({ ...streamResult })
+                        debugger
 
-                        return streamResult
+                        resolve({ ...streamResult })
+
+                        // return streamResult
                     })
 
                     .on('close', async function () {
@@ -1832,8 +1833,6 @@ async function storeAndQueueWork (chunks: string[], s3Key: string, config: custo
     let AddWorkToS3ProcessBucketResults
     let AddWorkToSQSProcessQueueResults
     let v = ''
-
-    debugger
 
     try
     {
