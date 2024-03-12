@@ -54,8 +54,8 @@ import { freemem } from 'os'
 let testS3Key: string
 let testS3Bucket: string
 testS3Bucket = "tricklercache-configs"
-// testS3Key = "TestData/visualcrossing_00213.csv"
-testS3Key = "TestData/pura_2024_02_26T05_53_26_084Z.json"
+testS3Key = "TestData/visualcrossing_00213.csv"
+// testS3Key = "TestData/pura_2024_02_26T05_53_26_084Z.json"
 // testS3Key = "TestData/pura_2024_02_25T00_00_00_090Z.json"
 // testS3Key = "TestData/pura_aggregate_S3DropBucket_Aggregator-7-2024-03-05-20-07-28-ae512353-e614-348c-86ac-43aa1236f117.json"
 
@@ -179,7 +179,7 @@ export interface processS3ObjectStreamResult {
         },
         AddWorkToSQSProcessQueueResults: {
             SQSWriteResult: string,
-            SQSQueued_Metadata: string
+            AddWorkToSQSQueueResult: object
         },
         StoreQueueWorkException: string
         StoreS3WorkException: string
@@ -207,7 +207,7 @@ let processS3ObjectStreamResolution: processS3ObjectStreamResult = {
         },
         AddWorkToSQSProcessQueueResults: {
             SQSWriteResult: '',
-            SQSQueued_Metadata: ''
+            AddWorkToSQSQueueResult: {}
         },
         StoreQueueWorkException: '',
         StoreS3WorkException: '',
@@ -355,7 +355,7 @@ export const s3DropBucketHandler: Handler = async (event: S3Event, context: Cont
         try
         {
             customersConfig = await getCustomerConfig(key)
-            console.info(`Processing inbound data for ${customersConfig.Customer} - ${key} \nS3 Object Details: VID: ${vid}, ETag: ${et}`)
+            console.info(`Processing inbound data for ${customersConfig.Customer} - ${key} \nS3 Object Details: VersionID: ${vid}, ETag: ${et}`)
         }
         catch (e)
         {
@@ -397,7 +397,7 @@ export const s3DropBucketHandler: Handler = async (event: S3Event, context: Cont
                     //Don't delete the test data
                     if (localTesting) key = 'TestData/S3Object_DoNotDelete'
 
-                    if (res.PutToFireHoseAggregatorResult = "200" ||
+                    if ((res.PutToFireHoseAggregatorResult = "200") ||
                         (res.OnEndStoreS3QueueResult.AddWorkToS3ProcessBucketResults.S3ProcessBucketResult === "200") &&
                         res.OnEndStoreS3QueueResult.AddWorkToSQSProcessQueueResults.SQSWriteResult === "200")
                     {
@@ -452,7 +452,7 @@ export default s3DropBucketHandler
 
 
 
-async function processS3ObjectContentStream (key: string, version: string, bucket: string, custConfig: customerConfig): Promise<processS3ObjectStreamResult> {
+async function processS3ObjectContentStream (key: string, version: string, bucket: string, custConfig: customerConfig) {
 
     let batchCount = 0
     let chunks: string[] = []
@@ -467,7 +467,7 @@ async function processS3ObjectContentStream (key: string, version: string, bucke
             },
             AddWorkToSQSProcessQueueResults: {
                 SQSWriteResult: '',
-                SQSQueued_Metadata: ''
+                AddWorkToSQSQueueResult: {}
             },
             StoreQueueWorkException: '',
             StoreS3WorkException: '',
@@ -644,7 +644,8 @@ async function processS3ObjectContentStream (key: string, version: string, bucke
             s3ContentReadableStream.setMaxListeners(Number(tcc.EventEmitterMaxListeners))
 
 
-            const readStream = await new Promise(async (resolve, reject) => {
+            // const readStream = await new Promise(async (resolve, reject) => {
+            await new Promise(async (resolve, reject) => {
 
                 let d: string
 
@@ -712,21 +713,22 @@ async function processS3ObjectContentStream (key: string, version: string, bucke
                             throw new Error(`Exception - onEnd ${JSON.stringify(streamResult)}`)
                         }
 
-                        let sqwResult = {
-                            // OnEndStoreQueueResult: {
-                            //     AddWorkToS3ProcessBucketResults: {
-                            //         versionId: '',
-                            //         S3ProcessBucketResult: '',
-                            //         AddWorkToS3ProcessBucket: {}
-                            //     },
-                            //     AddWorkToSQSProcessQueueResults: {
-                            //         SQSWriteResult: '',
-                            //         SQSQueued_Metadata: ''
-                            //     },
-                            //     StoreQueueWorkException: '',
-                            //     StoreS3WorkException: '',
-                            // }
-                        }
+                        let sqwResult
+                        // {
+                        //     OnEndStoreQueueResult: {
+                        //         AddWorkToS3ProcessBucketResults: {
+                        //             versionId: '',
+                        //             S3ProcessBucketResult: '',
+                        //             AddWorkToS3ProcessBucket: {}
+                        //         },
+                        //         AddWorkToSQSProcessQueueResults: {
+                        //             SQSWriteResult: '',
+                        //             AddWorkToSQSQueueResult: ''
+                        //         },
+                        //         StoreQueueWorkException: '',
+                        //         StoreS3WorkException: '',
+                        //     }
+                        // }
 
                         try
                         {
@@ -735,22 +737,23 @@ async function processS3ObjectContentStream (key: string, version: string, bucke
                             {
                                 batchCount++
                                 recs += chunks.length
-                                sqwResult = await storeAndQueueWork(chunks, key, custConfig, chunks.length, batchCount) as { AddWorkToS3ProcessBucketResults: object, AddWorkToSQSProcessQueueResults: object }
-                                // AddWorkToS3ProcessBucketResults, AddWorkToSQSProcessQueueResults
-                                streamResult = { ...streamResult, ...sqwResult }
-                            }
+                                sqwResult = await storeAndQueueWork(chunks, key, custConfig, chunks.length, batchCount)
 
-                            debugger
+                                // streamResult.OnEndStoreS3QueueResult = sqwResult 
+                                Object.assign(streamResult.OnEndStoreS3QueueResult, sqwResult)
+                                // streamResult = { ...streamResult, OnEndStoreS3QueueResult: sqwResult }
+
+                            }
 
                             //Next Process Step is Queue Work or Aggregate Small single Update files to improve performance?
                             if (chunks.length > 0 &&
                                 custConfig.updates.toLowerCase() === 'singular' &&
-                                key.indexOf('Aggregator') < 0)
+                                key.toLowerCase().indexOf('aggregat') < 0)
                             {
                                 batchCount++
                                 recs += chunks.length
                                 let pfRes
-
+                                debugger
                                 try 
                                 {
                                     pfRes = await putToFirehose(chunks, key, custConfig.Customer)
@@ -793,8 +796,9 @@ async function processS3ObjectContentStream (key: string, version: string, bucke
                         batchCount = 0
                         recs = 0
 
-                        // "S3 Content Stream Ended for pura_2024_01_25T01_43_15_416Z.csv. Processed 32 records as 1 batches."
-                        resolve({ ...streamResult })
+                        // resolve({ ...streamResult })
+
+                        return streamResult
                     })
 
                     .on('close', async function () {
@@ -805,12 +809,9 @@ async function processS3ObjectContentStream (key: string, version: string, bucke
 
                 console.info(`S3 Content Stream Opened for ${key}`)
 
-                // return { ...streamResult, "ReturnLocation": `Returning from ReadStream. ` }
-
             })
                 .then((r) => {
-                    const rs = { ...streamResult, ReturnLocation: "Returning from ReadStream Then Clause." }
-                    return rs
+                    return { ...streamResult, ReturnLocation: "ReadStream Then Clause." }
                 })
                 .catch(e => {
                     const err = `Exception - ReadStream(catch) - Process S3 Object Content Stream for ${key}.\nResults: ${JSON.stringify(streamResult)}.\n${e} `
@@ -818,7 +819,8 @@ async function processS3ObjectContentStream (key: string, version: string, bucke
                     throw new Error(err)
                 })
 
-            return { ...readStream, ReturnLocation: `...End of ReadStream Promise` }
+            // return { ...readStream, ReturnLocation: `...End of ReadStream Promise` }
+            return { ...streamResult, ReturnLocation: `...End of ReadStream Promise` }
         })
         .catch(e => {
             // console.error(`Exception(error) - Process S3 Object Content Stream for ${ key }.\nResults: ${ JSON.stringify(streamResult) }.\n${ e } `)
@@ -1024,7 +1026,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (event: SQSEvent
 
                 if (postResult.toLowerCase().indexOf('successfully posted') > -1)
                 {
-                    console.info(`Work Successfully Posted to Campaign - ${tqm.custconfig.listName}.(${tqm.workKey} - versionId: ${tqm.versionId}), will now Delete the Work from the S3 Process Queue`)
+                    console.info(`Work Successfully Posted to Campaign - ${tqm.custconfig.listName} from (${tqm.workKey} - versionId: ${tqm.versionId}), will now Delete the Work from the S3 Process Queue`)
 
                     const d: string = await deleteS3Object(tqm.workKey, tqm.versionId, tcc.s3DropBucketWorkBucket!)
                     if (d === '204') console.info(`Successful Deletion of Work: ${tqm.workKey} (versionId: ${tqm.versionId})`)
@@ -1774,22 +1776,22 @@ async function validateCustomerConfig (config: customerConfig) {
 
 async function storeAndQueueWork (chunks: string[], s3Key: string, config: customerConfig, recs: number, batch: number) {
 
-    let sqw = {
-        OnEndStoreQueueResult: {
-            AddWorkToS3ProcessBucketResults: {
-                versionId: '',
-                S3ProcessBucketResult: '',
-                AddWorkToS3ProcessBucket: {}
-            },
-            AddWorkToSQSProcessQueueResults: {
-                SQSWriteResult: '',
-                SQSQueued_Metadata: ''
+    // let sqw = {
+    //     OnEndStoreQueueResult: {
+    //         AddWorkToS3ProcessBucketResults: {
+    //             versionId: '',
+    //             S3ProcessBucketResult: '',
+    //             AddWorkToS3ProcessBucket: {}
+    //         },
+    //         AddWorkToSQSProcessQueueResults: {
+    //             SQSWriteResult: '',
+    //             AddWorkToSQSQueueResult: ''
 
-            },
-            StoreQueueWorkException: '',
-            StoreS3WorkException: '',
-        }
-    }
+    //         },
+    //         StoreQueueWorkException: '',
+    //         StoreS3WorkException: '',
+    //     }
+    // }
 
     if (batch > tcc.MaxBatchesWarning) console.warn(`Warning: Updates from the S3 Object(${s3Key}) are exceeding(${batch}) the Warning Limit of ${tcc.MaxBatchesWarning} Batches per Object.`)
     // throw new Error(`Updates from the S3 Object(${ s3Key }) Exceed(${ batch }) Safety Limit of 20 Batches of 99 Updates each.Exiting...`)
@@ -1825,35 +1827,39 @@ async function storeAndQueueWork (chunks: string[], s3Key: string, config: custo
     let key = s3Key.replace('.', '_')
     key = `${key}_update_${batch}_${recs}.xml`
 
-
     if (tcLogDebug) console.info(`Queuing Work for ${s3Key} - ${key}. (Batch ${batch} of ${Object.values(chunks).length} records)`)
 
-    let AddWorkToS3ProcessBucketResults: {} = {} //typeof sqw
-    let AddWorkToSQSProcessQueueResults: {} = {} //typeof sqw
-    let v
+    let AddWorkToS3ProcessBucketResults
+    let AddWorkToSQSProcessQueueResults
+    let v = ''
+
+    debugger
 
     try
     {
         AddWorkToS3ProcessBucketResults = await addWorkToS3ProcessStore(xmlRows, key)
-        //     {
-        //         AddWorkToS3ProcessBucket: "Wrote Work File (process_0_pura_2024_01_22T18_02_46_119Z_csv.xml) to S3 Processing Bucket (Result 200)",
-        //         S3ProcessBucketResult: "200",
-        // }
+            .then((res) => {
+                // const l = { ...AddWorkToS3ProcessBucketResults } //as typeof sqw.OnEndStoreQueueResult.AddWorkToS3ProcessBucketResults
+                // v = l.AddWorkToS3ProcessBucketResults.versionId
 
-        const l = { ...AddWorkToS3ProcessBucketResults } as typeof sqw.OnEndStoreQueueResult.AddWorkToS3ProcessBucketResults
-        v = l.versionId
-
+                return res
+            })
 
     } catch (e)
     {
         const sqwError = `Exception - StoreAndQueueWork Add work to S3 Bucket exception \n${e} `
         console.error(sqwError)
-        return { StoreS3WorkException: sqwError, StoreQueueWorkException: '', AddWorkToS3ProcessBucketResults, AddWorkToSQSProcessQueueResults: {} }
+        return { StoreS3WorkException: sqwError, StoreQueueWorkException: '', AddWorkToS3ProcessBucketResults, AddWorkToSQSProcessQueueResults }
     }
+
+    v = AddWorkToS3ProcessBucketResults.versionId ?? ''
 
     try
     {
         AddWorkToSQSProcessQueueResults = await addWorkToSQSProcessQueue(config, key, v, batch.toString(), chunks.length.toString())
+            .then((res) => {
+                return res
+            })
         //     {
         //         sqsWriteResult: "200",
         //         workQueuedSuccess: true,
@@ -1863,27 +1869,13 @@ async function storeAndQueueWork (chunks: string[], s3Key: string, config: custo
     {
         const sqwError = `Exception - StoreAndQueueWork Add work to SQS Queue exception \n${e} `
         console.error(sqwError)
-        return { StoreQueueWorkException: sqwError, StoreS3WorkException: '', AddWorkToS3ProcessBucketResults, AddWorkToSQSProcessQueueResults }
+        return { StoreQueueWorkException: sqwError, StoreS3WorkException: '' }
     }
 
     if (tcc.SelectiveDebug.indexOf("_15,") > -1) console.info(`Selective Debug 15 - Results of Store and Queue of Updates - Add to Proces Bucket: ${JSON.stringify(AddWorkToS3ProcessBucketResults)} \n Add to Process Queue: ${JSON.stringify(AddWorkToSQSProcessQueueResults)} `)
 
-    debugger
+    return { AddWorkToS3ProcessBucketResults, AddWorkToSQSProcessQueueResults }
 
-    // AddWorkToS3ProcessBucketResults, AddWorkToSQSProcessQueueResults
-    // { StoreS3WorkException: string, StoreQueueWorkException: string, AddWorkToS3ProcessBucketResults: object, AddWorkToSQSProcessQueueResults: object }
-    // return { AddWorkToS3ProcessBucketResults, AddWorkToSQSProcessQueueResults }
-    // sqw.OnEndStoreQueueResult.AddWorkToS3ProcessBucketResults = {
-    //     versionId: '',
-    //     S3ProcessBucketResult: '',
-    //     AddWorkToS3ProcessBucket: {}
-    // }
-    // sqw.OnEndStoreQueueResult.AddWorkToSQSProcessQueueResults = {
-    //     SQSWriteResult: '',
-    //     SQSQueued_Metadata: ''
-    // }
-
-    return sqw
 }
 
 function convertJSONToXML_RTUpdates (updates: string[], config: customerConfig) {
@@ -1991,13 +1983,13 @@ function convertJSONToXML_DBUpdates (updates: string[], config: customerConfig) 
 async function addWorkToS3ProcessStore (queueUpdates: string, key: string) {
     //write to the S3 Process Bucket
 
-    let s3p = {
-        AddWorkToS3ProcessBucketResults: {
-            versionId: '',
-            S3ProcessBucketResult: '',
-            AddWorkToS3ProcessBucket: {}
-        }
-    }
+    // let s3p = {
+    //     AddWorkToS3ProcessBucketResults: {
+    //         versionId: '',
+    //         S3ProcessBucketResult: '',
+    //         AddWorkToS3ProcessBucket: {}
+    //     }
+    // }
 
     if (tcc.QueueBucketQuiesce)
     {
@@ -2014,57 +2006,52 @@ async function addWorkToS3ProcessStore (queueUpdates: string, key: string) {
 
     if (tcLogDebug) console.info(`Write Work to S3 Process Queue for ${key}`)
 
-    let S3ProcessBucketResult: string = ''
-    let AddWorkToS3ProcessBucket: {} = {}
-    let versionid: string = ""
+    let s3ProcessBucketResult
+    let addWorkToS3ProcessBucket
 
     try
     {
-        await s3
-            .send(new PutObjectCommand(s3PutInput))
+        addWorkToS3ProcessBucket = await s3.send(new PutObjectCommand(s3PutInput))
             .then(async (s3PutResult: PutObjectCommandOutput) => {
-                S3ProcessBucketResult = JSON.stringify(s3PutResult.$metadata.httpStatusCode, null, 2)
-                if (S3ProcessBucketResult === '200')
+
+                if (s3PutResult.$metadata.httpStatusCode !== 200)
                 {
-                    versionid = s3PutResult.VersionId ?? ""
-                    AddWorkToS3ProcessBucket = `Wrote Work File (${key} (versionId: ${versionid}) of ${queueUpdates.length} characters) to S3 Processing Bucket (Result ${S3ProcessBucketResult})`
-                    if (tcc.SelectiveDebug.indexOf("_7,") > -1) console.info(`Selective Debug 7 - ${AddWorkToS3ProcessBucket}`)
+                    throw new Error(`Failed to write Work File to S3 Process Store (Result ${s3PutResult}) for ${key} of ${queueUpdates.length} characters`)
                 }
-                else
-                {
-                    throw new Error(`Failed to write Work File to S3 Process Store (Result ${S3ProcessBucketResult}) for ${key} (versionId: ${versionid}) of ${queueUpdates.length} characters`)
-                }
+                return s3PutResult
             })
             .catch(err => {
                 throw new Error(`PutObjectCommand Results Failed for (${key} of ${queueUpdates.length} characters) to S3 Processing bucket: ${err}`)
+                //return {StoreS3WorkException: err}
             })
     } catch (e)
     {
         throw new Error(`Exception - Put Object Command for writing work(${key} to S3 Processing bucket: ${e}`)
+        // return { StoreS3WorkException: e }
     }
 
-    // const r = { versionId: versionid, S3ProcessBucketResult, AddWorkToS3ProcessBucket }
-    s3p.AddWorkToS3ProcessBucketResults.AddWorkToS3ProcessBucket = AddWorkToS3ProcessBucket
-    s3p.AddWorkToS3ProcessBucketResults.S3ProcessBucketResult = S3ProcessBucketResult
+    if (tcc.SelectiveDebug.indexOf("_7,") > -1) console.info(`Selective Debug 7 - ${addWorkToS3ProcessBucket}`)
 
-    return s3p
+    s3ProcessBucketResult = JSON.stringify(addWorkToS3ProcessBucket.$metadata.httpStatusCode, null, 2)
+
+    const vd = addWorkToS3ProcessBucket.VersionId ?? ""
+
+    const m = `Wrote Work File (${key} (versionId: ${vd}) of ${queueUpdates.length} characters) to S3 Processing Bucket (Result ${s3ProcessBucketResult}`
+
+    return {
+        versionId: vd,
+        AddWorkToS3ProcessBucket: addWorkToS3ProcessBucket,
+        S3ProcessBucketResult: s3ProcessBucketResult
+    }
 }
 
 
 async function addWorkToSQSProcessQueue (config: customerConfig, key: string, versionId: string, batch: string, recCount: string) {
 
-
-    let sqp = {
-        AddWorkToSQSProcessQueueResults: {
-            SQSWriteResult: '',
-            SQSQueued_Metadata: ''
-        }
-    }
-
     if (tcc.QueueBucketQuiesce)
     {
         console.warn(`Work/Process Bucket Quiesce is in effect, no New Work Files are being written to the SQS Queue of S3 Work Bucket. This work file is for ${key}`)
-        return { versionId: '', S3ProcessBucketResult: 'In Quiesce', AddWorkToS3ProcessBucket: '' }
+        return { versionId: '', S3ProcessBucketResult: '', AddWorkToS3ProcessBucket: 'In Quiesce' }
     }
 
     const sqsQMsgBody = {} as tcQueueMessage
@@ -2097,30 +2084,31 @@ async function addWorkToSQSProcessQueue (config: customerConfig, key: string, ve
 
     if (tcLogDebug) console.info(`Add Work to SQS Process Queue - SQS Params: ${JSON.stringify(sqsParams)}`)
 
-    let sqsSendResult: string = ''
-    let sqsWriteResult: string = ''
+    let sqsSendResult
+    let sqsWriteResult
 
     try
     {
-        await sqsClient
-            .send(new SendMessageCommand(sqsParams))
-            .then(async (sqsSendMessageResult: SendMessageCommandOutput) => {
+        await sqsClient.send(new SendMessageCommand(sqsParams))
+            .then((sqsSendMessageResult: SendMessageCommandOutput) => {
                 sqsWriteResult = JSON.stringify(sqsSendMessageResult.$metadata.httpStatusCode, null, 2)
-
                 if (sqsWriteResult !== '200')
                 {
-                    throw new Error(
-                        `Failed writing to SQS Process Queue (queue URL: ${sqsParams.QueueUrl}), ${sqsQMsgBody.workKey}, SQS Params${JSON.stringify(sqsParams)})`,
-                    )
+                    const storeQueueWorkException =
+                        `Failed writing to SQS Process Queue (queue URL: ${sqsParams.QueueUrl}), ${sqsQMsgBody.workKey}, SQS Params${JSON.stringify(sqsParams)})`
+
+                    return { StoreQueueWorkException: storeQueueWorkException }
                 }
-                sqsSendResult = JSON.stringify(sqsSendMessageResult)
+                sqsSendResult = sqsSendMessageResult
 
                 if (tcc.SelectiveDebug.indexOf("_14,") > -1) console.info(`Selective Debug 14 - Queued Work to SQS Process Queue (${sqsQMsgBody.workKey}) - Result: ${sqsWriteResult} `)
+
+                return sqsSendMessageResult
             })
             .catch(err => {
-                console.error(
-                    `Failed writing to SQS Process Queue (${err}) \nQueue URL: ${sqsParams.QueueUrl})\nWork to be Queued: ${sqsQMsgBody.workKey}\nSQS Params: ${JSON.stringify(sqsParams)})`,
-                )
+                const storeQueueWorkException =
+                    `Failed writing to SQS Process Queue (${err}) \nQueue URL: ${sqsParams.QueueUrl})\nWork to be Queued: ${sqsQMsgBody.workKey}\nSQS Params: ${JSON.stringify(sqsParams)}`
+                return { StoreQueueWorkException: storeQueueWorkException }
             })
     } catch (e)
     {
@@ -2129,13 +2117,10 @@ async function addWorkToSQSProcessQueue (config: customerConfig, key: string, ve
         )
     }
 
-    debugger
-
-    // return { "SQSWriteResult": sqsWriteResult, "SQSQueued_Metadata": sqsSendResult }
-    sqp.AddWorkToSQSProcessQueueResults.SQSWriteResult = sqsWriteResult
-    sqp.AddWorkToSQSProcessQueueResults.SQSQueued_Metadata = sqsSendResult
-
-    return sqp
+    return {
+        SQSWriteResult: sqsWriteResult,
+        AddWorkToSQSQueueResult: sqsSendResult
+    }
 }
 
 
