@@ -45,6 +45,7 @@ import {
 import sftpClient, { ListFilterFunction } from 'ssh2-sftp-client'
 import { FileResultCallback } from '@babel/core'
 import { freemem } from 'os'
+import { env } from 'node:process'
 
 //For when needed to reference Lambda execution environment /tmp folder 
 // import { ReadStream, close } from 'fs'
@@ -255,9 +256,10 @@ export const s3DropBucketHandler: Handler = async (event: S3Event, context: Cont
     if (event.Records[0].s3.object.key.indexOf('AggregationError') > -1) return ""
 
     if (
-        process.env.EventEmitterMaxListeners === undefined ||
-        process.env.EventEmitterMaxListeners === '' ||
-        process.env.EventEmitterMaxListeners === null
+
+        process.env["EventEmitterMaxListeners"] === undefined ||
+        process.env["EventEmitterMaxListeners"] === '' ||
+        process.env["EventEmitterMaxListeners"] === null
     )
     {
         tcc = await getValidateTricklerConfig()
@@ -912,9 +914,9 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (event: SQSEvent
 
     //Populate Config Options in process.env as a means of Caching the config across invocations occurring within 15 secs of each other.
     if (
-        process.env.ProcessQueueVisibilityTimeout === undefined ||
-        process.env.ProcessQueueVisibilityTimeout === '' ||
-        process.env.ProcessQueueVisibilityTimeout === null
+        process.env["ProcessQueueVisibilityTimeout"] === undefined ||
+        process.env["ProcessQueueVisibilityTimeout"] === '' ||
+        process.env["ProcessQueueVisibilityTimeout"] === null
     )
     {
         tcc = await getValidateTricklerConfig()
@@ -934,7 +936,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (event: SQSEvent
     if (tcc.QueueBucketPurgeCount > 0)
     {
         console.info(`Purge Requested, Only action will be to Purge ${tcc.QueueBucketPurge} of ${tcc.QueueBucketPurgeCount} Records. `)
-        const d = await purgeBucket(Number(process.env.QueueBucketPurgeCount!), process.env.QueueBucketPurge!)
+        const d = await purgeBucket(Number(process.env["QueueBucketPurgeCount"]!), process.env["QueueBucketPurge"]!)
         return d
     }
 
@@ -1068,9 +1070,9 @@ export const s3DropBucketSFTPHandler: Handler = async (event: SQSEvent, context:
     // const sftpClient = new sftpClient()
 
     if (
-        process.env.ProcessQueueVisibilityTimeout === undefined ||
-        process.env.ProcessQueueVisibilityTimeout === '' ||
-        process.env.ProcessQueueVisibilityTimeout === null
+        process.env["ProcessQueueVisibilityTimeout"] === undefined ||
+        process.env["ProcessQueueVisibilityTimeout"] === '' ||
+        process.env["ProcessQueueVisibilityTimeout"] === null
     )
     {
         tcc = await getValidateTricklerConfig()
@@ -1411,47 +1413,47 @@ async function getValidateTricklerConfig () {
         if (tc.LOGLEVEL !== undefined && tc.LOGLEVEL.toLowerCase().indexOf('verbose') > -1)
         {
             tcLogVerbose = true
-            process.env.tcLogVerbose = "true"
+            process.env["tcLogVerbose"] = "true"
         }
 
-        if (tc.SelectiveDebug !== undefined) process.env.SelectiveDebug = tc.SelectiveDebug
+        if (tc.SelectiveDebug !== undefined) process.env["SelectiveDebug"] = tc.SelectiveDebug
 
 
         if (!tc.s3DropBucket || tc.s3DropBucket === "")
         {
             throw new Error(`Exception - S3 DropBucket Configuration is not correct: ${tc.s3DropBucket}.`)
         }
-        else process.env.s3DropBucket = tc.s3DropBucket
+        else process.env["s3DropBucket"] = tc.s3DropBucket
 
         if (!tc.s3DropBucketWorkBucket || tc.s3DropBucketWorkBucket === "")
         {
             throw new Error(`Exception - S3 DropBucket Work Bucket Configuration is not correct: ${tc.s3DropBucketWorkBucket} `)
         }
-        else process.env.s3DropBucketWorkBucket = tc.s3DropBucketWorkBucket
+        else process.env["s3DropBucketWorkBucket"] = tc.s3DropBucketWorkBucket
 
         if (!tc.s3DropBucketWorkQueue || tc.s3DropBucketWorkQueue === "")
         {
             throw new Error(`Exception - S3 DropBucket Work Queue Configuration is not correct: ${tc.s3DropBucketWorkQueue} `)
         }
-        else process.env.s3DropBucketWorkQueue = tc.s3DropBucketWorkQueue
+        else process.env["s3DropBucketWorkQueue"] = tc.s3DropBucketWorkQueue
 
 
         // if (tc.SQS_QUEUE_URL !== undefined) tcc.SQS_QUEUE_URL = tc.SQS_QUEUE_URL
         // else throw new Error(`Tricklercache Config invalid definition: SQS_QUEUE_URL - ${ tc.SQS_QUEUE_URL } `)
 
-        if (tc.xmlapiurl != undefined) process.env.xmlapiurl = tc.xmlapiurl
+        if (tc.xmlapiurl != undefined) process.env["xmlapiurl"] = tc.xmlapiurl
         else throw new Error(`Tricklercache Config invalid definition: xmlapiurl - ${tc.xmlapiurl} `)
 
-        if (tc.restapiurl !== undefined) process.env.restapiurl = tc.restapiurl
+        if (tc.restapiurl !== undefined) process.env["restapiurl"] = tc.restapiurl
         else throw new Error(`Tricklercache Config invalid definition: restapiurl - ${tc.restapiurl} `)
 
-        if (tc.authapiurl !== undefined) process.env.authapiurl = tc.authapiurl
+        if (tc.authapiurl !== undefined) process.env["authapiurl"] = tc.authapiurl
         else throw new Error(`Tricklercache Config invalid definition: authapiurl - ${tcc.authapiurl} `)
 
 
         if (tc.ProcessQueueQuiesce !== undefined)
         {
-            process.env.ProcessQueueQuiesce = tc.ProcessQueueQuiesce.toString()
+            process.env["ProcessQueueQuiesce"] = tc.ProcessQueueQuiesce.toString()
         }
         else
             throw new Error(
@@ -1489,7 +1491,7 @@ async function getValidateTricklerConfig () {
 
 
         if (tc.MaxBatchesWarning !== undefined)
-            process.env.RetryQueueInitialWaitTimeSeconds = tc.MaxBatchesWarning.toFixed()
+            process.env["RetryQueueInitialWaitTimeSeconds"] = tc.MaxBatchesWarning.toFixed()
         else
             throw new Error(
                 `Tricklercache Config invalid definition: MaxBatchesWarning - ${tc.MaxBatchesWarning} `,
@@ -1498,7 +1500,7 @@ async function getValidateTricklerConfig () {
 
         if (tc.DropBucketQuiesce !== undefined)
         {
-            process.env.DropBucketQuiesce = tc.DropBucketQuiesce.toString()
+            process.env["DropBucketQuiesce"] = tc.DropBucketQuiesce.toString()
         }
         else
             throw new Error(
@@ -1507,14 +1509,14 @@ async function getValidateTricklerConfig () {
 
 
         if (tc.DropBucketPurge !== undefined)
-            process.env.DropBucketPurge = tc.DropBucketPurge
+            process.env["DropBucketPurge"] = tc.DropBucketPurge
         else
             throw new Error(
                 `Tricklercache Config invalid definition: DropBucketPurge - ${tc.DropBucketPurge} `,
             )
 
         if (tc.DropBucketPurgeCount !== undefined)
-            process.env.DropBucketPurgeCount = tc.DropBucketPurgeCount.toFixed()
+            process.env["DropBucketPurgeCount"] = tc.DropBucketPurgeCount.toFixed()
         else
             throw new Error(
                 `Tricklercache Config invalid definition: DropBucketPurgeCount - ${tc.DropBucketPurgeCount} `,
@@ -1522,7 +1524,7 @@ async function getValidateTricklerConfig () {
 
         if (tc.QueueBucketQuiesce !== undefined)
         {
-            process.env.QueueBucketQuiesce = tc.QueueBucketQuiesce.toString()
+            process.env["QueueBucketQuiesce"] = tc.QueueBucketQuiesce.toString()
         }
         else
             throw new Error(
@@ -1530,21 +1532,21 @@ async function getValidateTricklerConfig () {
             )
 
         if (tc.QueueBucketPurge !== undefined)
-            process.env.QueueBucketPurge = tc.QueueBucketPurge
+            process.env["QueueBucketPurge"] = tc.QueueBucketPurge
         else
             throw new Error(
                 `Tricklercache Config invalid definition: QueueBucketPurge - ${tc.QueueBucketPurge} `,
             )
 
         if (tc.QueueBucketPurgeCount !== undefined)
-            process.env.QueueBucketPurgeCount = tc.QueueBucketPurgeCount.toFixed()
+            process.env["QueueBucketPurgeCount"] = tc.QueueBucketPurgeCount.toFixed()
         else
             throw new Error(
                 `Tricklercache Config invalid definition: QueueBucketPurgeCount - ${tc.QueueBucketPurgeCount} `,
             )
 
         if (tc.reQueue !== undefined)
-            process.env.TricklerProcessRequeue = tc.reQueue
+            process.env["TricklerProcessRequeue"] = tc.reQueue
         // else                 //ReQueue is optional
         //     throw new Error(
         //         `Tricklercache Config invalid definition: ReQueue - ${ tc.reQueue } `,
@@ -1553,7 +1555,7 @@ async function getValidateTricklerConfig () {
 
         if (tc.prefixFocus !== undefined && tc.prefixFocus != "")
         {
-            process.env.TricklerProcessPrefix = tc.prefixFocus
+            process.env["TricklerProcessPrefix"] = tc.prefixFocus
             console.warn(`A Prefix Focus has been configured.Only DropBucket Objects with the prefix "${tc.prefixFocus}" will be processed.`)
         }
 
@@ -2365,19 +2367,24 @@ export async function getAccessToken (config: customerConfig) {
 
 export async function postToCampaign (xmlCalls: string, config: customerConfig, count: string) {
 
-    //Store AccessAToken in process.env vars for reference across invocations, save requesting it repeatedly
-    if (process.env.accessToken === undefined || process.env.accessToken === null || process.env.accessToken == '')
-    {
-        if (tcLogDebug) console.info(`POST to Campaign - Need AccessToken...`)
-        process.env.accessToken = (await getAccessToken(config)) as string
 
-        const l = process.env.accessToken.length
-        const redactAT = '.......' + process.env.accessToken.substring(l - 10, l)
+    const c = config.Customer
+
+    //Store AccessToken in process.env vars for reference across invocations, save requesting it repeatedly
+    if (process.env[`${c}_accessToken`] === undefined ||
+        process.env[`${c}_accessToken`] === null ||
+        process.env[`${c}_accessToken`] == '')
+    {
+        process.env[`${c}_accessToken`] = (await getAccessToken(config)) as string
+        const at = process.env[`${c}_accessToken"`] ?? ''
+        const l = at.length
+        const redactAT = '.......' + at.substring(l - 10, l)
         if (tcLogDebug) console.info(`Generated a new AccessToken: ${redactAT}`)
     } else
     {
-        const l = process.env.accessToken?.length ?? 0
-        const redactAT = '.......' + process.env.accessToken?.substring(l - 8, l)
+        const at = process.env["accessToken"] ?? ''
+        const l = at.length
+        const redactAT = '.......' + at.substring(l - 8, l)
         if (tcLogDebug) console.info(`Access Token already stored: ${redactAT}`)
     }
 
@@ -2385,7 +2392,7 @@ export async function postToCampaign (xmlCalls: string, config: customerConfig, 
 
     const myHeaders = new Headers()
     myHeaders.append('Content-Type', 'text/xml')
-    myHeaders.append('Authorization', 'Bearer ' + process.env.accessToken)
+    myHeaders.append('Authorization', 'Bearer ' + process.env[`${c}_accessToken`])
     myHeaders.append('Content-Type', 'text/xml')
     myHeaders.append('Connection', 'keep-alive')
     myHeaders.append('Accept', '*/*')
@@ -2482,7 +2489,7 @@ export async function postToCampaign (xmlCalls: string, config: customerConfig, 
         })
     // } catch (e)
     // {
-    //     console.error(`Exception - On POST to Campaign (AccessToken ${process.env.accessToken}) Result: ${e}`)
+    //     console.error(`Exception - On POST to Campaign (AccessToken ${process.env[`${c}_accessToken`]}) Result: ${e}`)
     // }
 
     return postRes
