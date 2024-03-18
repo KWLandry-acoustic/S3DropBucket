@@ -58,8 +58,8 @@ testS3Bucket = "tricklercache-configs"
 // testS3Key = "TestData/cloroxweather_99706.csv"
 // testS3Key = "TestData/visualcrossing_00213.csv"
 // testS3Key = "TestData/pura_2024_02_26T05_53_26_084Z.json"
-// testS3Key = "TestData/pura_2024_02_25T00_00_00_090Z.json"
-testS3Key = "TestData/pura_aggregate_S3DropBucket_Aggregator-7-2024-03-05-20-07-28-ae512353-e614-348c-86ac-43aa1236f117.json"
+testS3Key = "TestData/pura_2024_02_25T00_00_00_090Z.json"
+// testS3Key = "TestData/pura_aggregate_S3DropBucket_Aggregator-7-2024-03-05-20-07-28-ae512353-e614-348c-86ac-43aa1236f117.json"
 
 
 let vid: string
@@ -1767,7 +1767,8 @@ async function storeAndQueueWork (chunks: string[], s3Key: string, config: custo
     // throw new Error(`Updates from the S3 Object(${ s3Key }) Exceed(${ batch }) Safety Limit of 20 Batches of 99 Updates each.Exiting...`)
 
     //Aggregate files are already transformed, otherwise process transforms
-    if (s3Key.toLowerCase().indexOf('aggregat') < 0) chunks = transforms(chunks, config)
+    // if (s3Key.toLowerCase().indexOf('aggregat') < 0)
+    chunks = transforms(chunks, config)
 
     if (customersConfig.listType.toLowerCase() === 'dbkeyed' ||
         customersConfig.listType.toLowerCase() === 'dbnonkeyed')
@@ -2000,6 +2001,24 @@ function transforms (chunks: string[], config: customerConfig) {
     //     "Col_BB",
     //     "Col_BC"
     // ],
+    if (config.transforms.ignore)
+    {
+        let i: typeof chunks = []
+        for (const l of chunks)
+        {
+            debugger
+
+            const jo = JSON.parse(l)
+            for (const i of config.transforms.ignore)
+            {
+                delete jo.i
+                // delete (i as { occupation?: string }).occupation
+            }
+        }
+
+
+    }
+
 
     //Apply CSVMap
     // "csvMap": { //Mapping when processing CSV files
