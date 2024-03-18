@@ -708,7 +708,7 @@ async function processS3ObjectContentStream (key: string, version: string, bucke
                     .on('end', async function () {
 
                         if (tcc.SelectiveDebug.indexOf('_99,') > -1) saveSampleJSON(JSON.stringify(chunks))
-
+                        debugger
                         if (recs < 1 && chunks.length < 1)
                         {
                             streamResult = {
@@ -741,7 +741,7 @@ async function processS3ObjectContentStream (key: string, version: string, bucke
                                 custConfig.updates.toLowerCase() !== 'singular')
                             {
                                 batchCount++
-                                recs += chunks.length
+                                recs = chunks.length
                                 sqwResult = await storeAndQueueWork(chunks, key, custConfig, chunks.length, batchCount)
 
                                 // streamResult.OnEndStoreS3QueueResult = sqwResult 
@@ -1873,7 +1873,7 @@ function convertJSONToXML_RTUpdates (updates: string[], config: customerConfig) 
     xmlRows = `<Envelope> <Body> <InsertUpdateRelationalTable> <TABLE_ID> ${config.listId} </TABLE_ID><ROWS>`
 
     let r = 0
-
+    debugger
     for (const jo in updates)
     {
         const j = JSON.parse(updates[jo])
@@ -1982,7 +1982,7 @@ function transforms (chunks: string[], config: customerConfig) {
 
     if (config.Customer.toLowerCase().indexOf('cloroxweather_') > -1)
     {
-        let c = [] as typeof chunks
+        let c: typeof chunks = []
 
         const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
 
@@ -1996,7 +1996,7 @@ function transforms (chunks: string[], config: customerConfig) {
                 const day = { "dateday": days[dt.getDay()] }
 
                 Object.assign(j, day)
-                c.push(j)
+                c.push(JSON.stringify(j))
             }
         }
         chunks = c
