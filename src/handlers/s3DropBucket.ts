@@ -55,10 +55,11 @@ import { env } from 'node:process'
 let testS3Key: string
 let testS3Bucket: string
 testS3Bucket = "tricklercache-configs"
+testS3Key = "TestData/cloroxweather_99706.csv"
 // testS3Key = "TestData/visualcrossing_00213.csv"
 // testS3Key = "TestData/pura_2024_02_26T05_53_26_084Z.json"
 // testS3Key = "TestData/pura_2024_02_25T00_00_00_090Z.json"
-testS3Key = "TestData/pura_aggregate_S3DropBucket_Aggregator-7-2024-03-05-20-07-28-ae512353-e614-348c-86ac-43aa1236f117.json"
+// testS3Key = "TestData/pura_aggregate_S3DropBucket_Aggregator-7-2024-03-05-20-07-28-ae512353-e614-348c-86ac-43aa1236f117.json"
 
 
 let vid: string
@@ -108,9 +109,12 @@ interface customerConfig {
         "filepattern": string
         "schedule": string
     }
-    jsonMap: { [key: string]: string }
-    csvMap: { [key: string]: string }
-    Ignore: string[]
+    transforms: [
+        jsonMap: { [key: string]: string },
+        csvMap: { [key: string]: string },
+        ignore: string[],
+        script: string[]
+    ]
 }
 
 let customersConfig = {} as customerConfig
@@ -1733,27 +1737,39 @@ async function validateCustomerConfig (config: customerConfig) {
     }
 
     if (!config.sftp) { config.sftp = { user: "", password: "", filepattern: "", schedule: "" } }
-    // if (!config.sftp.user) { config.sftp.user = '' }
-    // if (!config.sftp.password) { config.sftp.password = '' }
-    // if (!config.sftp.filepattern) { config.sftp.filepattern = '' }
-    // if (!config.sftp.schedule) { config.sftp.schedule = '' }
 
     if (config.sftp.user && config.sftp.user !== '') { }
     if (config.sftp.password && config.sftp.password !== '') { }
     if (config.sftp.filepattern && config.sftp.filepattern !== '') { }
     if (config.sftp.schedule && config.sftp.schedule !== '') { }
 
-    if (!config.jsonMap) config.jsonMap = {}
-    if (config.jsonMap)
+    if (!config.transforms)
     {
-        // config.jsonMap = [{
-        //     destColumn: "",
-        //     jsonPath: ""
-        // }]
+        Object.assign(config, { "transforms": [{}] })
+    }
+    if (!config.transforms[0].jsonMap)
+    {
+        Object.assign(config.transforms[0], { jsonMap: { "none": "" } })
+    }
+    if (!config.transforms[0].csvMap)
+    {
+        Object.assign(config.transforms[0], { csvMap: { "none": "" } })
+    }
+    if (!config.transforms[0].ignore)
+    {
+        Object.assign(config.transforms[0], { ignore: [] })
+    }
+    if (!config.transforms[0].script)
+    {
+        Object.assign(config.transforms[0], { script: "" })
+    }
 
+    // if (Object.keys(config.transform[0].jsonMap)[0].indexOf('none'))
+    if (!config.transforms[0].jsonMap.hasOwnProperty("none"))  
+    {
         let tmpMap: { [key: string]: string } = {}
-        let tmpmap2: Record<string, string> = {}
-        const jm = config.jsonMap
+        // let tmpmap2: Record<string, string> = {}
+        const jm = config.transforms[0].jsonMap as unknown as { [key: string]: string }
         for (const m in jm)
         {
             try
@@ -1768,7 +1784,7 @@ async function validateCustomerConfig (config: customerConfig) {
                 console.error(`Invalid JSONPath defined in Customer config: ${m}: "${m}", \nInvalid JSONPath - ${e} `)
             }
         }
-        config.jsonMap = tmpMap
+        config.transforms[0] = tmpMap
     }
 
     return config as customerConfig
@@ -1780,17 +1796,7 @@ async function storeAndQueueWork (chunks: string[], s3Key: string, config: custo
     if (batch > tcc.MaxBatchesWarning) console.warn(`Warning: Updates from the S3 Object(${s3Key}) are exceeding(${batch}) the Warning Limit of ${tcc.MaxBatchesWarning} Batches per Object.`)
     // throw new Error(`Updates from the S3 Object(${ s3Key }) Exceed(${ batch }) Safety Limit of 20 Batches of 99 Updates each.Exiting...`)
 
-    // //Apply the JSONMap - JSONPath statements
-    // if (config.jsonMap)
-    // {
-    //     const am: string[] = []
-    //     chunks.forEach((o) => {
-    //         const a = applyJSONMap([o], config.jsonMap)
-    //         // am.push(a)
-    //         chunks = am
-    //     })
-    // }
-
+    chunks = transforms(chunks, config)
 
     if (customersConfig.listType.toLowerCase() === 'dbkeyed' ||
         customersConfig.listType.toLowerCase() === 'dbnonkeyed')
@@ -1963,6 +1969,93 @@ function convertJSONToXML_DBUpdates (updates: string[], config: customerConfig) 
 
     return xmlRows
 }
+
+
+
+function transforms (chunks: string[], config: customerConfig) {
+
+    //Apply Transforms
+
+
+    //Clorox Weather Data
+    //Add dateday column
+
+    if (config.Customer.toLowerCase().indexOf('cloroxweather_') > -1)
+    {
+        let c = [] as typeof chunks
+
+        const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+
+        for (const l of chunks)
+        {
+            const j = JSON.parse(l)
+            const d = j.datetime ?? ""
+            if (d !== "")
+            {
+                const dt = new Date(d)
+                const day = { "dateday": days[dt.getDay()] }
+
+                Object.assign(j, day)
+                c.push(j)
+            }
+        }
+        chunks = c
+    }
+
+
+    // if (config.transform)
+    // {
+    //     for (const j in chunks)
+    //     {
+    //         const day = chunks[j].
+    //             Object.assign(chunks[j], "dateday": "day")
+    //     }
+    // }
+
+    //Apply Ignore
+    // "Ignore": [ //Ignore column if it exists in the data
+    //     "Col_BA",
+    //     "Col_BB",
+    //     "Col_BC"
+    // ],
+
+    //Apply CSVMap
+    // "csvMap": { //Mapping when processing CSV files
+    //       "Col_AA": "COL_XYZ", //Write Col_AA with data from Col_XYZ in the CSV file
+    //       "Col_BB": "COL_MNO",
+    //       "Col_CC": "COL_GHI",
+    //       "Col_DD": 1, //Write Col_DD with data from the 1st column of data in the CSV file.
+    //       "Col_DE": 2,
+    //       "Col_DF": 3
+    // },
+
+    //Apply the JSONMap - JSONPath statements
+    // "jsonMap": {
+    //     "email": "$.uniqueRecipient",
+    //         "zipcode": "$.context.traits.address.postalCode"
+    // },
+
+
+    // if (config.transform[0].jsonMap)
+    // {
+    //     const am: string[] = []
+    //     for (const j in chunks)
+    //     {
+    //         const a = applyJSONMap([o], config.jsonMap)
+    //         am.push(a)
+    //         chunks = am
+    //     }
+
+    //     chunks.forEach((o) => {
+    //         const a = applyJSONMap([o], config.jsonMap)
+    //         am.push(a)
+    //         chunks = am
+    //     })
+    // }
+
+    return chunks
+}
+
 
 async function addWorkToS3ProcessStore (queueUpdates: string, key: string) {
     //write to the S3 Process Bucket

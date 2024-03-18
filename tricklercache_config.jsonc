@@ -105,7 +105,7 @@
       //Selective Debug 29: 
 
       // Selective MUST have a preceding underscore and trailing comma, as shown: 
-      "SelectiveDebug": "_3,_25,",
+      // "SelectiveDebug": "_3,_25,",
 
       //Useful for cleaning out the S3 DropBucket. 
       //DropBucketPurgeCount sets the number to purge at one time (Max 1000) 

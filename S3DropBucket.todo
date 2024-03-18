@@ -1,6 +1,4 @@
 Future: 
-  ToDo: Periodic URL call - pull data - VisualCrossing Weather Data
-    Notes: Using AWS Example - 
 
   ☐ ToDo: Look into using AWS Transfer Family Solution (SFTP, et. al.) @created(24-03-06 20:51)
   ☐ ToDo: Extract Data from the SFTP Download folder @created(24-03-06 20:51)
@@ -23,7 +21,7 @@ DropBucket S3 Processor:
   ☐ ToDo: Confirm Keyed DB update is correct/works @created(24-03-06 20:49)
   ☐ ToDo: Confirm NonKeyed DB update is correct/works @created(24-03-06 20:49)
 
-  ☐ ToDo: Fix messaging for Firehose results @created(24-03-06 17:45)
+  ✔ ToDo: Fix messaging for Firehose results @created(24-03-06 17:45) @done(24-03-12 22:38)
 
   ☐ Debug: fix file naming 1_1 for Recs and Batch @created(24-03-06 17:44)
 
@@ -47,9 +45,9 @@ DropBucket S3 Processor:
 
     ✔ ToDo: Confirm Retry of SQS Events (When Campaign throttles) works @created(24-02-03 18:24) @done(24-02-03 18:24)
 
-   ☐ Todo: Report on all Objects that get "Unhandled Promise Rejection" Errors: @created(24-02-02 13:47)
-      ☐ The number of Updates in this batch Exceeds Max Row Updates allowed 101 in the Customers Config", @created(24-02-02 13:47)
-        ☐ *Can see "Unhandled" in Logs* @created(24-02-02 13:47)
+   ✔ Todo: Report on all Objects that get "Unhandled Promise Rejection" Errors: @created(24-02-02 13:47) @done(24-03-12 22:50)
+      ✔ The number of Updates in this batch Exceeds Max Row Updates allowed 101 in the Customers Config", @created(24-02-02 13:47) @done(24-03-12 22:50)
+        ✔ *Can see "Unhandled" in Logs* @created(24-02-02 13:47) @done(24-03-12 22:50)
 
 
   ☐ ToDo: Add JSON Path to Map capability for JSON files in DropBucket @created(24-01-31 12:55) @started(24-02-14 12:12)
@@ -59,13 +57,13 @@ DropBucket S3 Processor:
   ✔ ToDo:  Now need to solve for JSON content @created(24-01-31 12:31) @done(24-01-31 12:31)
 
 
-  ☐ ToDo: Of concern, very large data sets @created(24-01-31 12:55)
+  ✔ ToDo: Of concern, very large data sets @created(24-01-31 12:55) @done(24-03-12 22:39)
 
   ✔ ToDo: But how to parse LARGE JSON Files - each chunk for JSON content as each chunk is a @created(24-01-31 12:55) @done(24-03-06 11:46)
-        network chunk that can land on any or no record boundary.
-            Use a JSON Parser that handles record boundary just like the CSV parser?
-            Parse out individual Updates from the JSON in the Read Stream using start/stop index
-                of the stream/content?
+        ✔ network chunk that can land on any or no record boundary. @created(24-03-12 22:39) @done(24-03-12 22:39)
+            ✔ Use a JSON Parser that handles record boundary just like the CSV parser? @created(24-03-12 22:39) @done(24-03-12 22:39)
+            ✔ Parse out individual Updates from the JSON in the Read Stream using start/stop index @created(24-03-12 22:39) @done(24-03-12 22:39)
+                ✔ of the stream/content? @created(24-03-12 22:39) @done(24-03-12 22:39)
 
   ToDo: Test NodeJS stream UnArchiver
 
@@ -80,37 +78,40 @@ DropBucket Queue Processor:
     ToDo: Type Validation - Inbound Data type validation to Mapping Type
         ✔ ToDo: Confirm SQS Queue deletes queued work @created(24-02-03 18:24) @done(24-02-03 18:24)
 
-    //ToDo: Resolve the progression of these steps, currently "Completed" is logged regardless of 'completion'
-    // and Delete happens regardless of 'completion' being successful or not
-  ☐ ToDo: Confirm BatchItemFails are returned to Queue @created(24-01-31 12:55)
-        Should be returned to Queue for retry
-  ☐ ToDo: Check on recovery from Invalid Access/Expired Token Exceptions @created(24-01-31 12:55)
-        "access token has expired"
-        Should be returned to Queue for retry
-  ☐ ToDo: Check on recovery/reporting for "Error Saving Row" Errors @created(24-01-31 12:55)
-`<FAILURE failure_type="transient" description="Error saving row">
-  <COLUMN name="EventValue" > <![CDATA[renee.lankford@gmail.com]]> </COLUMN>
-      < COLUMN name = "EventSource" > <![CDATA[track Event]]> </COLUMN>
-          < COLUMN name = "Email" > <![CDATA[renee.lankford@gmail.com]]> </COLUMN>
-              < COLUMN name = "EventTimestamp" > <![CDATA[2024-01-18T15: 45: 31.037Z]]> </COLUMN>
-                  < COLUMN name = "EventName" > <![CDATA[email]]> </COLUMN>
-                      < /FAILURE>
+    ✔ //ToDo: Resolve the progression of these steps, currently "Completed" is logged regardless of 'completion' @created(24-03-12 22:42) @done(24-03-12 22:42)
+    ✔ // and Delete happens regardless of 'completion' being successful or not @created(24-03-12 22:42) @done(24-03-12 22:42)
+  ✔ ToDo: Confirm BatchItemFails are returned to Queue @created(24-01-31 12:55) @done(24-03-12 22:42)
+        ✔ Should be returned to Queue for retry @created(24-03-12 22:42) @done(24-03-12 22:42)
+  ✔ ToDo: Check on recovery from Invalid Access/Expired Token Exceptions @created(24-01-31 12:55) @done(24-03-12 22:42)
+        ✔ "access token has expired" @created(24-03-12 22:42) @done(24-03-12 22:42)
+        ✔ Should be returned to Queue for retry @created(24-03-12 22:42) @done(24-03-12 22:42)
+  ✔ ToDo: Check on recovery/reporting for "Error Saving Row" Errors @created(24-01-31 12:55) @done(24-03-12 22:41)
+✔ `<FAILURE failure_type="transient" description="Error saving row"> @created(24-03-12 22:41) @done(24-03-12 22:41)
+  ✔ <COLUMN name="EventValue" > <![CDATA[renee.lankford@gmail.com]]> </COLUMN> @created(24-03-12 22:41) @done(24-03-12 22:41)
+      ✔ < COLUMN name = "EventSource" > <![CDATA[track Event]]> </COLUMN> @created(24-03-12 22:41) @done(24-03-12 22:41)
+          ✔ < COLUMN name = "Email" > <![CDATA[renee.lankford@gmail.com]]> </COLUMN> @created(24-03-12 22:41) @done(24-03-12 22:41)
+              ✔ < COLUMN name = "EventTimestamp" > <![CDATA[2024-01-18T15: 45: 31.037Z]]> </COLUMN> @created(24-03-12 22:41) @done(24-03-12 22:41)
+                  ✔ < COLUMN name = "EventName" > <![CDATA[email]]> </COLUMN> @created(24-03-12 22:41) @done(24-03-12 22:41)
+                      ✔ < /FAILURE> @created(24-03-12 22:41) @done(24-03-12 22:41)
   `
-  ☐ ToDo: Check on recovery/retry for ECONNRESET errors @created(24-01-31 12:55)
-        Should be returned to Queue for retry
-` eventTimestamp
-  2024-01 - 20T17: 10: 54.871-05:00
-  logEvent
-  2024-01 - 20T22: 10: 54.871Z	589a5cd9 - 6126 - 505e-89cd-02ff260c8c9a	ERROR	Exception processing a Work File(process_0_pura_2024_01_20T21_25_08_509Z.csv -
-      Error- Exception during getAccessToken:
-      FetchError: request to https://api-campaign-us-2.goacoustic.com/oauth/token 
-            failed, reason: read ECONNRESET 
+  ✔ ToDo: Check on recovery/retry for ECONNRESET errors @created(24-01-31 12:55) @done(24-03-12 22:43)
+        ✔ Should be returned to Queue for retry @created(24-03-12 22:43) @done(24-03-12 22:43)
+✔ ` eventTimestamp @created(24-03-12 22:43) @done(24-03-12 22:43)
+  ✔ 2024-01 - 20T17: 10: 54.871-05:00 @created(24-03-12 22:43) @done(24-03-12 22:43)
+  ✔ logEvent @created(24-03-12 22:43) @done(24-03-12 22:43)
+  ✔ 2024-01 - 20T22: 10: 54.871Z	589a5cd9 - 6126 - 505e-89cd-02ff260c8c9a	ERROR	Exception processing a Work File(process_0_pura_2024_01_20T21_25_08_509Z.csv - @created(24-03-12 22:43) @done(24-03-12 22:43)
+      ✔ Error- Exception during getAccessToken: @created(24-03-12 22:43) @done(24-03-12 22:43)
+      ✔ FetchError: request to https://api-campaign-us-2.goacoustic.com/oauth/token @created(24-03-12 22:43) @done(24-03-12 22:43)
+            ✔ failed, reason: read ECONNRESET @created(24-03-12 22:43) @done(24-03-12 22:43)
   `        
 
 
 Dropbucket SFTP Connector:
   ToDo: create another lambda for SFTP Work
    
+DropBucket - API Periodic: 
+  ToDo: Periodic URL call - pull data - VisualCrossing Weather Data
+    Notes: Using AWS Example - 
 
   DropBucket UI Interface: 
   ☐ ToDo: Stand up an Interface to View and Edit Customer Configs @created(24-01-31 12:54)
@@ -126,12 +127,10 @@ Dropbucket SFTP Connector:
 SegmentConnector: 
   ✔ Todo: Complete Test of latest @created(24-02-14 12:03) @done(24-02-14 12:03)
   ✔ Todo: Create PR @created(24-02-14 12:03) @done(24-02-14 12:03)
-  ToDo: Confirm last update data arriving, no issues,
+  ✔ ToDo: Confirm last update data arriving, no issues, @created(24-03-12 22:37) @done(24-03-12 22:37)
   ToDo: review all material for Catalog PR 
   ToDo: Create PR for Catalog Entry
   ToDo: Confirm Catalog Entry correctness and completion
-
-
 
 
 Userguide to ToDo:             
