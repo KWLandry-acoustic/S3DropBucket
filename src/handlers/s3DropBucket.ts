@@ -55,11 +55,11 @@ import { env } from 'node:process'
 let testS3Key: string
 let testS3Bucket: string
 testS3Bucket = "tricklercache-configs"
-testS3Key = "TestData/cloroxweather_99706.csv"
+// testS3Key = "TestData/cloroxweather_99706.csv"
 // testS3Key = "TestData/visualcrossing_00213.csv"
 // testS3Key = "TestData/pura_2024_02_26T05_53_26_084Z.json"
 // testS3Key = "TestData/pura_2024_02_25T00_00_00_090Z.json"
-// testS3Key = "TestData/pura_aggregate_S3DropBucket_Aggregator-7-2024-03-05-20-07-28-ae512353-e614-348c-86ac-43aa1236f117.json"
+testS3Key = "TestData/pura_aggregate_S3DropBucket_Aggregator-7-2024-03-05-20-07-28-ae512353-e614-348c-86ac-43aa1236f117.json"
 
 
 let vid: string
@@ -109,12 +109,12 @@ interface customerConfig {
         "filepattern": string
         "schedule": string
     }
-    transforms: [
+    transforms: {
         jsonMap: { [key: string]: string },
         csvMap: { [key: string]: string },
         ignore: string[],
         script: string[]
-    ]
+    }
 }
 
 let customersConfig = {} as customerConfig
@@ -708,7 +708,7 @@ async function processS3ObjectContentStream (key: string, version: string, bucke
                     .on('end', async function () {
 
                         if (tcc.SelectiveDebug.indexOf('_99,') > -1) saveSampleJSON(JSON.stringify(chunks))
-                        debugger
+
                         if (recs < 1 && chunks.length < 1)
                         {
                             streamResult = {
@@ -756,9 +756,10 @@ async function processS3ObjectContentStream (key: string, version: string, bucke
                                 key.toLowerCase().indexOf('aggregat') < 0)
                             {
                                 batchCount++
-                                recs += chunks.length
+                                recs = chunks.length
+
                                 let pfRes
-                                debugger
+
                                 try 
                                 {
                                     pfRes = await putToFirehose(chunks, key, custConfig.Customer)
@@ -855,7 +856,7 @@ async function putToFirehose (S3Obj: string[], key: string, cust: string) {
             Object.assign(j, { "Customer": cust })
 
             const f = Buffer.from(JSON.stringify(j), 'utf-8')
-            debugger
+
             const fc = {
                 DeliveryStreamName: "S3DropBucket_Aggregator",
                 Record: {
@@ -1333,37 +1334,6 @@ async function sftpDeleteFile (remoteFile: string) {
 }
 
 
-
-
-function applyJSONMap (chunk: string[], map: { [key: string]: string }) {
-
-    Object.entries(map).forEach(([k, v]) => {
-
-        try
-        {
-            let j = jsonpath.value(chunk, v)
-            if (!j) j = 'JSONPathDataNotFound'
-            Object.assign(chunk, { [k]: jsonpath.value(chunk, v) })
-
-        } catch (e)
-        {
-            console.error(`Error parsing data for JSONPath statement ${k} ${v}, ${e} \nTarget Data: \n${JSON.stringify(chunk)} `)
-        }
-
-        // const a1 = jsonpath.parse(value)
-        // const a2 = jsonpath.parent(s3Chunk, value)
-        // const a3 = jsonpath.paths(s3Chunk, value)
-        // const a4 = jsonpath.query(s3Chunk, value)
-        // const a6 = jsonpath.value(s3Chunk, value)
-
-        //Confirms Update was accomplished 
-        // const j = jsonpath.query(s3Chunk, v)
-        // console.info(`${ j } `)
-    })
-    return chunk
-}
-
-
 async function checkForTCConfigUpdates () {
     if (tcLogDebug) console.info(`Checking for TricklerCache Config updates`)
     tcc = await getValidateTricklerConfig()
@@ -1745,31 +1715,31 @@ async function validateCustomerConfig (config: customerConfig) {
 
     if (!config.transforms)
     {
-        Object.assign(config, { "transforms": [{}] })
+        Object.assign(config, { "transforms": {} })
     }
-    if (!config.transforms[0].jsonMap)
+    if (!config.transforms.jsonMap)
     {
-        Object.assign(config.transforms[0], { jsonMap: { "none": "" } })
+        Object.assign(config.transforms, { jsonMap: { "none": "" } })
     }
-    if (!config.transforms[0].csvMap)
+    if (!config.transforms.csvMap)
     {
-        Object.assign(config.transforms[0], { csvMap: { "none": "" } })
+        Object.assign(config.transforms, { csvMap: { "none": "" } })
     }
-    if (!config.transforms[0].ignore)
+    if (!config.transforms.ignore)
     {
-        Object.assign(config.transforms[0], { ignore: [] })
+        Object.assign(config.transforms, { ignore: [] })
     }
-    if (!config.transforms[0].script)
+    if (!config.transforms.script)
     {
-        Object.assign(config.transforms[0], { script: "" })
+        Object.assign(config.transforms, { script: "" })
     }
 
     // if (Object.keys(config.transform[0].jsonMap)[0].indexOf('none'))
-    if (!config.transforms[0].jsonMap.hasOwnProperty("none"))  
+    if (!config.transforms.jsonMap.hasOwnProperty("none"))  
     {
         let tmpMap: { [key: string]: string } = {}
         // let tmpmap2: Record<string, string> = {}
-        const jm = config.transforms[0].jsonMap as unknown as { [key: string]: string }
+        const jm = config.transforms.jsonMap as unknown as { [key: string]: string }
         for (const m in jm)
         {
             try
@@ -1784,7 +1754,7 @@ async function validateCustomerConfig (config: customerConfig) {
                 console.error(`Invalid JSONPath defined in Customer config: ${m}: "${m}", \nInvalid JSONPath - ${e} `)
             }
         }
-        config.transforms[0] = tmpMap
+        config.transforms.jsonMap = tmpMap
     }
 
     return config as customerConfig
@@ -1796,7 +1766,8 @@ async function storeAndQueueWork (chunks: string[], s3Key: string, config: custo
     if (batch > tcc.MaxBatchesWarning) console.warn(`Warning: Updates from the S3 Object(${s3Key}) are exceeding(${batch}) the Warning Limit of ${tcc.MaxBatchesWarning} Batches per Object.`)
     // throw new Error(`Updates from the S3 Object(${ s3Key }) Exceed(${ batch }) Safety Limit of 20 Batches of 99 Updates each.Exiting...`)
 
-    chunks = transforms(chunks, config)
+    //Aggregate files are already transformed, otherwise process transforms
+    if (s3Key.toLowerCase().indexOf('aggregat') < 0) chunks = transforms(chunks, config)
 
     if (customersConfig.listType.toLowerCase() === 'dbkeyed' ||
         customersConfig.listType.toLowerCase() === 'dbnonkeyed')
@@ -1813,8 +1784,6 @@ async function storeAndQueueWork (chunks: string[], s3Key: string, config: custo
     {
         s3Key = s3Key.split('/').at(-1) ?? s3Key
     }
-
-    debugger
 
     let key = s3Key.replace('.', '_')
     key = `${key}_update_${batch}_${recs}.xml`
@@ -1979,7 +1948,6 @@ function transforms (chunks: string[], config: customerConfig) {
 
     //Clorox Weather Data
     //Add dateday column
-
     if (config.Customer.toLowerCase().indexOf('cloroxweather_') > -1)
     {
         let c: typeof chunks = []
@@ -2003,14 +1971,28 @@ function transforms (chunks: string[], config: customerConfig) {
     }
 
 
-    // if (config.transform)
-    // {
-    //     for (const j in chunks)
-    //     {
-    //         const day = chunks[j].
-    //             Object.assign(chunks[j], "dateday": "day")
-    //     }
-    // }
+
+    //Apply the JSONMap - 
+    //  JSONPath statements
+    //      "jsonMap": {
+    //          "email": "$.uniqueRecipient",
+    //              "zipcode": "$.context.traits.address.postalCode"
+    //      },
+
+    if (config.transforms.jsonMap)
+    {
+        let r: typeof chunks = []
+        for (const l of chunks)
+        {
+            const jo = JSON.parse(l)
+            // for (const j in config.transforms.jsonMap)
+            // {
+            const jmr = applyJSONMap(jo, config.transforms.jsonMap)
+            r.push(JSON.stringify(jmr))
+            // }
+        }
+        chunks = r
+    }
 
     //Apply Ignore
     // "Ignore": [ //Ignore column if it exists in the data
@@ -2029,31 +2011,48 @@ function transforms (chunks: string[], config: customerConfig) {
     //       "Col_DF": 3
     // },
 
-    //Apply the JSONMap - JSONPath statements
-    // "jsonMap": {
-    //     "email": "$.uniqueRecipient",
-    //         "zipcode": "$.context.traits.address.postalCode"
-    // },
-
-
-    // if (config.transform[0].jsonMap)
-    // {
-    //     const am: string[] = []
-    //     for (const j in chunks)
-    //     {
-    //         const a = applyJSONMap([o], config.jsonMap)
-    //         am.push(a)
-    //         chunks = am
-    //     }
-
-    //     chunks.forEach((o) => {
-    //         const a = applyJSONMap([o], config.jsonMap)
-    //         am.push(a)
-    //         chunks = am
-    //     })
-    // }
-
     return chunks
+}
+
+function applyJSONMap (jsonObj: object, map: { [key: string]: string }) {
+
+
+
+    // j.forEach((o: object) => {
+    //     const a = applyJSONMap([o], config.transforms[0].jsonMap)
+    //     am.push(a)
+    //     chunks = am
+    // })
+
+    Object.entries(map).forEach(([k, v]) => {
+        try
+        {
+            let j = jsonpath.value(jsonObj, v)
+            if (!j)
+            {
+                console.error(`Data not Found for JSONPath statement ${k}: ${v},  \nTarget Data: \n${JSON.stringify(jsonObj)} `)
+            }
+            else
+            {
+                // Object.assign(jsonObj, { [k]: jsonpath.value(jsonObj, v) })
+                Object.assign(jsonObj, { [k]: j })
+            }
+        } catch (e)
+        {
+            console.error(`Error parsing data for JSONPath statement ${k} ${v}, ${e} \nTarget Data: \n${JSON.stringify(jsonObj)} `)
+        }
+
+        // const a1 = jsonpath.parse(value)
+        // const a2 = jsonpath.parent(s3Chunk, value)
+        // const a3 = jsonpath.paths(s3Chunk, value)
+        // const a4 = jsonpath.query(s3Chunk, value)
+        // const a6 = jsonpath.value(s3Chunk, value)
+
+        //Confirms Update was accomplished 
+        // const j = jsonpath.query(s3Chunk, v)
+        // console.info(`${ j } `)
+    })
+    return jsonObj
 }
 
 

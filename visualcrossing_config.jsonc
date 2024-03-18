@@ -13,7 +13,32 @@
         "refreshToken": "rD-7E2r8BynGDaapr13oJV9BxQr20lsYGN9RPkbrtPtAS1",
         "clientId": "1d99f8d8-0897-4090-983a-c517cc54032e",
         "clientSecret": "124bd238-0987-40a2-b8fb-879ddd4d3241",
-        "csvMap": { //Mapping when processing CSV files
-                "Col_AA": "COL_XYZ" //Write Col_AA with data from Col_XYZ in the CSV file
+        "transforms": {
+                "jsonMap": {
+                        "email": "$.uniqueRecipient",
+                        "zipcode": "$.context.traits.address.postalCode"
+                },
+                "script": [
+                        "",
+                        "return '' ",
+                        ""
+                ],
+
+                "csvMap": { //Mapping when processing CSV files
+                        "Col_AA": "COL_XYZ", //Write Col_AA with data from Col_XYZ in the CSV file
+                        "Col_BB": "COL_MNO",
+                        "Col_CC": "COL_GHI",
+                        "Col_DD": 1, //Write Col_DD with data from the 1st column of data in the CSV file.
+                        "Col_DE": 2,
+                        "Col_DF": 3
+                },
+
+
+                "Ignore": [ //Ignore column if it exists in the data
+                        "Col_BA",
+                        "Col_BB",
+                        "Col_BC"
+                ]
+
         }
 }
