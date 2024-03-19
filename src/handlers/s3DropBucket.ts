@@ -400,6 +400,8 @@ export const s3DropBucketHandler: Handler = async (event: S3Event, context: Cont
 
                     //Don't delete the test data
                     if (localTesting) key = 'TestData/S3Object_DoNotDelete'
+                    if (key.toLowerCase().indexOf('aggregat') > -1) key = 'TestData/S3Object_DoNotDelete'
+
 
                     if ((res.PutToFireHoseAggregatorResult = "200") ||
                         (res.OnEndStoreS3QueueResult.AddWorkToS3ProcessBucketResults.S3ProcessBucketResult === "200") &&
@@ -407,7 +409,7 @@ export const s3DropBucketHandler: Handler = async (event: S3Event, context: Cont
                     {
                         try
                         {
-                            //Once successful delete the original S3 Object
+                            //Once File successfully processed delete the original S3 Object
                             delResultCode = await deleteS3Object(key, vid, bucket)
 
                             if (delResultCode !== '204')
@@ -1034,6 +1036,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (event: SQSEvent
                 {
                     console.info(`Work Successfully Posted to Campaign - ${tqm.custconfig.listName} from (${tqm.workKey} - versionId: ${tqm.versionId}), will now Delete the Work from the S3 Process Queue`)
 
+                    //Delete the Work file
                     const d: string = await deleteS3Object(tqm.workKey, tqm.versionId, tcc.s3DropBucketWorkBucket!)
                     if (d === '204') console.info(`Successful Deletion of Work: ${tqm.workKey} (versionId: ${tqm.versionId})`)
                     else console.error(`Failed to Delete ${tqm.workKey} (versionId: ${tqm.versionId}). Expected '204' but received ${d} `)
@@ -1048,7 +1051,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (event: SQSEvent
 
     }
 
-    console.info(`Processed ${event.Records.length} Work Queue records.Items Fail Count: ${sqsBatchFail.batchItemFailures.length} \nItems Failed List: ${JSON.stringify(sqsBatchFail)} `)
+    console.info(`Processed ${event.Records.length} Work Queue records. Items Retry Count: ${sqsBatchFail.batchItemFailures.length} \nItems Retry List: ${JSON.stringify(sqsBatchFail)} `)
 
     //ToDo: Complete the Final Processing Outcomes messaging for Queue Processing 
     // if (tcc.SelectiveDebug.indexOf("_21,") > -1) console.info(`Selective Debug 21 - \n${ JSON.stringify(processS3ObjectStreamResolution) } `)
