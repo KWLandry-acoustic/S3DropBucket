@@ -400,7 +400,8 @@ export const s3DropBucketHandler: Handler = async (event: S3Event, context: Cont
 
                     //Don't delete the test data
                     if (localTesting) key = 'TestData/S3Object_DoNotDelete'
-                    if (key.toLowerCase().indexOf('aggregat') > -1) key = 'TestData/S3Object_DoNotDelete'
+                    //Do not delete in order to Capture Testing Data
+                    // if (key.toLowerCase().indexOf('aggregat') > -1) key = 'TestData/S3Object_DoNotDelete'
 
 
                     if ((res.PutToFireHoseAggregatorResult = "200") ||
