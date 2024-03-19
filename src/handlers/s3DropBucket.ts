@@ -55,10 +55,10 @@ import { env } from 'node:process'
 let testS3Key: string
 let testS3Bucket: string
 testS3Bucket = "tricklercache-configs"
-// testS3Key = "TestData/cloroxweather_99706.csv"
+testS3Key = "TestData/cloroxweather_99706.csv"
 // testS3Key = "TestData/visualcrossing_00213.csv"
 // testS3Key = "TestData/pura_2024_02_26T05_53_26_084Z.json"
-testS3Key = "TestData/pura_2024_02_25T00_00_00_090Z.json"
+// testS3Key = "TestData/pura_2024_02_25T00_00_00_090Z.json"
 // testS3Key = "TestData/pura_aggregate_S3DropBucket_Aggregator-7-2024-03-05-20-07-28-ae512353-e614-348c-86ac-43aa1236f117.json"
 
 
@@ -1766,8 +1766,8 @@ async function storeAndQueueWork (chunks: string[], s3Key: string, config: custo
     if (batch > tcc.MaxBatchesWarning) console.warn(`Warning: Updates from the S3 Object(${s3Key}) are exceeding(${batch}) the Warning Limit of ${tcc.MaxBatchesWarning} Batches per Object.`)
     // throw new Error(`Updates from the S3 Object(${ s3Key }) Exceed(${ batch }) Safety Limit of 20 Batches of 99 Updates each.Exiting...`)
 
-    //Aggregate files are already transformed, otherwise process transforms
-    // if (s3Key.toLowerCase().indexOf('aggregat') < 0)
+    //Customers marked as "Singular" update files are not transformed, but sent to Firehose before this, 
+    //  therefore need to transform Aggregate files as well as files marked as "Bulk"
     chunks = transforms(chunks, config)
 
     if (customersConfig.listType.toLowerCase() === 'dbkeyed' ||
@@ -1973,6 +1973,37 @@ function transforms (chunks: string[], config: customerConfig) {
 
 
 
+    //Apply Ignore
+    // "Ignore": [ //Ignore column if it exists in the data
+    //     "Col_BA",
+    //     "Col_BB",
+    //     "Col_BC"
+    // ],
+    if (config.transforms.ignore)
+    {
+        let i: typeof chunks = []
+        try
+        {
+            for (const l of chunks)
+            {
+                const jo = JSON.parse(l)
+                for (const ig of config.transforms.ignore)
+                {
+                    // const { [keyToRemove]: removedKey, ...newObject } = originalObject;
+                    // const { [ig]: , ...i } = jo
+                    delete jo[ig]
+                    i.push(JSON.stringify(jo))
+                }
+            }
+        }
+        catch (e)
+        {
+            console.error(`Execption - Transform - Applying Ignore - \n${e}`)
+        }
+        chunks = i
+    }
+
+
     //Apply the JSONMap - 
     //  JSONPath statements
     //      "jsonMap": {
@@ -1983,52 +2014,61 @@ function transforms (chunks: string[], config: customerConfig) {
     if (config.transforms.jsonMap)
     {
         let r: typeof chunks = []
-        for (const l of chunks)
+        try
         {
-            const jo = JSON.parse(l)
-            // for (const j in config.transforms.jsonMap)
-            // {
-            const jmr = applyJSONMap(jo, config.transforms.jsonMap)
-            r.push(JSON.stringify(jmr))
-            // }
+            for (const l of chunks)
+            {
+                const jo = JSON.parse(l)
+                const jmr = applyJSONMap(jo, config.transforms.jsonMap)
+                r.push(JSON.stringify(jmr))
+            }
+        } catch (e)
+        {
+            console.error(`Exception - Transform - Applying JSONMap \n${e}`)
         }
         chunks = r
     }
-
-    //Apply Ignore
-    // "Ignore": [ //Ignore column if it exists in the data
-    //     "Col_BA",
-    //     "Col_BB",
-    //     "Col_BC"
-    // ],
-    if (config.transforms.ignore)
-    {
-        let i: typeof chunks = []
-        for (const l of chunks)
-        {
-            debugger
-
-            const jo = JSON.parse(l)
-            for (const i of config.transforms.ignore)
-            {
-                delete jo.i
-                // delete (i as { occupation?: string }).occupation
-            }
-        }
-
-
-    }
-
 
     //Apply CSVMap
     // "csvMap": { //Mapping when processing CSV files
     //       "Col_AA": "COL_XYZ", //Write Col_AA with data from Col_XYZ in the CSV file
     //       "Col_BB": "COL_MNO",
     //       "Col_CC": "COL_GHI",
+
     //       "Col_DD": 1, //Write Col_DD with data from the 1st column of data in the CSV file.
     //       "Col_DE": 2,
     //       "Col_DF": 3
     // },
+    if (config.transforms.csvMap)
+    {
+        let c: typeof chunks = []
+        try
+        {
+            for (const l of chunks)
+            {
+
+                const jo = JSON.parse(l)
+
+                const map = config.transforms.csvMap as { [key: string]: string }
+                Object.entries(map).forEach(([k, v]) => {
+                    if (typeof v !== "number") jo[k] = jo[v] ?? ""
+                    else
+                    {
+                        debugger
+                        const vk = Object.keys(jo)[v]
+                        // const vkk = vk[v]
+                        jo[k] = jo[vk] ?? ""
+
+                    }
+                })
+                c.push(JSON.stringify(jo))
+            }
+        } catch (e)
+        {
+            console.error(`Exception - Transforms - Applying CSVMap \n${e}`)
+        }
+        chunks = c
+    }
 
     return chunks
 }
