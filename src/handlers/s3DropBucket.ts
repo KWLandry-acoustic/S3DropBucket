@@ -59,7 +59,10 @@ testS3Key = "TestData/cloroxweather_99706.csv"
 // testS3Key = "TestData/visualcrossing_00213.csv"
 // testS3Key = "TestData/pura_2024_02_26T05_53_26_084Z.json"
 // testS3Key = "TestData/pura_2024_02_25T00_00_00_090Z.json"
-// testS3Key = "TestData/pura_aggregate_S3DropBucket_Aggregator-7-2024-03-05-20-07-28-ae512353-e614-348c-86ac-43aa1236f117.json"
+testS3Key = "TestData/pura_S3DropBucket_Aggregator-8-2024-03-19-16-42-48-46e884aa-8c6a-3ff9-8d32-c329395cf311.json"
+
+
+
 
 
 let vid: string
@@ -1770,9 +1773,13 @@ async function storeAndQueueWork (chunks: string[], s3Key: string, config: custo
     if (batch > tcc.MaxBatchesWarning) console.warn(`Warning: Updates from the S3 Object(${s3Key}) are exceeding(${batch}) the Warning Limit of ${tcc.MaxBatchesWarning} Batches per Object.`)
     // throw new Error(`Updates from the S3 Object(${ s3Key }) Exceed(${ batch }) Safety Limit of 20 Batches of 99 Updates each.Exiting...`)
 
+    debugger
+
     //Customers marked as "Singular" update files are not transformed, but sent to Firehose before this, 
     //  therefore need to transform Aggregate files as well as files marked as "Bulk"
     chunks = transforms(chunks, config)
+
+    debugger
 
     if (customersConfig.listType.toLowerCase() === 'dbkeyed' ||
         customersConfig.listType.toLowerCase() === 'dbnonkeyed')
@@ -1844,6 +1851,12 @@ async function storeAndQueueWork (chunks: string[], s3Key: string, config: custo
 
 function convertJSONToXML_RTUpdates (updates: string[], config: customerConfig) {
 
+    if (updates.length < 1)
+    {
+        throw new Error(`Exception - Convert JSON to XML for RT - No Updates (${updates.length}) were passed to process. Customer ${config.Customer} `)
+    }
+
+
     xmlRows = `<Envelope> <Body> <InsertUpdateRelationalTable> <TABLE_ID> ${config.listId} </TABLE_ID><ROWS>`
 
     let r = 0
@@ -1875,8 +1888,16 @@ function convertJSONToXML_RTUpdates (updates: string[], config: customerConfig) 
 
 function convertJSONToXML_DBUpdates (updates: string[], config: customerConfig) {
 
+    if (updates.length < 1)
+    {
+        throw new Error(`Exception - Convert JSON to XML for DB - No Updates (${updates.length}) were passed to process. Customer ${config.Customer} `)
+    }
+
+
     xmlRows = `<Envelope><Body>`
     let r = 0
+
+    debugger
 
     try
     {
@@ -1885,7 +1906,6 @@ function convertJSONToXML_DBUpdates (updates: string[], config: customerConfig) 
             r++
             const j = JSON.parse(updates[jo])
             const s = JSON.stringify(j)
-
 
             xmlRows += `<AddRecipient><LIST_ID>${config.listId}</LIST_ID><CREATED_FROM>0</CREATED_FROM><UPDATE_IF_FOUND>true</UPDATE_IF_FOUND>`
 
@@ -1955,7 +1975,7 @@ function transforms (chunks: string[], config: customerConfig) {
     //Add dateday column
     if (config.Customer.toLowerCase().indexOf('cloroxweather_') > -1)
     {
-        let c: typeof chunks = []
+        let t: typeof chunks = []
 
         const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
 
@@ -1969,10 +1989,14 @@ function transforms (chunks: string[], config: customerConfig) {
                 const day = { "dateday": days[dt.getDay()] }
 
                 Object.assign(j, day)
-                c.push(JSON.stringify(j))
+                t.push(JSON.stringify(j))
             }
         }
-        chunks = c
+        if (t.length !== chunks.length)
+        {
+            throw new Error(`Error - Transform - Applying Clorox Custom Transform returns fewer records (${t.length}) than initial set ${chunks.length}`)
+        }
+        else chunks = t
     }
 
 
@@ -1983,7 +2007,7 @@ function transforms (chunks: string[], config: customerConfig) {
     //     "Col_BB",
     //     "Col_BC"
     // ],
-    if (config.transforms.ignore)
+    if (config.transforms.ignore.length > 0)
     {
         let i: typeof chunks = []
         try
@@ -2002,9 +2026,13 @@ function transforms (chunks: string[], config: customerConfig) {
         }
         catch (e)
         {
-            console.error(`Execption - Transform - Applying Ignore - \n${e}`)
+            console.error(`Exception - Transform - Applying Ignore - \n${e}`)
         }
-        chunks = i
+        if (i.length !== chunks.length)
+        {
+            throw new Error(`Error - Transform - Applying Ignore returns fewer records ${i.length} than initial set ${chunks.length}`)
+        }
+        else chunks = i
     }
 
 
@@ -2015,7 +2043,7 @@ function transforms (chunks: string[], config: customerConfig) {
     //              "zipcode": "$.context.traits.address.postalCode"
     //      },
 
-    if (config.transforms.jsonMap)
+    if (Object.keys(config.transforms.jsonMap).indexOf('none') < 0)
     {
         let r: typeof chunks = []
         try
@@ -2030,7 +2058,12 @@ function transforms (chunks: string[], config: customerConfig) {
         {
             console.error(`Exception - Transform - Applying JSONMap \n${e}`)
         }
-        chunks = r
+
+        if (r.length !== chunks.length)
+        {
+            throw new Error(`Error - Transform - Applying JSONMap returns fewer records (${r.length}) than initial set ${chunks.length}`)
+        }
+        else chunks = r
     }
 
     //Apply CSVMap
@@ -2043,14 +2076,13 @@ function transforms (chunks: string[], config: customerConfig) {
     //       "Col_DE": 2,
     //       "Col_DF": 3
     // },
-    if (config.transforms.csvMap)
+    if (Object.keys(config.transforms.csvMap).indexOf('none') < 0)
     {
         let c: typeof chunks = []
         try
         {
             for (const l of chunks)
             {
-
                 const jo = JSON.parse(l)
 
                 const map = config.transforms.csvMap as { [key: string]: string }
@@ -2071,7 +2103,11 @@ function transforms (chunks: string[], config: customerConfig) {
         {
             console.error(`Exception - Transforms - Applying CSVMap \n${e}`)
         }
-        chunks = c
+        if (c.length !== chunks.length)
+        {
+            throw new Error(`Error - Transform - Applying CSVMap returns fewer records (${c.length}) than initial set ${chunks.length}`)
+        }
+        else chunks = c
     }
 
     return chunks
