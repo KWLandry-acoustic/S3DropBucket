@@ -6,7 +6,7 @@ import {
     GetObjectCommand, GetObjectCommandOutput, GetObjectCommandInput,
     DeleteObjectCommand, DeleteObjectCommandInput, DeleteObjectCommandOutput,
     DeleteObjectOutput, DeleteObjectRequest, ObjectStorageClass, DeleteObjectsCommand,
-    ListObjectVersionsCommand, ListObjectsCommandOutput
+    ListObjectVersionsCommand, ListObjectsCommandOutput, CopyObjectCommand
 } from '@aws-sdk/client-s3'
 
 import { FirehoseClient, PutRecordCommand, PutRecordCommandInput, PutRecordCommandOutput } from "@aws-sdk/client-firehose"
@@ -59,7 +59,7 @@ testS3Key = "TestData/cloroxweather_99706.csv"
 // testS3Key = "TestData/visualcrossing_00213.csv"
 // testS3Key = "TestData/pura_2024_02_26T05_53_26_084Z.json"
 // testS3Key = "TestData/pura_2024_02_25T00_00_00_090Z.json"
-testS3Key = "TestData/pura_S3DropBucket_Aggregator-8-2024-03-19-16-42-48-46e884aa-8c6a-3ff9-8d32-c329395cf311.json"
+// testS3Key = "TestData/pura_S3DropBucket_Aggregator-8-2024-03-19-16-42-48-46e884aa-8c6a-3ff9-8d32-c329395cf311.json"
 
 
 
@@ -158,6 +158,8 @@ export interface tcConfig {
     // RetryQueueInitialWaitTimeSeconds: number
     EventEmitterMaxListeners: number
     DropBucketQuiesce: boolean
+    DropBucketMaintHours: number,
+    DropBucketProcessQueueMaintHours: number,
     DropBucketPurgeCount: number
     DropBucketPurge: string
     QueueBucketQuiesce: boolean
@@ -272,8 +274,11 @@ export const s3DropBucketHandler: Handler = async (event: S3Event, context: Cont
         tcc = await getValidateTricklerConfig()
     }
 
-    // console.info(`S3 DropBucket File Processor Selective Debug Set is: ${tcc.SelectiveDebug}`)
+    if (event.Records[0].s3.bucket.name && tcc.DropBucketMaintHours > 0)
+    {
+        const maintainance = await maintainS3DropBucket(event.Records[0].s3.bucket.name)
 
+    }
 
     if (tcc.SelectiveDebug.indexOf("_9,") > -1) console.info(`Selective Debug 9 - Process Environment Vars: ${JSON.stringify(process.env)}`)
 
@@ -1488,6 +1493,18 @@ async function getValidateTricklerConfig () {
                 `Tricklercache Config invalid definition: DropBucketQuiesce - ${tc.DropBucketQuiesce} `,
             )
 
+
+        if (tc.DropBucketMaintHours != undefined)
+        {
+            process.env["DropBucketMaintHours"] = tc.DropBucketMaintHours.toString()
+        }
+        else tc.DropBucketMaintHours = -1
+
+        if (tc.DropBucketProcessQueueMaintHours != undefined)
+        {
+            process.env["DropBucketProcessQueueMaintHours"] = tc.DropBucketProcessQueueMaintHours.toString()
+        }
+        else tc.DropBucketProcessQueueMaintHours = -1
 
         if (tc.DropBucketPurge !== undefined)
             process.env["DropBucketPurge"] = tc.DropBucketPurge
@@ -2778,3 +2795,68 @@ async function purgeBucket (count: number, bucket: string) {
     console.info(`Deleted ${d} Objects from ${bucket} `)
     return `Deleted ${d} Objects from ${bucket} `
 }
+
+
+async function maintainS3DropBucketQueueBucket (bucket: string) {
+
+
+}
+
+async function maintainS3DropBucket (bucket: string) {
+
+    const listReq = {
+        Bucket: bucket,
+        MaxKeys: 1000
+    } as ListObjectsV2CommandInput
+
+    const rList: string[] = []
+
+    await s3.send(new ListObjectsV2Command(listReq))
+        .then(async (s3ListResult: ListObjectsV2CommandOutput) => {
+
+            // 3,600,000 millisecs = 1 hour
+            const a = 3600000 * tcc.DropBucketMaintHours  //Older Than X Hours 
+
+            const d: Date = new Date()
+
+            try
+            {
+                for (const o in s3ListResult.Contents)
+                {
+                    const n = parseInt(o)
+                    const s3d: Date = new Date(s3ListResult.Contents[n].LastModified ?? new Date())
+                    const df = d.getTime() - s3d.getTime()
+                    if (df > a) 
+                    {
+
+                        const obj = s3ListResult.Contents[n]
+                        const k = obj.Key
+
+                        const updatedMetadata = await s3.send(
+                            new CopyObjectCommand({
+                                Bucket: bucket,
+                                Key: k,
+                                CopySource: `${bucket}/${k}`,
+                                MetadataDirective: 'REPLACE'
+                            })
+                        )
+                            .then((res) => {
+                                // console.info(`${JSON.stringify(res)}`)
+                                rList.push(k + " --> " + JSON.stringify(res))
+                            })
+                    }
+                }
+            } catch (e)
+            {
+                throw new Error(`Exception - Maintain S3DropBucket - List Results processing - \n${e}`)
+            }
+        })
+        .catch((e) => {
+            console.error(`Exception - On S3 List Command for Maintaining Objects on ${bucket}: ${e} `)
+        })
+
+    debugger
+    return rList
+}
+
+
