@@ -40,12 +40,14 @@ import {
     paginateListQueues,
     SendMessageCommand,
     SendMessageCommandOutput,
+    BatchEntryIdsNotDistinct,
 } from '@aws-sdk/client-sqs'
 
 import sftpClient, { ListFilterFunction } from 'ssh2-sftp-client'
 import { FileResultCallback } from '@babel/core'
 import { freemem } from 'os'
 import { env } from 'node:process'
+import { keyBy } from 'lodash'
 
 //For when needed to reference Lambda execution environment /tmp folder 
 // import { ReadStream, close } from 'fs'
@@ -55,14 +57,12 @@ import { env } from 'node:process'
 let testS3Key: string
 let testS3Bucket: string
 testS3Bucket = "tricklercache-configs"
-testS3Key = "TestData/cloroxweather_99706.csv"
+// testS3Key = "TestData/cloroxweather_99706.csv"
 // testS3Key = "TestData/visualcrossing_00213.csv"
 // testS3Key = "TestData/pura_2024_02_26T05_53_26_084Z.json"
 // testS3Key = "TestData/pura_2024_02_25T00_00_00_090Z.json"
 // testS3Key = "TestData/pura_S3DropBucket_Aggregator-8-2024-03-19-16-42-48-46e884aa-8c6a-3ff9-8d32-c329395cf311.json"
-
-
-
+testS3Key = "pura_S3DropBucket_Aggregator-8-2024-03-23-09-23-55-123cb0f9-9552-3303-a451-a65dca81d3c4_json_update_53_99.xml"
 
 
 let vid: string
@@ -157,11 +157,11 @@ export interface tcConfig {
     // RetryQueueVisibilityTimeout: number
     // RetryQueueInitialWaitTimeSeconds: number
     EventEmitterMaxListeners: number
-    DropBucketQuiesce: boolean
-    DropBucketMaintHours: number,
-    DropBucketProcessQueueMaintHours: number,
-    DropBucketPurgeCount: number
-    DropBucketPurge: string
+    S3DropBucketQuiesce: boolean
+    S3DropBucketMaintHours: number,
+    S3DropBucketProcessQueueMaintHours: number,
+    S3DropBucketPurgeCount: number
+    S3DropBucketPurge: string
     QueueBucketQuiesce: boolean
     QueueBucketPurgeCount: number
     QueueBucketPurge: string
@@ -274,9 +274,11 @@ export const s3DropBucketHandler: Handler = async (event: S3Event, context: Cont
         tcc = await getValidateTricklerConfig()
     }
 
-    if (event.Records[0].s3.bucket.name && tcc.DropBucketMaintHours > 0)
+    if (event.Records[0].s3.bucket.name && tcc.S3DropBucketMaintHours > 0)
     {
-        const maintainance = await maintainS3DropBucket(event.Records[0].s3.bucket.name)
+        const maintainance = await maintainS3DropBucket()
+
+        if (tcc.SelectiveDebug.indexOf("_26,") > -1) console.info(`Selective Debug 26 - \n${maintainance}`)
 
     }
 
@@ -288,7 +290,6 @@ export const s3DropBucketHandler: Handler = async (event: S3Event, context: Cont
         if (tcc.SelectiveDebug.indexOf("_25,") > -1) console.info(`Selective Debug 25 - Processing an Aggregated File ${event.Records[0].s3.object.key}`)
 
     }
-
 
 
     //When Local Testing - pull an S3 Object and so avoid the not-found error
@@ -315,14 +316,14 @@ export const s3DropBucketHandler: Handler = async (event: S3Event, context: Cont
     }
 
 
-    if (tcc.DropBucketPurgeCount > 0)
+    if (tcc.S3DropBucketPurgeCount > 0)
     {
-        console.warn(`Purge Requested, Only action will be to Purge ${tcc.DropBucketPurge} of ${tcc.DropBucketPurgeCount} Records. `)
-        const d = await purgeBucket(Number(tcc.DropBucketPurgeCount!), tcc.DropBucketPurge!)
+        console.warn(`Purge Requested, Only action will be to Purge ${tcc.S3DropBucketPurge} of ${tcc.S3DropBucketPurgeCount} Records. `)
+        const d = await purgeBucket(Number(tcc.S3DropBucketPurgeCount!), tcc.S3DropBucketPurge!)
         return d
     }
 
-    if (tcc.DropBucketQuiesce)
+    if (tcc.S3DropBucketQuiesce)
     {
         if (!localTesting)
         {
@@ -956,6 +957,8 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (event: SQSEvent
         return d
     }
 
+
+
     //Deprecated in favor of AWS CLI commands 
     //
     // if (tcc.reQueue !== '')
@@ -993,14 +996,49 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (event: SQSEvent
         sqsBatchFail.batchItemFailures.pop()
     })
 
+    let tqm: tcQueueMessage = {
+        workKey: '',
+        versionId: '',
+        attempts: 0,
+        updateCount: '',
+        custconfig: {
+            Customer: '',
+            format: '',
+            updates: '',
+            listId: '',
+            listName: '',
+            listType: '',
+            DBKey: '',
+            LookupKeys: '',
+            pod: '',
+            region: '',
+            updateMaxRows: 0,
+            refreshToken: '',
+            clientId: '',
+            clientSecret: '',
+            sftp: {
+                user: '',
+                password: '',
+                filepattern: '',
+                schedule: ''
+            },
+            transforms: {
+                jsonMap: {},
+                csvMap: {},
+                ignore: [],
+                script: []
+            }
+        },
+        lastQueued: ''
+    }
+
     //Process this Inbound Batch 
     for (const q of event.Records)
     {
         // event.Records.forEach(async (i: SQSRecord) => {
-        const tqm: tcQueueMessage = JSON.parse(q.body)
+        tqm = JSON.parse(q.body)
 
         // tqm.workKey = JSON.parse(q.body).workKey
-
 
         //When Testing (Launch config has pre-stored payload) - get some actual work queued
         if (tqm.workKey === 'process_2_pura_2023_10_27T15_11_40_732Z.csv')
@@ -1061,6 +1099,15 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (event: SQSEvent
     }
 
     console.info(`Processed ${event.Records.length} Work Queue records. Items Retry Count: ${sqsBatchFail.batchItemFailures.length} \nItems Retry List: ${JSON.stringify(sqsBatchFail)} `)
+
+    if (tcc.S3DropBucketProcessQueueMaintHours > 0)
+    {
+        const maintainance = await maintainS3DropBucketQueueBucket(tqm.custconfig)   //, tqm.workKey, tqm.versionId, batch, tqm.updateCount)
+        if (tcc.SelectiveDebug.indexOf("_27,") > -1) console.info(`Selective Debug 27 - \n${maintainance}`)
+    }
+
+
+
 
     //ToDo: Complete the Final Processing Outcomes messaging for Queue Processing 
     // if (tcc.SelectiveDebug.indexOf("_21,") > -1) console.info(`Selective Debug 21 - \n${ JSON.stringify(processS3ObjectStreamResolution) } `)
@@ -1484,40 +1531,40 @@ async function getValidateTricklerConfig () {
             )
 
 
-        if (tc.DropBucketQuiesce !== undefined)
+        if (tc.S3DropBucketQuiesce !== undefined)
         {
-            process.env["DropBucketQuiesce"] = tc.DropBucketQuiesce.toString()
+            process.env["DropBucketQuiesce"] = tc.S3DropBucketQuiesce.toString()
         }
         else
             throw new Error(
-                `Tricklercache Config invalid definition: DropBucketQuiesce - ${tc.DropBucketQuiesce} `,
+                `Tricklercache Config invalid definition: DropBucketQuiesce - ${tc.S3DropBucketQuiesce} `,
             )
 
 
-        if (tc.DropBucketMaintHours != undefined)
+        if (tc.S3DropBucketMaintHours != undefined)
         {
-            process.env["DropBucketMaintHours"] = tc.DropBucketMaintHours.toString()
+            process.env["DropBucketMaintHours"] = tc.S3DropBucketMaintHours.toString()
         }
-        else tc.DropBucketMaintHours = -1
+        else tc.S3DropBucketMaintHours = -1
 
-        if (tc.DropBucketProcessQueueMaintHours != undefined)
+        if (tc.S3DropBucketProcessQueueMaintHours != undefined)
         {
-            process.env["DropBucketProcessQueueMaintHours"] = tc.DropBucketProcessQueueMaintHours.toString()
+            process.env["DropBucketProcessQueueMaintHours"] = tc.S3DropBucketProcessQueueMaintHours.toString()
         }
-        else tc.DropBucketProcessQueueMaintHours = -1
+        else tc.S3DropBucketProcessQueueMaintHours = -1
 
-        if (tc.DropBucketPurge !== undefined)
-            process.env["DropBucketPurge"] = tc.DropBucketPurge
+        if (tc.S3DropBucketPurge !== undefined)
+            process.env["DropBucketPurge"] = tc.S3DropBucketPurge
         else
             throw new Error(
-                `Tricklercache Config invalid definition: DropBucketPurge - ${tc.DropBucketPurge} `,
+                `Tricklercache Config invalid definition: DropBucketPurge - ${tc.S3DropBucketPurge} `,
             )
 
-        if (tc.DropBucketPurgeCount !== undefined)
-            process.env["DropBucketPurgeCount"] = tc.DropBucketPurgeCount.toFixed()
+        if (tc.S3DropBucketPurgeCount !== undefined)
+            process.env["DropBucketPurgeCount"] = tc.S3DropBucketPurgeCount.toFixed()
         else
             throw new Error(
-                `Tricklercache Config invalid definition: DropBucketPurgeCount - ${tc.DropBucketPurgeCount} `,
+                `Tricklercache Config invalid definition: DropBucketPurgeCount - ${tc.S3DropBucketPurgeCount} `,
             )
 
         if (tc.QueueBucketQuiesce !== undefined)
@@ -2797,25 +2844,24 @@ async function purgeBucket (count: number, bucket: string) {
 }
 
 
-async function maintainS3DropBucketQueueBucket (bucket: string) {
 
 
-}
+async function maintainS3DropBucket () {
 
-async function maintainS3DropBucket (bucket: string) {
+    const bucket = tcc.s3DropBucket
 
     const listReq = {
         Bucket: bucket,
         MaxKeys: 1000
     } as ListObjectsV2CommandInput
 
-    const rList: string[] = []
+    const reProcess: string[] = []
 
     await s3.send(new ListObjectsV2Command(listReq))
         .then(async (s3ListResult: ListObjectsV2CommandOutput) => {
 
             // 3,600,000 millisecs = 1 hour
-            const a = 3600000 * tcc.DropBucketMaintHours  //Older Than X Hours 
+            const a = 3600000 * tcc.S3DropBucketMaintHours  //Older Than X Hours 
 
             const d: Date = new Date()
 
@@ -2842,7 +2888,7 @@ async function maintainS3DropBucket (bucket: string) {
                         )
                             .then((res) => {
                                 // console.info(`${JSON.stringify(res)}`)
-                                rList.push(k + " --> " + JSON.stringify(res))
+                                reProcess.push(k + " --> " + JSON.stringify(res))
                             })
                     }
                 }
@@ -2856,7 +2902,75 @@ async function maintainS3DropBucket (bucket: string) {
         })
 
     debugger
-    return rList
+    return reProcess
 }
 
+
+async function maintainS3DropBucketQueueBucket (config: customerConfig) {  //, key: string, versionId: string, batch: string, recCount: string) {
+
+    const bucket = tcc.s3DropBucketWorkBucket
+
+    const listReq = {
+        Bucket: bucket,
+        MaxKeys: 1000
+    } as ListObjectsV2CommandInput
+
+    const requeue: string[] = []
+
+    await s3.send(new ListObjectsV2Command(listReq))
+        .then(async (s3ListResult: ListObjectsV2CommandOutput) => {
+
+            // 3,600,000 millisecs = 1 hour
+            const a = 3600000 * tcc.S3DropBucketProcessQueueMaintHours  //Older Than X Hours 
+
+            const d: Date = new Date()
+
+            try
+            {
+
+                for (const o in s3ListResult.Contents)
+                {
+                    const n = parseInt(o)
+                    const s3d: Date = new Date(s3ListResult.Contents[n].LastModified ?? new Date())
+                    const df = d.getTime() - s3d.getTime()
+                    let rm: string[] = []
+                    if (df > a) 
+                    {
+
+                        const obj = s3ListResult.Contents[n]
+                        const key = obj.Key ?? ""
+                        let versionId = ''
+                        let batch = ''
+                        let updates = ''
+
+                        const r1 = new RegExp(/json_update_(.*)_/g)
+                        let rm = r1.exec(key) ?? ""
+                        batch = rm[1]
+
+                        const r2 = new RegExp(/json_update_.*?_(.*)\./g)
+                        rm = r2.exec(key) ?? ""
+                        updates = rm[1]
+
+                        debugger
+
+                        //build SQS Entry
+                        const qa = await addWorkToSQSProcessQueue(config, key, versionId, batch, updates)
+
+                        requeue.push(key + " --> " + JSON.stringify(qa))
+
+                    }
+                }
+            } catch (e)
+            {
+                throw new Error(`Exception - Maintain S3DropBucket - List Results processing - \n${e}`)
+            }
+        })
+        .catch((e) => {
+            console.error(`Exception - On S3 List Command for Maintaining Objects on ${bucket}: ${e} `)
+        })
+
+    debugger
+    return requeue
+
+}
 
