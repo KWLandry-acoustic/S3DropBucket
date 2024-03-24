@@ -1053,6 +1053,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (event: SQSEvent
 
             if (work.length > 0)        //Retrieve Contents of the Work File  
             {
+
                 postResult = await postToCampaign(work, tqm.custconfig, tqm.updateCount)
 
                 if (tcc.SelectiveDebug.indexOf("_8,") > -1) console.info(`Selective Debug 8 - POST Result for ${tqm.workKey}(versionId: ${tqm.versionId}): ${postResult} `)
@@ -1065,17 +1066,27 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (event: SQSEvent
                     if (tcc.SelectiveDebug.indexOf("_12,") > -1) console.info(`Selective Debug 12 - Added ${tqm.workKey} (versionId: ${tqm.versionId}) to SQS Events Retry \n${JSON.stringify(sqsBatchFail)} `)
                 }
 
-                if (postResult.toLowerCase().indexOf('unsuccessful post') > -1)
-                    console.error(`Error - Unsuccesful POST(Hard Failure) for ${tqm.workKey}(versionId: ${tqm.versionId}): \n${postResult} \n Customer: ${tqm.custconfig.Customer}, Pod: ${tqm.custconfig.pod}, ListId: ${tqm.custconfig.listId} `)
-
-                if (postResult.toLowerCase().indexOf('successfully posted') > -1)
+                else if (postResult.toLowerCase().indexOf('unsuccessful post') > -1)
                 {
-                    console.info(`Work Successfully Posted to Campaign - ${tqm.custconfig.listName} from (${tqm.workKey} - versionId: ${tqm.versionId}), will now Delete the Work from the S3 Process Queue`)
+                    console.error(`Error - Unsuccesful POST(Hard Failure) for ${tqm.workKey}(versionId: ${tqm.versionId}): \n${postResult} \n Customer: ${tqm.custconfig.Customer}, Pod: ${tqm.custconfig.pod}, ListId: ${tqm.custconfig.listId} `)
+                }
+                else
+                {
+                    if (postResult.toLowerCase().indexOf('partially succesful') > -1)
+                    {
+                        console.info(`Most Work was Successfully Posted to Campaign, exceptions are: \n${postResult}`)
+                    }
+
+                    else if (postResult.toLowerCase().indexOf('successfully posted') > -1)
+                    {
+                        console.info(`Work Successfully Posted to Campaign - ${tqm.custconfig.listName} from (${tqm.workKey} - versionId: ${tqm.versionId}), will now Delete the Work from the S3 Process Queue`)
+                    }
 
                     //Delete the Work file
                     const d: string = await deleteS3Object(tqm.workKey, tqm.versionId, tcc.s3DropBucketWorkBucket!)
                     if (d === '204') console.info(`Successful Deletion of Work: ${tqm.workKey} (versionId: ${tqm.versionId})`)
                     else console.error(`Failed to Delete ${tqm.workKey} (versionId: ${tqm.versionId}). Expected '204' but received ${d} `)
+
                 }
             }
             else throw new Error(`Failed to retrieve work file(${tqm.workKey}) `)
@@ -2616,7 +2627,6 @@ export async function getAccessToken (config: customerConfig) {
 
 export async function postToCampaign (xmlCalls: string, config: customerConfig, count: string) {
 
-
     const c = config.Customer
 
     //Store AccessToken in process.env vars for reference across invocations, save requesting it repeatedly
@@ -2669,6 +2679,7 @@ export async function postToCampaign (xmlCalls: string, config: customerConfig, 
         .then(async (result) => {
 
             // console.error(`Debug POST Response: ${result}`)
+            let faults: string[] = []
 
             if (result.toLowerCase().indexOf('false</success>') > -1)
             {
@@ -2690,6 +2701,15 @@ export async function postToCampaign (xmlCalls: string, config: customerConfig, 
                 {
                     console.error(`Temporary Failure - POST of the Updates - Marked for Retry. \n${result}`)
                     return 'retry'
+                }
+                else if (result.toLowerCase().indexOf('<FaultString><![CDATA[') > -1)
+                {
+                    const f = result.split('<FaultString>')
+                    for (const fl in f)
+                    {
+                        faults.push(fl)
+                    }
+                    return "Partially Succesful - \nJSON.stringify(faults)"
                 }
                 else return `Error - Unsuccessful POST of the Updates (${count}) - Response : ${result}`
             }
