@@ -959,17 +959,6 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (event: SQSEvent
 
 
 
-    //Deprecated in favor of AWS CLI commands 
-    //
-    // if (tcc.reQueue !== '')
-    // {
-    //     console.info(`ReQueue requested for all ${ tcc.reQueue } updates on the Work Queue. `)
-    //     const d = await requeueWork(tcc.reQueue!)
-    //     console.info(`ReQueue result: ${ d } `)
-    // }
-
-
-
     // Backoff strategy for failed invocations
 
     //When an invocation fails, Lambda attempts to retry the invocation while implementing a backoff strategy.
@@ -2463,11 +2452,22 @@ async function getS3Work (s3Key: string, version: string, bucket: string) {
 
     if (tcLogDebug) console.info(`Debug - GetS3Work Key: ${s3Key}`)
 
-    const getObjectCmd = {
-        Bucket: bucket,
-        Key: s3Key,
-        VersionId: version
-    } as GetObjectCommandInput
+    let getObjectCmd
+    if (version !== "")
+    {
+        getObjectCmd = {
+            Bucket: bucket,
+            Key: s3Key,
+            VersionId: version
+        } as GetObjectCommandInput
+    }
+    else
+    {
+        getObjectCmd = {
+            Bucket: bucket,
+            Key: s3Key
+        } as GetObjectCommandInput
+    }
 
     let work: string = ''
     try
