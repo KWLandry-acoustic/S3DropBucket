@@ -376,7 +376,7 @@ export const s3DropBucketHandler: Handler = async (event: S3Event, context: Cont
             throw new Error(`Exception - Retrieving Customer Config for ${key} \n${e}`)
         }
 
-        // get test files from the testdata folder of the tricklercache bucket
+        // get test files from the testdata folder of the tricklercache-configs/TestData/ bucket
         if (testS3Key && testS3Key !== null)
         {
             key = testS3Key
@@ -1049,7 +1049,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (event: SQSEvent
 
         try
         {
-            const work = await getS3Work(tqm.workKey, tqm.versionId, "tricklercache-process")
+            const work = await getS3Work(tqm.workKey, tqm.versionId, tcc.s3DropBucketWorkQueue)
 
             if (work.length > 0)        //Retrieve Contents of the Work File  
             {
@@ -1394,10 +1394,10 @@ async function sftpDeleteFile (remoteFile: string) {
 
 
 async function checkForTCConfigUpdates () {
-    if (tcLogDebug) console.info(`Checking for TricklerCache Config updates`)
+    if (tcLogDebug) console.info(`Checking for S3DropBucket Config updates`)
     tcc = await getValidateTricklerConfig()
 
-    if (tcc.SelectiveDebug.indexOf("_1,") > -1) console.info(`Refreshed TricklerCache Config \n ${JSON.stringify(tcc)} `)
+    if (tcc.SelectiveDebug.indexOf("_1,") > -1) console.info(`Refreshed S3DropBucket Queue Config \n ${JSON.stringify(tcc)} `)
 }
 
 async function getValidateTricklerConfig () {
@@ -1405,7 +1405,7 @@ async function getValidateTricklerConfig () {
     //Article notes that Lambda runs faster referencing process.env vars, lets see.  
     //Did not pan out, with all the issues with conversions needed to actually use as primary reference, can't see it being faster
     //Using process.env as a useful reference store, especially for accessToken, good across invocations
-    //Validate then populate env vars with tricklercache config
+    //Validate then populate env vars with S3DropBucket config
 
 
     const getObjectCmd = {
@@ -1472,16 +1472,16 @@ async function getValidateTricklerConfig () {
 
 
         // if (tc.SQS_QUEUE_URL !== undefined) tcc.SQS_QUEUE_URL = tc.SQS_QUEUE_URL
-        // else throw new Error(`Tricklercache Config invalid definition: SQS_QUEUE_URL - ${ tc.SQS_QUEUE_URL } `)
+        // else throw new Error(`S3DropBucket Config invalid definition: SQS_QUEUE_URL - ${ tc.SQS_QUEUE_URL } `)
 
         if (tc.xmlapiurl != undefined) process.env["xmlapiurl"] = tc.xmlapiurl
-        else throw new Error(`Tricklercache Config invalid definition: xmlapiurl - ${tc.xmlapiurl} `)
+        else throw new Error(`S3DropBucket Config invalid definition: xmlapiurl - ${tc.xmlapiurl} `)
 
         if (tc.restapiurl !== undefined) process.env["restapiurl"] = tc.restapiurl
-        else throw new Error(`Tricklercache Config invalid definition: restapiurl - ${tc.restapiurl} `)
+        else throw new Error(`S3DropBucket Config invalid definition: restapiurl - ${tc.restapiurl} `)
 
         if (tc.authapiurl !== undefined) process.env["authapiurl"] = tc.authapiurl
-        else throw new Error(`Tricklercache Config invalid definition: authapiurl - ${tcc.authapiurl} `)
+        else throw new Error(`S3DropBucket Config invalid definition: authapiurl - ${tcc.authapiurl} `)
 
 
         if (tc.ProcessQueueQuiesce !== undefined)
@@ -1490,7 +1490,7 @@ async function getValidateTricklerConfig () {
         }
         else
             throw new Error(
-                `Tricklercache Config invalid definition: ProcessQueueQuiesce - ${tc.ProcessQueueQuiesce} `,
+                `S3DropBucket Config invalid definition: ProcessQueueQuiesce - ${tc.ProcessQueueQuiesce} `,
             )
 
         //deprecated in favor of using AWS interface to set these on the queue
@@ -1498,28 +1498,28 @@ async function getValidateTricklerConfig () {
         //     process.env.ProcessQueueVisibilityTimeout = tc.ProcessQueueVisibilityTimeout.toFixed()
         // else
         //     throw new Error(
-        //         `Tricklercache Config invalid definition: ProcessQueueVisibilityTimeout - ${ tc.ProcessQueueVisibilityTimeout } `,
+        //         `S3DropBucket Config invalid definition: ProcessQueueVisibilityTimeout - ${ tc.ProcessQueueVisibilityTimeout } `,
         //     )
 
         // if (tc.ProcessQueueWaitTimeSeconds !== undefined)
         //     process.env.ProcessQueueWaitTimeSeconds = tc.ProcessQueueWaitTimeSeconds.toFixed()
         // else
         //     throw new Error(
-        //         `Tricklercache Config invalid definition: ProcessQueueWaitTimeSeconds - ${ tc.ProcessQueueWaitTimeSeconds } `,
+        //         `S3DropBucket Config invalid definition: ProcessQueueWaitTimeSeconds - ${ tc.ProcessQueueWaitTimeSeconds } `,
         //     )
 
         // if (tc.RetryQueueVisibilityTimeout !== undefined)
         //     process.env.RetryQueueVisibilityTimeout = tc.ProcessQueueWaitTimeSeconds.toFixed()
         // else
         //     throw new Error(
-        //         `Tricklercache Config invalid definition: RetryQueueVisibilityTimeout - ${ tc.RetryQueueVisibilityTimeout } `,
+        //         `S3DropBucket Config invalid definition: RetryQueueVisibilityTimeout - ${ tc.RetryQueueVisibilityTimeout } `,
         //     )
 
         // if (tc.RetryQueueInitialWaitTimeSeconds !== undefined)
         //     process.env.RetryQueueInitialWaitTimeSeconds = tc.RetryQueueInitialWaitTimeSeconds.toFixed()
         // else
         //     throw new Error(
-        //         `Tricklercache Config invalid definition: RetryQueueInitialWaitTimeSeconds - ${ tc.RetryQueueInitialWaitTimeSeconds } `,
+        //         `S3DropBucket Config invalid definition: RetryQueueInitialWaitTimeSeconds - ${ tc.RetryQueueInitialWaitTimeSeconds } `,
         //     )
 
 
@@ -1527,7 +1527,7 @@ async function getValidateTricklerConfig () {
             process.env["RetryQueueInitialWaitTimeSeconds"] = tc.MaxBatchesWarning.toFixed()
         else
             throw new Error(
-                `Tricklercache Config invalid definition: MaxBatchesWarning - ${tc.MaxBatchesWarning} `,
+                `S3DropBucket Config invalid definition: MaxBatchesWarning - ${tc.MaxBatchesWarning} `,
             )
 
 
@@ -1537,7 +1537,7 @@ async function getValidateTricklerConfig () {
         }
         else
             throw new Error(
-                `Tricklercache Config invalid definition: DropBucketQuiesce - ${tc.S3DropBucketQuiesce} `,
+                `S3DropBucket Config invalid definition: DropBucketQuiesce - ${tc.S3DropBucketQuiesce} `,
             )
 
 
@@ -1557,14 +1557,14 @@ async function getValidateTricklerConfig () {
             process.env["DropBucketPurge"] = tc.S3DropBucketPurge
         else
             throw new Error(
-                `Tricklercache Config invalid definition: DropBucketPurge - ${tc.S3DropBucketPurge} `,
+                `S3DropBucket Config invalid definition: DropBucketPurge - ${tc.S3DropBucketPurge} `,
             )
 
         if (tc.S3DropBucketPurgeCount !== undefined)
             process.env["DropBucketPurgeCount"] = tc.S3DropBucketPurgeCount.toFixed()
         else
             throw new Error(
-                `Tricklercache Config invalid definition: DropBucketPurgeCount - ${tc.S3DropBucketPurgeCount} `,
+                `S3DropBucket Config invalid definition: DropBucketPurgeCount - ${tc.S3DropBucketPurgeCount} `,
             )
 
         if (tc.QueueBucketQuiesce !== undefined)
@@ -1573,28 +1573,28 @@ async function getValidateTricklerConfig () {
         }
         else
             throw new Error(
-                `Tricklercache Config invalid definition: QueueBucketQuiesce - ${tc.QueueBucketQuiesce} `,
+                `S3DropBucket Config invalid definition: QueueBucketQuiesce - ${tc.QueueBucketQuiesce} `,
             )
 
         if (tc.QueueBucketPurge !== undefined)
             process.env["QueueBucketPurge"] = tc.QueueBucketPurge
         else
             throw new Error(
-                `Tricklercache Config invalid definition: QueueBucketPurge - ${tc.QueueBucketPurge} `,
+                `S3DropBucket Config invalid definition: QueueBucketPurge - ${tc.QueueBucketPurge} `,
             )
 
         if (tc.QueueBucketPurgeCount !== undefined)
             process.env["QueueBucketPurgeCount"] = tc.QueueBucketPurgeCount.toFixed()
         else
             throw new Error(
-                `Tricklercache Config invalid definition: QueueBucketPurgeCount - ${tc.QueueBucketPurgeCount} `,
+                `S3DropBucket Config invalid definition: QueueBucketPurgeCount - ${tc.QueueBucketPurgeCount} `,
             )
 
         if (tc.reQueue !== undefined)
             process.env["TricklerProcessRequeue"] = tc.reQueue
         // else                 //ReQueue is optional
         //     throw new Error(
-        //         `Tricklercache Config invalid definition: ReQueue - ${ tc.reQueue } `,
+        //         `S3DropBucket Config invalid definition: ReQueue - ${ tc.reQueue } `,
         //     )        
 
 
@@ -1607,7 +1607,7 @@ async function getValidateTricklerConfig () {
 
     } catch (e)
     {
-        throw new Error(`Exception - Parsing TricklerCache Config File ${e} `)
+        throw new Error(`Exception - Parsing S3DropBucket Config File ${e} `)
     }
 
     if (tc.SelectiveDebug.indexOf("_1,") > -1) console.info(`Selective Debug 1 - Pulled tricklercache_config.jsonc: \n${JSON.stringify(tc)} `)
@@ -1663,12 +1663,12 @@ async function getCustomerConfig (filekey: string) {
                 const err: string = JSON.stringify(e)
 
                 if (err.indexOf('specified key does not exist') > -1)
-                    throw new Error(`Exception - Customer Config ${customer}config.jsonc does not exist on S3 tricklercache-configs bucket \nException ${e} `)
+                    throw new Error(`Exception - Customer Config ${customer}config.jsonc does not exist on tricklercache-configs bucket \nException ${e} `)
 
                 if (err.indexOf('NoSuchKey') > -1)
-                    throw new Error(`Exception - Customer Config Not Found(${customer}config.jsonc) on S3 tricklercache - configs\nException ${e} `)
+                    throw new Error(`Exception - Customer Config Not Found(${customer}config.jsonc) on tricklercache-configs\nException ${e} `)
 
-                throw new Error(`Exception - Retrieving Config(${customer}config.jsonc) from S3 tricklercache - configs \nException ${e} `)
+                throw new Error(`Exception - Retrieving Config(${customer}config.jsonc) from tricklercache-configs \nException ${e} `)
 
             })
     } catch (e)
@@ -2298,7 +2298,6 @@ async function addWorkToSQSProcessQueue (config: customerConfig, key: string, ve
     const sqsParams = {
         MaxNumberOfMessages: 1,
         QueueUrl: tcc.s3DropBucketWorkQueue,
-        // https://sqs.us-east-1.amazonaws.com/777957353822/tricklercacheQueue
         //Defer to setting these on the Queue in AWS SQS Interface
         // VisibilityTimeout: parseInt(tcc.ProcessQueueVisibilityTimeout),
         // WaitTimeSeconds: parseInt(tcc.ProcessQueueWaitTimeSeconds),
@@ -2601,7 +2600,7 @@ export async function getAccessToken (config: customerConfig) {
             }),
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
-                'User-Agent': 'S3 TricklerCache GetAccessToken',
+                'User-Agent': 'S3DropBucket GetAccessToken',
             },
         })
 
@@ -2898,7 +2897,8 @@ async function maintainS3DropBucket () {
                         const obj = s3ListResult.Contents[n]
                         const k = obj.Key
 
-                        const updatedMetadata = await s3.send(
+                        // const updatedMetadata =
+                        await s3.send(
                             new CopyObjectCommand({
                                 Bucket: bucket,
                                 Key: k,
@@ -2976,7 +2976,7 @@ async function maintainS3DropBucketQueueBucket (config: customerConfig) {  //, k
                         //build SQS Entry
                         const qa = await addWorkToSQSProcessQueue(config, key, versionId, batch, updates)
 
-                        requeue.push(key + " --> " + JSON.stringify(qa))
+                        requeue.push("ReQueue Work" + key + " --> " + JSON.stringify(qa))
 
                     }
                 }
