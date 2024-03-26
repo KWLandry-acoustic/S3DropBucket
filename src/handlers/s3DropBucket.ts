@@ -1040,7 +1040,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (event: SQSEvent
 
         try
         {
-            const work = await getS3Work(tqm.workKey, tqm.versionId, tcc.s3DropBucketWorkQueue)
+            const work = await getS3Work(tqm.workKey, tqm.versionId, tcc.s3DropBucketWorkBucket)
 
             if (work.length > 0)        //Retrieve Contents of the Work File  
             {
