@@ -336,7 +336,7 @@ export const s3DropBucketHandler: Handler = async (event: S3Event, context: Cont
     }
 
     console.info(
-        `Received S3 DropBucket Event Batch. There are ${event.Records.length} S3 DropBucket Event Records in this batch. (Event Id: ${event.Records[0].responseElements['x-amz-request-id']}).`,
+        `Received S3DropBucket Event Batch. There are ${event.Records.length} S3DropBucket Event Records in this batch. (Event Id: ${event.Records[0].responseElements['x-amz-request-id']}).`,
     )
 
     //Future: Left this for possible switch of the Trigger as an SQS Trigger of an S3 Write, 
@@ -378,6 +378,7 @@ export const s3DropBucketHandler: Handler = async (event: S3Event, context: Cont
         {
             throw new Error(`Exception - Retrieving Customer Config for ${key} \n${e}`)
         }
+
 
         // get test files from the testdata folder of the tricklercache-configs/TestData/ bucket
         if (testS3Key && testS3Key !== null)
@@ -686,13 +687,15 @@ async function processS3ObjectContentStream (key: string, version: string, bucke
 
                         chunks.push(d)
 
+                        if (key.toLowerCase().indexOf('aggregat') < 0
+                            && recs > custConfig.updateMaxRows) throw new Error(`The number of Updates in this batch Exceeds Max Row Updates allowed ${recs} in the Customers Config. S3 Object ${key} will not be deleted to allow for review and possible restaging.`)
+
+                        if (tcc.SelectiveDebug.indexOf("_13,") > -1) console.info(`Selective Debug 13 - s3ContentStream OnData - Another chunk (Num of Entries:${Object.values(s3Chunk).length} Recs:${recs} Batch:${batchCount} from ${key} - ${d}`)
+
                         try
                         {
-                            if (key.toLowerCase().indexOf('aggregat') < 0
-                                && recs > custConfig.updateMaxRows) throw new Error(`The number of Updates in this batch Exceeds Max Row Updates allowed ${recs} in the Customers Config. S3 Object ${key} will not be deleted to allow for review and possible restaging.`)
-
-                            if (tcc.SelectiveDebug.indexOf("_13,") > -1) console.info(`Selective Debug 13 - s3ContentStream OnData - Another chunk (Num of Entries:${Object.values(s3Chunk).length} Recs:${recs} Batch:${batchCount} from ${key} - ${d}`)
-
+                            //Singular Update files will not reach 99 updates in a single file
+                            //Aggregate(d) Files will have > 99 updates in each file 
                             if (chunks.length > 98)
                             {
                                 batchCount++
@@ -705,12 +708,11 @@ async function processS3ObjectContentStream (key: string, version: string, bucke
                                     updates.push(c)
                                 }
 
-                                if (tcc.SelectiveDebug.indexOf('_99,') > -1) saveSampleJSON(JSON.stringify(chunks))
-
                                 sqwResult = await storeAndQueueWork(updates, key, custConfig, updates.length, batchCount)
                             }
 
                             if (tcc.SelectiveDebug.indexOf("_2,") > -1) console.info(`Selective Debug 2: Content Stream OnData - Store And Queue Work for ${key} of ${batchCount + 1} Batches of ${Object.values(d).length} records, Result: \n${JSON.stringify(sqwResult)}`)
+
                             streamResult = { ...streamResult, OnDataStoreQueueResult: sqwResult }
 
                         } catch (e)
@@ -722,8 +724,6 @@ async function processS3ObjectContentStream (key: string, version: string, bucke
 
                     .on('end', async function () {
 
-                        if (tcc.SelectiveDebug.indexOf('_99,') > -1) saveSampleJSON(JSON.stringify(chunks))
-
                         if (recs < 1 && chunks.length < 1)
                         {
                             streamResult = {
@@ -734,26 +734,16 @@ async function processS3ObjectContentStream (key: string, version: string, bucke
                         }
 
                         let sqwResult
-                        // {
-                        //     OnEndStoreQueueResult: {
-                        //         AddWorkToS3ProcessBucketResults: {
-                        //             versionId: '',
-                        //             S3ProcessBucketResult: '',
-                        //             AddWorkToS3ProcessBucket: {}
-                        //         },
-                        //         AddWorkToSQSProcessQueueResults: {
-                        //             SQSWriteResult: '',
-                        //             AddWorkToSQSQueueResult: ''
-                        //         },
-                        //         StoreQueueWorkException: '',
-                        //         StoreS3WorkException: '',
-                        //     }
-                        // }
 
+                        //Next Process Step is Queue Work or Aggregate Small single Update files into larger Update files to improve Campaign Update performance.
                         try
                         {
-                            if (chunks.length > 0 &&
-                                custConfig.updates.toLowerCase() !== 'singular')
+                            // if (aggregate file and chunks not 0)
+
+
+                            if ((chunks.length > 0) &&
+                                (custConfig.updates.toLowerCase() === 'bulk') ||
+                                key.toLowerCase().indexOf('aggregat') > 0)
                             {
                                 batchCount++
                                 recs = chunks.length
@@ -765,7 +755,6 @@ async function processS3ObjectContentStream (key: string, version: string, bucke
 
                             }
 
-                            //Next Process Step is Queue Work or Aggregate Small single Update files to improve performance?
                             if (chunks.length > 0 &&
                                 custConfig.updates.toLowerCase() === 'singular' &&
                                 key.toLowerCase().indexOf('aggregat') < 0)
@@ -773,13 +762,12 @@ async function processS3ObjectContentStream (key: string, version: string, bucke
                                 batchCount++
                                 recs = chunks.length
 
-                                let pfRes
+                                let pfhRes
 
                                 try 
                                 {
-                                    pfRes = await putToFirehose(chunks, key, custConfig.Customer)
+                                    pfhRes = await putToFirehose(chunks, key, custConfig.Customer)
                                         .then((res) => {
-                                            // S3DropBucketAggregate_BFSlE95VRhb_VhNbxLpw1mp_S3DropBucket_FireHoseStream - 2 - 2024-02 - 25 - 20 - 14 - 14 - 13c6a4ee - e529 - 4f19 - 8e45 - c335218922c8.json
 
                                             // const su = ` Singular Update (${key}) put to Firehose aggregator pipe - \n${JSON.stringify(res)} \n${batchCount} Batches of ${chunks.length} records - Result: \n${JSON.stringify(res)}`
 
@@ -1044,8 +1032,6 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (event: SQSEvent
             testS3Bucket = ''
             localTesting = false
         }
-
-
 
         console.info(`Processing Work off the Queue - ${tqm.workKey} (versionId: ${tqm.versionId})`)
         if (tcc.SelectiveDebug.indexOf("_11,") > -1) console.info(`Selective Debug 11 - SQS Events - Processing Batch Item ${JSON.stringify(q)} `)
