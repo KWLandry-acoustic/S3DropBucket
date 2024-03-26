@@ -150,21 +150,21 @@ export interface tcConfig {
     authapiurl: string
     MaxBatchesWarning: number,
     SelectiveDebug: string,
-    ProcessQueueQuiesce: boolean
+    WorkQueueQuiesce: boolean
     prefixFocus: string,
-    // ProcessQueueVisibilityTimeout: number
-    // ProcessQueueWaitTimeSeconds: number
+    // WorkQueueVisibilityTimeout: number
+    // WorkQueueWaitTimeSeconds: number
     // RetryQueueVisibilityTimeout: number
     // RetryQueueInitialWaitTimeSeconds: number
     EventEmitterMaxListeners: number
     S3DropBucketQuiesce: boolean
     S3DropBucketMaintHours: number,
-    S3DropBucketProcessQueueMaintHours: number,
+    S3DropBucketWorkQueueMaintHours: number,
     S3DropBucketPurgeCount: number
     S3DropBucketPurge: string
     QueueBucketQuiesce: boolean
-    QueueBucketPurgeCount: number
-    QueueBucketPurge: string
+    WorkQueueBucketPurgeCount: number
+    WorkQueueBucketPurge: string
 }
 
 let tcc = {} as tcConfig
@@ -187,7 +187,7 @@ export interface processS3ObjectStreamResult {
             S3ProcessBucketResult: string,
             AddWorkToS3ProcessBucket: object
         },
-        AddWorkToSQSProcessQueueResults: {
+        AddWorkToSQSWorkQueueResults: {
             SQSWriteResult: string,
             AddWorkToSQSQueueResult: object
         },
@@ -215,7 +215,7 @@ let processS3ObjectStreamResolution: processS3ObjectStreamResult = {
             S3ProcessBucketResult: '',
             AddWorkToS3ProcessBucket: {}
         },
-        AddWorkToSQSProcessQueueResults: {
+        AddWorkToSQSWorkQueueResults: {
             SQSWriteResult: '',
             AddWorkToSQSQueueResult: {}
         },
@@ -407,7 +407,7 @@ export const s3DropBucketHandler: Handler = async (event: S3Event, context: Cont
 
                     if ((res.PutToFireHoseAggregatorResult = "200") ||
                         (res.OnEndStoreS3QueueResult.AddWorkToS3ProcessBucketResults.S3ProcessBucketResult === "200") &&
-                        res.OnEndStoreS3QueueResult.AddWorkToSQSProcessQueueResults.SQSWriteResult === "200")
+                        res.OnEndStoreS3QueueResult.AddWorkToSQSWorkQueueResults.SQSWriteResult === "200")
                     {
                         try
                         {
@@ -486,7 +486,7 @@ async function processS3ObjectContentStream (key: string, version: string, bucke
                 S3ProcessBucketResult: '',
                 AddWorkToS3ProcessBucket: {}
             },
-            AddWorkToSQSProcessQueueResults: {
+            AddWorkToSQSWorkQueueResults: {
                 SQSWriteResult: '',
                 AddWorkToSQSQueueResult: {}
             },
@@ -923,29 +923,29 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (event: SQSEvent
 
     //Populate Config Options in process.env as a means of Caching the config across invocations occurring within 15 secs of each other.
     if (
-        process.env["ProcessQueueVisibilityTimeout"] === undefined ||
-        process.env["ProcessQueueVisibilityTimeout"] === '' ||
-        process.env["ProcessQueueVisibilityTimeout"] === null
+        process.env["WorkQueueVisibilityTimeout"] === undefined ||
+        process.env["WorkQueueVisibilityTimeout"] === '' ||
+        process.env["WorkQueueVisibilityTimeout"] === null
     )
     {
         tcc = await getValidateTricklerConfig()
     }
 
-    console.info(`S3 DropBucket Work Processor Selective Debug Set is: ${tcc.SelectiveDebug!} `)
+    console.info(`S3 DropBucket WorkQueue Selective Debug Set is: ${tcc.SelectiveDebug!} `)
 
     if (tcc.SelectiveDebug.indexOf("_9,") > -1) console.info(`Selective Debug 9 - Process Environment Vars: ${JSON.stringify(process.env)} `)
 
 
-    if (tcc.ProcessQueueQuiesce) 
+    if (tcc.WorkQueueQuiesce) 
     {
-        console.info(`Work Process Queue Quiesce is in effect, no New Work will be Queued up in the SQS Process Queue.`)
+        console.info(`WorkQueue Quiesce is in effect, no New Work will be Queued up in the SQS Process Queue.`)
         return
     }
 
-    if (tcc.QueueBucketPurgeCount > 0)
+    if (tcc.WorkQueueBucketPurgeCount > 0)
     {
-        console.info(`Purge Requested, Only action will be to Purge ${tcc.QueueBucketPurge} of ${tcc.QueueBucketPurgeCount} Records. `)
-        const d = await purgeBucket(Number(process.env["QueueBucketPurgeCount"]!), process.env["QueueBucketPurge"]!)
+        console.info(`Purge Requested, Only action will be to Purge ${tcc.WorkQueueBucketPurge} of ${tcc.WorkQueueBucketPurgeCount} Records. `)
+        const d = await purgeBucket(Number(process.env["WorkQueueBucketPurgeCount"]!), process.env["WorkQueueBucketPurge"]!)
         return d
     }
 
@@ -1091,7 +1091,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (event: SQSEvent
 
     console.info(`Processed ${event.Records.length} Work Queue records. Items Retry Count: ${sqsBatchFail.batchItemFailures.length} \nItems Retry List: ${JSON.stringify(sqsBatchFail)} `)
 
-    if (tcc.S3DropBucketProcessQueueMaintHours > 0)
+    if (tcc.S3DropBucketWorkQueueMaintHours > 0)
     {
         const maintenance = await maintainS3DropBucketQueueBucket(tqm.custconfig)
 
@@ -1132,9 +1132,9 @@ export const s3DropBucketSFTPHandler: Handler = async (event: SQSEvent, context:
     // const sftpClient = new sftpClient()
 
     if (
-        process.env["ProcessQueueVisibilityTimeout"] === undefined ||
-        process.env["ProcessQueueVisibilityTimeout"] === '' ||
-        process.env["ProcessQueueVisibilityTimeout"] === null
+        process.env["WorkQueueVisibilityTimeout"] === undefined ||
+        process.env["WorkQueueVisibilityTimeout"] === '' ||
+        process.env["WorkQueueVisibilityTimeout"] === null
     )
     {
         tcc = await getValidateTricklerConfig()
@@ -1482,32 +1482,32 @@ async function getValidateTricklerConfig () {
         else throw new Error(`S3DropBucket Config invalid definition: authapiurl - ${tcc.authapiurl} `)
 
 
-        if (tc.ProcessQueueQuiesce !== undefined)
+        if (tc.WorkQueueQuiesce !== undefined)
         {
-            process.env["ProcessQueueQuiesce"] = tc.ProcessQueueQuiesce.toString()
+            process.env["WorkQueueQuiesce"] = tc.WorkQueueQuiesce.toString()
         }
         else
             throw new Error(
-                `S3DropBucket Config invalid definition: ProcessQueueQuiesce - ${tc.ProcessQueueQuiesce} `,
+                `S3DropBucket Config invalid definition: WorkQueueQuiesce - ${tc.WorkQueueQuiesce} `,
             )
 
         //deprecated in favor of using AWS interface to set these on the queue
-        // if (tc.ProcessQueueVisibilityTimeout !== undefined)
-        //     process.env.ProcessQueueVisibilityTimeout = tc.ProcessQueueVisibilityTimeout.toFixed()
+        // if (tc.WorkQueueVisibilityTimeout !== undefined)
+        //     process.env.WorkQueueVisibilityTimeout = tc.WorkQueueVisibilityTimeout.toFixed()
         // else
         //     throw new Error(
-        //         `S3DropBucket Config invalid definition: ProcessQueueVisibilityTimeout - ${ tc.ProcessQueueVisibilityTimeout } `,
+        //         `S3DropBucket Config invalid definition: WorkQueueVisibilityTimeout - ${ tc.WorkQueueVisibilityTimeout } `,
         //     )
 
-        // if (tc.ProcessQueueWaitTimeSeconds !== undefined)
-        //     process.env.ProcessQueueWaitTimeSeconds = tc.ProcessQueueWaitTimeSeconds.toFixed()
+        // if (tc.WorkQueueWaitTimeSeconds !== undefined)
+        //     process.env.WorkQueueWaitTimeSeconds = tc.WorkQueueWaitTimeSeconds.toFixed()
         // else
         //     throw new Error(
-        //         `S3DropBucket Config invalid definition: ProcessQueueWaitTimeSeconds - ${ tc.ProcessQueueWaitTimeSeconds } `,
+        //         `S3DropBucket Config invalid definition: WorkQueueWaitTimeSeconds - ${ tc.WorkQueueWaitTimeSeconds } `,
         //     )
 
         // if (tc.RetryQueueVisibilityTimeout !== undefined)
-        //     process.env.RetryQueueVisibilityTimeout = tc.ProcessQueueWaitTimeSeconds.toFixed()
+        //     process.env.RetryQueueVisibilityTimeout = tc.WorkQueueWaitTimeSeconds.toFixed()
         // else
         //     throw new Error(
         //         `S3DropBucket Config invalid definition: RetryQueueVisibilityTimeout - ${ tc.RetryQueueVisibilityTimeout } `,
@@ -1545,11 +1545,11 @@ async function getValidateTricklerConfig () {
         }
         else tc.S3DropBucketMaintHours = -1
 
-        if (tc.S3DropBucketProcessQueueMaintHours != undefined)
+        if (tc.S3DropBucketWorkQueueMaintHours != undefined)
         {
-            process.env["DropBucketProcessQueueMaintHours"] = tc.S3DropBucketProcessQueueMaintHours.toString()
+            process.env["DropBucketWorkQueueMaintHours"] = tc.S3DropBucketWorkQueueMaintHours.toString()
         }
-        else tc.S3DropBucketProcessQueueMaintHours = -1
+        else tc.S3DropBucketWorkQueueMaintHours = -1
 
         if (tc.S3DropBucketPurge !== undefined)
             process.env["DropBucketPurge"] = tc.S3DropBucketPurge
@@ -1574,18 +1574,18 @@ async function getValidateTricklerConfig () {
                 `S3DropBucket Config invalid definition: QueueBucketQuiesce - ${tc.QueueBucketQuiesce} `,
             )
 
-        if (tc.QueueBucketPurge !== undefined)
-            process.env["QueueBucketPurge"] = tc.QueueBucketPurge
+        if (tc.WorkQueueBucketPurge !== undefined)
+            process.env["WorkQueueBucketPurge"] = tc.WorkQueueBucketPurge
         else
             throw new Error(
-                `S3DropBucket Config invalid definition: QueueBucketPurge - ${tc.QueueBucketPurge} `,
+                `S3DropBucket Config invalid definition: WorkQueueBucketPurge - ${tc.WorkQueueBucketPurge} `,
             )
 
-        if (tc.QueueBucketPurgeCount !== undefined)
-            process.env["QueueBucketPurgeCount"] = tc.QueueBucketPurgeCount.toFixed()
+        if (tc.WorkQueueBucketPurgeCount !== undefined)
+            process.env["WorkQueueBucketPurgeCount"] = tc.WorkQueueBucketPurgeCount.toFixed()
         else
             throw new Error(
-                `S3DropBucket Config invalid definition: QueueBucketPurgeCount - ${tc.QueueBucketPurgeCount} `,
+                `S3DropBucket Config invalid definition: WorkQueueBucketPurgeCount - ${tc.WorkQueueBucketPurgeCount} `,
             )
 
         if (tc.prefixFocus !== undefined && tc.prefixFocus != "")
@@ -1852,7 +1852,7 @@ async function storeAndQueueWork (chunks: string[], s3Key: string, config: custo
     if (tcLogDebug) console.info(`Queuing Work for ${s3Key} - ${key}. (Batch ${batch} of ${Object.values(chunks).length} records)`)
 
     let AddWorkToS3ProcessBucketResults
-    let AddWorkToSQSProcessQueueResults
+    let AddWorkToSQSWorkQueueResults
     let v = ''
 
     try
@@ -1869,7 +1869,7 @@ async function storeAndQueueWork (chunks: string[], s3Key: string, config: custo
     {
         const sqwError = `Exception - StoreAndQueueWork Add work to S3 Bucket exception \n${e} `
         console.error(sqwError)
-        return { StoreS3WorkException: sqwError, StoreQueueWorkException: '', AddWorkToS3ProcessBucketResults, AddWorkToSQSProcessQueueResults }
+        return { StoreS3WorkException: sqwError, StoreQueueWorkException: '', AddWorkToS3ProcessBucketResults, AddWorkToSQSWorkQueueResults }
     }
 
     v = AddWorkToS3ProcessBucketResults.versionId ?? ''
@@ -1877,7 +1877,7 @@ async function storeAndQueueWork (chunks: string[], s3Key: string, config: custo
 
     try
     {
-        AddWorkToSQSProcessQueueResults = await addWorkToSQSProcessQueue(config, key, v, batch.toString(), chunks.length.toString(), marker)
+        AddWorkToSQSWorkQueueResults = await addWorkToSQSWorkQueue(config, key, v, batch.toString(), chunks.length.toString(), marker)
             .then((res) => {
                 return res
             })
@@ -1893,9 +1893,9 @@ async function storeAndQueueWork (chunks: string[], s3Key: string, config: custo
         return { StoreQueueWorkException: sqwError, StoreS3WorkException: '' }
     }
 
-    if (tcc.SelectiveDebug.indexOf("_15,") > -1) console.info(`Selective Debug 15 - Results of Store and Queue of Updates - Add to Proces Bucket: ${JSON.stringify(AddWorkToS3ProcessBucketResults)} \n Add to Process Queue: ${JSON.stringify(AddWorkToSQSProcessQueueResults)} `)
+    if (tcc.SelectiveDebug.indexOf("_15,") > -1) console.info(`Selective Debug 15 - Results of Store and Queue of Updates - Add to Proces Bucket: ${JSON.stringify(AddWorkToS3ProcessBucketResults)} \n Add to Process Queue: ${JSON.stringify(AddWorkToSQSWorkQueueResults)} `)
 
-    return { AddWorkToS3ProcessBucketResults, AddWorkToSQSProcessQueueResults }
+    return { AddWorkToS3ProcessBucketResults, AddWorkToSQSWorkQueueResults }
 
 }
 
@@ -2269,7 +2269,7 @@ async function addWorkToS3ProcessStore (queueUpdates: string, key: string) {
 }
 
 
-async function addWorkToSQSProcessQueue (config: customerConfig, key: string, versionId: string, batch: string, recCount: string, marker: string) {
+async function addWorkToSQSWorkQueue (config: customerConfig, key: string, versionId: string, batch: string, recCount: string, marker: string) {
 
     if (tcc.QueueBucketQuiesce)
     {
@@ -2290,8 +2290,8 @@ async function addWorkToSQSProcessQueue (config: customerConfig, key: string, ve
         MaxNumberOfMessages: 1,
         QueueUrl: tcc.s3DropBucketWorkQueue,
         //Defer to setting these on the Queue in AWS SQS Interface
-        // VisibilityTimeout: parseInt(tcc.ProcessQueueVisibilityTimeout),
-        // WaitTimeSeconds: parseInt(tcc.ProcessQueueWaitTimeSeconds),
+        // VisibilityTimeout: parseInt(tcc.WorkQueueVisibilityTimeout),
+        // WaitTimeSeconds: parseInt(tcc.WorkQueueWaitTimeSeconds),
         MessageAttributes: {
             FirstQueued: {
                 DataType: 'String',
@@ -2376,7 +2376,7 @@ async function addWorkToSQSProcessQueue (config: customerConfig, key: string, ve
 
 //                     s3ListResult.Contents?.forEach(async (listItem) => {
 //                         q++
-//                         const r = await addWorkToSQSProcessQueue(cc, listItem.Key as string, vid, "", "")
+//                         const r = await addWorkToSQSWorkQueue(cc, listItem.Key as string, vid, "", "")
 //                         if (r.SQSWriteResult !== '200') console.error(`Non Successful return, received ${r} ) on ReQueue of ${listItem.Key} `)
 //                     })
 //                 })
@@ -2401,8 +2401,8 @@ async function addWorkToSQSProcessQueue (config: customerConfig, key: string, ve
 //     const sqsParams = {
 //         MaxNumberOfMessages: 1,
 //         QueueUrl: tcc.SQS_QUEUE_URL,
-//         VisibilityTimeout: parseInt(tcc.ProcessQueueVisibilityTimeout!),
-//         WaitTimeSeconds: parseInt(tcc.ProcessQueueWaitTimeSeconds!),
+//         VisibilityTimeout: parseInt(tcc.WorkQueueVisibilityTimeout!),
+//         WaitTimeSeconds: parseInt(tcc.WorkQueueWaitTimeSeconds!),
 //         MessageAttributes: {
 //             FirstQueued: {
 //                 DataType: 'String',
@@ -2938,7 +2938,7 @@ async function maintainS3DropBucketQueueBucket (config: customerConfig) {  //, k
         .then(async (s3ListResult: ListObjectsV2CommandOutput) => {
 
             // 3,600,000 millisecs = 1 hour
-            const a = 3600000 * tcc.S3DropBucketProcessQueueMaintHours  //Older Than X Hours 
+            const a = 3600000 * tcc.S3DropBucketWorkQueueMaintHours  //Older Than X Hours 
 
             const d: Date = new Date()
 
@@ -2975,7 +2975,7 @@ async function maintainS3DropBucketQueueBucket (config: customerConfig) {  //, k
                         debugger
 
                         //build SQS Entry
-                        const qa = await addWorkToSQSProcessQueue(config, key, versionId, batch, updates, marker)
+                        const qa = await addWorkToSQSWorkQueue(config, key, versionId, batch, updates, marker)
 
                         reQueue.push("ReQueue Work" + key + " --> " + JSON.stringify(qa))
 
