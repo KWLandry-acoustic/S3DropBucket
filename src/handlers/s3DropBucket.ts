@@ -273,18 +273,6 @@ export const s3DropBucketHandler: Handler = async (event: S3Event, context: Cont
         tcc = await getValidateTricklerConfig()
     }
 
-    if (event.Records[0].s3.bucket.name && tcc.S3DropBucketMaintHours > 0)
-    {
-        const maintenance = await maintainS3DropBucket()
-
-        if (tcc.SelectiveDebug.indexOf("_26,") > -1)
-        {
-            const l = maintenance[0] as number
-            if (l > 0) console.info(`Selective Debug 26 - Files sent to ReProcess: \n${maintenance}`)
-            else console.info(`Selective Debug 26 - No files found to Reprocess`)
-        }
-    }
-
     if (tcc.SelectiveDebug.indexOf("_9,") > -1) console.info(`Selective Debug 9 - Process Environment Vars: ${JSON.stringify(process.env)}`)
 
 
@@ -306,7 +294,6 @@ export const s3DropBucketHandler: Handler = async (event: S3Event, context: Cont
         }
         else
         {
-
             event.Records[0].s3.object.key = await getAnS3ObjectforTesting(event.Records[0].s3.bucket.name) ?? ""
         }
         localTesting = true
@@ -457,6 +444,19 @@ export const s3DropBucketHandler: Handler = async (event: S3Event, context: Cont
 
         if (tcc.SelectiveDebug.indexOf("_3,") > -1) console.info(`Selective Debug 3 - Returned from Processing S3 Object Content Stream for ${key}. Result: ${JSON.stringify(processS3ObjectStreamResolution)}`)
 
+    }
+
+
+    if (event.Records[0].s3.bucket.name && tcc.S3DropBucketMaintHours > 0)
+    {
+        const maintenance = await maintainS3DropBucket(customersConfig)
+
+        if (tcc.SelectiveDebug.indexOf("_26,") > -1)
+        {
+            const l = maintenance[0] as number
+            if (l > 0) console.info(`Selective Debug 26 - Files sent to ReProcess: \n${maintenance}`)
+            else console.info(`Selective Debug 26 - No files found to Reprocess`)
+        }
     }
 
     //Check for important Config updates (which caches the config in Lambdas long-running cache)
@@ -2852,13 +2852,14 @@ async function purgeBucket (count: number, bucket: string) {
 
 
 
-async function maintainS3DropBucket () {
+async function maintainS3DropBucket (cust: customerConfig) {
 
     const bucket = tcc.s3DropBucket
 
     const listReq = {
         Bucket: bucket,
-        MaxKeys: 1000
+        MaxKeys: 1000,
+        Prefix: `cust.Customer`
     } as ListObjectsV2CommandInput
 
     const reProcess: string[] = []
@@ -2878,9 +2879,9 @@ async function maintainS3DropBucket () {
                     const n = parseInt(o)
                     const s3d: Date = new Date(s3ListResult.Contents[n].LastModified ?? new Date())
                     const df = d.getTime() - s3d.getTime()
+                    const dd = s3d.setHours(-tcc.S3DropBucketMaintHours)
                     if (df > a) 
                     {
-
                         const obj = s3ListResult.Contents[n]
                         const k = obj.Key
 
@@ -2890,7 +2891,8 @@ async function maintainS3DropBucket () {
                                 Bucket: bucket,
                                 Key: k,
                                 CopySource: `${bucket}/${k}`,
-                                MetadataDirective: 'REPLACE'
+                                MetadataDirective: 'COPY',
+                                CopySourceIfUnmodifiedSince: new Date(dd)
                             })
                         )
                             .then((res) => {
@@ -2941,6 +2943,8 @@ async function maintainS3DropBucketQueueBucket (config: customerConfig) {  //, k
                     const n = parseInt(o)
                     const s3d: Date = new Date(s3ListResult.Contents[n].LastModified ?? new Date())
                     const df = d.getTime() - s3d.getTime()
+                    const dd = s3d.setHours(-tcc.S3DropBucketMaintHours)
+
                     let rm: string[] = []
                     if (df > a) 
                     {
