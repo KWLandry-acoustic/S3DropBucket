@@ -150,7 +150,6 @@ export interface tcConfig {
     MaxBatchesWarning: number,
     SelectiveDebug: string,
     ProcessQueueQuiesce: boolean
-    reQueue: string,
     prefixFocus: string,
     // ProcessQueueVisibilityTimeout: number
     // ProcessQueueWaitTimeSeconds: number
@@ -1601,20 +1600,11 @@ async function getValidateTricklerConfig () {
                 `S3DropBucket Config invalid definition: QueueBucketPurgeCount - ${tc.QueueBucketPurgeCount} `,
             )
 
-        if (tc.reQueue !== undefined)
-            process.env["TricklerProcessRequeue"] = tc.reQueue
-        // else                 //ReQueue is optional
-        //     throw new Error(
-        //         `S3DropBucket Config invalid definition: ReQueue - ${ tc.reQueue } `,
-        //     )        
-
-
         if (tc.prefixFocus !== undefined && tc.prefixFocus != "")
         {
             process.env["TricklerProcessPrefix"] = tc.prefixFocus
             console.warn(`A Prefix Focus has been configured.Only DropBucket Objects with the prefix "${tc.prefixFocus}" will be processed.`)
         }
-
 
     } catch (e)
     {
