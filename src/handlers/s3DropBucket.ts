@@ -59,10 +59,10 @@ let testS3Bucket: string
 testS3Bucket = "tricklercache-configs"
 // testS3Key = "TestData/cloroxweather_99706.csv"
 // testS3Key = "TestData/visualcrossing_00213.csv"
-// testS3Key = "TestData/pura_2024_02_26T05_53_26_084Z.json"
+testS3Key = "TestData/pura_2024_02_26T05_53_26_084Z.json"
 // testS3Key = "TestData/pura_2024_02_25T00_00_00_090Z.json"
 // testS3Key = "TestData/pura_S3DropBucket_Aggregator-8-2024-03-19-16-42-48-46e884aa-8c6a-3ff9-8d32-c329395cf311.json"
-testS3Key = "pura_S3DropBucket_Aggregator-8-2024-03-23-09-23-55-123cb0f9-9552-3303-a451-a65dca81d3c4_json_update_53_99.xml"
+// testS3Key = "pura_S3DropBucket_Aggregator-8-2024-03-23-09-23-55-123cb0f9-9552-3303-a451-a65dca81d3c4_json_update_53_99.xml"
 
 
 let vid: string
@@ -2879,7 +2879,9 @@ async function maintainS3DropBucket (cust: customerConfig) {
                     const n = parseInt(o)
                     const s3d: Date = new Date(s3ListResult.Contents[n].LastModified ?? new Date())
                     const df = d.getTime() - s3d.getTime()
-                    const dd = s3d.setHours(-tcc.S3DropBucketMaintHours)
+
+                    const dd = new Date(s3d.setHours(-tcc.S3DropBucketMaintHours))
+
                     if (df > a) 
                     {
                         const obj = s3ListResult.Contents[n]
@@ -2892,7 +2894,7 @@ async function maintainS3DropBucket (cust: customerConfig) {
                                 Key: k,
                                 CopySource: `${bucket}/${k}`,
                                 MetadataDirective: 'COPY',
-                                CopySourceIfUnmodifiedSince: new Date(dd)
+                                CopySourceIfUnmodifiedSince: dd
                             })
                         )
                             .then((res) => {
