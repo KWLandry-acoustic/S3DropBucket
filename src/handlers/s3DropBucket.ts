@@ -132,6 +132,7 @@ export interface accessResp {
 export interface tcQueueMessage {
     workKey: string
     versionId: string
+    marker: string
     attempts: number
     updateCount: string
     custconfig: customerConfig
@@ -979,8 +980,10 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (event: SQSEvent
     let tqm: tcQueueMessage = {
         workKey: '',
         versionId: '',
+        marker: '',
         attempts: 0,
         updateCount: '',
+        lastQueued: '',
         custconfig: {
             Customer: '',
             format: '',
@@ -1008,8 +1011,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (event: SQSEvent
                 ignore: [],
                 script: []
             }
-        },
-        lastQueued: ''
+        }
     }
 
     //Process this Inbound Batch 
@@ -1871,10 +1873,11 @@ async function storeAndQueueWork (chunks: string[], s3Key: string, config: custo
     }
 
     v = AddWorkToS3ProcessBucketResults.versionId ?? ''
+    const marker = 'Initially Queued on ' + new Date()
 
     try
     {
-        AddWorkToSQSProcessQueueResults = await addWorkToSQSProcessQueue(config, key, v, batch.toString(), chunks.length.toString())
+        AddWorkToSQSProcessQueueResults = await addWorkToSQSProcessQueue(config, key, v, batch.toString(), chunks.length.toString(), marker)
             .then((res) => {
                 return res
             })
@@ -2266,7 +2269,7 @@ async function addWorkToS3ProcessStore (queueUpdates: string, key: string) {
 }
 
 
-async function addWorkToSQSProcessQueue (config: customerConfig, key: string, versionId: string, batch: string, recCount: string) {
+async function addWorkToSQSProcessQueue (config: customerConfig, key: string, versionId: string, batch: string, recCount: string, marker: string) {
 
     if (tcc.QueueBucketQuiesce)
     {
@@ -2277,6 +2280,7 @@ async function addWorkToSQSProcessQueue (config: customerConfig, key: string, ve
     const sqsQMsgBody = {} as tcQueueMessage
     sqsQMsgBody.workKey = key
     sqsQMsgBody.versionId = versionId
+    sqsQMsgBody.marker = marker
     sqsQMsgBody.attempts = 1
     sqsQMsgBody.updateCount = recCount
     sqsQMsgBody.custconfig = config
@@ -2924,7 +2928,8 @@ async function maintainS3DropBucketQueueBucket (config: customerConfig) {  //, k
 
     const listReq = {
         Bucket: bucket,
-        MaxKeys: 1000
+        MaxKeys: 1000,
+        Prefix: `config.Customer`
     } as ListObjectsV2CommandInput
 
     const reQueue: string[] = []
@@ -2965,10 +2970,12 @@ async function maintainS3DropBucketQueueBucket (config: customerConfig) {  //, k
                         rm = r2.exec(key) ?? ""
                         updates = rm[1]
 
+                        const marker = "ReQueued on: " + new Date()
+
                         debugger
 
                         //build SQS Entry
-                        const qa = await addWorkToSQSProcessQueue(config, key, versionId, batch, updates)
+                        const qa = await addWorkToSQSProcessQueue(config, key, versionId, batch, updates, marker)
 
                         reQueue.push("ReQueue Work" + key + " --> " + JSON.stringify(qa))
 
