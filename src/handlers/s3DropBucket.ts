@@ -276,10 +276,14 @@ export const s3DropBucketHandler: Handler = async (event: S3Event, context: Cont
 
     if (event.Records[0].s3.bucket.name && tcc.S3DropBucketMaintHours > 0)
     {
-        const maintainance = await maintainS3DropBucket()
+        const maintenance = await maintainS3DropBucket()
 
-        if (tcc.SelectiveDebug.indexOf("_26,") > -1) console.info(`Selective Debug 26 - \n${maintainance}`)
-
+        if (tcc.SelectiveDebug.indexOf("_26,") > -1)
+        {
+            const l = maintenance[0] as number
+            if (l > 0) console.info(`Selective Debug 26 - Files sent to ReProcess: \n${maintenance}`)
+            else console.info(`Selective Debug 26 - No files found to Reprocess`)
+        }
     }
 
     if (tcc.SelectiveDebug.indexOf("_9,") > -1) console.info(`Selective Debug 9 - Process Environment Vars: ${JSON.stringify(process.env)}`)
@@ -1102,8 +1106,15 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (event: SQSEvent
 
     if (tcc.S3DropBucketProcessQueueMaintHours > 0)
     {
-        const maintainance = await maintainS3DropBucketQueueBucket(tqm.custconfig)   //, tqm.workKey, tqm.versionId, batch, tqm.updateCount)
-        if (tcc.SelectiveDebug.indexOf("_27,") > -1) console.info(`Selective Debug 27 - \n${maintainance}`)
+        const maintenance = await maintainS3DropBucketQueueBucket(tqm.custconfig)
+
+        if (tcc.SelectiveDebug.indexOf("_27,") > -1)
+        {
+            const l = maintenance[0] as number
+            if (l > 0) console.info(`Selective Debug 27 - Work Files ReQueued: \n${maintenance}`)
+            else console.info(`Selective Debug 27 - No Work files found to ReQueue`)
+        }
+
     }
 
 
@@ -2922,7 +2933,8 @@ async function maintainS3DropBucket () {
         })
 
     debugger
-    return reProcess
+    const l = reProcess.length
+    return [l, reProcess]
 }
 
 
@@ -2935,7 +2947,7 @@ async function maintainS3DropBucketQueueBucket (config: customerConfig) {  //, k
         MaxKeys: 1000
     } as ListObjectsV2CommandInput
 
-    const requeue: string[] = []
+    const reQueue: string[] = []
 
     await s3.send(new ListObjectsV2Command(listReq))
         .then(async (s3ListResult: ListObjectsV2CommandOutput) => {
@@ -2976,7 +2988,7 @@ async function maintainS3DropBucketQueueBucket (config: customerConfig) {  //, k
                         //build SQS Entry
                         const qa = await addWorkToSQSProcessQueue(config, key, versionId, batch, updates)
 
-                        requeue.push("ReQueue Work" + key + " --> " + JSON.stringify(qa))
+                        reQueue.push("ReQueue Work" + key + " --> " + JSON.stringify(qa))
 
                     }
                 }
@@ -2990,7 +3002,8 @@ async function maintainS3DropBucketQueueBucket (config: customerConfig) {  //, k
         })
 
     debugger
-    return requeue
+    const l = reQueue.length
+    return [l, reQueue]
 
 }
 
