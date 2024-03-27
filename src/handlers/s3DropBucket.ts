@@ -265,7 +265,6 @@ export const s3DropBucketHandler: Handler = async (event: S3Event, context: Cont
     if (event.Records[0].s3.object.key.indexOf('AggregationError') > -1) return ""
 
     if (
-
         process.env["EventEmitterMaxListeners"] === undefined ||
         process.env["EventEmitterMaxListeners"] === '' ||
         process.env["EventEmitterMaxListeners"] === null
@@ -437,6 +436,14 @@ export const s3DropBucketHandler: Handler = async (event: S3Event, context: Cont
 
     }
 
+    //Check for important Config updates (which caches the config in Lambdas long-running cache)
+    checkForTCConfigUpdates()
+
+
+    console.info(`Completing S3 DropBucket Processing of Request Id ${event.Records[0].responseElements['x-amz-request-id']}`)
+    if (tcc.SelectiveDebug.indexOf("_20,") > -1) console.info(`Selective Debug 20 - \n${processS3ObjectStreamResolution}`)
+
+
 
     if (event.Records[0].s3.bucket.name && tcc.S3DropBucketMaintHours > 0)
     {
@@ -450,14 +457,11 @@ export const s3DropBucketHandler: Handler = async (event: S3Event, context: Cont
             const filesProcessed = maintenance[1]
             if (l > 0) console.info(`Selective Debug 26 - ${l} Files ReProcessed: \n${filesProcessed}`)
             else console.info(`Selective Debug 26 - No files found to Reprocess`)
+
         }
     }
 
-    //Check for important Config updates (which caches the config in Lambdas long-running cache)
-    checkForTCConfigUpdates()
 
-    console.info(`Completing S3 DropBucket Processing of Request Id ${event.Records[0].responseElements['x-amz-request-id']}`)
-    if (tcc.SelectiveDebug.indexOf("_20,") > -1) console.info(`Selective Debug 20 - \n${processS3ObjectStreamResolution}`)
 
     return JSON.stringify(processS3ObjectStreamResolution)
 }
