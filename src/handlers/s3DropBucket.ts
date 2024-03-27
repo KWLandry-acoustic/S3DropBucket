@@ -66,9 +66,8 @@ testS3Key = "TestData/pura_2024_02_26T05_53_26_084Z.json"
 // testS3Key = "pura_S3DropBucket_Aggregator-8-2024-03-23-09-23-55-123cb0f9-9552-3303-a451-a65dca81d3c4_json_update_53_99.xml"
 
 
-let vid: string
-let et: string
-let tqmVid: string
+let vid: string | undefined
+let et: string | undefined
 
 const sqsClient = new SQSClient({})
 
@@ -332,18 +331,8 @@ export const s3DropBucketHandler: Handler = async (event: S3Event, context: Cont
     // Drive higher concurrency in each Lambda invocation by running batches of 10 files written at a time(SQS Batch) 
     for (const r of event.Records)
     {
-        let key = ''
-        let bucket = ''
-
-
-        // {
-        //     const contents = await fs.readFile(file, 'utf8')
-        // }
-        // event.Records.forEach(async (r: S3EventRecord) => {
-
-
-        key = r.s3.object.key
-        bucket = r.s3.bucket.name
+        let key = r.s3.object.key ?? ''
+        let bucket = r.s3.bucket.name ?? ''
 
         if (!key.startsWith(tcc.prefixFocus))
         {
@@ -355,7 +344,7 @@ export const s3DropBucketHandler: Handler = async (event: S3Event, context: Cont
         //ToDo: Resolve Duplicates Issue - S3 allows Duplicate Object Names but Delete marks all Objects of same Name Deleted. 
         //   Which causes an issue with Key Not Found after an Object of Name A is processed and deleted, then another Object of Name A comes up in a Trigger.
 
-        vid = r.s3.object.versionId ?? ""
+        vid = r.s3.object.versionId ?? undefined
         et = r.s3.object.eTag ?? ""
 
         try
@@ -456,7 +445,8 @@ export const s3DropBucketHandler: Handler = async (event: S3Event, context: Cont
         if (tcc.SelectiveDebug.indexOf("_26,") > -1)
         {
             const l = maintenance[0] as number
-            if (l > 0) console.info(`Selective Debug 26 - Files sent to ReProcess: \n${maintenance}`)
+            const filesProcessed = maintenance[1]
+            if (l > 0) console.info(`Selective Debug 26 - ${l} Files ReProcessed: \n${filesProcessed}`)
             else console.info(`Selective Debug 26 - No files found to Reprocess`)
         }
     }
@@ -474,7 +464,7 @@ export default s3DropBucketHandler
 
 
 
-async function processS3ObjectContentStream (key: string, version: string, bucket: string, custConfig: customerConfig) {
+async function processS3ObjectContentStream (key: string, version: string | undefined, bucket: string, custConfig: customerConfig) {
 
     let batchCount = 0
     let chunks: string[] = []
@@ -1094,7 +1084,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (event: SQSEvent
 
     if (tcc.S3DropBucketWorkQueueMaintHours > 0)
     {
-        const maintenance = await maintainS3DropBucketQueueBucket(tqm.custconfig)
+        const maintenance = await maintainS3DropBucketQueueBucket(tqm.custconfig) ?? [0, '']
 
         if (tcc.SelectiveDebug.indexOf("_27,") > -1)
         {
@@ -2516,7 +2506,7 @@ async function saveS3Work (s3Key: string, body: string, bucket: string) {
     return saveS3
 }
 
-async function deleteS3Object (s3ObjKey: string, version: string, bucket: string) {
+async function deleteS3Object (s3ObjKey: string, version: string | undefined, bucket: string) {
 
     let delRes = ''
 
