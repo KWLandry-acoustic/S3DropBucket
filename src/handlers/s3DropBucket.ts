@@ -1611,7 +1611,7 @@ async function getCustomerConfig (filekey: string) {
     // const configObjs = [new Uint8Array()]
 
     const getObjectCommand = {
-        Key: `${customer} config.jsonc`,
+        Key: `${customer}config.jsonc`,
         Bucket: 'tricklercache-configs'
     }
 
