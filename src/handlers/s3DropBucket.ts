@@ -2886,7 +2886,7 @@ async function maintainS3DropBucket (cust: customerConfig) {
                 reProcess.push(`Copy of ${sourceKey}  -->  \n${JSON.stringify(res)}`)
             })
             .catch((e) => {
-                console.error(`Error - Maintain S3DropBucket - Copy of ${sourceKey} \n${e}`)
+                // console.error(`Error - Maintain S3DropBucket - Copy of ${sourceKey} \n${e}`)
                 reProcess.push(`Copy Error on ${sourceKey}  -->  \n${JSON.stringify(e)}`)
             })
 
@@ -3022,14 +3022,68 @@ async function maintainS3DropBucket (cust: customerConfig) {
 async function maintainS3DropBucketQueueBucket (config: customerConfig) {  //, key: string, versionId: string, batch: string, recCount: string) {
 
     const bucket = tcc.s3DropBucketWorkBucket
+    let ContinuationToken: string | undefined
+    const reQueue: string[] = []
+    let deleteSource = false
+    let concurrency = 10
+
+    if (true) return
+
+    const d: Date = new Date()
+    // 3,600,000 millisecs = 1 hour
+    const a = 3600000 * tcc.S3DropBucketMaintHours  //Older Than X Hours 
+
+    do
+    {
+        const { Contents = [], NextContinuationToken } = await s3.send(
+            new ListObjectsV2Command({
+                Bucket: bucket,
+                Prefix: config.Customer,
+                ContinuationToken,
+            }),
+        )
+
+        const lastMod = Contents.map(({ LastModified }) => LastModified as Date)
+        const sourceKeys = Contents.map(({ Key }) => Key)
+
+
+        await Promise.all(
+            new Array(concurrency).fill(null).map(async () => {
+                while (sourceKeys.length)
+                {
+                    const key = sourceKeys.pop() ?? ""
+                    const mod = lastMod.pop() as Date
+
+                    const s3d: Date = new Date(mod)
+                    const df = d.getTime() - s3d.getTime()
+                    // const dd = new Date(s3d.setHours(-tcc.S3DropBucketMaintHours))
+
+                    if (df > a) 
+                    {
+                        // await copyFile(key)
+                    }
+                }
+            }),
+        )
+
+        ContinuationToken = NextContinuationToken ?? ""
+    } while (ContinuationToken)
+
+
+
+
+
+
+
+
+
 
     const listReq = {
         Bucket: bucket,
         MaxKeys: 1000,
-        Prefix: `config.Customer`
+        Prefix: `config.Customer`,
+        ContinuationToken,
     } as ListObjectsV2CommandInput
-
-    const reQueue: string[] = []
 
     await s3.send(new ListObjectsV2Command(listReq))
         .then(async (s3ListResult: ListObjectsV2CommandOutput) => {
