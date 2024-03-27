@@ -350,7 +350,7 @@ export const s3DropBucketHandler: Handler = async (event: S3Event, context: Cont
         try
         {
             customersConfig = await getCustomerConfig(key)
-            console.info(`Processing inbound data for ${customersConfig.Customer} - ${key} \nS3 Object Details: VersionID: ${vid}, ETag: ${et}`)
+            console.info(`Processing inbound data for ${customersConfig.Customer} - ${key}`)
         }
         catch (e)
         {
@@ -383,7 +383,7 @@ export const s3DropBucketHandler: Handler = async (event: S3Event, context: Cont
 
         try
         {
-            processS3ObjectStreamResolution = await processS3ObjectContentStream(key, vid, bucket, customersConfig)
+            processS3ObjectStreamResolution = await processS3ObjectContentStream(key, bucket, customersConfig)
                 .then(async (res) => {
                     let delResultCode
 
@@ -402,7 +402,7 @@ export const s3DropBucketHandler: Handler = async (event: S3Event, context: Cont
                         try
                         {
                             //Once File successfully processed delete the original S3 Object
-                            delResultCode = await deleteS3Object(key, vid, bucket)
+                            delResultCode = await deleteS3Object(key, bucket)
 
                             if (delResultCode !== '204')
                             {
@@ -442,9 +442,11 @@ export const s3DropBucketHandler: Handler = async (event: S3Event, context: Cont
     {
         const maintenance = await maintainS3DropBucket(customersConfig)
 
+        const l = maintenance[0] as number
+        console.info(`Files Reprocessed - ${l}`)
+
         if (tcc.SelectiveDebug.indexOf("_26,") > -1)
         {
-            const l = maintenance[0] as number
             const filesProcessed = maintenance[1]
             if (l > 0) console.info(`Selective Debug 26 - ${l} Files ReProcessed: \n${filesProcessed}`)
             else console.info(`Selective Debug 26 - No files found to Reprocess`)
@@ -464,7 +466,7 @@ export default s3DropBucketHandler
 
 
 
-async function processS3ObjectContentStream (key: string, version: string | undefined, bucket: string, custConfig: customerConfig) {
+async function processS3ObjectContentStream (key: string, bucket: string, custConfig: customerConfig) {
 
     let batchCount = 0
     let chunks: string[] = []
@@ -500,21 +502,9 @@ async function processS3ObjectContentStream (key: string, version: string | unde
 
     if (tcLogDebug) console.info(`Processing S3 Content Stream for ${key}`)
 
-    let s3C: GetObjectCommandInput
-    if (version !== '')
-    {
-        s3C = {
-            Key: key,
-            Bucket: bucket,
-            VersionId: version
-        }
-    }
-    else
-    {
-        s3C = {
-            Key: key,
-            Bucket: bucket
-        }
+    const s3C: GetObjectCommandInput = {
+        Key: key,
+        Bucket: bucket
     }
 
     let streamResult = processS3ObjectResults
@@ -1026,12 +1016,12 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (event: SQSEvent
             localTesting = false
         }
 
-        console.info(`Processing Work off the Queue - ${tqm.workKey} (versionId: ${tqm.versionId})`)
+        console.info(`Processing Work off the Queue - ${tqm.workKey}`)
         if (tcc.SelectiveDebug.indexOf("_11,") > -1) console.info(`Selective Debug 11 - SQS Events - Processing Batch Item ${JSON.stringify(q)} `)
 
         try
         {
-            const work = await getS3Work(tqm.workKey, tqm.versionId, tcc.s3DropBucketWorkBucket)
+            const work = await getS3Work(tqm.workKey, tcc.s3DropBucketWorkBucket)
 
             if (work.length > 0)        //Retrieve Contents of the Work File  
             {
@@ -1042,7 +1032,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (event: SQSEvent
 
                 if (postResult.indexOf('retry') > -1)
                 {
-                    console.warn(`Retry Marked for ${tqm.workKey}(versionId: ${tqm.versionId})(Retry Report: ${sqsBatchFail.batchItemFailures.length + 1}) Returning Work Item ${q.messageId} to Process Queue.`)
+                    console.warn(`Retry Marked for ${tqm.workKey} (versionId: ${tqm.versionId}) Returning Work Item ${q.messageId} to Process Queue (Total Retry Count: ${sqsBatchFail.batchItemFailures.length + 1}). `)
                     //Add to BatchFail array to Retry processing the work 
                     sqsBatchFail.batchItemFailures.push({ itemIdentifier: q.messageId })
                     if (tcc.SelectiveDebug.indexOf("_12,") > -1) console.info(`Selective Debug 12 - Added ${tqm.workKey} (versionId: ${tqm.versionId}) to SQS Events Retry \n${JSON.stringify(sqsBatchFail)} `)
@@ -1065,7 +1055,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (event: SQSEvent
                     }
 
                     //Delete the Work file
-                    const d: string = await deleteS3Object(tqm.workKey, tqm.versionId, tcc.s3DropBucketWorkBucket!)
+                    const d: string = await deleteS3Object(tqm.workKey, tcc.s3DropBucketWorkBucket!)
                     if (d === '204') console.info(`Successful Deletion of Work: ${tqm.workKey} (versionId: ${tqm.versionId})`)
                     else console.error(`Failed to Delete ${tqm.workKey} (versionId: ${tqm.versionId}). Expected '204' but received ${d} `)
 
@@ -2248,12 +2238,12 @@ async function addWorkToS3ProcessStore (queueUpdates: string, key: string) {
 
     s3ProcessBucketResult = JSON.stringify(addWorkToS3ProcessBucket.$metadata.httpStatusCode, null, 2)
 
-    const vd = addWorkToS3ProcessBucket.VersionId ?? ""
+    const vid = addWorkToS3ProcessBucket.VersionId ?? ""
 
-    const m = `Wrote Work File (${key} (versionId: ${vd}) of ${queueUpdates.length} characters) to S3 Processing Bucket (Result ${s3ProcessBucketResult}`
+    const m = `Wrote Work File (${key} (versionId: ${vid}) of ${queueUpdates.length} characters) to S3 Processing Bucket (Result ${s3ProcessBucketResult}`
 
     return {
-        versionId: vd,
+        versionId: vid,
         AddWorkToS3ProcessBucket: addWorkToS3ProcessBucket,
         S3ProcessBucketResult: s3ProcessBucketResult
     }
@@ -2440,26 +2430,15 @@ async function addWorkToSQSWorkQueue (config: customerConfig, key: string, versi
 
 
 
-async function getS3Work (s3Key: string, version: string, bucket: string) {
+async function getS3Work (s3Key: string, bucket: string) {
 
     if (tcLogDebug) console.info(`Debug - GetS3Work Key: ${s3Key}`)
 
-    let getObjectCmd
-    if (version !== "")
-    {
-        getObjectCmd = {
-            Bucket: bucket,
-            Key: s3Key,
-            VersionId: version
-        } as GetObjectCommandInput
-    }
-    else
-    {
-        getObjectCmd = {
-            Bucket: bucket,
-            Key: s3Key
-        } as GetObjectCommandInput
-    }
+    const getObjectCmd = {
+        Bucket: bucket,
+        Key: s3Key
+    } as GetObjectCommandInput
+
 
     let work: string = ''
     try
@@ -2467,15 +2446,15 @@ async function getS3Work (s3Key: string, version: string, bucket: string) {
         await s3.send(new GetObjectCommand(getObjectCmd))
             .then(async (getS3Result: GetObjectCommandOutput) => {
                 work = (await getS3Result.Body?.transformToString('utf8')) as string
-                if (tcLogDebug) console.info(`Work Pulled (${work.length} chars): ${s3Key} (versionId: ${version})`)
+                if (tcLogDebug) console.info(`Work Pulled (${work.length} chars): ${s3Key}`)
             })
     } catch (e)
     {
         const err: string = JSON.stringify(e)
 
         if (err.indexOf('NoSuchKey') > -1)
-            throw new Error(`Exception - Work Not Found on S3 Process Queue (${s3Key} (versionId: ${version})) Work will not be marked for Retry. \n${e}`)
-        else throw new Error(`Exception - Retrieving Work from S3 Process Queue for ${s3Key} (versionId: ${version}). \n ${e}`)
+            throw new Error(`Exception - Work Not Found on S3 Process Queue (${s3Key}. Work will not be marked for Retry. \n${e}`)
+        else throw new Error(`Exception - Retrieving Work from S3 Process Queue for ${s3Key}.  \n ${e}`)
     }
     return work
 }
@@ -2506,7 +2485,7 @@ async function saveS3Work (s3Key: string, body: string, bucket: string) {
     return saveS3
 }
 
-async function deleteS3Object (s3ObjKey: string, version: string | undefined, bucket: string) {
+async function deleteS3Object (s3ObjKey: string, bucket: string) {
 
     let delRes = ''
 
@@ -2530,22 +2509,14 @@ async function deleteS3Object (s3ObjKey: string, version: string | undefined, bu
     //
     //
 
-    let s3D
-    if (version !== '')
-    {
-        s3D = {
-            Key: s3ObjKey,
-            Bucket: bucket,
-            VersionId: version
-        }
+
+
+    const s3D = {
+        Key: s3ObjKey,
+        Bucket: bucket
     }
-    else
-    {
-        s3D = {
-            Key: s3ObjKey,
-            Bucket: bucket
-        }
-    }
+
+
     const d = new DeleteObjectCommand(s3D)
 
     // d.setMatchingETagConstraints(Collections.singletonList(et));
@@ -2832,7 +2803,7 @@ async function purgeBucket (count: number, bucket: string) {
         await s3.send(new ListObjectsV2Command(listReq)).then(async (s3ListResult: ListObjectsV2CommandOutput) => {
             s3ListResult.Contents?.forEach(async (listItem) => {
                 d++
-                r = await deleteS3Object(listItem.Key as string, "", bucket)
+                r = await deleteS3Object(listItem.Key as string, bucket)
                 if (r !== '204') console.error(`Non Successful return (Expected 204 but received ${r} ) on Delete of ${listItem.Key} `)
             })
         })
@@ -2855,7 +2826,6 @@ async function maintainS3DropBucket (cust: customerConfig) {
     let deleteSource = false
     let concurrency = 10
 
-    debugger
 
     const copyFile = async (sourceKey: string) => {
         // const targetKey = sourceKey.replace(sourcePrefix, targetPrefix)
@@ -3009,7 +2979,7 @@ async function maintainS3DropBucket (cust: customerConfig) {
 }
 
 
-async function maintainS3DropBucketQueueBucket (config: customerConfig) {  //, key: string, versionId: string, batch: string, recCount: string) {
+async function maintainS3DropBucketQueueBucket (config: customerConfig) {
 
     const bucket = tcc.s3DropBucketWorkBucket
     let ContinuationToken: string | undefined
