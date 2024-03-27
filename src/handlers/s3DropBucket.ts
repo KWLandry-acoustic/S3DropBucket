@@ -48,6 +48,7 @@ import { FileResultCallback } from '@babel/core'
 import { freemem } from 'os'
 import { env } from 'node:process'
 import { keyBy } from 'lodash'
+import { setUncaughtExceptionCaptureCallback } from 'process'
 
 //For when needed to reference Lambda execution environment /tmp folder 
 // import { ReadStream, close } from 'fs'
@@ -2858,63 +2859,159 @@ async function purgeBucket (count: number, bucket: string) {
 
 async function maintainS3DropBucket (cust: customerConfig) {
 
-    const bucket = tcc.s3DropBucket
-
-    const listReq = {
-        Bucket: bucket,
-        MaxKeys: 1000,
-        Prefix: `cust.Customer`
-    } as ListObjectsV2CommandInput
-
+    let bucket = tcc.s3DropBucket
+    let ContinuationToken: string | undefined
     const reProcess: string[] = []
+    let deleteSource = false
+    let concurrency = 10
 
-    await s3.send(new ListObjectsV2Command(listReq))
-        .then(async (s3ListResult: ListObjectsV2CommandOutput) => {
+    debugger
 
-            // 3,600,000 millisecs = 1 hour
-            const a = 3600000 * tcc.S3DropBucketMaintHours  //Older Than X Hours 
+    const copyFile = async (sourceKey: string) => {
+        // const targetKey = sourceKey.replace(sourcePrefix, targetPrefix)
 
-            const d: Date = new Date()
 
-            try
-            {
-                for (const o in s3ListResult.Contents)
+        // const updatedMetadata =
+        await s3.send(
+            new CopyObjectCommand({
+                Bucket: bucket,
+                Key: sourceKey,
+                CopySource: `${bucket}/${sourceKey}`,
+                MetadataDirective: 'COPY',
+                // CopySourceIfUnmodifiedSince: dd
+            })
+        )
+            .then((res) => {
+                // console.info(`${JSON.stringify(res)}`)
+                reProcess.push(`Copy of ${sourceKey}  -->  \n${JSON.stringify(res)}`)
+            })
+            .catch((e) => {
+                console.error(`Error - Maintain S3DropBucket - Copy of ${sourceKey} \n${e}`)
+                reProcess.push(`Copy Error on ${sourceKey}  -->  \n${JSON.stringify(e)}`)
+            })
+
+        if (deleteSource)
+        {
+            await s3.send(
+                new DeleteObjectCommand({
+                    Bucket: bucket,
+                    Key: sourceKey,
+                }),
+            )
+                .then((res) => {
+                    // console.info(`${JSON.stringify(res)}`)
+                    reProcess.push(`Delete of ${sourceKey}  -->  \n${JSON.stringify(res)}`)
+                })
+                .catch((e) => {
+                    console.error(`Error - Maintain S3DropBucket - Delete of ${sourceKey} \n${e}`)
+                    reProcess.push(`Delete Error on ${sourceKey}  -->  \n${JSON.stringify(e)}`)
+                })
+        }
+    }
+
+    debugger
+
+    const d: Date = new Date()
+    // 3,600,000 millisecs = 1 hour
+    const a = 3600000 * tcc.S3DropBucketMaintHours  //Older Than X Hours 
+
+    do
+    {
+        const { Contents = [], NextContinuationToken } = await s3.send(
+            new ListObjectsV2Command({
+                Bucket: bucket,
+                Prefix: cust.Customer,
+                ContinuationToken,
+            }),
+        )
+
+        const lastMod = Contents.map(({ LastModified }) => LastModified as Date)
+        const sourceKeys = Contents.map(({ Key }) => Key)
+
+
+        await Promise.all(
+            new Array(concurrency).fill(null).map(async () => {
+                while (sourceKeys.length)
                 {
-                    const n = parseInt(o)
-                    const s3d: Date = new Date(s3ListResult.Contents[n].LastModified ?? new Date())
-                    const df = d.getTime() - s3d.getTime()
+                    const key = sourceKeys.pop() ?? ""
+                    const mod = lastMod.pop() as Date
 
-                    const dd = new Date(s3d.setHours(-tcc.S3DropBucketMaintHours))
+                    const s3d: Date = new Date(mod)
+                    const df = d.getTime() - s3d.getTime()
+                    // const dd = new Date(s3d.setHours(-tcc.S3DropBucketMaintHours))
 
                     if (df > a) 
                     {
-                        const obj = s3ListResult.Contents[n]
-                        const k = obj.Key
-
-                        // const updatedMetadata =
-                        await s3.send(
-                            new CopyObjectCommand({
-                                Bucket: bucket,
-                                Key: k,
-                                CopySource: `${bucket}/${k}`,
-                                MetadataDirective: 'COPY',
-                                CopySourceIfUnmodifiedSince: dd
-                            })
-                        )
-                            .then((res) => {
-                                // console.info(`${JSON.stringify(res)}`)
-                                reProcess.push(k + " --> " + JSON.stringify(res))
-                            })
+                        await copyFile(key)
                     }
                 }
-            } catch (e)
-            {
-                throw new Error(`Exception - Maintain S3DropBucket - List Results processing - \n${e}`)
-            }
-        })
-        .catch((e) => {
-            console.error(`Exception - On S3 List Command for Maintaining Objects on ${bucket}: ${e} `)
-        })
+            }),
+        )
+
+        ContinuationToken = NextContinuationToken ?? ""
+    } while (ContinuationToken)
+
+
+
+
+
+    //Initial Version....
+    // const listReq = {
+    //     Bucket: bucket,
+    //     MaxKeys: 1000,
+    //     Prefix: `cust.Customer`
+    // } as ListObjectsV2CommandInput
+
+    // const reProcess: string[] = []
+
+    // await s3.send(new ListObjectsV2Command(listReq))
+    //     .then(async (s3ListResult: ListObjectsV2CommandOutput) => {
+
+    //         // 3,600,000 millisecs = 1 hour
+    //         const a = 3600000 * tcc.S3DropBucketMaintHours  //Older Than X Hours 
+
+    //         const d: Date = new Date()
+
+    //         try
+    //         {
+    //             for (const o in s3ListResult.Contents)
+    //             {
+    //                 const n = parseInt(o)
+    //                 const s3d: Date = new Date(s3ListResult.Contents[n].LastModified ?? new Date())
+    //                 const df = d.getTime() - s3d.getTime()
+
+    //                 const dd = new Date(s3d.setHours(-tcc.S3DropBucketMaintHours))
+
+    //                 if (df > a) 
+    //                 {
+    //                     const obj = s3ListResult.Contents[n]
+    //                     const k = obj.Key
+
+    //                     // const updatedMetadata =
+    //                     await s3.send(
+    //                         new CopyObjectCommand({
+    //                             Bucket: bucket,
+    //                             Key: k,
+    //                             CopySource: `${bucket}/${k}`,
+    //                             MetadataDirective: 'COPY',
+    //                             CopySourceIfUnmodifiedSince: dd
+    //                         })
+    //                     )
+    //                         .then((res) => {
+    //                             // console.info(`${JSON.stringify(res)}`)
+    //                             reProcess.push(k + " --> " + JSON.stringify(res))
+    //                         })
+    //                 }
+    //             }
+    //         } catch (e)
+    //         {
+    //             throw new Error(`Exception - Maintain S3DropBucket - List Results processing - \n${e}`)
+    //         }
+    //     })
+    //     .catch((e) => {
+    //         console.error(`Exception - On S3 List Command for Maintaining Objects on ${bucket}: ${e} `)
+    //     })
+
 
     debugger
     const l = reProcess.length
