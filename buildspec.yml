@@ -9,7 +9,6 @@ phases:
 
   pre_build:
     commands:
-      - cd ../tricklercache
       - cp package.json layers
       - cp package-lock.json layers
       - cd layers
