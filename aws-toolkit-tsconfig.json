@@ -1,17 +1,17 @@
 {
-    "compilerOptions": {
-        "target": "es6",
-        "module": "nodenext",
-        "resolveJsonModule": true,
-        "inlineSourceMap": true,
-        "outDir": "/Users/kwlandry/Dropbox/Documents/A.Campaign/CodeFolder/A.TricklerCache_codecommit/tricklerCache/tricklerCache/.aws-sam",
-        "rootDir": ".",
-        "sourceRoot": "/Users/kwlandry/Dropbox/Documents/A.Campaign/CodeFolder/A.TricklerCache_codecommit/tricklerCache",
-        "typeRoots": [
-            "node_modules/@types"
-        ],
-        "types": [
-            "node"
-        ]
-    }
+  "compilerOptions": {
+    "target": "es6",
+    "module": "nodenext",
+    "resolveJsonModule": true,
+    "inlineSourceMap": true,
+    "outDir": "/Users/kwlandry/Dropbox/Documents/A.Campaign/CodeFolder/A. S3DropBucket_main/tricklercache/.aws-sam",
+    "rootDir": ".",
+    "sourceRoot": "/Users/kwlandry/Dropbox/Documents/A.Campaign/CodeFolder/A. S3DropBucket_main/tricklercache",
+    "typeRoots": [
+      "node_modules/@types"
+    ],
+    "types": [
+      "node"
+    ]
+  }
 }

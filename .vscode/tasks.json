@@ -1,0 +1,25 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "shell",
+			"problemMatcher": [ ],
+			"label": "cleanUpdateDependencies",
+			"detail": "Clean then Update Dependencies Directory",
+			"command": " echo 'tasks.json \nDirectory:'; pwd; echo 'Clean:'; rm -r .aws-sam/deps; echo 'Update:'; cp -f package.json layers"
+		}, {
+			"type": "shell",
+			"problemMatcher": [ ],
+			"label": "cleanDependencyDirectory",
+			"detail": "Clean Dependencies Directory",
+			"command": " rm -r .aws-sam/deps"
+		},
+		{
+			"type": "shell",
+			"problemMatcher": [ ],
+			"label": "updateDependencies",
+			"detail": "install dependencies from package",
+			"command": " cp -f package.json layers"
+		}
+	]
+}

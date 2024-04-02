@@ -1,0 +1,247 @@
+{
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+
+    {
+      "type": "aws-sam",
+      "request": "direct-invoke",
+      "name": "1.S3-Direct Invoke Lambda Template - s3DropBucketfunction",
+      "preLaunchTask": "cleanUpdateDependencies",
+      "invokeTarget": {
+        "target": "template",
+        "templatePath": "${workspaceFolder}/template.yml",
+        "logicalId": "s3DropBucketFunction"
+      },
+      "lambda": {
+        "runtime": "nodejs18.x",
+        "environmentVariables": {
+          "NODE_OPTIONS": "--enable-source-map --trace-warnings --unhandled-rejections=warn"
+        },
+        "payload": {
+          "json": {
+            "Records": [
+              {
+                "eventVersion": "2.1",
+                "eventSource": "aws:s3",
+                "awsRegion": "us-east-1",
+                "eventTime": "2023-09-12T01:37:58.757Z",
+                "eventName": "ObjectCreated:Put",
+                "userIdentity": {
+                  "principalId": "AWS:AIDA3KIO7FFPI5JLSCB6L"
+                },
+                "requestParameters": {
+                  "sourceIPAddress": "35.90.239.77"
+                },
+                "responseElements": {
+                  "x-amz-request-id": "3BCC6W10SKPVRX6G",
+                  "x-amz-id-2": "iFbN8puUnyX1myStlBQ74MeLgVaDU3j6neiLmmYSCbh2S/FciA1p0A3WRQyPC2Y8L1A/NLr3RwbSgKNtJEcmNsAIH24MrFu6"
+                },
+                "s3": {
+                  "s3SchemaVersion": "1.0",
+                  "configurationId": "6fa6d8d0-8b86-42a4-bf33-fcd9b76f6acb",
+                  "bucket": {
+                    "name": "tricklercache",
+                    "ownerIdentity": {
+                      "principalId": "A1YJHXASHX7MHQ"
+                    },
+                    "arn": "arn:aws:s3:::tricklercache"
+                  },
+                  "object": {
+                    "key": "devtest.csv",
+                    "size": 6131,
+                    "eTag": "d0110fd73049e5d91dd658fc86badc02",
+                    "sequencer": "0064FFC0F6B39E3B98"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "aws": {
+        "credentials": "profile:Acoustic-cis-dev-ecs-devteam-user"
+      }
+    },
+    {
+      "type": "aws-sam",
+      "request": "direct-invoke",
+      "name": "2.SQS-Direct Invoke Lambda Template - S3DropBucketQueueProcessorHandler",
+      "preLaunchTask": "cleanUpdateDependencies",
+      "invokeTarget": {
+        "target": "template",
+        "templatePath": "${workspaceFolder}/template.yml",
+        "logicalId": "S3DropBucketQueueProcessorFunction" //"tricklerQueueProcessorFunction"
+      },
+      "lambda": {
+        "runtime": "nodejs18.x",
+        "environmentVariables": {
+          "NODE_OPTIONS": "--enable-source-map --trace-warnings --unhandled-rejections=warn"
+        },
+        "payload": {
+          "json": {
+            "Records": [
+              { "messageId": "b1cbaac2-b7fc-4685-bd50-508bd6b03ffb", "receiptHandle": "AQEBCHcvf/Z9QnXSGLnGuAl3RwolBBnDkjuovQjMU9Z84hEpspYnQi2q3DMbPlN8BjERKZbObM6fbgesuRndpRMAzdwyCPBI9a2TCwow155XwNcodqT+B/7XsfvXG5IKPdma5p/eltZ6sQGFSuG1Zel96f6zSJ+FrFLIGa1S8wmFCPfBVK/o//FxGGAe2XyJjRxSgYAOE3IADNsa05eAzu7Gwing8etRqmB1MhoVMbm6JMVRlAKm64nIv9Q3JOk9E8wYCordJdfixmx3xZIt/xL8CvJ7Z+8nFRIBsjr4sFH4DJy9Kcf8IGHck1BQBvX++0kga1aYcFzQbO1FaoYvfIxqe/YAIn4TZ8DuYe/2nnwewcaop58WYWMN0w0A+gjs+9pPW1C63uWu0PRjOf0c9XNSSg==", "body": "{\"workKey\":\"visualcrossing_99929_csv_update_1.xml\",\"custconfig\":{\"customer\":\"visualcrossing_\",\"format\":\"csv\",\"listId\":\"13248912\",\"listName\":\"WeatherForecast\",\"pod\":\"2\",\"region\":\"us\",\"refreshToken\":\"rD-7E2r8BynGDaapr13oJV9BxQr20lsYGN9RPkbrtPtAS1\",\"clientId\":\"1d99f8d8-0897-4090-983a-c517cc54032e\",\"clientSecret\":\"124bd238-0987-40a2-b8fb-879ddd4d3241\"}}", "attributes": { "ApproximateReceiveCount": "1", "AWSTraceHeader": "Root=1-653bd32d-1b74003765023a6c0079e6f3;Parent=393fd8be0cab98f2;Sampled=0;Lineage=42c3d060:0", "SentTimestamp": "1698419502055", "SenderId": "AROA3KIO7FFPJQBTPO3YW:tricklercache-s3JsonLoggerFunction-pAZxQSJGtklV", "ApproximateFirstReceiveTimestamp": "1698419503055" }, "messageAttributes": { "tricklerProcessQueue": { "stringValue": "process_1_visualcrossing_00676_csv.xml", "stringListValues": [ ], "binaryListValues": [ ], "dataType": "String" } }, "md5OfMessageAttributes": "67ca3965ea845a6a4d2a2ffcd137f3d5", "md5OfBody": "f9f7f5ea3b86e3057b19076e93d943e3", "eventSource": "aws:sqs", "eventSourceARN": "arn:aws:sqs:us-east-1:777957353822:tricklercacheQueue", "awsRegion": "us-east-1" },
+              { "messageId": "b1cbaac2-b7fc-4685-bd50-508bd6b03ffb", "receiptHandle": "AQEBCHcvf/Z9QnXSGLnGuAl3RwolBBnDkjuovQjMU9Z84hEpspYnQi2q3DMbPlN8BjERKZbObM6fbgesuRndpRMAzdwyCPBI9a2TCwow155XwNcodqT+B/7XsfvXG5IKPdma5p/eltZ6sQGFSuG1Zel96f6zSJ+FrFLIGa1S8wmFCPfBVK/o//FxGGAe2XyJjRxSgYAOE3IADNsa05eAzu7Gwing8etRqmB1MhoVMbm6JMVRlAKm64nIv9Q3JOk9E8wYCordJdfixmx3xZIt/xL8CvJ7Z+8nFRIBsjr4sFH4DJy9Kcf8IGHck1BQBvX++0kga1aYcFzQbO1FaoYvfIxqe/YAIn4TZ8DuYe/2nnwewcaop58WYWMN0w0A+gjs+9pPW1C63uWu0PRjOf0c9XNSSg==", "body": "{\"workKey\":\"visualcrossing_99929_csv_update_1.xml\",\"custconfig\":{\"customer\":\"visualcrossing_\",\"format\":\"csv\",\"listId\":\"13248912\",\"listName\":\"WeatherForecast\",\"pod\":\"2\",\"region\":\"us\",\"refreshToken\":\"rD-7E2r8BynGDaapr13oJV9BxQr20lsYGN9RPkbrtPtAS1\",\"clientId\":\"1d99f8d8-0897-4090-983a-c517cc54032e\",\"clientSecret\":\"124bd238-0987-40a2-b8fb-879ddd4d3241\"}}", "attributes": { "ApproximateReceiveCount": "1", "AWSTraceHeader": "Root=1-653bd32d-1b74003765023a6c0079e6f3;Parent=393fd8be0cab98f2;Sampled=0;Lineage=42c3d060:0", "SentTimestamp": "1698419502055", "SenderId": "AROA3KIO7FFPJQBTPO3YW:tricklercache-s3JsonLoggerFunction-pAZxQSJGtklV", "ApproximateFirstReceiveTimestamp": "1698419503055" }, "messageAttributes": { "tricklerProcessQueue": { "stringValue": "process_1_visualcrossing_00676_csv.xml", "stringListValues": [ ], "binaryListValues": [ ], "dataType": "String" } }, "md5OfMessageAttributes": "67ca3965ea845a6a4d2a2ffcd137f3d5", "md5OfBody": "f9f7f5ea3b86e3057b19076e93d943e3", "eventSource": "aws:sqs", "eventSourceARN": "arn:aws:sqs:us-east-1:777957353822:tricklercacheQueue", "awsRegion": "us-east-1" },
+            ]
+          }
+        }
+      },
+      "aws": {
+        "credentials": "profile:Acoustic-cis-dev-ecs-devteam-user"
+      }
+    },
+    {
+      "type": "aws-sam",
+      "request": "direct-invoke",
+      "name": "3.aws-sam Direct Invoke Function Code - s3jsonLoggerFunction",
+      "invokeTarget": {
+        "target": "code",
+        "projectRoot": "tricklercache/.aws-sam/build/s3JsonLoggerFunction",
+        "lambdaHandler": "s3DropBucket.s3DropBucketHandler",
+      },
+      "lambda": {
+        "runtime": "nodejs18.x",
+        "payload": {
+          "json": {
+            "Records": [
+              {
+                "eventVersion": "2.0",
+                "eventSource": "aws:s3",
+                "awsRegion": "us-east-1",
+                "eventTime": "1970-01-01T00:00:00.000Z",
+                "eventName": "ObjectCreated:Put",
+                "userIdentity": {
+                  "principalId": "EXAMPLE"
+                },
+                "requestParameters": {
+                  "sourceIPAddress": "127.0.0.1"
+                },
+                "responseElements": {
+                  "x-amz-request-id": "EXAMPLE123456789",
+                  "x-amz-id-2": "EXAMPLE123/5678abcdefghijklambdaisawesome/mnopqrstuvwxyzABCDEFGH"
+                },
+                "s3": {
+                  "s3SchemaVersion": "1.0",
+                  "configurationId": "testConfigRule",
+                  "bucket": {
+                    "name": "example-bucket",
+                    "ownerIdentity": {
+                      "principalId": "EXAMPLE"
+                    },
+                    "arn": "arn:aws:s3:::aws-us-east-1-777957353822-tricklercache-tricklercache"
+                  },
+                  "object": {
+                    "key": "test%2Fkey",
+                    "size": 1024,
+                    "eTag": "0123456789abcdef0123456789abcdef",
+                    "sequencer": "0A1B2C3D4E5F678901"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    // {
+    //   "name": "3.Attach to SAM CLI",
+    //   "type": "node",
+    //   "request": "attach",
+    //   "address": "127.0.0.1",
+    //   "port": 9999,
+    //   "localRoot": "${workspaceRoot}/.aws-sam/",
+    //   "remoteRoot": "/var/task",
+    //   "protocol": "inspector",
+    //   "stopOnEntry": false
+    // },
+    {
+      "type": "aws-sam",
+      "request": "direct-invoke",
+      "name": "4.Invoke Lambda Code ",
+      "invokeTarget": {
+        "target": "code",
+        "lambdaHandler": "Function Handler",
+        "projectRoot": "${workspaceFolder}/.aws-sam"
+      },
+      "lambda": {
+        "runtime": "Lambda Runtime",
+        "payload": {
+          "json": { }
+        }
+      }
+    },
+    {
+      "type": "aws-sam",
+      "request": "direct-invoke",
+      "name": "5.Invoke Template - tricklercache:s3JsonLoggerFunction",
+      "invokeTarget": {
+        "target": "template",
+        "templatePath": "${workspaceFolder}/template.yml",
+        "logicalId": "s3JsonLoggerFunction"
+      },
+      "lambda": {
+        "payload": { },
+        "environmentVariables": { }
+      }
+    },
+    {
+      "type": "aws-sam",
+      "request": "direct-invoke",
+      "name": "6.Invoke Lambda Template - s3jsonloggerfunction",
+      "invokeTarget": {
+        "target": "template",
+        "templatePath": "${workspaceFolder}/template.yml",
+        "logicalId": "s3jsonLoggerFunction"
+      },
+      "lambda": {
+        "payload": {
+          "json": { }
+        }
+      }
+    },
+    {
+      "type": "aws-sam",
+      "request": "direct-invoke",
+      "name": "7.Debug Lambda Code - s3jsonLoggerFunction",
+      "invokeTarget": {
+        "target": "code",
+        "projectRoot": "tricklercache/",
+        "lambdaHandler": "s3JsonLoggerHandler"
+      },
+      "lambda": {
+        "runtime": "nodejs18.x",
+        "payload": { },
+        "environmentVariables": { }
+      }
+    },
+    {
+      "type": "aws-sam",
+      "request": "direct-invoke",
+      "name": "8.Debug .aws-sam Lambda Code - s3jsonLoggerFunction",
+      "invokeTarget": {
+        "target": "code",
+        "projectRoot": "tricklercache/.aws-sam",
+        "lambdaHandler": "s3JsonLoggerHandler"
+      },
+      "lambda": {
+        "runtime": "nodejs18.x",
+        "payload": { },
+        "environmentVariables": { }
+      }
+    },
+    {
+      "name": "9.Debug Experiment",
+      "type": "node",
+      "request": "launch",
+      "cwd": "${workspaceRoot}",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run-script",
+        "debug"
+      ]
+    }
+  ]
+}

@@ -4,6 +4,7 @@
       "es2023"
     ],
     "noEmit": true,
+    "allowImportingTsExtensions": true,
     "module": "Node16",
     "moduleResolution": "Node16",
     "resolveJsonModule": true, /* Enable importing .json files. */
@@ -123,7 +124,7 @@
   "include": [
     "src/**/*.ts",
     "src/**/*.js"
-    , "setaside/campaignUpdate.ts", "setaside/doPOST.ts", "setaside/getAllS3Obj.ts", "setaside/getS3Obj.ts", "setaside/listAllS3Obj.ts" // "src/handlers/main.mjs",
+    // "src/handlers/main.mjs",
     // "scratchTests/src/main.ts" 
   ],
   "exclude": [

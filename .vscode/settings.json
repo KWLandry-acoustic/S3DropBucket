@@ -1,0 +1,24 @@
+{
+      "typescript.format.semicolons": "remove",
+      "javascript.format.semicolons": "remove",
+      "files.insertFinalNewline": true,
+      "typescript.format.insertSpaceAfterTypeAssertion": true,
+      "typescript.format.insertSpaceBeforeFunctionParenthesis": true,
+      "javascript.format.insertSpaceAfterOpeningAndBeforeClosingNonemptyBrackets": true,
+      "javascript.format.insertSpaceAfterOpeningAndBeforeClosingNonemptyParenthesis": true,
+      "javascript.format.insertSpaceBeforeFunctionParenthesis": true,
+      "typescript.format.insertSpaceAfterConstructor": true,
+      "typescript.format.insertSpaceAfterOpeningAndBeforeClosingNonemptyBrackets": true,
+      "typescript.format.insertSpaceAfterOpeningAndBeforeClosingNonemptyParenthesis": true,
+      "typescript.format.insertSpaceAfterOpeningAndBeforeClosingTemplateStringBraces": true,
+      "editor.defaultFormatter": "numso.prettier-standard-vscode",
+      "[yaml]": {
+            "editor.defaultFormatter": "redhat.vscode-yaml",
+            "editor.autoIndent": "advanced"
+      },
+      "[dockercompose]": {
+            "editor.autoIndent": "advanced"
+      }
+      "eslint.format.enable": true,
+      "html.format.contentUnformatted": ""
+}

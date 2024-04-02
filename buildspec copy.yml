@@ -3,33 +3,32 @@ phases:
   install:
     runtime-versions:
       nodejs: 18.x
-    commands:
+    commands: 
       - pwd; ls -lha
       - SAM_CLI_TELEMETRY=0
 
   pre_build:
     commands:
-      - cd ../tricklercache
       - cp package.json layers
       - cp package-lock.json layers
       - cd layers
       - npm install --omit=dev
       - cd ..
-
+      
   build:
     commands:
       - npm i -g esbuild --bundle --minify --keep-names --sourcemap --platform=node --target=node18
 
       - sam build --debug
 
-      # - sam package --s3-bucket aws-us-east-1-777957353822-tricklercache-pipe --force-upload --debug
+      # - sam package --s3-bucket aws-us-east-1-777957353822-tricklercache-pipe --force-upload --debug      
       - sam package --s3-bucket aws-us-east-1-777957353822-tricklercache-pipe --output-template-file packaged.yaml --debug
-
+     
       - aws cloudformation package --template-file packaged.yaml --s3-bucket $S3_BUCKET --output-template-file template-export.yml --debug
-
+     
   post_build:
     commands:
-      - pwd
+      - pwd 
       - ls  -lha
 
 artifacts:
@@ -38,3 +37,4 @@ artifacts:
     - package-lock.json
     - package.json
     - template-export.yml
+

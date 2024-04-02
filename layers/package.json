@@ -35,10 +35,10 @@
     "@babel/core": "^7.22.9",
     "@babel/preset-env": "^7.22.9",
     "@babel/preset-typescript": "^7.22.5",
-    "@types/aws-lambda": "^8.10.119",
+    "@types/aws-lambda": "^8.10.136",
     "@types/jest": "^29.4.0",
     "@types/lodash.get": "^4.4.7",
-    "@types/node": "^20.5.0",
+    "@types/node": "^20.11.30",
     "@types/papaparse": "^5.3.9",
     "@types/ssh2-sftp-client": "^9.0.3",
     "@typescript-eslint/eslint-plugin": "^5.46.1",
@@ -54,7 +54,7 @@
     "prettier": "^2.5.1",
     "ts-jest": "^29.0.5",
     "ts-node": "^10.9.2",
-    "typescript": "^5.1.6"
+    "typescript": "^5.4.3"
   },
   "scripts": {
     "start": "./node_modules/.bin/aws sls offline -s dev",
