@@ -409,7 +409,7 @@ export const s3DropBucketHandler: Handler = async ( event: S3Event, context: Con
                                 throw new Error( `Unsuccessful Delete of ${ key }, Expected 204 result code, received ${ delResultCode }` )
                             } else
                             {
-                                const dr = `Successful Delete of ${ key }  (Result ${ delResultCode })`
+                                if ( tcc.SelectiveDebug.indexOf( "_23," ) > -1 ) console.info( `Selective Debug 23 - Delete of ${ key } Successful (Result ${ delResultCode }).` )
                                 res = { ...res, DeleteResult: `Successful Delete of ${ key }  (Result ${ JSON.stringify( delResultCode ) })` }
                             }
                         }
@@ -1059,7 +1059,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async ( event: SQSEven
                 }
                 else
                 {
-                    if ( postResult.toLowerCase().indexOf( 'partially succesful' ) > -1 )
+                    if ( postResult.toLowerCase().indexOf( 'partially successful' ) > -1 )
                     {
                         console.info( `Most Work was Successfully Posted to Campaign, exceptions are: \n${ postResult } ` )
                     }
@@ -1071,7 +1071,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async ( event: SQSEven
 
                     //Delete the Work file
                     const d: string = await deleteS3Object( tqm.workKey, tcc.s3DropBucketWorkBucket! )
-                    if ( d === '204' ) console.info( `Successful Deletion of Work: ${ tqm.workKey } (versionId: ${ tqm.versionId })` )
+                    if ( tcc.SelectiveDebug.indexOf( "_24," ) > -1 ) console.info( `Selective Debug 24 - Successful Deletion of Queued Work file: ${ tqm.workKey }( versionId: ${ tqm.versionId } )` )
                     else console.error( `Failed to Delete ${ tqm.workKey } (versionId: ${ tqm.versionId }). Expected '204' but received ${ d } ` )
 
                 }

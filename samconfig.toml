@@ -6,7 +6,7 @@ version = 0.1
 
 
 [default.global.parameters]
-stack_name = "tricklerCache"
+stack_name = "s3DropBucket"
 resolve_s3 = false
 
 [default.build.parameters]
@@ -24,7 +24,7 @@ region = "us-east-1"
 profile = "Acoustic-cis-dev-ecs-devteam-user"
 codeuri = "src/handlers/"
 # basedir = './'
-# parameter_overrides = "AppId=\"tricklercache\""
+# parameter_overrides = "AppId=\"s3DropBucket\""
 image_repositories = []
 disable_rollback = false
 confirm_changeset = false
@@ -32,13 +32,13 @@ confirm_changeset = false
 #role = "arn:aws:iam::777957353822:role/tricklercacheExecutionRole"
 #role = "tricklercache-s3JsonLoggerFunctionRole-1HQYY60B3HZMT"
 resolve_s3 = false
-#s3-bucket = "arn:aws:s3:::aws-us-east-1-777957353822-tricklercache-pipe"
-s3_prefix = "tricklercache"
+#s3-bucket = "arn:aws:s3:::aws-us-east-1-777957353822-s3dropbucket-pipe"
+s3_prefix = "s3dropbucket"
 
 
 [default.package.parameters]
 resolve_s3 = false
-# s3-bucket = "arn:aws:s3:::aws-us-east-1-777957353822-tricklercache-pipe"
+# s3-bucket = "arn:aws:s3:::aws-us-east-1-777957353822-s3dropbucket-pipe"
 
 [default.sync.parameters]
 watch = true
