@@ -399,6 +399,9 @@ export const s3DropBucketHandler: Handler = async ( event: S3Event, context: Con
                         {
                             //Once File successfully processed delete the original S3 Object
                             delResultCode = await deleteS3Object( key, bucket )
+                                .catch( ( e ) => {
+                                    console.error( `Exception - DeleteS3Object - ${ e }` )
+                                } )
 
                             if ( delResultCode !== '204' )
                             {
@@ -406,7 +409,7 @@ export const s3DropBucketHandler: Handler = async ( event: S3Event, context: Con
                                 if ( tcc.SelectiveDebug.indexOf( "_904," ) > -1 ) console.error( `Processing Successful, but Unsuccessful Delete of ${ key }, Expected 204 result code, received ${ delResultCode }` )
                             } else
                             {
-                                if ( tcc.SelectiveDebug.indexOf( "_904," ) > -1 ) console.info( `(904) Processing successful, Delete of ${ key } Successful (Result ${ delResultCode }).` )
+                                if ( tcc.SelectiveDebug.indexOf( "_904," ) > -1 ) console.info( `(904) Processing Successful, Delete of ${ key } Successful (Result ${ delResultCode }).` )
                                 res = {...res, DeleteResult: `Successful Delete of ${ key }  (Result ${ JSON.stringify( delResultCode ) })`}
                             }
                         }
