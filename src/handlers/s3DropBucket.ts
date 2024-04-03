@@ -406,7 +406,7 @@ export const s3DropBucketHandler: Handler = async ( event: S3Event, context: Con
                                 throw new Error( `Unsuccessful Delete of ${ key }, Expected 204 result code, received ${ delResultCode }` )
                             } else
                             {
-                                if ( tcc.SelectiveDebug.indexOf( "_904," ) > -1 ) console.info( `(904) Delete of ${ key } Successful (Result ${ delResultCode }).` )
+                                if ( tcc.SelectiveDebug.indexOf( "_909," ) > -1 ) console.info( `(909) Delete of ${ key } Successful (Result ${ delResultCode }).` )
                                 res = { ...res, DeleteResult: `Successful Delete of ${ key }  (Result ${ JSON.stringify( delResultCode ) })` }
                             }
                         }
@@ -907,6 +907,10 @@ async function putToFirehose ( S3Obj: string[], key: string, cust: string ) {
  */
 export const S3DropBucketQueueProcessorHandler: Handler = async ( event: SQSEvent, context: Context ) => {
 
+
+    //ToDo: Build aggregate results and outcomes block  
+
+
     //Populate Config Options in process.env as a means of Caching the config across invocations occurring within 15 secs of each other.
     if (
         process.env[ "WorkQueueVisibilityTimeout" ] === undefined ||
@@ -954,7 +958,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async ( event: SQSEven
 
     let postResult: string = 'false'
 
-    console.info( `Received SQS Events Batch of ${ event.Records.length } records.` )
+    if ( tcc.SelectiveDebug.indexOf( "_906," ) > -1 ) console.info( `(906) Received SQS Events Batch of ${ event.Records.length } records.` )
 
     if ( tcc.SelectiveDebug.indexOf( "_4," ) > -1 ) console.info( `Selective Debug 4 - Received ${ event.Records.length } Work Queue Records. The set of Records are: \n${ JSON.stringify( event ) } ` )
 
@@ -1008,7 +1012,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async ( event: SQSEven
 
         // tqm.workKey = JSON.parse(q.body).workKey
 
-        //When Testing (Launch config has pre-stored payload) - get some actual work queued
+        //When Testing locally  (Launch config has pre-stored payload) - get some actual work queued
         if ( tqm.workKey === 'process_2_pura_2023_10_27T15_11_40_732Z.csv' )
         {
             tqm.workKey = await getAnS3ObjectforTesting( tcc.s3DropBucketWorkBucket! ) ?? ""
@@ -1021,8 +1025,9 @@ export const S3DropBucketQueueProcessorHandler: Handler = async ( event: SQSEven
             localTesting = false
         }
 
-        console.info( `Processing Work off the Queue - ${ tqm.workKey } ` )
-        if ( tcc.SelectiveDebug.indexOf( "_11," ) > -1 ) console.info( `Selective Debug 11 - SQS Events - Processing Batch Item ${ JSON.stringify( q ) } ` )
+        if ( tcc.SelectiveDebug.indexOf( "_907," ) > -1 ) console.info( `(907) Processing Work off the Queue - ${ tqm.workKey }` )
+
+        if ( tcc.SelectiveDebug.indexOf( "_11," ) > -1 ) console.info( `Selective Debug 11 - SQS Events - Processing Batch Items ${ JSON.stringify( q ) } ` )
 
         try
         {
@@ -1045,7 +1050,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async ( event: SQSEven
 
                 else if ( postResult.toLowerCase().indexOf( 'unsuccessful post' ) > -1 )
                 {
-                    console.error( `Error - Unsuccesful POST(Hard Failure) for ${ tqm.workKey }(versionId: ${ tqm.versionId }): \n${ postResult } \n Customer: ${ tqm.custconfig.Customer }, Pod: ${ tqm.custconfig.pod }, ListId: ${ tqm.custconfig.listId } ` )
+                    console.error( `Error - Unsuccesful POST (Hard Failure) for ${ tqm.workKey }(versionId: ${ tqm.versionId }): \n${ postResult } \n Customer: ${ tqm.custconfig.Customer }, Pod: ${ tqm.custconfig.pod }, ListId: ${ tqm.custconfig.listId } ` )
                 }
                 else
                 {
@@ -1056,13 +1061,17 @@ export const S3DropBucketQueueProcessorHandler: Handler = async ( event: SQSEven
 
                     else if ( postResult.toLowerCase().indexOf( 'successfully posted' ) > -1 )
                     {
-                        console.info( `Work Successfully Posted to Campaign - ${ tqm.custconfig.listName } from(${ tqm.workKey } - versionId: ${ tqm.versionId }), will now Delete the Work from the S3 Process Queue` )
+                        if ( tcc.SelectiveDebug.indexOf( "_908," ) > -1 ) console.info( `(908) Work Successfully Posted to Campaign - ${ tqm.custconfig.listName } from(${ tqm.workKey } - versionId: ${ tqm.versionId }), will now Delete the Work from the S3 Process Queue` )
                     }
 
                     //Delete the Work file
                     const d: string = await deleteS3Object( tqm.workKey, tcc.s3DropBucketWorkBucket! )
-                    if ( tcc.SelectiveDebug.indexOf( "_24," ) > -1 ) console.info( `Selective Debug 24 - Successful Deletion of Queued Work file: ${ tqm.workKey }( versionId: ${ tqm.versionId } )` )
-                    else console.error( `Failed to Delete ${ tqm.workKey } (versionId: ${ tqm.versionId }). Expected '204' but received ${ d } ` )
+                    if ( d === '204' )
+                    {
+                        if ( tcc.SelectiveDebug.indexOf( "_24," ) > -1 ) console.info( `Selective Debug 24 - Successful Deletion of Queued Work file: ${ tqm.workKey }( versionId: ${ tqm.versionId } )` )
+                    }
+
+                    else if ( tcc.SelectiveDebug.indexOf( "_24," ) > -1 ) console.error( `Failed to Delete ${ tqm.workKey } (versionId: ${ tqm.versionId }). Expected '204' but received ${ d } ` )
 
                 }
             }
@@ -1075,7 +1084,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async ( event: SQSEven
 
     }
 
-    console.info( `Processed ${ event.Records.length } Work Queue records.Items Retry Count: ${ sqsBatchFail.batchItemFailures.length } \nItems Retry List: ${ JSON.stringify( sqsBatchFail ) } ` )
+    if ( tcc.SelectiveDebug.indexOf( "_910," ) > -1 ) console.info( `(910) Processed ${ event.Records.length } Work Queue records. Items Retry Count: ${ sqsBatchFail.batchItemFailures.length } \nItems Retry List: ${ JSON.stringify( sqsBatchFail ) } ` )
 
     if ( tcc.S3DropBucketWorkQueueMaintHours > 0 )
     {
