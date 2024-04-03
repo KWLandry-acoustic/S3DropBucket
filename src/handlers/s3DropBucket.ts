@@ -403,10 +403,10 @@ export const s3DropBucketHandler: Handler = async ( event: S3Event, context: Con
                             if ( delResultCode !== '204' )
                             {
                                 res = {...res, DeleteResult: JSON.stringify( delResultCode )}
-                                throw new Error( `Unsuccessful Delete of ${ key }, Expected 204 result code, received ${ delResultCode }` )
+                                if ( tcc.SelectiveDebug.indexOf( "_904," ) > -1 ) console.error( `Processing Successful, but Unsuccessful Delete of ${ key }, Expected 204 result code, received ${ delResultCode }` )
                             } else
                             {
-                                if ( tcc.SelectiveDebug.indexOf( "_904," ) > -1 ) console.info( `(904) Delete of ${ key } Successful (Result ${ delResultCode }).` )
+                                if ( tcc.SelectiveDebug.indexOf( "_904," ) > -1 ) console.info( `(904) Processing successful, Delete of ${ key } Successful (Result ${ delResultCode }).` )
                                 res = {...res, DeleteResult: `Successful Delete of ${ key }  (Result ${ JSON.stringify( delResultCode ) })`}
                             }
                         }
@@ -419,7 +419,7 @@ export const s3DropBucketHandler: Handler = async ( event: S3Event, context: Con
                     return res
                 } )
                 .catch( ( e: any ) => {
-                    const r = `Exception - Process S3 Object Stream exception \n${ e }`
+                    const r = `Exception - Process S3 Object Stream Catch - \n${ e }`
                     console.error( r )
                     processS3ObjectStreamResolution = {...processS3ObjectStreamResolution, ProcessS3ObjectStreamCatch: r}
                     return processS3ObjectStreamResolution
@@ -821,7 +821,8 @@ async function processS3ObjectContentStream ( key: string, bucket: string, custC
         } )
         .catch( e => {
             // console.error(`Exception(error) - Process S3 Object Content Stream for ${ key }.\nResults: ${ JSON.stringify(streamResult) }.\n${ e } `)
-            throw new Error( `Exception(throw) - Process S3 Object Content Stream for ${ key }.\nResults: ${ JSON.stringify( streamResult ) }.\n${ e } ` )
+            //throw new Error( `Exception(throw) - ReadStream - For ${ key }.\nResults: ${ JSON.stringify( streamResult ) }.\n${ e } ` )
+            return {...streamResult, ReadStreamException: `Exception(throw) - ReadStream - For ${ key }.\nResults: ${ JSON.stringify( streamResult ) }.\n${ e } `}
         } )
 
     // return processS3ObjectResults
@@ -1031,6 +1032,12 @@ export const S3DropBucketQueueProcessorHandler: Handler = async ( event: SQSEven
             {
 
                 postResult = await postToCampaign( work, tqm.custconfig, tqm.updateCount )
+
+                //  postResult can contain: 
+                //retry
+                //unsuccessful post
+                //partially successful
+                //successfully posted
 
                 if ( tcc.SelectiveDebug.indexOf( "_8," ) > -1 ) console.info( `Selective Debug 8 - POST Result for ${ tqm.workKey }(versionId: ${ tqm.versionId }): ${ postResult } ` )
 
@@ -2753,6 +2760,12 @@ export async function postToCampaign ( xmlCalls: string, config: customerConfig,
                 return 'Unsuccessful POST of the Updates'
             }
         } )
+
+
+    //retry
+    //unsuccessful post
+    //partially successful
+    //successfully posted
 
     return postRes
 }
