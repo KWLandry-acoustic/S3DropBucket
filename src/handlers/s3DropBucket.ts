@@ -447,18 +447,15 @@ export const s3DropBucketHandler: Handler = async ( event: S3Event, context: Con
         const maintenance = await maintainS3DropBucket( customersConfig )
 
         const l = maintenance[ 0 ] as number
-        console.info( `Files Reprocessed - ${ l }` )
+        console.info( `- ${ l } File(s) met criteria and are marked for reprocessing ` )
 
         if ( tcc.SelectiveDebug.indexOf( "_26," ) > -1 )
         {
             const filesProcessed = maintenance[ 1 ]
             if ( l > 0 ) console.info( `Selective Debug 26 - ${ l } Files ReProcessed: \n${ filesProcessed }` )
-            else console.info( `Selective Debug 26 - No files found to Reprocess` )
-
+            else console.info( `Selective Debug 26 - No files met the criteria to return for Reprocessing` )
         }
     }
-
-
 
     return JSON.stringify( processS3ObjectStreamResolution )
 }
@@ -1093,13 +1090,10 @@ export const S3DropBucketQueueProcessorHandler: Handler = async ( event: SQSEven
         if ( tcc.SelectiveDebug.indexOf( "_27," ) > -1 )
         {
             const l = maintenance[ 0 ] as number
-            if ( l > 0 ) console.info( `Selective Debug 27 - Work Files ReQueued: \n${ maintenance } ` )
-            else console.info( `Selective Debug 27 - No Work files found to ReQueue` )
+            if ( l > 0 ) console.info( `Selective Debug 27 - ReQueued Work Files: \n${ maintenance } ` )
+            else console.info( `Selective Debug 27 - No Work files met criteria to ReQueue` )
         }
-
     }
-
-
 
 
     //ToDo: Complete the Final Processing Outcomes messaging for Queue Processing 
