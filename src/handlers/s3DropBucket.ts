@@ -160,6 +160,8 @@ export interface tcConfig {
     S3DropBucketQuiesce: boolean
     S3DropBucketMaintHours: number,
     S3DropBucketWorkQueueMaintHours: number,
+    S3DropBucketMaintLimit: number,
+    S3DropBucketWorkQueueMaintLimit: number,
     S3DropBucketPurgeCount: number
     S3DropBucketPurge: string
     QueueBucketQuiesce: boolean
@@ -460,6 +462,10 @@ export const s3DropBucketHandler: Handler = async ( event: S3Event, context: Con
         }
     }
 
+    if ( JSON.stringify( processS3ObjectStreamResolution ).length > 1000 )
+        processS3ObjectStreamResolution = processS3ObjectStreamResolution
+
+
     return JSON.stringify( processS3ObjectStreamResolution )
 }
 
@@ -508,7 +514,7 @@ async function processS3ObjectContentStream ( key: string, bucket: string, custC
         Bucket: bucket
     }
 
-    // let streamResult = processS3ObjectResults
+
     let streamResult = processS3ObjectStreamResolution
 
     // processS3ObjectResults
@@ -1554,11 +1560,25 @@ async function getValidateTricklerConfig () {
         }
         else tc.S3DropBucketMaintHours = -1
 
+        if ( tc.S3DropBucketMaintLimit != undefined )
+        {
+            process.env[ "DropBucketMaintLimit" ] = tc.S3DropBucketMaintLimit.toString()
+        }
+        else tc.S3DropBucketMaintLimit = 0
+
+
         if ( tc.S3DropBucketWorkQueueMaintHours != undefined )
         {
             process.env[ "DropBucketWorkQueueMaintHours" ] = tc.S3DropBucketWorkQueueMaintHours.toString()
         }
         else tc.S3DropBucketWorkQueueMaintHours = -1
+
+        if ( tc.S3DropBucketWorkQueueMaintLimit != undefined )
+        {
+            process.env[ "DropBucketWorkQueueMaintLimit" ] = tc.S3DropBucketWorkQueueMaintLimit.toString()
+        }
+        else tc.S3DropBucketWorkQueueMaintLimit = 0
+
 
         if ( tc.S3DropBucketPurge !== undefined )
             process.env[ "DropBucketPurge" ] = tc.S3DropBucketPurge
@@ -2881,6 +2901,10 @@ async function purgeBucket ( count: number, bucket: string ) {
 async function maintainS3DropBucket ( cust: customerConfig ) {
 
     let bucket = tcc.s3DropBucket
+    let limit = 0
+    if ( bucket.indexOf( '-process' ) > -1 ) limit = tcc.S3DropBucketMaintLimit
+    else limit = tcc.S3DropBucketWorkQueueMaintLimit
+
     let ContinuationToken: string | undefined
     const reProcess: string[] = []
     let deleteSource = false
@@ -2944,6 +2968,7 @@ async function maintainS3DropBucket ( cust: customerConfig ) {
                 Bucket: bucket,
                 Prefix: cust.Customer,
                 ContinuationToken,
+                MaxKeys: limit,
             } ),
         )
 
