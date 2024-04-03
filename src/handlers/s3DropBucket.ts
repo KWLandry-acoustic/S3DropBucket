@@ -348,7 +348,7 @@ export const s3DropBucketHandler: Handler = async ( event: S3Event, context: Con
         try
         {
             customersConfig = await getCustomerConfig( key )
-            if ( tcc.SelectiveDebug.indexOf( "_902," ) > -1 ) console.info( `(902) Processing inbound data for ${ customersConfig.Customer } - ${ key }` )
+            if ( tcc.SelectiveDebug.indexOf( "_901," ) > -1 ) console.info( `(901) Processing inbound data for ${ customersConfig.Customer } - ${ key }` )
         }
         catch ( e )
         {
@@ -384,8 +384,7 @@ export const s3DropBucketHandler: Handler = async ( event: S3Event, context: Con
             processS3ObjectStreamResolution = await processS3ObjectContentStream( key, bucket, customersConfig )
                 .then( async ( res ) => {
                     let delResultCode
-
-                    console.info( `Completed processing all records of the S3 Object ${ key }. ${ res.OnEndRecordStatus }` )
+                    if ( tcc.SelectiveDebug.indexOf( "_903," ) > -1 ) console.info( `(903) Completed processing all records of the S3 Object ${ key }. ${ res.OnEndRecordStatus }` )
 
                     //Don't delete the test data
                     if ( localTesting ) key = 'TestData/S3Object_DoNotDelete'
@@ -408,7 +407,7 @@ export const s3DropBucketHandler: Handler = async ( event: S3Event, context: Con
                                 throw new Error( `Unsuccessful Delete of ${ key }, Expected 204 result code, received ${ delResultCode }` )
                             } else
                             {
-                                if ( tcc.SelectiveDebug.indexOf( "_903," ) > -1 ) console.info( `(903) Delete of ${ key } Successful (Result ${ delResultCode }).` )
+                                if ( tcc.SelectiveDebug.indexOf( "_904," ) > -1 ) console.info( `(904) Delete of ${ key } Successful (Result ${ delResultCode }).` )
                                 res = { ...res, DeleteResult: `Successful Delete of ${ key }  (Result ${ JSON.stringify( delResultCode ) })` }
                             }
                         }
@@ -439,9 +438,9 @@ export const s3DropBucketHandler: Handler = async ( event: S3Event, context: Con
     checkForTCConfigUpdates()
 
 
-    console.info( `Completing S3 DropBucket Processing of Request Id ${ event.Records[ 0 ].responseElements[ 'x-amz-request-id' ] }` )
-    if ( tcc.SelectiveDebug.indexOf( "_20," ) > -1 ) console.info( `Selective Debug 20 - \n${ processS3ObjectStreamResolution }` )
+    if ( tcc.SelectiveDebug.indexOf( "_905," ) > -1 ) console.info( `(905) Completing S3 DropBucket Processing of Request Id ${ event.Records[ 0 ].responseElements[ 'x-amz-request-id' ] }` )
 
+    if ( tcc.SelectiveDebug.indexOf( "_20," ) > -1 ) console.info( `Selective Debug 20 - \n${ processS3ObjectStreamResolution }` )
 
 
     if ( event.Records[ 0 ].s3.bucket.name && tcc.S3DropBucketMaintHours > 0 )
@@ -813,7 +812,7 @@ async function processS3ObjectContentStream ( key: string, bucket: string, custC
                         streamResult = { ...streamResult, OnClose_Result: `S3 Content Stream Closed for ${ key }` }
 
                     } )
-                if ( tcc.SelectiveDebug.indexOf( "_901," ) > -1 ) console.info( `(901) S3 Content Stream Opened for ${ key }` )
+                if ( tcc.SelectiveDebug.indexOf( "_902," ) > -1 ) console.info( `(902) S3 Content Stream Opened for ${ key }` )
 
             } )
                 .then( ( r ) => {
