@@ -322,9 +322,8 @@ export const s3DropBucketHandler: Handler = async ( event: S3Event, context: Con
         }
     }
 
-    console.info(
-        `Received S3DropBucket Event Batch. There are ${ event.Records.length } S3DropBucket Event Records in this batch. (Event Id: ${ event.Records[ 0 ].responseElements[ 'x-amz-request-id' ] }).`,
-    )
+    if ( tcc.SelectiveDebug.indexOf( "_900," ) > -1 ) console.info( `(900) Received S3DropBucket Event Batch.There are ${ event.Records.length } S3DropBucket Event Records in this batch. (Event Id: ${ event.Records[ 0 ].responseElements[ 'x-amz-request-id' ] }).` )
+
 
     //Future: Left this for possible switch of the Trigger from S3 being an SQS Trigger of an S3 Write, 
     // Drive higher concurrency in each Lambda invocation by running batches of 10 files written at a time(SQS Batch) 
@@ -349,7 +348,7 @@ export const s3DropBucketHandler: Handler = async ( event: S3Event, context: Con
         try
         {
             customersConfig = await getCustomerConfig( key )
-            console.info( `Processing inbound data for ${ customersConfig.Customer } - ${ key }` )
+            if ( tcc.SelectiveDebug.indexOf( "_902," ) > -1 ) console.info( `(902) Processing inbound data for ${ customersConfig.Customer } - ${ key }` )
         }
         catch ( e )
         {
@@ -409,7 +408,7 @@ export const s3DropBucketHandler: Handler = async ( event: S3Event, context: Con
                                 throw new Error( `Unsuccessful Delete of ${ key }, Expected 204 result code, received ${ delResultCode }` )
                             } else
                             {
-                                if ( tcc.SelectiveDebug.indexOf( "_23," ) > -1 ) console.info( `Selective Debug 23 - Delete of ${ key } Successful (Result ${ delResultCode }).` )
+                                if ( tcc.SelectiveDebug.indexOf( "_903," ) > -1 ) console.info( `(903) Delete of ${ key } Successful (Result ${ delResultCode }).` )
                                 res = { ...res, DeleteResult: `Successful Delete of ${ key }  (Result ${ JSON.stringify( delResultCode ) })` }
                             }
                         }
@@ -814,8 +813,7 @@ async function processS3ObjectContentStream ( key: string, bucket: string, custC
                         streamResult = { ...streamResult, OnClose_Result: `S3 Content Stream Closed for ${ key }` }
 
                     } )
-
-                console.info( `S3 Content Stream Opened for ${ key }` )
+                if ( tcc.SelectiveDebug.indexOf( "_901," ) > -1 ) console.info( `(901) S3 Content Stream Opened for ${ key }` )
 
             } )
                 .then( ( r ) => {
@@ -966,7 +964,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async ( event: SQSEven
 
     console.info( `Received SQS Events Batch of ${ event.Records.length } records.` )
 
-    if ( tcc.SelectiveDebug.indexOf( "_4," ) > -1 ) console.info( `Selective Debug 4 - Received ${ event.Records.length } Work Queue Records.Records are: \n${ JSON.stringify( event ) } ` )
+    if ( tcc.SelectiveDebug.indexOf( "_4," ) > -1 ) console.info( `Selective Debug 4 - Received ${ event.Records.length } Work Queue Records. The set of Records are: \n${ JSON.stringify( event ) } ` )
 
     //Empty BatchFail array 
     sqsBatchFail.batchItemFailures.forEach( () => {
