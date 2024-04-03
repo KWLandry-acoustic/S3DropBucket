@@ -406,7 +406,7 @@ export const s3DropBucketHandler: Handler = async ( event: S3Event, context: Con
                                 throw new Error( `Unsuccessful Delete of ${ key }, Expected 204 result code, received ${ delResultCode }` )
                             } else
                             {
-                                if ( tcc.SelectiveDebug.indexOf( "_909," ) > -1 ) console.info( `(909) Delete of ${ key } Successful (Result ${ delResultCode }).` )
+                                if ( tcc.SelectiveDebug.indexOf( "_904," ) > -1 ) console.info( `(904) Delete of ${ key } Successful (Result ${ delResultCode }).` )
                                 res = { ...res, DeleteResult: `Successful Delete of ${ key }  (Result ${ JSON.stringify( delResultCode ) })` }
                             }
                         }
@@ -1068,7 +1068,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async ( event: SQSEven
                     const d: string = await deleteS3Object( tqm.workKey, tcc.s3DropBucketWorkBucket! )
                     if ( d === '204' )
                     {
-                        if ( tcc.SelectiveDebug.indexOf( "_24," ) > -1 ) console.info( `Selective Debug 24 - Successful Deletion of Queued Work file: ${ tqm.workKey }( versionId: ${ tqm.versionId } )` )
+                        if ( tcc.SelectiveDebug.indexOf( "_909," ) > -1 ) console.info( `(909) Successful Deletion of Queued Work file: ${ tqm.workKey }( versionId: ${ tqm.versionId } )` )
                     }
 
                     else if ( tcc.SelectiveDebug.indexOf( "_24," ) > -1 ) console.error( `Failed to Delete ${ tqm.workKey } (versionId: ${ tqm.versionId }). Expected '204' but received ${ d } ` )
