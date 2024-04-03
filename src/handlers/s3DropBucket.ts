@@ -1812,9 +1812,17 @@ async function storeAndQueueWork ( chunks: string[], s3Key: string, config: cust
     if ( batch > tcc.MaxBatchesWarning ) console.warn( `Warning: Updates from the S3 Object(${ s3Key }) are exceeding(${ batch }) the Warning Limit of ${ tcc.MaxBatchesWarning } Batches per Object.` )
     // throw new Error(`Updates from the S3 Object(${ s3Key }) Exceed(${ batch }) Safety Limit of 20 Batches of 99 Updates each.Exiting...`)
 
-    //Customers marked as "Singular" update files are not transformed, but sent to Firehose before this, 
+    //Customers marked as "Singular" update files are not transformed, but sent to Firehose before this,
     //  therefore need to transform Aggregate files as well as files marked as "Bulk"
-    chunks = transforms( chunks, config )
+    try
+    {
+        chunks = transforms( chunks, config )
+    }
+    catch ( e )
+    {
+        throw new Error( `Exception - Transforms - ${ e }` )
+    }
+
 
     if ( customersConfig.listType.toLowerCase() === 'dbkeyed' ||
         customersConfig.listType.toLowerCase() === 'dbnonkeyed' )
