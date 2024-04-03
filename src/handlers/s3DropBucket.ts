@@ -58,9 +58,9 @@ import { setUncaughtExceptionCaptureCallback } from 'process'
 let testS3Key: string
 let testS3Bucket: string
 testS3Bucket = "tricklercache-configs"
-// testS3Key = "TestData/cloroxweather_99706.csv"
+testS3Key = "TestData/cloroxweather_99706.csv"
 // testS3Key = "TestData/visualcrossing_00213.csv"
-testS3Key = "TestData/pura_2024_02_26T05_53_26_084Z.json"
+// testS3Key = "TestData/pura_2024_02_26T05_53_26_084Z.json"
 // testS3Key = "TestData/pura_2024_02_25T00_00_00_090Z.json"
 // testS3Key = "TestData/pura_S3DropBucket_Aggregator-8-2024-03-19-16-42-48-46e884aa-8c6a-3ff9-8d32-c329395cf311.json"
 // testS3Key = "pura_S3DropBucket_Aggregator-8-2024-03-23-09-23-55-123cb0f9-9552-3303-a451-a65dca81d3c4_json_update_53_99.xml"
@@ -391,7 +391,6 @@ export const s3DropBucketHandler: Handler = async ( event: S3Event, context: Con
                     //Do not delete in order to Capture Testing Data
                     // if (key.toLowerCase().indexOf('aggregat') > -1) key = 'TestData/S3Object_DoNotDelete'
 
-                    debugger
                     if ( ( res.PutToFireHoseAggregatorResult === "200" ) ||
                         ( res.OnEndStoreS3QueueResult.AddWorkToS3WorkBucketResults.S3ProcessBucketResult === "200" ) &&
                         res.OnEndStoreS3QueueResult.AddWorkToSQSWorkQueueResults.SQSWriteResult === "200" )
@@ -649,7 +648,6 @@ async function processS3ObjectContentStream ( key: string, bucket: string, custC
 
             s3ContentReadableStream.setMaxListeners( Number( tcc.EventEmitterMaxListeners ) )
 
-
             // const readStream = await new Promise(async (resolve, reject) => {
             await new Promise( async ( resolve, reject ) => {
 
@@ -737,6 +735,7 @@ async function processS3ObjectContentStream ( key: string, bucket: string, custC
                             {
                                 batchCount++
                                 recs = chunks.length
+
                                 sqwResult = await storeAndQueueWork( chunks, key, custConfig, chunks.length, batchCount )
 
                                 // streamResult.OnEndStoreS3QueueResult = sqwResult 
@@ -754,8 +753,6 @@ async function processS3ObjectContentStream ( key: string, bucket: string, custC
 
                                 let pfhRes
 
-                                debugger
-
                                 try 
                                 {
                                     pfhRes = await putToFirehose( chunks, key, custConfig.Customer )
@@ -765,8 +762,6 @@ async function processS3ObjectContentStream ( key: string, bucket: string, custC
                                                 PutToFireHoseAggregatorResult: string,
                                                 PutToFireHoseException: string
                                             }
-
-                                            debugger
 
                                             streamResult = {
                                                 ...streamResult, ...fRes
@@ -873,8 +868,6 @@ async function putToFirehose ( S3Obj: string[], key: string, cust: string ) {
                     .then( ( res: PutRecordCommandOutput ) => {
 
                         if ( tcc.SelectiveDebug.indexOf( '_22,' ) > -1 ) console.info( `Put to Firehose Aggregator for ${ key } - \n${ JSON.stringify( fc ) } \nResult: ${ JSON.stringify( res ) } ` )
-
-                        debugger
 
                         if ( res.$metadata.httpStatusCode === 200 )
                         {
@@ -2033,6 +2026,7 @@ function transforms ( chunks: string[], config: customerConfig ) {
                 t.push( JSON.stringify( j ) )
             }
         }
+
         if ( t.length !== chunks.length )
         {
             throw new Error( `Error - Transform - Applying Clorox Custom Transform returns fewer records (${ t.length }) than initial set ${ chunks.length }` )
@@ -2048,6 +2042,7 @@ function transforms ( chunks: string[], config: customerConfig ) {
     //     "Col_BB",
     //     "Col_BC"
     // ],
+
     if ( config.transforms.ignore.length > 0 )
     {
         let i: typeof chunks = []
@@ -2061,14 +2056,19 @@ function transforms ( chunks: string[], config: customerConfig ) {
                     // const { [keyToRemove]: removedKey, ...newObject } = originalObject;
                     // const { [ig]: , ...i } = jo
                     delete jo[ ig ]
-                    i.push( JSON.stringify( jo ) )
                 }
+                i.push( JSON.stringify( jo ) )
             }
         }
         catch ( e )
         {
             console.error( `Exception - Transform - Applying Ignore - \n${ e }` )
         }
+
+
+        debugger
+
+
         if ( i.length !== chunks.length )
         {
             throw new Error( `Error - Transform - Applying Ignore returns fewer records ${ i.length } than initial set ${ chunks.length }` )
@@ -2084,15 +2084,18 @@ function transforms ( chunks: string[], config: customerConfig ) {
     //              "zipcode": "$.context.traits.address.postalCode"
     //      },
 
+    debugger
+
     if ( Object.keys( config.transforms.jsonMap ).indexOf( 'none' ) < 0 )
     {
         let r: typeof chunks = []
         try
         {
+            let jmr
             for ( const l of chunks )
             {
                 const jo = JSON.parse( l )
-                const jmr = applyJSONMap( jo, config.transforms.jsonMap )
+                jmr = applyJSONMap( jo, config.transforms.jsonMap )
                 r.push( JSON.stringify( jmr ) )
             }
         } catch ( e )
@@ -2117,6 +2120,7 @@ function transforms ( chunks: string[], config: customerConfig ) {
     //       "Col_DE": 2,
     //       "Col_DF": 3
     // },
+
     if ( Object.keys( config.transforms.csvMap ).indexOf( 'none' ) < 0 )
     {
         let c: typeof chunks = []
@@ -2155,8 +2159,6 @@ function transforms ( chunks: string[], config: customerConfig ) {
 
 function applyJSONMap ( jsonObj: object, map: { [ key: string ]: string } ) {
 
-
-
     // j.forEach((o: object) => {
     //     const a = applyJSONMap([o], config.transforms[0].jsonMap)
     //     am.push(a)
@@ -2169,7 +2171,7 @@ function applyJSONMap ( jsonObj: object, map: { [ key: string ]: string } ) {
             let j = jsonpath.value( jsonObj, v )
             if ( !j )
             {
-                console.error( `Data not Found for JSONPath statement ${ k }: ${ v },  \nTarget Data: \n${ JSON.stringify( jsonObj ) } ` )
+                if ( tcc.SelectiveDebug.indexOf( "_30," ) > -1 ) console.warn( `Warning: Data not Found for JSONPath statement ${ k }: ${ v },  \nTarget Data: \n${ JSON.stringify( jsonObj ) } ` )
             }
             else
             {
