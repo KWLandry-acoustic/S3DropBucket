@@ -516,7 +516,8 @@ async function processS3ObjectContentStream ( key: string, bucket: string, custC
             if ( getS3StreamResult.$metadata.httpStatusCode != 200 )
             {
                 const errMsg = JSON.stringify( getS3StreamResult.$metadata )
-                throw new Error( `Get S3 Object Command failed for ${ key }. Result is ${ errMsg }` )
+                //throw new Error( `Get S3 Object Command failed for ${ key }. Result is ${ errMsg }` )
+                return {...streamResult, ProcessS3ObjectStreamError: `Get S3 Object Command failed for ${ key }. Result is ${ errMsg }`}
             }
 
             let recs = 0
@@ -715,7 +716,8 @@ async function processS3ObjectContentStream ( key: string, bucket: string, custC
                                 ...streamResult, OnEndNoRecordsException: `Exception - No records returned from parsing file.Check the content as well as the configured file format(${ custConfig.format }) matches the content of the file.`
                             }
                             // console.error(`Exception - ${ JSON.stringify(streamResult) } `)
-                            throw new Error( `Exception - onEnd ${ JSON.stringify( streamResult ) } ` )
+                            //throw new Error( `Exception - onEnd ${ JSON.stringify( streamResult ) } ` )
+                            return streamResult
                         }
 
                         let sqwResult
@@ -811,9 +813,10 @@ async function processS3ObjectContentStream ( key: string, bucket: string, custC
                     return {...streamResult, ReturnLocation: `ReadStream Then Clause.\n${ r } `}
                 } )
                 .catch( e => {
-                    const err = `Exception - ReadStream(catch) - Process S3 Object Content Stream for ${ key }.\nResults: ${ JSON.stringify( streamResult ) }.\n${ e } `
-                    console.error( err )
-                    throw new Error( err )
+                    const err = `Exception - ReadStream(catch) - Process S3 Object Content Stream for ${ key }. \n${ e } `
+                    //console.error( err )
+                    //throw new Error( err )
+                    return {...streamResult, OnCloseReadStreamException: `${ err }`}
                 } )
 
             // return { ...readStream, ReturnLocation: `...End of ReadStream Promise` }
