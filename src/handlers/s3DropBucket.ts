@@ -462,11 +462,17 @@ export const s3DropBucketHandler: Handler = async ( event: S3Event, context: Con
         }
     }
 
-    if ( JSON.stringify( processS3ObjectStreamResolution ).length > 1000 )
+
+    const osr = JSON.stringify( processS3ObjectStreamResolution )
+    const l = osr.length
+
+    if ( l > 1000 )
+    {
+        console.info( `Length of ProcessS3ObjectStreamResolution: ${ l }` )
         return processS3ObjectStreamResolution.OnClose_Result
+    }
 
-
-    return JSON.stringify( processS3ObjectStreamResolution )
+    return osr
 }
 
 export default s3DropBucketHandler
