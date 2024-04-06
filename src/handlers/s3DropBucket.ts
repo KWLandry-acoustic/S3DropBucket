@@ -467,10 +467,7 @@ export const s3DropBucketHandler: Handler = async ( event: S3Event, context: Con
     debugger
 
     const osr = JSON.stringify( processS3ObjectStreamResolution )
-    processS3ObjectStreamResolution = {} as processS3ObjectStreamResult
-
     const osrl = osr.length
-
     if ( osrl > 2000 )
     {
         console.info( `Length of ProcessS3ObjectStreamResolution: ${ osrl }` )
@@ -482,6 +479,8 @@ export const s3DropBucketHandler: Handler = async ( event: S3Event, context: Con
     const logKey = `S3DropBucket_Log_${ new Date().toISOString().replace( /:/g, '_' ) }`
     const fireLog = await putToFirehose( dropLog, logKey, 'S3DropBucket_Log_' )
     console.info( `Write to FireHose Log - ${ fireLog }` )
+
+    processS3ObjectStreamResolution = {} as processS3ObjectStreamResult
 
     return osr
 }
