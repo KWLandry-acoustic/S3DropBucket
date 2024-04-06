@@ -467,6 +467,8 @@ export const s3DropBucketHandler: Handler = async ( event: S3Event, context: Con
     debugger
 
     const osr = JSON.stringify( processS3ObjectStreamResolution )
+    processS3ObjectStreamResolution = {} as processS3ObjectStreamResult
+
     const osrl = osr.length
 
     if ( osrl > 2000 )
