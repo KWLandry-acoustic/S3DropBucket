@@ -466,14 +466,13 @@ export const s3DropBucketHandler: Handler = async ( event: S3Event, context: Con
 
     debugger
 
-    const osr = JSON.stringify( processS3ObjectStreamResolution )
+    const osr = JSON.stringify( processS3ObjectStreamResolution ) + '\n\n'
     const osrl = osr.length
     if ( osrl > 2000 )
     {
         console.info( `Length of ProcessS3ObjectStreamResolution: ${ osrl }` )
-        return processS3ObjectStreamResolution.OnClose_Result
+        return processS3ObjectStreamResolution.OnEndStreamEndResult
     }
-
 
     const dropLog = [ JSON.stringify( processS3ObjectStreamResolution ) ]
     const logKey = `S3DropBucket_Log_${ new Date().toISOString().replace( /:/g, '_' ) }`
@@ -481,7 +480,7 @@ export const s3DropBucketHandler: Handler = async ( event: S3Event, context: Con
     console.info( `Write to FireHose Log - ${ fireLog }` )
 
     processS3ObjectStreamResolution = {} as processS3ObjectStreamResult
-    //resolve new Lambda Params issues
+
     return osr
 }
 
