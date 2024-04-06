@@ -159,9 +159,11 @@ export interface tcConfig {
     EventEmitterMaxListeners: number
     S3DropBucketQuiesce: boolean
     S3DropBucketMaintHours: number,
-    S3DropBucketWorkQueueMaintHours: number,
     S3DropBucketMaintLimit: number,
+    S3DropBucketMaintConcurrency: number,
+    S3DropBucketWorkQueueMaintHours: number,
     S3DropBucketWorkQueueMaintLimit: number,
+    S3DropBucketWorkQueueMaintConcurrency: number,
     S3DropBucketPurgeCount: number
     S3DropBucketPurge: string
     QueueBucketQuiesce: boolean
@@ -462,21 +464,26 @@ export const s3DropBucketHandler: Handler = async ( event: S3Event, context: Con
         }
     }
 
+    debugger
 
     const osr = JSON.stringify( processS3ObjectStreamResolution )
-    const l = osr.length
+    const osrl = osr.length
 
-    if ( l > 2000 )
+    if ( osrl > 2000 )
     {
-        console.info( `Length of ProcessS3ObjectStreamResolution: ${ l }` )
+        console.info( `Length of ProcessS3ObjectStreamResolution: ${ osrl }` )
         return processS3ObjectStreamResolution.OnClose_Result
     }
+
+
+    const dropLog = [ JSON.stringify( processS3ObjectStreamResolution ) ]
+    const logKey = `S3DropBucket_Log_${ new Date().toISOString().replace( /:/g, '_' ) }`
+    putToFirehose( dropLog, logKey, 'S3DropBucket_Log_' )
 
     return osr
 }
 
 export default s3DropBucketHandler
-
 
 
 async function processS3ObjectContentStream ( key: string, bucket: string, custConfig: customerConfig ) {
@@ -856,7 +863,12 @@ async function putToFirehose ( S3Obj: string[], key: string, cust: string ) {
     // S3DropBucket_Aggregator 
     // S3DropBucket_FireHoseStream
 
+    let fireHoseStream = "S3DropBucket_Aggregator"
+    if ( cust === "S3DropBucket_Log_" ) fireHoseStream = 'S3DropBucket_Log'
+
     let putFirehoseResp: {} = {}
+
+    debugger
 
     try
     {
@@ -869,7 +881,7 @@ async function putToFirehose ( S3Obj: string[], key: string, cust: string ) {
             const f = Buffer.from( JSON.stringify( j ), 'utf-8' )
 
             const fc = {
-                DeliveryStreamName: "S3DropBucket_Aggregator",
+                DeliveryStreamName: fireHoseStream,
                 Record: {
                     Data: f
                 }
@@ -882,17 +894,20 @@ async function putToFirehose ( S3Obj: string[], key: string, cust: string ) {
             {
                 putFirehoseResp = await client.send( fireCommand )
                     .then( ( res: PutRecordCommandOutput ) => {
-
-                        if ( tcc.SelectiveDebug.indexOf( '_22,' ) > -1 ) console.info( `Put to Firehose Aggregator for ${ key } - \n${ JSON.stringify( fc ) } \nResult: ${ JSON.stringify( res ) } ` )
-
-                        if ( res.$metadata.httpStatusCode === 200 )
+                        if ( fireHoseStream !== 'S3DropBucket_Log' )
                         {
-                            firehosePutResult = {...firehosePutResult, PutToFireHoseAggregatorResult: `${ res.$metadata.httpStatusCode }`}
-                            firehosePutResult = {...firehosePutResult, OnEnd_PutToFireHoseAggregator: `Successful Put to Firehose Aggregator for ${ key }.\n${ JSON.stringify( res ) } \n${ res.RecordId } `}
-                        }
-                        else
-                        {
-                            firehosePutResult = {...firehosePutResult, PutToFireHoseAggregatorResult: `UnSuccessful Put to Firehose Aggregator for ${ key } \n ${ JSON.stringify( res ) } `}
+                            if ( tcc.SelectiveDebug.indexOf( '_22,' ) > -1 ) console.info( `Put to Firehose Aggregator for ${ key } - \n${ JSON.stringify( fc ) } \nResult: ${ JSON.stringify( res ) } ` )
+
+                            if ( res.$metadata.httpStatusCode === 200 )
+                            {
+                                firehosePutResult = {...firehosePutResult, PutToFireHoseAggregatorResult: `${ res.$metadata.httpStatusCode }`}
+                                firehosePutResult = {...firehosePutResult, OnEnd_PutToFireHoseAggregator: `Successful Put to Firehose Aggregator for ${ key }.\n${ JSON.stringify( res ) } \n${ res.RecordId } `}
+                            }
+                            else
+                            {
+                                firehosePutResult = {...firehosePutResult, PutToFireHoseAggregatorResult: `UnSuccessful Put to Firehose Aggregator for ${ key } \n ${ JSON.stringify( res ) } `}
+                            }
+
                         }
                         return firehosePutResult
                     } )
@@ -1109,22 +1124,23 @@ export const S3DropBucketQueueProcessorHandler: Handler = async ( event: SQSEven
 
     if ( tcc.S3DropBucketWorkQueueMaintHours > 0 )
     {
-
         try
         {
             maintenance = await maintainS3DropBucketQueueBucket( tqm.custconfig ) ?? [ 0, '' ]
+
+            debugger
+
+            if ( tcc.SelectiveDebug.indexOf( "_27," ) > -1 )
+            {
+                const l = maintenance[ 0 ] as number
+                if ( l > 0 ) console.info( `Selective Debug 27 - ReQueued Work Files: \n${ maintenance } ` )
+                else console.info( `Selective Debug 27 - No Work files met criteria to ReQueue` )
+            }
         } catch ( e )
         {
             debugger
         }
 
-
-        if ( tcc.SelectiveDebug.indexOf( "_27," ) > -1 )
-        {
-            const l = maintenance[ 0 ] as number
-            if ( l > 0 ) console.info( `Selective Debug 27 - ReQueued Work Files: \n${ maintenance } ` )
-            else console.info( `Selective Debug 27 - No Work files met criteria to ReQueue` )
-        }
     }
 
 
@@ -1573,6 +1589,13 @@ async function getValidateTricklerConfig () {
         else tc.S3DropBucketMaintLimit = 0
 
 
+        if ( tc.S3DropBucketMaintConcurrency != undefined )
+        {
+            process.env[ "DropBucketMaintConcurrency" ] = tc.S3DropBucketMaintConcurrency.toString()
+        }
+        else tc.S3DropBucketMaintLimit = 1
+
+
         if ( tc.S3DropBucketWorkQueueMaintHours != undefined )
         {
             process.env[ "DropBucketWorkQueueMaintHours" ] = tc.S3DropBucketWorkQueueMaintHours.toString()
@@ -1584,6 +1607,13 @@ async function getValidateTricklerConfig () {
             process.env[ "DropBucketWorkQueueMaintLimit" ] = tc.S3DropBucketWorkQueueMaintLimit.toString()
         }
         else tc.S3DropBucketWorkQueueMaintLimit = 0
+
+        if ( tc.S3DropBucketWorkQueueMaintConcurrency != undefined )
+        {
+            process.env[ "DropBucketWorkQueueMaintConcurrency" ] = tc.S3DropBucketWorkQueueMaintConcurrency.toString()
+        }
+        else tc.S3DropBucketWorkQueueMaintConcurrency = 1
+
 
 
         if ( tc.S3DropBucketPurge !== undefined )
@@ -2100,48 +2130,14 @@ function transforms ( chunks: string[], config: customerConfig ) {
     //     "Col_BC"
     // ],
 
-    if ( config.transforms.ignore.length > 0 )
-    {
-        let i: typeof chunks = []
-        try
-        {
-            for ( const l of chunks )
-            {
-                const jo = JSON.parse( l )
-                for ( const ig of config.transforms.ignore )
-                {
-                    // const { [keyToRemove]: removedKey, ...newObject } = originalObject;
-                    // const { [ig]: , ...i } = jo
-                    delete jo[ ig ]
-                }
-                i.push( JSON.stringify( jo ) )
-            }
-        }
-        catch ( e )
-        {
-            console.error( `Exception - Transform - Applying Ignore - \n${ e }` )
-        }
 
-
-        debugger
-
-
-        if ( i.length !== chunks.length )
-        {
-            throw new Error( `Error - Transform - Applying Ignore returns fewer records ${ i.length } than initial set ${ chunks.length }` )
-        }
-        else chunks = i
-    }
-
-
-    //Apply the JSONMap - 
+    //Apply the JSONMap -
     //  JSONPath statements
     //      "jsonMap": {
     //          "email": "$.uniqueRecipient",
     //              "zipcode": "$.context.traits.address.postalCode"
     //      },
 
-    debugger
 
     if ( Object.keys( config.transforms.jsonMap ).indexOf( 'none' ) < 0 )
     {
@@ -2210,6 +2206,40 @@ function transforms ( chunks: string[], config: customerConfig ) {
         }
         else chunks = c
     }
+
+    //Have Ignore last to take advantage of cleaning up any extraneous columns after previous transforms
+    if ( config.transforms.ignore.length > 0 )
+    {
+        let i: typeof chunks = []
+        try
+        {
+            for ( const l of chunks )
+            {
+                const jo = JSON.parse( l )
+                for ( const ig of config.transforms.ignore )
+                {
+                    // const { [keyToRemove]: removedKey, ...newObject } = originalObject;
+                    // const { [ig]: , ...i } = jo
+                    delete jo[ ig ]
+                }
+                i.push( JSON.stringify( jo ) )
+            }
+        }
+        catch ( e )
+        {
+            console.error( `Exception - Transform - Applying Ignore - \n${ e }` )
+        }
+
+
+        if ( i.length !== chunks.length )
+        {
+            throw new Error( `Error - Transform - Applying Ignore returns fewer records ${ i.length } than initial set ${ chunks.length }` )
+        }
+        else chunks = i
+    }
+
+
+
 
     return chunks
 }
@@ -2661,8 +2691,6 @@ export async function postToCampaign ( xmlCalls: string, config: customerConfig,
         if ( tcLogDebug ) console.info( `Access Token already stored: ${ redactAT }` )
     }
 
-
-
     const myHeaders = new Headers()
     myHeaders.append( 'Content-Type', 'text/xml' )
     myHeaders.append( 'Authorization', 'Bearer ' + process.env[ `${ c }_accessToken` ] )
@@ -2909,12 +2937,12 @@ async function maintainS3DropBucket ( cust: customerConfig ) {
     let bucket = tcc.s3DropBucket
     let limit = 0
     if ( bucket.indexOf( '-process' ) > -1 ) limit = tcc.S3DropBucketMaintLimit
-    else limit = tcc.S3DropBucketWorkQueueMaintLimit
+    else limit = tcc.S3DropBucketMaintLimit
 
     let ContinuationToken: string | undefined
     const reProcess: string[] = []
     let deleteSource = false
-    let concurrency = 10
+    let concurrency = tcc.S3DropBucketMaintConcurrency
 
 
     const copyFile = async ( sourceKey: string ) => {
@@ -2922,7 +2950,6 @@ async function maintainS3DropBucket ( cust: customerConfig ) {
 
         debugger
 
-        // const updatedMetadata =
         await s3.send(
             new CopyObjectCommand( {
                 Bucket: bucket,
@@ -2934,7 +2961,7 @@ async function maintainS3DropBucket ( cust: customerConfig ) {
         )
             .then( ( res ) => {
                 // console.info(`${JSON.stringify(res)}`)
-                reProcess.push( `Copy of ${ sourceKey }  -->  \n${ JSON.stringify( res ) }` )
+                return res
             } )
             .catch( ( err ) => {
                 // console.error(`Error - Maintain S3DropBucket - Copy of ${sourceKey} \n${e}`)
@@ -2961,7 +2988,11 @@ async function maintainS3DropBucket ( cust: customerConfig ) {
         //             reProcess.push( `Delete Error on ${ sourceKey }  -->  \n${ JSON.stringify( e ) }` )
         //         } )
         // }
+
+        return reProcess
     }
+
+    debugger
 
     const d: Date = new Date()
     // 3,600,000 millisecs = 1 hour
@@ -2972,15 +3003,14 @@ async function maintainS3DropBucket ( cust: customerConfig ) {
         const {Contents = [], NextContinuationToken} = await s3.send(
             new ListObjectsV2Command( {
                 Bucket: bucket,
-                Prefix: cust.Customer,
+                //Prefix: cust.Customer,
                 ContinuationToken,
-                MaxKeys: limit,
+                //MaxKeys: limit,
             } ),
         )
 
         const lastMod = Contents.map( ( {LastModified} ) => LastModified as Date )
         const sourceKeys = Contents.map( ( {Key} ) => Key )
-
 
         await Promise.all(
             new Array( concurrency ).fill( null ).map( async () => {
@@ -2995,77 +3025,19 @@ async function maintainS3DropBucket ( cust: customerConfig ) {
 
                     if ( df > a ) 
                     {
-                        await copyFile( key )
+                        const rp = await copyFile( key )
+                        reProcess.push( `Copy of ${ key }  -->  \n${ JSON.stringify( rp ) }` )
+                        console.info( `S3DropBucketMaintenance Copy Log: ${ JSON.stringify( reProcess ) }` )
+                        if ( reProcess.length >= limit ) ContinuationToken = ''
                     }
                 }
             } ),
         )
 
-        debugger
-
         ContinuationToken = NextContinuationToken ?? ""
     } while ( ContinuationToken )
 
-
-
-
-
-    //Initial Version....
-    // const listReq = {
-    //     Bucket: bucket,
-    //     MaxKeys: 1000,
-    //     Prefix: `cust.Customer`
-    // } as ListObjectsV2CommandInput
-
-    // const reProcess: string[] = []
-
-    // await s3.send(new ListObjectsV2Command(listReq))
-    //     .then(async (s3ListResult: ListObjectsV2CommandOutput) => {
-
-    //         // 3,600,000 millisecs = 1 hour
-    //         const a = 3600000 * tcc.S3DropBucketMaintHours  //Older Than X Hours 
-
-    //         const d: Date = new Date()
-
-    //         try
-    //         {
-    //             for (const o in s3ListResult.Contents)
-    //             {
-    //                 const n = parseInt(o)
-    //                 const s3d: Date = new Date(s3ListResult.Contents[n].LastModified ?? new Date())
-    //                 const df = d.getTime() - s3d.getTime()
-
-    //                 const dd = new Date(s3d.setHours(-tcc.S3DropBucketMaintHours))
-
-    //                 if (df > a) 
-    //                 {
-    //                     const obj = s3ListResult.Contents[n]
-    //                     const k = obj.Key
-
-    //                     // const updatedMetadata =
-    //                     await s3.send(
-    //                         new CopyObjectCommand({
-    //                             Bucket: bucket,
-    //                             Key: k,
-    //                             CopySource: `${bucket}/${k}`,
-    //                             MetadataDirective: 'COPY',
-    //                             CopySourceIfUnmodifiedSince: dd
-    //                         })
-    //                     )
-    //                         .then((res) => {
-    //                             // console.info(`${JSON.stringify(res)}`)
-    //                             reProcess.push(k + " --> " + JSON.stringify(res))
-    //                         })
-    //                 }
-    //             }
-    //         } catch (e)
-    //         {
-    //             throw new Error(`Exception - Maintain S3DropBucket - List Results processing - \n${e}`)
-    //         }
-    //     })
-    //     .catch((e) => {
-    //         console.error(`Exception - On S3 List Command for Maintaining Objects on ${bucket}: ${e} `)
-    //     })
+    debugger
 
     const l = reProcess.length
     return [ l, reProcess ]
@@ -3078,7 +3050,8 @@ async function maintainS3DropBucketQueueBucket ( config: customerConfig ) {
     let ContinuationToken: string | undefined
     const reQueue: string[] = []
     // let deleteSource = false
-    let concurrency = 10
+    let concurrency = tcc.S3DropBucketWorkQueueMaintConcurrency
+
 
     // if ( new Date().getTime() > 0 ) return
 
@@ -3099,6 +3072,7 @@ async function maintainS3DropBucketQueueBucket ( config: customerConfig ) {
         const lastMod = Contents.map( ( {LastModified} ) => LastModified as Date )
         const sourceKeys = Contents.map( ( {Key} ) => Key )
 
+        console.log( `S3DropBucket Maintenance - Processing ${ Contents.length } records` )
 
         await Promise.all(
             new Array( concurrency ).fill( null ).map( async () => {
