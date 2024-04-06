@@ -481,7 +481,7 @@ export const s3DropBucketHandler: Handler = async ( event: S3Event, context: Con
     console.info( `Write to FireHose Log - ${ fireLog }` )
 
     processS3ObjectStreamResolution = {} as processS3ObjectStreamResult
-
+    //resolve new Lambda Params issues
     return osr
 }
 
