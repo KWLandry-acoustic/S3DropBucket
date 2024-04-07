@@ -877,7 +877,7 @@ async function putToFirehose ( S3Obj: string[], key: string, cust: string ) {
         {
             const j = JSON.parse( S3Obj[ fo ] )
 
-            Object.assign( j, {"Customer": cust} )
+            if ( cust !== "S3DropBucket_Log_" ) cust === Object.assign( j, {"Customer": cust} )
 
             const f = Buffer.from( JSON.stringify( j ), 'utf-8' )
 
