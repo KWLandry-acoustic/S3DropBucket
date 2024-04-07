@@ -3054,7 +3054,6 @@ async function maintainS3DropBucket ( cust: customerConfig ) {
                     {
                         const rp = await copyFile( key )
                         reProcess.push( `Copy of ${ key }  -->  \n${ JSON.stringify( rp ) }` )
-                        console.info( `S3DropBucketMaintenance Copy Log: ${ JSON.stringify( reProcess ) }` )
                         if ( reProcess.length >= limit ) ContinuationToken = ''
                     }
                 }
@@ -3063,6 +3062,8 @@ async function maintainS3DropBucket ( cust: customerConfig ) {
 
         ContinuationToken = NextContinuationToken ?? ""
     } while ( ContinuationToken )
+
+    console.info( `S3DropBucketMaintenance Copy Log: ${ JSON.stringify( reProcess ) }` )
 
     debugger
 
