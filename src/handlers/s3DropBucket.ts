@@ -145,6 +145,8 @@ export interface tcConfig {
     s3DropBucket: string
     s3DropBucketWorkBucket: string
     s3DropBucketWorkQueue: string
+    S3DropBucketLog: boolean
+    S3DropBucketLogBucket: string
     xmlapiurl: string
     restapiurl: string
     authapiurl: string
@@ -239,9 +241,6 @@ let processS3ObjectStreamResolution: processS3ObjectStreamResult = {
     OnEndNoRecordsException: '',
 }
 
-
-
-
 let sqsBatchFail: SQSBatchItemFails = {
     batchItemFailures: [
         {
@@ -256,8 +255,6 @@ let tcLogInfo = true
 let tcLogDebug = false
 let tcLogVerbose = false
 let tcSelectiveDebug   //call out selective debug as an option
-
-
 
 
 /**
@@ -283,7 +280,6 @@ export const s3DropBucketHandler: Handler = async ( event: S3Event, context: Con
     if ( event.Records[ 0 ].s3.object.key.indexOf( 'Aggregator' ) > -1 )
     {
         if ( tcc.SelectiveDebug.indexOf( "_25," ) > -1 ) console.info( `Selective Debug 25 - Processing an Aggregated File ${ event.Records[ 0 ].s3.object.key }` )
-
     }
 
 
@@ -473,11 +469,15 @@ export const s3DropBucketHandler: Handler = async ( event: S3Event, context: Con
         console.info( `Length of ProcessS3ObjectStreamResolution: ${ osrl }` )
         return processS3ObjectStreamResolution.OnEndStreamEndResult
     }
+    else console.info( `${ processS3ObjectStreamResolution }` )
 
-    const dropLog = [ JSON.stringify( processS3ObjectStreamResolution ) ]
-    const logKey = `S3DropBucket_Log_${ new Date().toISOString().replace( /:/g, '_' ) }`
-    const fireLog = await putToFirehose( dropLog, logKey, 'S3DropBucket_Log_' )
-    console.info( `Write to FireHose Log - ${ fireLog }` )
+    if ( tcc.S3DropBucketLog = true )
+    {
+        const dropLog = [ JSON.stringify( processS3ObjectStreamResolution ) ]
+        const logKey = `S3DropBucket_Log_${ new Date().toISOString().replace( /:/g, '_' ) }`
+        const fireLog = await putToFirehose( dropLog, logKey, tcc.S3DropBucketLogBucket )
+        console.info( `Write to FireHose Log - ${ fireLog }` )
+    }
 
     processS3ObjectStreamResolution = {} as processS3ObjectStreamResult
 
@@ -1583,6 +1583,7 @@ async function getValidateTricklerConfig () {
         }
         else tc.S3DropBucketMaintHours = -1
 
+
         if ( tc.S3DropBucketMaintLimit != undefined )
         {
             process.env[ "DropBucketMaintLimit" ] = tc.S3DropBucketMaintLimit.toString()
@@ -1603,11 +1604,13 @@ async function getValidateTricklerConfig () {
         }
         else tc.S3DropBucketWorkQueueMaintHours = -1
 
+
         if ( tc.S3DropBucketWorkQueueMaintLimit != undefined )
         {
             process.env[ "DropBucketWorkQueueMaintLimit" ] = tc.S3DropBucketWorkQueueMaintLimit.toString()
         }
         else tc.S3DropBucketWorkQueueMaintLimit = 0
+
 
         if ( tc.S3DropBucketWorkQueueMaintConcurrency != undefined )
         {
@@ -1615,6 +1618,26 @@ async function getValidateTricklerConfig () {
         }
         else tc.S3DropBucketWorkQueueMaintConcurrency = 1
 
+
+        if ( tc.S3DropBucketLog != undefined )
+        {
+            process.env[ "S3DropBucketLog" ] = tc.S3DropBucketLog.toString()
+        }
+        else tc.S3DropBucketLog = false
+
+
+        if ( tc.S3DropBucketLogBucket != undefined )
+        {
+            process.env[ "S3DropBucketLogBucket" ] = tc.S3DropBucketLogBucket.toString()
+        }
+        else tc.S3DropBucketLogBucket = ''
+
+
+        if ( tc.S3DropBucketWorkQueueMaintConcurrency != undefined )
+        {
+            process.env[ "DropBucketWorkQueueMaintConcurrency" ] = tc.S3DropBucketWorkQueueMaintConcurrency.toString()
+        }
+        else tc.S3DropBucketWorkQueueMaintConcurrency = 1
 
 
         if ( tc.S3DropBucketPurge !== undefined )
@@ -1640,6 +1663,7 @@ async function getValidateTricklerConfig () {
                 `S3DropBucket Config invalid definition: QueueBucketQuiesce - ${ tc.QueueBucketQuiesce } `,
             )
 
+
         if ( tc.WorkQueueBucketPurge !== undefined )
             process.env[ "WorkQueueBucketPurge" ] = tc.WorkQueueBucketPurge
         else
@@ -1647,12 +1671,14 @@ async function getValidateTricklerConfig () {
                 `S3DropBucket Config invalid definition: WorkQueueBucketPurge - ${ tc.WorkQueueBucketPurge } `,
             )
 
+
         if ( tc.WorkQueueBucketPurgeCount !== undefined )
             process.env[ "WorkQueueBucketPurgeCount" ] = tc.WorkQueueBucketPurgeCount.toFixed()
         else
             throw new Error(
                 `S3DropBucket Config invalid definition: WorkQueueBucketPurgeCount - ${ tc.WorkQueueBucketPurgeCount } `,
             )
+
 
         if ( tc.prefixFocus !== undefined && tc.prefixFocus != "" )
         {
