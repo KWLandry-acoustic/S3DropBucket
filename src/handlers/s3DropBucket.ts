@@ -2937,7 +2937,7 @@ async function maintainS3DropBucket ( cust: customerConfig ) {
 
     let bucket = tcc.s3DropBucket
     let limit = 0
-    if ( bucket.indexOf( '-process' ) > -1 ) limit = tcc.S3DropBucketMaintLimit
+    if ( bucket.indexOf( '-process' ) > -1 ) limit = tcc.S3DropBucketWorkQueueMaintLimit
     else limit = tcc.S3DropBucketMaintLimit
 
     let ContinuationToken: string | undefined
