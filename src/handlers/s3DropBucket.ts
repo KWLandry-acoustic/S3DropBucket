@@ -2993,9 +2993,10 @@ async function maintainS3DropBucket ( cust: customerConfig ) {
             .catch( ( err ) => {
                 // console.error(`Error - Maintain S3DropBucket - Copy of ${sourceKey} \n${e}`)
                 reProcess.push( `Copy Error on ${ sourceKey }  -->  \n${ JSON.stringify( err ) }` )
-                if ( err.indexOf( 'NoSuchKey' ) > -1 )
-                    console.error( `Error - MaintainS3DropBucket - File Not Found(${ sourceKey } \nException ${ err } ` )
-                reProcess.push( `Error for ${ sourceKey }  -->  \n${ JSON.stringify( err ) }` )
+                if ( err && err.indexOf( 'NoSuchKey' ) > -1 )
+                    reProcess.push( `S3DropBucket Maintenance - Reprocess Error - MaintainS3DropBucket - File Not Found(${ sourceKey } \nException ${ err } ` )
+                else
+                    reProcess.push( `S3DropBucket Maintenance - Reprocess Error for ${ sourceKey } --> \n${ JSON.stringify( err ) }` )
             } )
 
         // if ( deleteSource )
