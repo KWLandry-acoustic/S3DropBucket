@@ -347,8 +347,11 @@ export const s3DropBucketHandler: Handler = async ( event: S3Event, context: Con
 
         try
         {
+            if ( key.indexOf( 'S3DropBucket-LogsS3DropBucket_Aggregator' ) > -1 ) console.warn( `Warning -- Found Invalid Aggregator File Name - ${ key }` )
+
             customersConfig = await getCustomerConfig( key )
             if ( tcc.SelectiveDebug.indexOf( "_901," ) > -1 ) console.info( `(901) Processing inbound data for ${ customersConfig.Customer } - ${ key }` )
+
         }
         catch ( e )
         {
@@ -469,14 +472,14 @@ export const s3DropBucketHandler: Handler = async ( event: S3Event, context: Con
         console.info( `Length of ProcessS3ObjectStreamResolution: ${ osrl }` )
         return processS3ObjectStreamResolution.OnEndStreamEndResult
     }
-    else console.info( `${ processS3ObjectStreamResolution }` )
+    else console.info( `${ JSON.stringify( processS3ObjectStreamResolution ) }` )
 
     if ( tcc.S3DropBucketLog = true )
     {
         const dropLog = [ JSON.stringify( processS3ObjectStreamResolution ) ]
         const logKey = `S3DropBucket_Log_${ new Date().toISOString().replace( /:/g, '_' ) }`
         const fireLog = await putToFirehose( dropLog, logKey, tcc.S3DropBucketLogBucket )
-        console.info( `Write to FireHose Log - ${ fireLog }` )
+        console.info( `Write to FireHose Log - ${ JSON.stringify( fireLog ) }` )
     }
 
     processS3ObjectStreamResolution = {} as processS3ObjectStreamResult
@@ -1993,7 +1996,7 @@ async function storeAndQueueWork ( chunks: string[], s3Key: string, config: cust
         return {StoreQueueWorkException: sqwError, StoreS3WorkException: ''}
     }
 
-    if ( tcc.SelectiveDebug.indexOf( "_15," ) > -1 ) console.info( `Selective Debug 15 - Results of Store and Queue of Updates - Add to Proces Bucket: ${ JSON.stringify( AddWorkToS3WorkBucketResults ) } \n Add to Process Queue: ${ JSON.stringify( AddWorkToSQSWorkQueueResults ) } ` )
+    if ( tcc.SelectiveDebug.indexOf( "_15," ) > -1 ) console.info( `Selective Debug 15 - Results of Store and Queue of Updates - Add to Process Bucket: ${ JSON.stringify( AddWorkToS3WorkBucketResults ) } \n Add to Process Queue: ${ JSON.stringify( AddWorkToSQSWorkQueueResults ) } ` )
 
     return {AddWorkToS3WorkBucketResults, AddWorkToSQSWorkQueueResults}
 
