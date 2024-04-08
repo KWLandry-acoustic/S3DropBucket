@@ -476,9 +476,9 @@ export const s3DropBucketHandler: Handler = async ( event: S3Event, context: Con
 
     if ( tcc.S3DropBucketLog = true )
     {
-        const dropLog = [ JSON.stringify( processS3ObjectStreamResolution ) ]
+        const logMsg = [ JSON.stringify( processS3ObjectStreamResolution ) ]
         const logKey = `S3DropBucket_Log_${ new Date().toISOString().replace( /:/g, '_' ) }`
-        const fireLog = await putToFirehose( dropLog, logKey, 'S3DropBucket_Logs_' )
+        const fireLog = await putToFirehose( logMsg, logKey, 'S3DropBucket_Logs_' )
         console.info( `Write to FireHose Log - ${ JSON.stringify( fireLog ) }` )
     }
 
@@ -868,7 +868,7 @@ async function putToFirehose ( S3Obj: string[], key: string, cust: string ) {
     // S3DropBucket_FireHoseStream
 
     let fireHoseStream = "S3DropBucket_Aggregator"
-    if ( cust === "S3DropBucket_Log_" ) fireHoseStream = 'S3DropBucket_Log'
+    if ( cust === "S3DropBucket_Logs_" ) fireHoseStream = 'S3DropBucket_Log'
 
     let putFirehoseResp: {} = {}
 
