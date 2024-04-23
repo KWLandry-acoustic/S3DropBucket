@@ -271,7 +271,7 @@ export const s3DropBucketHandler: Handler = async ( event: S3Event, context: Con
         process.env[ "EventEmitterMaxListeners" ] === null
     )
     {
-        tcc = await getValidateTricklerConfig()
+        tcc = await getValidateS3DropBucketConfig()
     }
 
     if ( tcc.SelectiveDebug.indexOf( "_9," ) > -1 ) console.info( `Selective Debug 9 - Process Environment Vars: ${ JSON.stringify( process.env ) }` )
@@ -465,16 +465,19 @@ export const s3DropBucketHandler: Handler = async ( event: S3Event, context: Con
 
     debugger
 
-    const osr = new Date().toISOString + "  -  " + JSON.stringify( processS3ObjectStreamResolution ) + '\n\n'
+    const n = new Date().toISOString()
+    const osr = n + "  -  " + JSON.stringify( processS3ObjectStreamResolution ) + '\n\n'
+    //Need to protect against this string becoming excessively long
     const osrl = osr.length
-    if ( osrl > 2000 )
+    if ( osrl > 10000 )
     {
-        console.info( `Length of ProcessS3ObjectStreamResolution: ${ osrl }` )
-        return processS3ObjectStreamResolution.OnEndStreamEndResult
+        const truncated = `Excessive Length of ProcessS3ObjectStreamResolution: ${ osrl } Truncated: \n ${ osr.substring( 0, 1000 ) } ... ${ osr.substring( osrl - 1000, osrl ) }` 
+        console.warn(truncated)
+        return truncated
     }
-    else console.info( `${ JSON.stringify( processS3ObjectStreamResolution ) }` )
+    else console.info( `${ JSON.stringify( osr ) }` )
 
-    if ( tcc.S3DropBucketLog = true )
+    if ( tcc.S3DropBucketLog )
     {
         const logMsg = [ JSON.stringify( processS3ObjectStreamResolution ) ]
         const logKey = `S3DropBucket_Log_${ new Date().toISOString().replace( /:/g, '_' ) }`
@@ -959,7 +962,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async ( event: SQSEven
         process.env[ "WorkQueueVisibilityTimeout" ] === null
     )
     {
-        tcc = await getValidateTricklerConfig()
+        tcc = await getValidateS3DropBucketConfig()
     }
 
     console.info( `S3 DropBucket WorkQueue Selective Debug Set is: ${ tcc.SelectiveDebug! } ` )
@@ -1184,7 +1187,7 @@ export const s3DropBucketSFTPHandler: Handler = async ( event: SQSEvent, context
         process.env[ "WorkQueueVisibilityTimeout" ] === null
     )
     {
-        tcc = await getValidateTricklerConfig()
+        tcc = await getValidateS3DropBucketConfig()
     }
 
     console.info( `S3 Dropbucket SFTP Processor Selective Debug Set is: ${ tcc.SelectiveDebug! } ` )
@@ -1440,12 +1443,12 @@ async function sftpDeleteFile ( remoteFile: string ) {
 
 async function checkForTCConfigUpdates () {
     if ( tcLogDebug ) console.info( `Checking for S3DropBucket Config updates` )
-    tcc = await getValidateTricklerConfig()
+    tcc = await getValidateS3DropBucketConfig()
 
     if ( tcc.SelectiveDebug.indexOf( "_1," ) > -1 ) console.info( `Refreshed S3DropBucket Queue Config \n ${ JSON.stringify( tcc ) } ` )
 }
 
-async function getValidateTricklerConfig () {
+async function getValidateS3DropBucketConfig () {
 
     //Article notes that Lambda runs faster referencing process.env vars, lets see.  
     //Did not pan out, with all the issues with conversions needed to actually use as primary reference, can't see it being faster
@@ -1586,63 +1589,63 @@ async function getValidateTricklerConfig () {
             )
 
 
-        if ( tc.S3DropBucketMaintHours != undefined )
+        if ( tc.S3DropBucketMaintHours !== undefined )
         {
             process.env[ "DropBucketMaintHours" ] = tc.S3DropBucketMaintHours.toString()
         }
         else tc.S3DropBucketMaintHours = -1
 
 
-        if ( tc.S3DropBucketMaintLimit != undefined )
+        if ( tc.S3DropBucketMaintLimit !== undefined )
         {
             process.env[ "DropBucketMaintLimit" ] = tc.S3DropBucketMaintLimit.toString()
         }
         else tc.S3DropBucketMaintLimit = 0
 
 
-        if ( tc.S3DropBucketMaintConcurrency != undefined )
+        if ( tc.S3DropBucketMaintConcurrency !== undefined )
         {
             process.env[ "DropBucketMaintConcurrency" ] = tc.S3DropBucketMaintConcurrency.toString()
         }
         else tc.S3DropBucketMaintLimit = 1
 
 
-        if ( tc.S3DropBucketWorkQueueMaintHours != undefined )
+        if ( tc.S3DropBucketWorkQueueMaintHours !== undefined )
         {
             process.env[ "DropBucketWorkQueueMaintHours" ] = tc.S3DropBucketWorkQueueMaintHours.toString()
         }
         else tc.S3DropBucketWorkQueueMaintHours = -1
 
 
-        if ( tc.S3DropBucketWorkQueueMaintLimit != undefined )
+        if ( tc.S3DropBucketWorkQueueMaintLimit !== undefined )
         {
             process.env[ "DropBucketWorkQueueMaintLimit" ] = tc.S3DropBucketWorkQueueMaintLimit.toString()
         }
         else tc.S3DropBucketWorkQueueMaintLimit = 0
 
 
-        if ( tc.S3DropBucketWorkQueueMaintConcurrency != undefined )
+        if ( tc.S3DropBucketWorkQueueMaintConcurrency !== undefined )
         {
             process.env[ "DropBucketWorkQueueMaintConcurrency" ] = tc.S3DropBucketWorkQueueMaintConcurrency.toString()
         }
         else tc.S3DropBucketWorkQueueMaintConcurrency = 1
 
 
-        if ( tc.S3DropBucketLog != undefined )
+        if ( tc.S3DropBucketLog !== undefined )
         {
             process.env[ "S3DropBucketLog" ] = tc.S3DropBucketLog.toString()
         }
         else tc.S3DropBucketLog = false
 
 
-        if ( tc.S3DropBucketLogBucket != undefined )
+        if ( tc.S3DropBucketLogBucket !== undefined )
         {
             process.env[ "S3DropBucketLogBucket" ] = tc.S3DropBucketLogBucket.toString()
         }
         else tc.S3DropBucketLogBucket = ''
 
 
-        if ( tc.S3DropBucketWorkQueueMaintConcurrency != undefined )
+        if ( tc.S3DropBucketWorkQueueMaintConcurrency !== undefined )
         {
             process.env[ "DropBucketWorkQueueMaintConcurrency" ] = tc.S3DropBucketWorkQueueMaintConcurrency.toString()
         }
