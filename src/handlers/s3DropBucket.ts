@@ -478,8 +478,8 @@ export const s3DropBucketHandler: Handler = async ( event: S3Event, context: Con
     {
         const logMsg = [ JSON.stringify( processS3ObjectStreamResolution ) ]
         const logKey = `S3DropBucket_Log_${ new Date().toISOString().replace( /:/g, '_' ) }`
-        const fireLog = await putToFirehose( logMsg, logKey, 'S3DropBucket_Logs_' )
-        console.info( `Write to FireHose Log - ${ JSON.stringify( fireLog ) }` )
+        const fireHoseLog = await putToFirehose( logMsg, logKey, 'S3DropBucket_Logs_' )
+        console.info( `Write to FireHose Log - ${ JSON.stringify( fireHoseLog ) }` )
     }
 
     processS3ObjectStreamResolution = {} as processS3ObjectStreamResult
@@ -549,6 +549,8 @@ async function processS3ObjectContentStream ( key: string, bucket: string, custC
             let recs = 0
 
             let s3ContentReadableStream = getS3StreamResult.Body as NodeJS.ReadableStream
+
+            debugger
 
             if ( key.indexOf( 'aggregate_' ) < 0 && custConfig.format.toLowerCase() === 'csv' )
             {
@@ -646,7 +648,7 @@ async function processS3ObjectContentStream ( key: string, bucket: string, custC
             const jsonParser = new JSONParser( {
                 // numberBufferSize: 64,        //64, //0, //undefined, // set to 0 to don't buffer.
                 stringBufferSize: undefined,        //64, //0, //undefined,
-                separator: '\n',               // separator between object. For example `\n` for nd-js.
+                separator: '',               // separator between object. For example `\n` for nd-js.
                 paths: [ '$' ],              //ToDo: Possible data transform oppty
                 keepStack: false,
                 emitPartialTokens: false    // whether to emit tokens mid-parsing.
@@ -679,7 +681,8 @@ async function processS3ObjectContentStream ( key: string, bucket: string, custC
 
                 s3ContentReadableStream
                     .on( 'error', async function ( err: string ) {
-                        const errMessage = `An error has stopped Content Parsing at record ${ recs } for s3 object ${ key }.\n${ err }`
+                        debugger
+                        const errMessage = `An error has stopped Content Parsing at record ${ recs++ } for s3 object ${ key }.\n${ err }`
                         console.error( errMessage )
                         chunks = []
                         batchCount = 0
@@ -692,6 +695,7 @@ async function processS3ObjectContentStream ( key: string, bucket: string, custC
                         throw new Error( `Error on Readable Stream for s3DropBucket Object ${ key }.\nError Message: ${ errMessage } ` )
                     } )
                     .on( 'data', async function ( s3Chunk: {key: string, parent: object, stack: object, value: object} ) {
+                        debugger
                         recs++
                         let sqwResult: {} = {}
 
@@ -832,6 +836,7 @@ async function processS3ObjectContentStream ( key: string, bucket: string, custC
                         streamResult = {...streamResult, OnClose_Result: `S3 Content Stream Closed for ${ key }`}
 
                     } )
+                
                 if ( tcc.SelectiveDebug.indexOf( "_902," ) > -1 ) console.info( `(902) S3 Content Stream Opened for ${ key }` )
 
             } )
@@ -860,12 +865,12 @@ async function processS3ObjectContentStream ( key: string, bucket: string, custC
 }
 
 
-async function putToFirehose ( S3Obj: string[], key: string, cust: string ) {
+async function putToFirehose ( chunks: string[], key: string, cust: string ) {
 
     const client = new FirehoseClient()
 
     // S3DropBucket_Aggregator 
-    // S3DropBucket_FireHoseStream
+    // S3DropBucket_Log
 
     let fireHoseStream = "S3DropBucket_Aggregator"
     if ( cust === "S3DropBucket_Logs_" ) fireHoseStream = 'S3DropBucket_Log'
@@ -876,9 +881,9 @@ async function putToFirehose ( S3Obj: string[], key: string, cust: string ) {
 
     try
     {
-        for ( const fo in S3Obj )
+        for ( const fhchunk in chunks )
         {
-            const j = JSON.parse( S3Obj[ fo ] )
+            const j = JSON.parse( chunks[ fhchunk ] )
 
             if ( cust !== "S3DropBucket_Log_" ) cust === Object.assign( j, {"Customer": cust} )
 
@@ -920,14 +925,15 @@ async function putToFirehose ( S3Obj: string[], key: string, cust: string ) {
                         firehosePutResult = {...firehosePutResult, PutToFireHoseException: `Exception - Put to Firehose Aggregator for ${ key } \n${ e } `}
                         return firehosePutResult
                     } )
+
             } catch ( e )
             {
                 console.error( `Exception - PutToFirehose \n${ e } ` )
             }
-
+                
         }
-
-        // return putFirehoseResp
+        
+        return putFirehoseResp
 
     } catch ( e )
     {
@@ -1117,7 +1123,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async ( event: SQSEven
 
         } catch ( e )
         {
-            console.error( `Exception - Processing a Work File(${ tqm.workKey } off the Work Queue - \n${ e }} ` )
+            console.error( `Exception - Processing a Work File (${ tqm.workKey } off the Work Queue - \n${ e }} ` )
         }
 
     }
@@ -2663,6 +2669,7 @@ async function deleteS3Object ( s3ObjKey: string, bucket: string ) {
 
 
 export async function getAccessToken ( config: customerConfig ) {
+    debugger
     try
     {
         const rat = await fetch( `https://api-campaign-${ config.region }-${ config.pod }.goacoustic.com/oauth/token`, {
