@@ -58,14 +58,20 @@ import {setUncaughtExceptionCaptureCallback} from 'process'
 let testS3Key: string
 let testS3Bucket: string
 testS3Bucket = "tricklercache-configs"
-//testS3Key = "TestData/cloroxweather_99706.csv"
+
 // testS3Key = "TestData/visualcrossing_00213.csv"
 // testS3Key = "TestData/pura_2024_02_26T05_53_26_084Z.json"
 // testS3Key = "TestData/pura_2024_02_25T00_00_00_090Z.json"
-// testS3Key = "TestData/pura_S3DropBucket_Aggregator-8-2024-03-19-16-42-48-46e884aa-8c6a-3ff9-8d32-c329395cf311.json"
+
 // testS3Key = "TestData/pura_S3DropBucket_Aggregator-8-2024-03-23-09-23-55-123cb0f9-9552-3303-a451-a65dca81d3c4_json_update_53_99.xml"
 // testS3Key = "TestData/alerusrepsignature_sampleformatted_json_update_1_1.xml"
-testS3Key = "TestData/alerusrepsignature_sampleformatted.json"
+// testS3Key = "TestData/alerusrepsignature_sampleformatted.json"
+// testS3Key = "TestData/alerusrepsignature_sample - min.json"
+
+//testS3Key = "TestData/cloroxweather_99706.csv"
+testS3Key = "TestData/pura_S3DropBucket_Aggregator-8-2024-03-19-16-42-48-46e884aa-8c6a-3ff9-8d32-c329395cf311.json"
+//testS3Key = "TestData/pura_2024_02_26T05_53_26_084Z.json"
+//testS3Key = "TestData/alerusrepsignature_sample.json"
 
 
 let vid: string | undefined
@@ -96,7 +102,7 @@ interface S3Object {
 interface customerConfig {
     Customer: string
     format: string // CSV or JSON 
-    updates: string // singular or bulk
+    updates: string // singular or bulk (default)
     listId: string
     listName: string
     listType: string
@@ -496,7 +502,7 @@ export default s3DropBucketHandler
 async function processS3ObjectContentStream ( key: string, bucket: string, custConfig: customerConfig ) {
 
     let batchCount = 0
-    let chunks: string[] = []
+    let chunks: any[] = []
 
     // let processS3ObjectResults: processS3ObjectStreamResult = {
     //     OnClose_Result: '',
@@ -696,29 +702,62 @@ async function processS3ObjectContentStream ( key: string, bucket: string, custC
                         throw new Error( `Error on Readable Stream for s3DropBucket Object ${ key }.\nError Message: ${ errMessage } ` )
                     } )
                     .on( 'data', async function ( s3Chunk: {key: string, parent: object, stack: object, value: object} ) {
-                        recs++
+
                         let sqwResult: {} = {}
 
-                        debugger
-
-                        d = JSON.stringify( s3Chunk.value )
-
-                        chunks.push( d )
+                        recs++
 
                         if ( key.toLowerCase().indexOf( 'aggregat' ) < 0
                             && recs > custConfig.updateMaxRows ) throw new Error( `The number of Updates in this batch Exceeds Max Row Updates allowed ${ recs } in the Customers Config.S3 Object ${ key } will not be deleted to allow for review and possible restaging.` )
 
                         if ( tcc.SelectiveDebug.indexOf( "_13," ) > -1 ) console.info( `Selective Debug 13 - s3ContentStream OnData - Another chunk(Num of Entries: ${ Object.values( s3Chunk ).length } Recs: ${ recs } Batch: ${ batchCount } from ${ key } - ${ d }` )
 
+                        const oa = s3Chunk.value
+
+                        //d = JSON.stringify( s3Chunk.value )
+
+                        //What's possible
+                        //  {} a single Object - Pura
+                        //  [{},{},{}] An Array of Objects - Alerus
+                        //  A list of Objects - (Aggregated files) Line delimited
+                        //      [{}
+                        //      {}
+                        //       ...
+                        //      {}]
+                        // An array of Strings (CSV Parsed)
+                        //  [{"key1":"value1","key2":"value2"},{"key1":"value1","key2":"value2"},...]
+                        //
+                        //Build a consistent Object of an Array of Objects
+                        // [{},{},{},...]
+
+
+                        //debugger
+
+                        if ( Array.isArray( oa ) )
+                        {
+                            for ( const a in oa ) 
+                            {
+                                let e = oa[ a ]
+                                if ( typeof e === "string" ) {e = JSON.parse( e )}
+                                chunks.push( e )
+                            }
+                        }
+
+                        else 
+                        {
+                            //chunks.push( JSON.stringify( oa ) )
+                            chunks.push( oa )
+                        }
+
                         try
                         {
-                            //Singular Update files will not reach 99 updates in a single file
+                            //Update Singular files will not reach 99 updates in a single file
                             //Aggregate(d) Files will have > 99 updates in each file 
                             if ( chunks.length > 98 )
                             {
                                 batchCount++
 
-                                const updates: string[] = []
+                                const updates: any[] = []
 
                                 while ( chunks.length > 0 && updates.length < 100 )
                                 {
@@ -742,8 +781,6 @@ async function processS3ObjectContentStream ( key: string, bucket: string, custC
 
                     .on( 'end', async function () {
 
-                        debugger
-
                         if ( recs < 1 && chunks.length < 1 )
                         {
                             streamResult = {
@@ -753,6 +790,8 @@ async function processS3ObjectContentStream ( key: string, bucket: string, custC
                             //throw new Error( `Exception - onEnd ${ JSON.stringify( streamResult ) } ` )
                             return streamResult
                         }
+
+                        debugger
 
                         let sqwResult
 
@@ -1052,7 +1091,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async ( event: SQSEven
     for ( const q of event.Records )
     {
         tqm = JSON.parse( q.body )
-        
+
         //When Testing locally  (Launch config has pre-stored payload) - get some actual work queued
         if ( tqm.workKey === '' ) 
         {
@@ -1107,7 +1146,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async ( event: SQSEven
 
                 else if ( postResult.toLowerCase().indexOf( 'unsuccessful post' ) > -1 )
                 {
-                    console.error( `Error - Unsuccessful POST (Hard Failure) for ${ tqm.workKey }(versionId: ${ tqm.versionId }): \n${ postResult }\nCustomer: ${ custconfig.Customer }, ListId: ${ custconfig.listId } ListName: ${custconfig.listName} ` )
+                    console.error( `Error - Unsuccessful POST (Hard Failure) for ${ tqm.workKey }(versionId: ${ tqm.versionId }): \n${ postResult }\nCustomer: ${ custconfig.Customer }, ListId: ${ custconfig.listId } ListName: ${ custconfig.listName } ` )
                 }
                 else
                 {
@@ -1817,6 +1856,7 @@ async function validateCustomerConfig ( config: customerConfig ) {
     {
         throw new Error( 'Invalid Config - Updates is not defined' )
     }
+
     if ( !config.listId )
     {
         throw new Error( 'Invalid Config - ListId is not defined' )
@@ -1889,7 +1929,7 @@ async function validateCustomerConfig ( config: customerConfig ) {
         case 'b':
             config.pod = '3'
             break
-        
+
         default:
             break
     }
@@ -1974,7 +2014,7 @@ async function validateCustomerConfig ( config: customerConfig ) {
 }
 
 
-async function storeAndQueueWork ( chunks: string[], s3Key: string, config: customerConfig, recs: number, batch: number ) {
+async function storeAndQueueWork ( chunks: any[], s3Key: string, config: customerConfig, recs: number, batch: number ) {
 
     if ( batch > tcc.MaxBatchesWarning ) console.warn( `Warning: Updates from the S3 Object(${ s3Key }) are exceeding(${ batch }) the Warning Limit of ${ tcc.MaxBatchesWarning } Batches per Object.` )
     // throw new Error(`Updates from the S3 Object(${ s3Key }) Exceed(${ batch }) Safety Limit of 20 Batches of 99 Updates each.Exiting...`)
@@ -1990,6 +2030,7 @@ async function storeAndQueueWork ( chunks: string[], s3Key: string, config: cust
         throw new Error( `Exception - Transforms - ${ e }` )
     }
 
+    debugger
 
     if ( customersConfig.listType.toLowerCase() === 'dbkeyed' ||
         customersConfig.listType.toLowerCase() === 'dbnonkeyed' )
@@ -2060,29 +2101,34 @@ async function storeAndQueueWork ( chunks: string[], s3Key: string, config: cust
 
 }
 
-function convertJSONToXML_RTUpdates ( updates: string[], config: customerConfig ) {
+function convertJSONToXML_RTUpdates ( updates: any[], config: customerConfig ) {
 
     if ( updates.length < 1 )
     {
         throw new Error( `Exception - Convert JSON to XML for RT - No Updates(${ updates.length }) were passed to process.Customer ${ config.Customer } ` )
     }
 
-
     xmlRows = `< Envelope > <Body> <InsertUpdateRelationalTable> <TABLE_ID> ${ config.listId } </TABLE_ID><ROWS>`
 
     let r = 0
 
-    for ( const jo in updates )
+    for ( const upd in updates )
     {
-        const j = JSON.parse( updates[ jo ] )
+        debugger
+
+        //const updAtts = JSON.parse( updates[ upd ] )
+        const updAtts = updates[ upd ]
+
         r++
         xmlRows += `<ROW>`
         // Object.entries(jo).forEach(([key, value]) => {
-        for ( const l in j )
+
+        for ( const uv in updAtts )
         {
             // console.info(`Record ${r} as ${key}: ${value}`)
-            xmlRows += `<COLUMN name="${ l }"> <![CDATA[${ j[ l ] }]]> </COLUMN>`
+            xmlRows += `<COLUMN name="${ uv }"> <![CDATA[${ updAtts[ uv ] }]]> </COLUMN>`
         }
+
         xmlRows += `</ROW>`
     }
 
@@ -2097,32 +2143,34 @@ function convertJSONToXML_RTUpdates ( updates: string[], config: customerConfig 
     return xmlRows
 }
 
-function convertJSONToXML_DBUpdates ( updates: string[], config: customerConfig ) {
+function convertJSONToXML_DBUpdates ( updates: any[], config: customerConfig ) {
 
     if ( updates.length < 1 )
     {
         throw new Error( `Exception - Convert JSON to XML for DB - No Updates (${ updates.length }) were passed to process. Customer ${ config.Customer } ` )
     }
 
-
     xmlRows = `<Envelope><Body>`
     let r = 0
 
+    debugger
+
     try
     {
-        for ( const jo in updates )
+        for ( const upd in updates )
         {
+
             r++
-            const j = JSON.parse( updates[ jo ] )
-            const s = JSON.stringify( j )
+
+            const updAtts = updates[ upd ]
+            //const s = JSON.stringify(updAttr )
 
             xmlRows += `<AddRecipient><LIST_ID>${ config.listId }</LIST_ID><CREATED_FROM>0</CREATED_FROM><UPDATE_IF_FOUND>true</UPDATE_IF_FOUND>`
 
-            // If Keyed, then Column that is the key must be present in Column Set
-            // If Not Keyed must use Lookup Fields
-            // Use SyncFields as 'Lookup" values,
-            //   Columns hold the Updates while SyncFields hold the 'lookup' values.
 
+            // If Keyed, then Column that is the key must be present in Column Set
+            // If Not Keyed must add Lookup Fields
+            // Use SyncFields as 'Lookup" values, Columns hold the Updates while SyncFields hold the 'lookup' values.
 
             //Only needed on non-keyed(In Campaign use DB -> Settings -> LookupKeys to find what fields are Lookup Keys)
             if ( config.listType.toLowerCase() === 'dbnonkeyed' )
@@ -2130,34 +2178,34 @@ function convertJSONToXML_DBUpdates ( updates: string[], config: customerConfig 
                 const lk = config.LookupKeys.split( ',' )
 
                 xmlRows += `<SYNC_FIELDS>`
-                lk.forEach( k => {
+                for ( let k in lk )
+                {
+                    //lk.forEach( k => {
                     k = k.trim()
-                    const sf = `<SYNC_FIELD><NAME>${ k }</NAME><VALUE><![CDATA[${ j[ k ] }]]></VALUE></SYNC_FIELD>`
+                    const sf = `<SYNC_FIELD><NAME>${ k }</NAME><VALUE><![CDATA[${ updAtts[ k ] }]]></VALUE></SYNC_FIELD>`
                     xmlRows += sf
-                } )
+                } //)
 
                 xmlRows += `</SYNC_FIELDS>`
             }
 
+            //
             if ( config.listType.toLowerCase() === 'dbkeyed' )
             {
                 //Placeholder
                 //Don't need to do anything with DBKey, it's superfluous but documents the keys of the keyed DB
             }
 
-            for ( const pv in j )
+            //debugger
+
+            for ( const uv in updAtts )
             {
-                xmlRows += `<COLUMN><NAME>${ pv }</NAME><VALUE><![CDATA[${ j[ pv ] }]]></VALUE></COLUMN>`
+                xmlRows += `<COLUMN><NAME>${ uv }</NAME><VALUE><![CDATA[${ updAtts[ uv ] }]]></VALUE></COLUMN>`
             }
 
 
-            //CRM Lead Source Update 
-            //Todo: CRM Lead Source as a config option
-            xmlRows += `<COLUMN><NAME>CRM Lead Source</NAME><VALUE><![CDATA[S3DropBucket]]></VALUE></COLUMN>`
-
             xmlRows += `</AddRecipient>`
 
-            // })
         }
     } catch ( e )
     {
@@ -2175,7 +2223,7 @@ function convertJSONToXML_DBUpdates ( updates: string[], config: customerConfig 
 
 
 
-function transforms ( chunks: string[], config: customerConfig ) {
+function transforms ( chunks: any[], config: customerConfig ) {
 
     //Apply Transforms
 
@@ -2188,17 +2236,21 @@ function transforms ( chunks: string[], config: customerConfig ) {
 
         const days = [ "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday" ]
 
-        for ( const l of chunks )
+        debugger
+
+        for ( const jo of chunks )
         {
-            const j = JSON.parse( l )
-            const d = j.datetime ?? ""
+            //const j = JSON.parse( l )
+
+            const d = jo.datetime ?? ""
             if ( d !== "" )
             {
                 const dt = new Date( d )
                 const day = {"dateday": days[ dt.getDay() ]}
 
-                Object.assign( j, day )
-                t.push( JSON.stringify( j ) )
+                Object.assign( jo, day )
+                //t.push( JSON.stringify( l ) )
+                t.push( jo )
             }
         }
 
@@ -2233,11 +2285,11 @@ function transforms ( chunks: string[], config: customerConfig ) {
         try
         {
             let jmr
-            for ( const l of chunks )
+            for ( const jo of chunks )
             {
-                const jo = JSON.parse( l )
+                //const jo = JSON.parse( l )
                 jmr = applyJSONMap( jo, config.transforms.jsonMap )
-                r.push( JSON.stringify( jmr ) )
+                r.push( jmr )
             }
         } catch ( e )
         {
@@ -2267,9 +2319,9 @@ function transforms ( chunks: string[], config: customerConfig ) {
         let c: typeof chunks = []
         try
         {
-            for ( const l of chunks )
+            for ( const jo of chunks )
             {
-                const jo = JSON.parse( l )
+                //const jo = JSON.parse( l )
 
                 const map = config.transforms.csvMap as {[ key: string ]: string}
                 Object.entries( map ).forEach( ( [ k, v ] ) => {
@@ -2282,7 +2334,7 @@ function transforms ( chunks: string[], config: customerConfig ) {
 
                     }
                 } )
-                c.push( JSON.stringify( jo ) )
+                c.push( jo )
             }
         } catch ( e )
         {
@@ -2301,16 +2353,16 @@ function transforms ( chunks: string[], config: customerConfig ) {
         let i: typeof chunks = []
         try
         {
-            for ( const l of chunks )
+            for ( const jo of chunks )
             {
-                const jo = JSON.parse( l )
+                //const jo = JSON.parse( l )
                 for ( const ig of config.transforms.ignore )
                 {
                     // const { [keyToRemove]: removedKey, ...newObject } = originalObject;
                     // const { [ig]: , ...i } = jo
                     delete jo[ ig ]
                 }
-                i.push( JSON.stringify( jo ) )
+                i.push( jo )
             }
         }
         catch ( e )
@@ -2325,9 +2377,6 @@ function transforms ( chunks: string[], config: customerConfig ) {
         }
         else chunks = i
     }
-
-
-
 
     return chunks
 }
@@ -3137,7 +3186,7 @@ async function maintainS3DropBucket ( cust: customerConfig ) {
 }
 
 
-async function maintainS3DropBucketQueueBucket ( ) {
+async function maintainS3DropBucketQueueBucket () {
 
     const bucket = tcc.s3DropBucketWorkBucket
     let ContinuationToken: string | undefined
@@ -3174,8 +3223,8 @@ async function maintainS3DropBucketQueueBucket ( ) {
                     const key = sourceKeys.pop() ?? ""
                     const mod = lastMod.pop() as Date
 
-                    const cc = await getCustomerConfig( key ) 
-                    
+                    const cc = await getCustomerConfig( key )
+
                     const s3d: Date = new Date( mod )
                     const tdf = d.getTime() - s3d.getTime()
                     // const dd = new Date(s3d.setHours(-tcc.S3DropBucketMaintHours))

@@ -50,8 +50,7 @@
                     "arn": "arn:aws:s3:::tricklercache"
                   },
                   "object": {
-                    //"key": "devtest.csv",
-                    "key": "alerusrepsignature_sampleformatted.json",
+                    "key": "devtest.csv",
                     "size": 6131,
                     "eTag": "d0110fd73049e5d91dd658fc86badc02",
                     "sequencer": "0064FFC0F6B39E3B98"
