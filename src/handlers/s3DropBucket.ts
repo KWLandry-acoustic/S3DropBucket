@@ -2113,7 +2113,7 @@ function convertJSONToXML_RTUpdates ( updates: any[], config: customerConfig ) {
         throw new Error( `Exception - Convert JSON to XML for RT - No Updates(${ updates.length }) were passed to process.Customer ${ config.Customer } ` )
     }
 
-    xmlRows = `<Envelope > <Body> <InsertUpdateRelationalTable> <TABLE_ID> ${ config.listId } </TABLE_ID><ROWS>`
+    xmlRows = `<Envelope> <Body> <InsertUpdateRelationalTable> <TABLE_ID> ${ config.listId } </TABLE_ID><ROWS>`
 
     let r = 0
 
