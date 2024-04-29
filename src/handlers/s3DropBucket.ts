@@ -70,8 +70,8 @@ testS3Bucket = "tricklercache-configs"
 
 //testS3Key = "TestData/cloroxweather_99706.csv"
 //testS3Key = "TestData/pura_S3DropBucket_Aggregator-8-2024-03-19-16-42-48-46e884aa-8c6a-3ff9-8d32-c329395cf311.json"
-testS3Key = "TestData/pura_2024_02_26T05_53_26_084Z.json"
-//testS3Key = "TestData/alerusrepsignature_sample.json"
+//testS3Key = "TestData/pura_2024_02_26T05_53_26_084Z.json"
+testS3Key = "TestData/alerusrepsignature_sample.json"
 
 
 let vid: string | undefined
@@ -655,7 +655,8 @@ async function processS3ObjectContentStream ( key: string, bucket: string, custC
             const jsonParser = new JSONParser( {
                 // numberBufferSize: 64,        //64, //0, //undefined, // set to 0 to don't buffer.
                 stringBufferSize: undefined,        //64, //0, //undefined,
-                separator: '\n',               // separator between object. For example `\n` for nd-js.
+                //separator: '\n',               // separator between object. For example `\n` for nd-js.
+                separator: `''`,               // separator between object. For example `\n` for nd-js.
                 paths: [ '$' ],              //ToDo: Possible data transform oppty
                 keepStack: false,
                 emitPartialTokens: false    // whether to emit tokens mid-parsing.
