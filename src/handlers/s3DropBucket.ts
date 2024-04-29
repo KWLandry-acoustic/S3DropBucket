@@ -69,8 +69,8 @@ testS3Bucket = "tricklercache-configs"
 // testS3Key = "TestData/alerusrepsignature_sample - min.json"
 
 //testS3Key = "TestData/cloroxweather_99706.csv"
-testS3Key = "TestData/pura_S3DropBucket_Aggregator-8-2024-03-19-16-42-48-46e884aa-8c6a-3ff9-8d32-c329395cf311.json"
-//testS3Key = "TestData/pura_2024_02_26T05_53_26_084Z.json"
+//testS3Key = "TestData/pura_S3DropBucket_Aggregator-8-2024-03-19-16-42-48-46e884aa-8c6a-3ff9-8d32-c329395cf311.json"
+testS3Key = "TestData/pura_2024_02_26T05_53_26_084Z.json"
 //testS3Key = "TestData/alerusrepsignature_sample.json"
 
 
@@ -908,7 +908,7 @@ async function processS3ObjectContentStream ( key: string, bucket: string, custC
 }
 
 
-async function putToFirehose ( chunks: string[], key: string, cust: string ) {
+async function putToFirehose ( chunks: any[], key: string, cust: string ) {
 
     const client = new FirehoseClient()
 
@@ -922,22 +922,26 @@ async function putToFirehose ( chunks: string[], key: string, cust: string ) {
 
     try
     {
-        for ( const fhchunk in chunks )
+        debugger
+
+        for ( const j in chunks )
         {
-            const j = JSON.parse( chunks[ fhchunk ] )
+            const jo = chunks[ j ]
 
-            if ( cust !== "S3DropBucket_Log_" ) cust === Object.assign( j, {"Customer": cust} )
+            //const j = JSON.parse( chunks[ fhchunk ] )
 
-            const f = Buffer.from( JSON.stringify( j ), 'utf-8' )
+            if ( cust !== "S3DropBucket_Log_" ) cust === Object.assign( jo, {"Customer": cust} )
 
-            const fc = {
+            const fd = Buffer.from( JSON.stringify( jo ), 'utf-8' )
+
+            const fp = {
                 DeliveryStreamName: fireHoseStream,
                 Record: {
-                    Data: f
+                    Data: fd
                 }
             } as PutRecordCommandInput
 
-            const fireCommand = new PutRecordCommand( fc )
+            const fireCommand = new PutRecordCommand( fp )
             let firehosePutResult: {}
 
             try
@@ -946,7 +950,7 @@ async function putToFirehose ( chunks: string[], key: string, cust: string ) {
                     .then( ( res: PutRecordCommandOutput ) => {
                         if ( fireHoseStream !== 'S3DropBucket_Log' )
                         {
-                            if ( tcc.SelectiveDebug.indexOf( '_22,' ) > -1 ) console.info( `Put to Firehose Aggregator for ${ key } - \n${ JSON.stringify( fc ) } \nResult: ${ JSON.stringify( res ) } ` )
+                            if ( tcc.SelectiveDebug.indexOf( '_22,' ) > -1 ) console.info( `Put to Firehose Aggregator for ${ key } - \n${ JSON.stringify( fd ) } \nResult: ${ JSON.stringify( res ) } ` )
 
                             if ( res.$metadata.httpStatusCode === 200 )
                             {
