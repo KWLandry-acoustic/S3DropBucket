@@ -671,9 +671,9 @@ async function processS3ObjectContentStream ( key: string, bucket: string, custC
             //
             // Later, OnData processing populates an Array with each line/Object, so the
             // final format will be an Array of Objects:
-            // [ {data:data, data:data, .....}
-            //  { data: data, data: data, .....}
-            //  { data: data, data: data, .....} ]
+            // [ {data:data, data:data, .....},
+            //  { data: data, data: data, .....},
+            //  { data: data, data: data, .....}, ... ]
             //
 
 
@@ -2113,7 +2113,7 @@ function convertJSONToXML_RTUpdates ( updates: any[], config: customerConfig ) {
         throw new Error( `Exception - Convert JSON to XML for RT - No Updates(${ updates.length }) were passed to process.Customer ${ config.Customer } ` )
     }
 
-    xmlRows = `< Envelope > <Body> <InsertUpdateRelationalTable> <TABLE_ID> ${ config.listId } </TABLE_ID><ROWS>`
+    xmlRows = `<Envelope > <Body> <InsertUpdateRelationalTable> <TABLE_ID> ${ config.listId } </TABLE_ID><ROWS>`
 
     let r = 0
 
