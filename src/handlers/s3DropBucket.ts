@@ -1594,16 +1594,17 @@ async function getValidateS3DropBucketConfig () {
         if ( tc.authapiurl !== undefined ) process.env[ "authapiurl" ] = tc.authapiurl
         else throw new Error( `S3DropBucket Config invalid definition: authapiurl - ${ tcc.authapiurl } ` )
 
-        if (tc.separator !== undefined) process.env['separator'] = tc.separator
-        if ( tc.separator.toLowerCase() === "null" ) tc.separator = `''`
-        if ( tc.separator.toLowerCase() === "empty" ) tc.separator = `""`
-        if ( tc.separator.toLowerCase() === "\n" ) tc.separator = '\n'
-        if ( tc.separator.toLowerCase() !== "\{" ) tc.separator = '\{'
+        if ( tc.separator !== undefined )
+        {
+            process.env[ 'separator' ] = tc.separator
+            if ( tc.separator.toLowerCase() === "null" ) tc.separator = `''`
+            if ( tc.separator.toLowerCase() === "empty" ) tc.separator = `""`
+            if ( tc.separator.toLowerCase() === "\n" ) tc.separator = '\n'
+            if ( tc.separator.toLowerCase() !== "\{" ) tc.separator = '\{'
+        }
+        else tc.separator = '\n'
 
-
-
-
-
+        
         if ( tc.WorkQueueQuiesce !== undefined )
         {
             process.env[ "WorkQueueQuiesce" ] = tc.WorkQueueQuiesce.toString()
