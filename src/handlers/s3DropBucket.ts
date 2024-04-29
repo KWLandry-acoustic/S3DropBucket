@@ -574,7 +574,7 @@ async function processS3ObjectContentStream ( key: string, bucket: string, custC
                 const t = transform( function ( data ) {
                     debugger
                     //return JSON.stringify( data ) + '\n'
-                    return data
+                    //return data
                 } )
 
 
@@ -1604,7 +1604,7 @@ async function getValidateS3DropBucketConfig () {
         }
         else tc.separator = '\n'
 
-        
+
         if ( tc.WorkQueueQuiesce !== undefined )
         {
             process.env[ "WorkQueueQuiesce" ] = tc.WorkQueueQuiesce.toString()
@@ -2942,7 +2942,7 @@ export async function postToCampaign ( xmlCalls: string, config: customerConfig,
                             faults.push( fl )
                         }
                     }
-                    return "Partially Successful - \nJSON.stringify(faults)"
+                    return `Partially Successful - \n${JSON.stringify(faults)}`
                 }
                 else return `Error - Unsuccessful POST of the Updates - Response : ${ result }`
             }
