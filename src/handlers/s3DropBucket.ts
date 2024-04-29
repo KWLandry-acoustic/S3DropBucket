@@ -102,6 +102,7 @@ interface S3Object {
 interface customerConfig {
     Customer: string
     format: string // CSV or JSON 
+    separator: string
     updates: string // singular or bulk (default)
     listId: string
     listName: string
@@ -158,6 +159,7 @@ export interface tcConfig {
     xmlapiurl: string
     restapiurl: string
     authapiurl: string
+    separator: string
     MaxBatchesWarning: number,
     SelectiveDebug: string,
     WorkQueueQuiesce: boolean
@@ -570,7 +572,9 @@ async function processS3ObjectContentStream ( key: string, bucket: string, custC
                 } )
 
                 const t = transform( function ( data ) {
-                    return JSON.stringify( data ) + '\n'
+                    debugger
+                    //return JSON.stringify( data ) + '\n'
+                    return data
                 } )
 
 
@@ -651,12 +655,16 @@ async function processS3ObjectContentStream ( key: string, bucket: string, custC
 
             if ( key.indexOf( 'aggregate_' ) > -1 ) console.info( `Begin Stream Parsing aggregate file ${ key }` )
 
+            
+            let sep = tcc.separator
+            if(custConfig.separator && key.indexOf('aggregate_') < 0) sep = custConfig.separator
 
             const jsonParser = new JSONParser( {
                 // numberBufferSize: 64,        //64, //0, //undefined, // set to 0 to don't buffer.
                 stringBufferSize: undefined,        //64, //0, //undefined,
                 //separator: '\n',               // separator between object. For example `\n` for nd-js.
-                separator: `''`,               // separator between object. For example `\n` for nd-js.
+                //separator: `''`,               // separator between object. For example `\n` for nd-js.
+                separator: sep,               // separator between object. For example `\n` for nd-js.
                 paths: [ '$' ],              //ToDo: Possible data transform oppty
                 keepStack: false,
                 emitPartialTokens: false    // whether to emit tokens mid-parsing.
@@ -1065,6 +1073,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async ( event: SQSEven
         custconfig: {
             Customer: '',
             format: '',
+            separator: '',
             updates: '',
             listId: '',
             listName: '',
@@ -1585,6 +1594,15 @@ async function getValidateS3DropBucketConfig () {
         if ( tc.authapiurl !== undefined ) process.env[ "authapiurl" ] = tc.authapiurl
         else throw new Error( `S3DropBucket Config invalid definition: authapiurl - ${ tcc.authapiurl } ` )
 
+        if (tc.separator !== undefined) process.env['separator'] = tc.separator
+        if ( tc.separator.toLowerCase() === "null" ) tc.separator = `''`
+        if ( tc.separator.toLowerCase() === "empty" ) tc.separator = `""`
+        if ( tc.separator.toLowerCase() === "\n" ) tc.separator = '\n'
+        if ( tc.separator.toLowerCase() !== "\{" ) tc.separator = '\{'
+
+
+
+
 
         if ( tc.WorkQueueQuiesce !== undefined )
         {
@@ -1888,6 +1906,22 @@ async function validateCustomerConfig ( config: customerConfig ) {
         throw new Error( "Invalid Config - Format is not 'CSV' or 'JSON' " )
     }
 
+    if ( !config.separator ||
+        config.separator.toLowerCase() !== "null" ||
+        config.separator.toLowerCase() !== "empty" ||
+          config.separator.toLowerCase() !== "\n" ||
+            config.separator.toLowerCase() !== "\{" )
+    {
+        //see: https://www.npmjs.com/package/@streamparser/json-node
+        //JSONParser / Node separator option: null = `''` empty = '', otherwise a separator eg. '\n'
+       config.separator = 'null'
+    }
+
+        if(config.separator.toLowerCase() === "null")config.separator = `''`
+        if(config.separator.toLowerCase() === "empty") config.separator = `""`
+        if(config.separator.toLowerCase() === "\n") config.separator = '\n'
+        if(config.separator.toLowerCase() !== "\{") config.separator = '\{'
+
 
     if ( !config.updates.toLowerCase().match( /^(?:singular|bulk)$/gim ) )
     {
@@ -2110,7 +2144,7 @@ function convertJSONToXML_RTUpdates ( updates: any[], config: customerConfig ) {
 
     if ( updates.length < 1 )
     {
-        throw new Error( `Exception - Convert JSON to XML for RT - No Updates(${ updates.length }) were passed to process.Customer ${ config.Customer } ` )
+        throw new Error( `Exception - Convert JSON to XML for RT - No Updates(${ updates.length }) were passed to process into XML. Customer ${ config.Customer } ` )
     }
 
     xmlRows = `<Envelope> <Body> <InsertUpdateRelationalTable> <TABLE_ID> ${ config.listId } </TABLE_ID><ROWS>`
