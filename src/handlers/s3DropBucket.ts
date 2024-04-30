@@ -194,6 +194,8 @@ export interface SQSBatchItemFails {
 
 
 export interface processS3ObjectStreamResult {
+    Key: string
+    Processed: string
     OnDataReadStreamException: string,
     OnDataStoreQueueResult: object,
     OnEndStoreS3QueueResult: {
@@ -223,6 +225,8 @@ export interface processS3ObjectStreamResult {
 
 
 let processS3ObjectStreamResolution: processS3ObjectStreamResult = {
+    Key: '',
+    Processed: '',
     OnClose_Result: '',
     OnEndStoreS3QueueResult: {
         AddWorkToS3WorkBucketResults: {
@@ -396,6 +400,11 @@ export const s3DropBucketHandler: Handler = async ( event: S3Event, context: Con
             processS3ObjectStreamResolution = await processS3ObjectContentStream( key, bucket, customersConfig )
                 .then( async ( res ) => {
                     let delResultCode
+                    processS3ObjectStreamResolution.Key = key
+                    processS3ObjectStreamResolution.Processed = res.OnEndRecordStatus
+
+                    console.info(`Completed Processing Content Stream - ${processS3ObjectStreamResolution.Key} ${processS3ObjectStreamResolution.Processed}`)
+                        
                     if ( tcc.SelectiveDebug.indexOf( "_903," ) > -1 ) console.info( `(903) Completed processing all records of the S3 Object ${ key }. ${ res.OnEndRecordStatus }` )
 
                     //Don't delete the test data
@@ -452,9 +461,7 @@ export const s3DropBucketHandler: Handler = async ( event: S3Event, context: Con
     checkForTCConfigUpdates()
 
 
-    if ( tcc.SelectiveDebug.indexOf( "_905," ) > -1 ) console.info( `(905) Completing S3 DropBucket Processing of Request Id ${ event.Records[ 0 ].responseElements[ 'x-amz-request-id' ] }` )
-
-    if ( tcc.SelectiveDebug.indexOf( "_20," ) > -1 ) console.info( `Selective Debug 20 - \n${ processS3ObjectStreamResolution }` )
+ 
 
 
     if ( event.Records[ 0 ].s3.bucket.name && tcc.S3DropBucketMaintHours > 0 )
@@ -472,24 +479,36 @@ export const s3DropBucketHandler: Handler = async ( event: S3Event, context: Con
         }
     }
 
-    const n = new Date().toISOString()
-    const osr = n + "  -  " + JSON.stringify( processS3ObjectStreamResolution ) + '\n\n'
+
+
     //Need to protect against this string becoming excessively long
+    const n = new Date().toISOString()
+    let osr = n + "  -  " + JSON.stringify( processS3ObjectStreamResolution ) + '\n\n'
     const osrl = osr.length
+    
     if ( osrl > 10000 )
     {
-        const truncated = `Excessive Length of ProcessS3ObjectStreamResolution: ${ osrl } Truncated: \n ${ osr.substring( 0, 1000 ) } ... ${ osr.substring( osrl - 1000, osrl ) }`
-        console.warn( truncated )
-        return truncated
+        osr = `Excessive Length of ProcessS3ObjectStreamResolution: ${ osrl } Truncated: \n ${ osr.substring( 0, 1000 ) } ... ${ osr.substring( osrl - 1000, osrl ) }`
+        
+        if ( tcc.SelectiveDebug.indexOf( "_20," ) > -1 ) console.warn( `Selective Debug 20 - \n ${ JSON.stringify( osr ) } `)
+        return osr
     }
-    else console.info( `${ JSON.stringify( osr ) }` )
+    const k = processS3ObjectStreamResolution.Key
+    const p = processS3ObjectStreamResolution.Processed
 
+    if ( tcc.SelectiveDebug.indexOf( "_905," ) > -1 ) console.info( `(905) Completing S3 DropBucket Processing of Request Id ${ event.Records[ 0 ].responseElements[ 'x-amz-request-id' ]} for ${k}
+ with results: ${p}` )
+
+    if ( tcc.SelectiveDebug.indexOf( "_20," ) > -1 ) console.info( `Selective Debug 20 - \n${ JSON.stringify(osr )}` )
+    
+    
+    
     if ( tcc.S3DropBucketLog )
     {
-        const logMsg = [ JSON.stringify( processS3ObjectStreamResolution ) ]
+        const logMsg = [ osr ]
         const logKey = `S3DropBucket_Log_${ new Date().toISOString().replace( /:/g, '_' ) }`
         const fireHoseLog = await putToFirehose( logMsg, logKey, 'S3DropBucket_Logs_' )
-        console.info( `Write to FireHose Log - ${ JSON.stringify( fireHoseLog ) }` )
+        console.info( `Write S3DropBucket Log to FireHose aggregation - ${ JSON.stringify( fireHoseLog ) }` )
     }
 
     processS3ObjectStreamResolution = {} as processS3ObjectStreamResult
@@ -660,7 +679,7 @@ async function processS3ObjectContentStream ( key: string, bucket: string, custC
             //  emitPartialTokens: <boolean> // whether to emit tokens mid-parsing.
             // }
 
-            if ( key.indexOf( 'aggregate_' ) > -1 ) console.info( `Begin Stream Parsing aggregate file ${ key }` )
+            //if ( key.indexOf( 'aggregate_' ) > -1 ) console.info( `Begin Stream Parsing aggregate file ${ key }` )
 
             
             let sep = tcc.separator
@@ -875,8 +894,7 @@ async function processS3ObjectContentStream ( key: string, bucket: string, custC
                         }
 
                         const streamEndResult = `S3 Content Stream Ended for ${ key }.Processed ${ recs } records as ${ batchCount } batches.`
-                        // "S3 Content Stream Ended for pura_2024_01_22T18_02_45_204Z.csv. Processed 33 records as 1 batches."
-                        // console.info(`OnEnd - Stream End Result: ${ streamEndResult } `)
+                        
                         streamResult = {
                             ...streamResult, OnEndStreamEndResult: streamEndResult, OnEndRecordStatus: `Processed ${ recs } records as ${ batchCount } batches.`
                         }
@@ -968,7 +986,7 @@ async function putToFirehose ( chunks: any[], key: string, cust: string ) {
                     .then( ( res: PutRecordCommandOutput ) => {
                         if ( fireHoseStream !== 'S3DropBucket_Log' )
                         {
-                            if ( tcc.SelectiveDebug.indexOf( '_22,' ) > -1 ) console.info( `Put to Firehose Aggregator for ${ key } - \n${ JSON.stringify( fd ) } \nResult: ${ JSON.stringify( res ) } ` )
+                            if ( tcc.SelectiveDebug.indexOf( '_22,' ) > -1 ) console.info( `Selective Debug 22 - Put to Firehose Aggregator for ${ key } - \n${ JSON.stringify( fd ) } \nResult: ${ JSON.stringify( res ) } ` )
 
                             if ( res.$metadata.httpStatusCode === 200 )
                             {
@@ -1173,7 +1191,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async ( event: SQSEven
                 {
                     if ( postResult.toLowerCase().indexOf( 'partially successful' ) > -1 )
                     {
-                        console.info( `Most Work was Successfully Posted to Campaign, exceptions are: \n${ postResult } ` )
+                        console.info( `Most Work was Successfully Posted to Campaign, however there were some exceptions: \n${ postResult } ` )
                     }
 
                     else if ( postResult.toLowerCase().indexOf( 'successfully posted' ) > -1 )
@@ -1515,7 +1533,7 @@ async function checkForTCConfigUpdates () {
     if ( tcLogDebug ) console.info( `Checking for S3DropBucket Config updates` )
     tcc = await getValidateS3DropBucketConfig()
 
-    if ( tcc.SelectiveDebug.indexOf( "_1," ) > -1 ) console.info( `Refreshed S3DropBucket Queue Config \n ${ JSON.stringify( tcc ) } ` )
+    if ( tcc.SelectiveDebug.indexOf( "_1," ) > -1 ) console.info( `Selective Debug 1 - Refreshed S3DropBucket Queue Config \n ${ JSON.stringify( tcc ) } ` )
 }
 
 async function getValidateS3DropBucketConfig () {
@@ -3141,7 +3159,6 @@ async function maintainS3DropBucket ( cust: customerConfig ) {
             } )
         )
             .then( ( res ) => {
-                // console.info(`${JSON.stringify(res)}`)
                 return res
             } )
             .catch( ( err ) => {
@@ -3218,7 +3235,7 @@ async function maintainS3DropBucket ( cust: customerConfig ) {
         ContinuationToken = NextContinuationToken ?? ""
     } while ( ContinuationToken )
 
-    console.info( `S3DropBucketMaintenance Copy Log: ${ JSON.stringify( reProcess ) }` )
+    console.info( `S3DropBucketMaintenance - Copy Log: ${ JSON.stringify( reProcess ) }` )
 
     debugger
 
