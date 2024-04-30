@@ -1920,15 +1920,11 @@ async function validateCustomerConfig ( config: customerConfig ) {
         throw new Error( "Invalid Config - Format is not 'CSV' or 'JSON' " )
     }
 
-    if ( !config.separator ||
-        config.separator.toLowerCase() !== "null" ||
-        config.separator.toLowerCase() !== "empty" ||
-          config.separator.toLowerCase() !== "\n" ||
-            config.separator.toLowerCase() !== "\{" )
+    if ( !config.separator)
     {
         //see: https://www.npmjs.com/package/@streamparser/json-node
         //JSONParser / Node separator option: null = `''` empty = '', otherwise a separator eg. '\n'
-       config.separator = 'null'
+       config.separator = '\n'
     }
 
         if(config.separator.toLowerCase() === "null") config.separator = `''`
