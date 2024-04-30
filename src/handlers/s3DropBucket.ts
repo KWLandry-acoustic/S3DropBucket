@@ -68,10 +68,10 @@ testS3Bucket = "tricklercache-configs"
 // testS3Key = "TestData/alerusrepsignature_sampleformatted.json"
 // testS3Key = "TestData/alerusrepsignature_sample - min.json"
 
-//testS3Key = "TestData/cloroxweather_99706.csv"
+testS3Key = "TestData/cloroxweather_99706.csv"
 //testS3Key = "TestData/pura_S3DropBucket_Aggregator-8-2024-03-19-16-42-48-46e884aa-8c6a-3ff9-8d32-c329395cf311.json"
 //testS3Key = "TestData/pura_2024_02_26T05_53_26_084Z.json"
-testS3Key = "TestData/alerusrepsignature_sample.json"
+//testS3Key = "TestData/alerusrepsignature_sample.json"
 
 
 let vid: string | undefined
@@ -561,6 +561,22 @@ async function processS3ObjectContentStream ( key: string, bucket: string, custC
 
             let s3ContentReadableStream = getS3StreamResult.Body as NodeJS.ReadableStream
 
+            const t = transform( function ( data ) {
+                debugger
+                //"The \"chunk\" argument must be of type string or an instance of Buffer or Uint8Array. Received an instance of Object"
+                
+                //2024-04 - 30 12: 16: 42.168[ info ] {"errorType": "Runtime.UnhandledPromiseRejection", "errorMessage": "Error: Error on Readable Stream for s3DropBucket Object TestData/cloroxweather_99706.csv.\nError Message: An error has stopped Content Parsing at record 0 for s3 object TestData/cloroxweather_99706.csv. Separator is {.\nError: Unexpected SEPARATOR (\"{\") in state VALUE ", "trace": [ "Runtime.UnhandledPromiseRejection: Error: Error on Readable Stream for s3DropBucket Object TestData/cloroxweather_99706.csv.", "Error Message: An error has stopped Content Parsing at record 0 for s3 object TestData/cloroxweather_99706.csv. Separator is {.", "Error: Unexpected SEPARATOR (\"{\") in state VALUE ", "    at process.<anonymous> (file:///var/runtime/index.mjs:1276:17)", "    at process.emit (node:events:517:28)", "    at emit (node:internal/process/promises:149:20)", "    at processPromiseRejections (node:internal/process/promises:283:27)", "    at process.processTicksAndRejections (node:internal/process/task_queues:96:32)" ]}
+
+                //const b = Buffer.from(data, 'utf-8')
+                //console.info( b )
+                //return b
+                const r = JSON.stringify(data) + '\n'
+                return r
+
+                //const fd = Buffer.from( JSON.stringify( jo ), 'utf-8' )
+
+            } )
+
             if ( key.indexOf( 'aggregate_' ) < 0 && custConfig.format.toLowerCase() === 'csv' )
             {
                 const csvParser = parse( {
@@ -570,13 +586,6 @@ async function processS3ObjectContentStream ( key: string, bucket: string, custC
                     trim: true,
                     skip_records_with_error: true,
                 } )
-
-                const t = transform( function ( data ) {
-                    debugger
-                    //return JSON.stringify( data ) + '\n'
-                    //return data
-                } )
-
 
                 s3ContentReadableStream = s3ContentReadableStream.pipe( csvParser ).pipe( t )
 
@@ -604,6 +613,11 @@ async function processS3ObjectContentStream ( key: string, bucket: string, custC
                 //
                 // })
                 //#region
+            }
+            else
+            {
+                s3ContentReadableStream = s3ContentReadableStream.pipe(t)
+
             }
 
 
@@ -740,7 +754,7 @@ async function processS3ObjectContentStream ( key: string, bucket: string, custC
                         // [{},{},{},...]
 
 
-                        //debugger
+                        debugger
 
                         if ( Array.isArray( oa ) )
                         {
@@ -1921,7 +1935,7 @@ async function validateCustomerConfig ( config: customerConfig ) {
         if(config.separator.toLowerCase() === "null")config.separator = `''`
         if(config.separator.toLowerCase() === "empty") config.separator = `""`
         if(config.separator.toLowerCase() === "\n") config.separator = '\n'
-        if(config.separator.toLowerCase() !== "\{") config.separator = '\{'
+        if(config.separator.toLowerCase() === "\{") config.separator = '\{'
 
 
     if ( !config.updates.toLowerCase().match( /^(?:singular|bulk)$/gim ) )
