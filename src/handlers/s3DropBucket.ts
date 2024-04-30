@@ -698,7 +698,7 @@ async function processS3ObjectContentStream ( key: string, bucket: string, custC
                 s3ContentReadableStream
                     .on( 'error', async function ( err: string ) {
                         debugger
-                        const errMessage = `An error has stopped Content Parsing at record ${ recs++ } for s3 object ${ key }.\n${ err }`
+                        const errMessage = `An error has stopped Content Parsing at record ${ recs++ } for s3 object ${ key }. Separator is ${sep}.\n${ err }`
                         console.error( errMessage )
                         chunks = []
                         batchCount = 0
