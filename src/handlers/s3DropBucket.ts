@@ -1614,7 +1614,6 @@ async function getValidateS3DropBucketConfig () {
             if ( tc.separator.toLowerCase() === "null" ) tc.separator = `''`
             if ( tc.separator.toLowerCase() === "empty" ) tc.separator = `""`
             if ( tc.separator.toLowerCase() === "\n" ) tc.separator = '\n'
-            if ( tc.separator.toLowerCase() !== "\{" ) tc.separator = '\{'
         }
         else tc.separator = '\n'
 
@@ -1932,10 +1931,9 @@ async function validateCustomerConfig ( config: customerConfig ) {
        config.separator = 'null'
     }
 
-        if(config.separator.toLowerCase() === "null")config.separator = `''`
+        if(config.separator.toLowerCase() === "null") config.separator = `''`
         if(config.separator.toLowerCase() === "empty") config.separator = `""`
         if(config.separator.toLowerCase() === "\n") config.separator = '\n'
-        if(config.separator.toLowerCase() === "\{") config.separator = '\{'
 
 
     if ( !config.updates.toLowerCase().match( /^(?:singular|bulk)$/gim ) )
