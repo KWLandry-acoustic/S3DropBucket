@@ -403,8 +403,8 @@ export const s3DropBucketHandler: Handler = async ( event: S3Event, context: Con
                     processS3ObjectStreamResolution.Key = key
                     processS3ObjectStreamResolution.Processed = res.OnEndRecordStatus
 
-                    console.info(`Completed Processing Content Stream - ${processS3ObjectStreamResolution.Key} ${processS3ObjectStreamResolution.Processed}`)
-                        
+                    console.info( `Completed Processing Content Stream - ${ processS3ObjectStreamResolution.Key } ${ processS3ObjectStreamResolution.Processed }` )
+
                     if ( tcc.SelectiveDebug.indexOf( "_903," ) > -1 ) console.info( `(903) Completed processing all records of the S3 Object ${ key }. ${ res.OnEndRecordStatus }` )
 
                     //Don't delete the test data
@@ -461,7 +461,7 @@ export const s3DropBucketHandler: Handler = async ( event: S3Event, context: Con
     checkForTCConfigUpdates()
 
 
- 
+
 
 
     if ( event.Records[ 0 ].s3.bucket.name && tcc.S3DropBucketMaintHours > 0 )
@@ -485,24 +485,24 @@ export const s3DropBucketHandler: Handler = async ( event: S3Event, context: Con
     const n = new Date().toISOString()
     let osr = n + "  -  " + JSON.stringify( processS3ObjectStreamResolution ) + '\n\n'
     const osrl = osr.length
-    
+
     if ( osrl > 10000 )
     {
         osr = `Excessive Length of ProcessS3ObjectStreamResolution: ${ osrl } Truncated: \n ${ osr.substring( 0, 1000 ) } ... ${ osr.substring( osrl - 1000, osrl ) }`
-        
-        if ( tcc.SelectiveDebug.indexOf( "_20," ) > -1 ) console.warn( `Selective Debug 20 - \n ${ JSON.stringify( osr ) } `)
+
+        if ( tcc.SelectiveDebug.indexOf( "_20," ) > -1 ) console.warn( `Selective Debug 20 - \n ${ JSON.stringify( osr ) } ` )
         return osr
     }
     const k = processS3ObjectStreamResolution.Key
     const p = processS3ObjectStreamResolution.Processed
 
-    if ( tcc.SelectiveDebug.indexOf( "_905," ) > -1 ) console.info( `(905) Completing S3 DropBucket Processing of Request Id ${ event.Records[ 0 ].responseElements[ 'x-amz-request-id' ]} for ${k}
- with results: ${p}` )
+    if ( tcc.SelectiveDebug.indexOf( "_905," ) > -1 ) console.info( `(905) Completing S3 DropBucket Processing of Request Id ${ event.Records[ 0 ].responseElements[ 'x-amz-request-id' ] } for ${ k }
+ with results: ${ p }` )
 
-    if ( tcc.SelectiveDebug.indexOf( "_20," ) > -1 ) console.info( `Selective Debug 20 - \n${ JSON.stringify(osr )}` )
-    
-    
-    
+    if ( tcc.SelectiveDebug.indexOf( "_20," ) > -1 ) console.info( `Selective Debug 20 - \n${ JSON.stringify( osr ) }` )
+
+
+
     if ( tcc.S3DropBucketLog )
     {
         const logMsg = [ osr ]
@@ -582,10 +582,10 @@ async function processS3ObjectContentStream ( key: string, bucket: string, custC
             const t = transform( function ( data ) {
                 debugger
                 //"The \"chunk\" argument must be of type string or an instance of Buffer or Uint8Array. Received an instance of Object"
-                
+
                 let r
-                if ( Buffer.isBuffer( data ) ) r = data.toString( 'utf8' ) //+ '\n'
-                 else r = JSON.stringify(data) + '\n'
+                if ( Buffer.isBuffer( data ) ) r = data.toString( 'utf8' )
+                else r = JSON.stringify( data ) + '\n'
                 return r
             } )
 
@@ -628,7 +628,7 @@ async function processS3ObjectContentStream ( key: string, bucket: string, custC
             }
             else
             {
-                s3ContentReadableStream = s3ContentReadableStream.pipe(t)
+                s3ContentReadableStream = s3ContentReadableStream.pipe( t )
 
             }
 
@@ -681,9 +681,9 @@ async function processS3ObjectContentStream ( key: string, bucket: string, custC
 
             //if ( key.indexOf( 'aggregate_' ) > -1 ) console.info( `Begin Stream Parsing aggregate file ${ key }` )
 
-            
+
             let sep = tcc.separator
-            if(custConfig.separator && key.indexOf('aggregate_') < 0) sep = custConfig.separator
+            if ( custConfig.separator && key.indexOf( 'aggregate_' ) < 0 ) sep = custConfig.separator
 
             const jsonParser = new JSONParser( {
                 // numberBufferSize: 64,        //64, //0, //undefined, // set to 0 to don't buffer.
@@ -724,9 +724,9 @@ async function processS3ObjectContentStream ( key: string, bucket: string, custC
                 s3ContentReadableStream
                     .on( 'error', async function ( err: string ) {
                         debugger
-                        
-                        const errMessage = `An error has stopped Content Parsing at record ${ recs++ } for s3 object ${ key }. Separator is ${ sep }.\n${ err } \n${chunks}`
-                        
+
+                        const errMessage = `An error has stopped Content Parsing at record ${ recs++ } for s3 object ${ key }. Separator is ${ sep }.\n${ err } \n${ chunks }`
+
                         console.error( errMessage )
 
 
@@ -898,7 +898,7 @@ async function processS3ObjectContentStream ( key: string, bucket: string, custC
                         }
 
                         const streamEndResult = `S3 Content Stream Ended for ${ key }.Processed ${ recs } records as ${ batchCount } batches.`
-                        
+
                         streamResult = {
                             ...streamResult, OnEndStreamEndResult: streamEndResult, OnEndRecordStatus: `Processed ${ recs } records as ${ batchCount } batches.`
                         }
@@ -1935,16 +1935,16 @@ async function validateCustomerConfig ( config: customerConfig ) {
         throw new Error( "Invalid Config - Format is not 'CSV' or 'JSON' " )
     }
 
-    if ( !config.separator)
+    if ( !config.separator )
     {
         //see: https://www.npmjs.com/package/@streamparser/json-node
         //JSONParser / Node separator option: null = `''` empty = '', otherwise a separator eg. '\n'
-       config.separator = '\n'
+        config.separator = '\n'
     }
 
-        if(config.separator.toLowerCase() === "null") config.separator = `''`
-        if(config.separator.toLowerCase() === "empty") config.separator = `""`
-        if(config.separator.toLowerCase() === "\n") config.separator = '\n'
+    if ( config.separator.toLowerCase() === "null" ) config.separator = `''`
+    if ( config.separator.toLowerCase() === "empty" ) config.separator = `""`
+    if ( config.separator.toLowerCase() === "\n" ) config.separator = '\n'
 
 
     if ( !config.updates.toLowerCase().match( /^(?:singular|bulk)$/gim ) )
@@ -2944,47 +2944,42 @@ export async function postToCampaign ( xmlCalls: string, config: customerConfig,
             //        < /detail>
             //        < /Fault>
 
-            if ( result.indexOf( 'false</SUCCESS>' ) > -1 )
+            //if ( result.indexOf( 'false</SUCCESS>' ) > -1 )
+            //{
+            if (
+                result.toLowerCase().indexOf( 'max number of concurrent' ) > -1 ||
+                result.toLowerCase().indexOf( 'access token has expired' ) > -1 ||
+                result.toLowerCase().indexOf( 'Error saving row' ) > -1
+            )
             {
-                if (
-                    result.toLowerCase().indexOf( 'max number of concurrent' ) > -1 ||
-                    result.toLowerCase().indexOf( 'access token has expired' ) > -1 ||
-                    result.toLowerCase().indexOf( 'Error saving row' ) > -1
-                )
-                {
-                    console.error( `Temporary Failure - POST of the Updates - Marked for Retry. \n${ result }` )
-                    return 'retry'
-                }
-                else if ( result.indexOf( '<FaultString><![CDATA[' ) > -1 )
-                {
-                    const f = result.split( /<FaultString><!\[CDATA\[(.*)\]\]/g )
-                    if ( f && f?.length > 0 )
-                    {
-                        for ( const fl in f )
-                        {
-                            faults.push( fl )
-                        }
-                    }
-                    return `Partially Successful - \n${JSON.stringify(faults)}`
-                }
-                else return `Error - Unsuccessful POST of the Updates - Response : ${ result }`
+                console.error( `Temporary Failure - POST of the Updates - Marked for Retry. \n${ result }` )
+                return 'retry'
             }
+            else if ( result.indexOf( '<FaultString><![CDATA[' ) > -1 )
+            {
+                const f = result.split( /<FaultString><!\[CDATA\[(.*)\]\]/g )
+                if ( f && f?.length > 0 )
+                {
+                    for ( const fl in f )
+                    {
+                        faults.push( fl )
+                    }
+                }
+                return `Partially Successful - \n${ JSON.stringify( faults ) }`
+            }
+            //else if ( result.indexOf('<FAILURE failure_type') > -1 )
+            //{
+            //    //<SUCCESS> true < /SUCCESS>
+            //    //    < FAILURES >
+            //    //    <FAILURE failure_type="permanent" description = "There is no column registeredAdvisorTitle" >
+            //    const m = result.match( /<FAILURE failure_(.*)"/gm )
 
-            //Add this fail 
-            //<Envelope>
-            //  <Body>
-            //  <RESULT>
-            //  <SUCCESS> true < /SUCCESS>
-            //  <FAILURES>
-            //  <FAILURE failure_type="permanent" description = "All key columns are not present" >
+            //      
+            //    }
+            //else return `Error - Unsuccessful POST of the Updates - Response : ${ result }`
+            //}
 
-            //And this one
-            // <FAILURES>
-            // <FAILURE failure_type="permanent" description = "There is no column name" >
-            // </FAILURE>
-            // < /FAILURES>
-
-            if ( result.indexOf( "<FAILURE " ) > -1 )
+            else if ( result.indexOf( "<FAILURE  failure_type" ) > -1 )
             {
                 let msg = ''
 
@@ -2996,7 +2991,7 @@ export async function postToCampaign ( xmlCalls: string, config: customerConfig,
                     {
                         // "<FAILURE failure_type=\"permanent\" description=\"There is no column name\">"
                         //Actual message is ambiguous, changing it to read less confusingly:
-                        l.replace( "There is no column", "There is no column = " )
+                        l.replace( "There is no column ", "There is no column = " )
                         msg += l
                     }
 
