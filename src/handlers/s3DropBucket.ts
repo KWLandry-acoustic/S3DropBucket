@@ -496,8 +496,7 @@ export const s3DropBucketHandler: Handler = async ( event: S3Event, context: Con
     const k = processS3ObjectStreamResolution.Key
     const p = processS3ObjectStreamResolution.Processed
 
-    if ( tcc.SelectiveDebug.indexOf( "_905," ) > -1 ) console.info( `(905) Completing S3 DropBucket Processing of Request Id ${ event.Records[ 0 ].responseElements[ 'x-amz-request-id' ] } for ${ k }
- with results: ${ p }` )
+    if ( tcc.SelectiveDebug.indexOf( "_905," ) > -1 ) console.info( `(905) Completing S3 DropBucket Processing of Request Id ${ event.Records[ 0 ].responseElements[ 'x-amz-request-id' ] } for ${ k } \n${ p }` )
 
     if ( tcc.SelectiveDebug.indexOf( "_20," ) > -1 ) console.info( `Selective Debug 20 - \n${ JSON.stringify( osr ) }` )
 
@@ -1135,6 +1134,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async ( event: SQSEven
     {
         tqm = JSON.parse( q.body )
 
+        
         //When Testing locally  (Launch config has pre-stored payload) - get some actual work queued
         if ( tqm.workKey === '' ) 
         {
@@ -1154,6 +1154,8 @@ export const S3DropBucketQueueProcessorHandler: Handler = async ( event: SQSEven
             testS3Bucket = ''
             localTesting = false
         }
+        //
+        //
 
 
         if ( tcc.SelectiveDebug.indexOf( "_907," ) > -1 ) console.info( `(907) Processing Work off the Queue - ${ tqm.workKey }` )
@@ -1169,7 +1171,9 @@ export const S3DropBucketQueueProcessorHandler: Handler = async ( event: SQSEven
             if ( work.length > 0 )        //Retrieve Contents of the Work File  
             {
 
+
                 postResult = await postToCampaign( work, custconfig as customerConfig, tqm.updateCount )
+
 
                 //  postResult can contain: 
                 //retry
@@ -1200,17 +1204,17 @@ export const S3DropBucketQueueProcessorHandler: Handler = async ( event: SQSEven
 
                     else if ( postResult.toLowerCase().indexOf( 'successfully posted' ) > -1 )
                     {
-                        if ( tcc.SelectiveDebug.indexOf( "_908," ) > -1 ) console.info( `(908) Work Successfully Posted to Campaign - ${ tqm.custconfig.listName } from(${ tqm.workKey } - versionId: ${ tqm.versionId }), will now Delete the Work from the S3 Process Queue` )
+                        if ( tcc.SelectiveDebug.indexOf( "_908," ) > -1 ) console.info( `(908) Work Successfully Posted to Campaign - ${postResult} (updated ${ tqm.custconfig.listName } from(${ tqm.workKey }), the Work will be deleted from the S3 Process Queue` )
                     }
 
                     //Delete the Work file
                     const d: string = await deleteS3Object( tqm.workKey, tcc.s3DropBucketWorkBucket! )
                     if ( d === '204' )
                     {
-                        if ( tcc.SelectiveDebug.indexOf( "_909," ) > -1 ) console.info( `(909) Successful Deletion of Queued Work file: ${ tqm.workKey }( versionId: ${ tqm.versionId } )` )
+                        if ( tcc.SelectiveDebug.indexOf( "_24," ) > -1 ) console.info( `Selective Debug 24 - Successful Deletion of Queued Work file: ${ tqm.workKey }( versionId: ${ tqm.versionId } )` )
                     }
 
-                    else if ( tcc.SelectiveDebug.indexOf( "_24," ) > -1 ) console.error( `Failed to Delete ${ tqm.workKey } (versionId: ${ tqm.versionId }). Expected '204' but received ${ d } ` )
+                    else if ( tcc.SelectiveDebug.indexOf( "_24," ) > -1 ) console.error( `Selective Debug 24 - Failed to Delete ${ tqm.workKey } (versionId: ${ tqm.versionId }). Expected '204' but received ${ d } ` )
 
                 }
             }
@@ -2199,8 +2203,8 @@ function convertJSONToXML_RTUpdates ( updates: any[], config: customerConfig ) {
     xmlRows += `</ROWS></InsertUpdateRelationalTable></Body></Envelope>`
 
     if ( tcLogDebug ) console.info( `Converting S3 Content to XML RT Updates. Packaging ${ Object.values( updates ).length } rows as updates to ${ config.Customer }'s ${ config.listName }` )
-    if ( tcc.SelectiveDebug.indexOf( "_6," ) > -1 ) console.info( `Selective Debug 6 - JSON to be converted to XML RT Updates: ${ JSON.stringify( updates ) }` )
-    if ( tcc.SelectiveDebug.indexOf( "_17," ) > -1 ) console.info( `Selective Debug 17 - XML from JSON for RT Updates: ${ xmlRows }` )
+    if ( tcc.SelectiveDebug.indexOf( "_6," ) > -1 ) console.info( `Selective Debug 6 - JSON to be converted to XML RT Updates(${ config.Customer } - ${ config.listName}): ${ JSON.stringify( updates ) }` )
+    if ( tcc.SelectiveDebug.indexOf( "_17," ) > -1 ) console.info( `Selective Debug 17 - XML from JSON for RT Updates (${config.Customer} - ${config.listName}): ${ xmlRows }` )
 
 
     return xmlRows
@@ -2324,16 +2328,6 @@ function transforms ( chunks: any[], config: customerConfig ) {
         else chunks = t
     }
 
-
-
-    //Apply Ignore
-    // "Ignore": [ //Ignore column if it exists in the data
-    //     "Col_BA",
-    //     "Col_BB",
-    //     "Col_BC"
-    // ],
-
-
     //Apply the JSONMap -
     //  JSONPath statements
     //      "jsonMap": {
@@ -2410,7 +2404,7 @@ function transforms ( chunks: any[], config: customerConfig ) {
         else chunks = c
     }
 
-    //Have Ignore last to take advantage of cleaning up any extraneous columns after previous transforms
+    // Ignore must be last to take advantage of cleaning up any extraneous columns after previous transforms
     if ( config.transforms.ignore.length > 0 )
     {
         let i: typeof chunks = []
@@ -2925,6 +2919,7 @@ export async function postToCampaign ( xmlCalls: string, config: customerConfig,
             // console.error(`Debug POST Response: ${result}`)
             let faults: string[] = []
 
+            const f = result.split( /<FaultString><!\[CDATA\[(.*)\]\]/g )
 
             //Add this fail
             //<RESULT>
@@ -2944,8 +2939,6 @@ export async function postToCampaign ( xmlCalls: string, config: customerConfig,
             //        < /detail>
             //        < /Fault>
 
-            //if ( result.indexOf( 'false</SUCCESS>' ) > -1 )
-            //{
             if (
                 result.toLowerCase().indexOf( 'max number of concurrent' ) > -1 ||
                 result.toLowerCase().indexOf( 'access token has expired' ) > -1 ||
@@ -2965,19 +2958,18 @@ export async function postToCampaign ( xmlCalls: string, config: customerConfig,
                         faults.push( fl )
                     }
                 }
-                return `Partially Successful - \n${ JSON.stringify( faults ) }`
+                return `Partially Successful - (${f.length} of ${count}) \n${ JSON.stringify( faults ) }`
             }
             //else if ( result.indexOf('<FAILURE failure_type') > -1 )
-            //{
+                //{
+
+                
+            //Add this Fail 
             //    //<SUCCESS> true < /SUCCESS>
             //    //    < FAILURES >
             //    //    <FAILURE failure_type="permanent" description = "There is no column registeredAdvisorTitle" >
             //    const m = result.match( /<FAILURE failure_(.*)"/gm )
 
-            //      
-            //    }
-            //else return `Error - Unsuccessful POST of the Updates - Response : ${ result }`
-            //}
 
             else if ( result.indexOf( "<FAILURE  failure_type" ) > -1 )
             {
@@ -2991,12 +2983,12 @@ export async function postToCampaign ( xmlCalls: string, config: customerConfig,
                     {
                         // "<FAILURE failure_type=\"permanent\" description=\"There is no column name\">"
                         //Actual message is ambiguous, changing it to read less confusingly:
-                        l.replace( "There is no column ", "There is no column = " )
+                        l.replace( "There is no column ", "There is no column named " )
                         msg += l
                     }
 
-                    console.error( `Unsuccessful POST of the Updates (${ count }) - \nFailure Msg: ${ JSON.stringify( msg ) }` )
-                    return `Error - Unsuccessful POST of the Updates (${ count }) - \nFailure Msg: ${ JSON.stringify( msg ) }`
+                    console.error( `Unsuccessful POST of the Updates (${m.length} of ${ count }) - \nFailure Msg: ${ JSON.stringify( msg ) }` )
+                    return `Error - Unsuccessful POST of the Updates (${m.length} of ${ count }) - \nFailure Msg: ${ JSON.stringify( msg ) }`
                 }
             }
 
