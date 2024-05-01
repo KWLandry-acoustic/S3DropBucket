@@ -1185,7 +1185,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async ( event: SQSEven
 
                 if ( postResult.indexOf( 'retry' ) > -1 )
                 {
-                    console.warn( `Retry Marked for ${ tqm.workKey }(versionId: ${ tqm.versionId }) Returning Work Item ${ q.messageId } to Process Queue(Total Retry Count: ${ sqsBatchFail.batchItemFailures.length + 1 }). ` )
+                    console.warn( `Retry Marked for ${ tqm.workKey }. Returning Work Item ${ q.messageId } to Process Queue(Total Retry Count: ${ sqsBatchFail.batchItemFailures.length + 1 }). \n${postResult} ` )
                     //Add to BatchFail array to Retry processing the work 
                     sqsBatchFail.batchItemFailures.push( {itemIdentifier: q.messageId} )
                     if ( tcc.SelectiveDebug.indexOf( "_12," ) > -1 ) console.info( `Selective Debug 12 - Added ${ tqm.workKey } (versionId: ${ tqm.versionId }) to SQS Events Retry \n${ JSON.stringify( sqsBatchFail ) } ` )
