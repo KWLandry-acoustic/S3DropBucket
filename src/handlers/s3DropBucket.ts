@@ -2519,12 +2519,12 @@ async function addWorkToS3WorkBucket ( queueUpdates: string, key: string ) {
                 return s3PutResult
             } )
             .catch( err => {
-                throw new Error( `PutObjectCommand Results Failed for (${ key } of ${ queueUpdates.length } characters) to S3 Processing bucket: ${ err }` )
+                throw new Error( `PutObjectCommand Results Failed for (${ key } of ${ queueUpdates.length } characters) to S3 Processing bucket (${ tcc.s3DropBucketWorkBucket}): ${ err }` )
                 //return {StoreS3WorkException: err}
             } )
     } catch ( e )
     {
-        throw new Error( `Exception - Put Object Command for writing work(${ key } to S3 Processing bucket: ${ e }` )
+        throw new Error( `Exception - Put Object Command for writing work(${ key } to S3 Processing bucket(${ tcc.s3DropBucketWorkBucket}): ${ e }` )
         // return { StoreS3WorkException: e }
     }
 
