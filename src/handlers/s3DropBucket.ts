@@ -1202,7 +1202,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async ( event: SQSEven
                 {
                     if ( postResult.toLowerCase().indexOf( 'partially successful' ) > -1 )
                     {
-                        console.info( `Most Work was Successfully Posted to Campaign, however there were some exceptions: \n${ postResult } ` )
+                        if ( tcc.SelectiveDebug.indexOf( "_508," ) > -1 ) console.info( `(508) Most Work was Successfully Posted to Campaign, however there were some exceptions: \n${ postResult } ` )
                     }
 
                     else if ( postResult.toLowerCase().indexOf( 'successfully posted' ) > -1 )
@@ -1854,7 +1854,7 @@ async function getCustomerConfig ( filekey: string ) {
             .then( async ( getConfigS3Result: GetObjectCommandOutput ) => {
                 ccr = await getConfigS3Result.Body?.transformToString( 'utf8' ) as string
 
-                if ( tcc.SelectiveDebug.indexOf( "_910," ) > -1 ) console.info( `Selective Debug 910 - Customers Config: \n ${ ccr } ` )
+                if ( tcc.SelectiveDebug.indexOf( "_910," ) > -1 ) console.info( `Selective Debug 910 - Customers (${customer}) Config: \n ${ ccr } ` )
 
                 //Parse comments out of the json before parse
                 ccr = ccr.replaceAll( new RegExp( /[^:](\/\/.*(,|$|")?)/g ), '' )
