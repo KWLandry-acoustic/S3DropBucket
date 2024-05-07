@@ -347,7 +347,7 @@ export const s3DropBucketHandler: Handler = async ( event: S3Event, context: Con
 
         if ( !key.startsWith( tcc.prefixFocus ) )
         {
-            console.warn( `PrefixFocus is configured, File Name ${ key } does not fall within focus restricted by the configured PrefixFocus ${ tcc.prefixFocus }` )
+            //console.warn( `PrefixFocus is configured, File Name ${ key } does not fall within focus restricted by the configured PrefixFocus ${ tcc.prefixFocus }` )
             return
         }
 
