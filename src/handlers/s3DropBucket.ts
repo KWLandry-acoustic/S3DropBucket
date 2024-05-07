@@ -2528,7 +2528,7 @@ async function addWorkToS3WorkBucket ( queueUpdates: string, key: string ) {
         // return { StoreS3WorkException: e }
     }
 
-    if ( tcc.SelectiveDebug.indexOf( "_907," ) > -1 ) console.info( `Selective Debug 907 - ${ JSON.stringify(addWorkToS3ProcessBucket) }` )
+    if ( tcc.SelectiveDebug.indexOf( "_907," ) > -1 ) console.info( `Selective Debug 907 - Adding Work to the Process Queue (${ tcc.s3DropBucketWorkQueue}) ${ JSON.stringify(addWorkToS3ProcessBucket) }` )
 
     s3ProcessBucketResult = JSON.stringify( addWorkToS3ProcessBucket.$metadata.httpStatusCode, null, 2 )
 
@@ -2580,8 +2580,6 @@ async function addWorkToSQSWorkQueue ( config: customerConfig, key: string, vers
         MessageBody: JSON.stringify( sqsQMsgBody ),
     }
 
-    if ( tcc.SelectiveDebug.indexOf( "_918," ) > -1 ) console.info( `Selective Debug 918 - Adding Work to SQS Process Queue - SQS Params: \n${ JSON.stringify( sqsParams ) }` )
-
     let sqsSendResult
     let sqsWriteResult
 
@@ -2616,6 +2614,14 @@ async function addWorkToSQSWorkQueue ( config: customerConfig, key: string, vers
         )
     }
 
+
+    if ( tcc.SelectiveDebug.indexOf( "_907," ) > -1 ) console.info( `Selective Debug 907 - Adding Work to SQS Process Queue (${ tcc.s3DropBucketWorkQueue }) - SQS Params: \n${ JSON.stringify( sqsParams ) } \nresults: ${ JSON.stringify({
+        SQSWriteResult: sqsWriteResult,
+        AddWorkToSQSQueueResult: sqsSendResult
+    } ) }` )
+
+    
+    
     return {
         SQSWriteResult: sqsWriteResult,
         AddWorkToSQSQueueResult: sqsSendResult
