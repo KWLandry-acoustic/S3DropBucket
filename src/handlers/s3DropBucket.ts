@@ -306,8 +306,8 @@ export const s3DropBucketHandler: Handler = async ( event: S3Event, context: Con
         if ( tcc.SelectiveDebug.indexOf( "_925," ) > -1 ) console.info( `Selective Debug 925 - Processing an Aggregated File ${ event.Records[ 0 ].s3.object.key }` )
     }
 
-   
-    
+
+
     //When Local Testing - pull an S3 Object and so avoid the not-found error
     if ( !event.Records[ 0 ].s3.object.key || event.Records[ 0 ].s3.object.key === 'devtest.csv' )
     {
@@ -342,7 +342,7 @@ export const s3DropBucketHandler: Handler = async ( event: S3Event, context: Con
     {
         if ( !localTesting )
         {
-            console.warn( `S3DropBucket Quiesce is in effect, new Files from ${ tcc.S3DropBucket} will be ignored and not processed. \nTo Process files that have arrived during a Quiesce of the Cache, reference the S3DropBucket Guide appendix for AWS cli commands.` )
+            console.warn( `S3DropBucket Quiesce is in effect, new Files from ${ tcc.S3DropBucket } will be ignored and not processed. \nTo Process files that have arrived during a Quiesce of the Cache, reference the S3DropBucket Guide appendix for AWS cli commands.` )
             return
         }
     }
@@ -798,22 +798,24 @@ async function processS3ObjectContentStream ( key: string, bucket: string, custC
                             streamResult = {...streamResult, OnDataReadStreamException: `Exception - First Catch - ReadStream-OnData Processing for ${ key } \nBatch ${ batchCount } of ${ recs } Updates. \n${ e } `}
                         }
 
-                        try {
+                        try
+                        {
                             //Update Singular files will not reach 99 updates in a single file
                             // those will fall through to the OnEnd processing.
                             //Aggregate(d) Files will have > 99 updates in each file so
-                            //  those will need to be chunked up into 99 updates each as Work files. 
+                            //  those will need to be chunked up into 99 updates each as Work files.
+
+
+                            //Cannot convert undefined or null to object
+                            if ( !chunks ) console.error( `Chunks not defined` )
+                            if ( !key ) console.error( `key not defined` )
+                            if ( !custConfig ) console.error( `CustConfig not defined` )
+                            console.error( `Troubleshoot - Chunks - ${ chunks.length }, Key - ${ key }, CustomerConfig \n ${ custConfig }` )
 
                             while ( chunks.length > 98 )
                             //if ( chunks.length > 9 )
                             {
-                                //Cannot convert undefined or null to object 
-                                if (!chunks) console.error(`Chunks not defined`)
-                                if ( !key ) console.error( `key not defined` )
-                                if ( !custConfig ) console.error( `CustConfig not defined` )
-
-                                console.error( `Troubleshoot - Chunks-${ chunks.length }, Key - ${ key }, CustomerConfig \n ${ custConfig }` )
-                                chunks = await packageUpdates( chunks, key, custConfig)
+                                chunks = await packageUpdates( chunks, key, custConfig )
                             }
 
                         } catch ( e )
@@ -851,7 +853,7 @@ async function processS3ObjectContentStream ( key: string, bucket: string, custC
 
                                 //while ( chunks.length > 0 )
                                 //{
-     
+
                                 packageResult = await packageUpdates( chunks, key, custConfig )
                                 //sqwResult = await storeAndQueueWork( chunks, key, custConfig )
                                 //}
@@ -1618,7 +1620,7 @@ async function getValidateS3DropBucketConfig () {
 
         if ( tc.SelectiveDebug !== undefined ) process.env[ "SelectiveDebug" ] = tc.SelectiveDebug
         //Perhaps validate that the string contains commas and underscores as needed, 
-        
+
 
         if ( !tc.S3DropBucket || tc.S3DropBucket === "" )
         {
@@ -1846,7 +1848,7 @@ async function getValidateS3DropBucketConfig () {
 }
 
 async function getCustomerConfig ( filekey: string ) {
-    
+
     // Retrieve file's prefix as Customer Name
     if ( !filekey ) throw new Error( `Exception - Cannot resolve Customer Config without a valid Customer Prefix(file prefix is ${ filekey })` )
 
@@ -1893,12 +1895,12 @@ async function getCustomerConfig ( filekey: string ) {
                 const err: string = JSON.stringify( e )
 
                 if ( err.indexOf( 'specified key does not exist' ) > -1 )
-                    throw new Error( `Exception - Customer Config - ${ customer }config.jsonc does not exist on ${tcc.S3DropBucketConfigs} bucket \nException ${ e } ` )
+                    throw new Error( `Exception - Customer Config - ${ customer }config.jsonc does not exist on ${ tcc.S3DropBucketConfigs } bucket \nException ${ e } ` )
 
                 if ( err.indexOf( 'NoSuchKey' ) > -1 )
-                    throw new Error( `Exception - Customer Config Not Found(${ customer }config.jsonc) on ${ tcc.S3DropBucketConfigs}. \nException ${ e } ` )
+                    throw new Error( `Exception - Customer Config Not Found(${ customer }config.jsonc) on ${ tcc.S3DropBucketConfigs }. \nException ${ e } ` )
 
-                throw new Error( `Exception - Retrieving Config(${ customer }config.jsonc) from ${ tcc.S3DropBucketConfigs} \nException ${ e } ` )
+                throw new Error( `Exception - Retrieving Config(${ customer }config.jsonc) from ${ tcc.S3DropBucketConfigs } \nException ${ e } ` )
 
             } )
     } catch ( e )
@@ -2121,7 +2123,7 @@ async function packageUpdates ( workSet: any[], key: string, custConfig: custome
     while ( workSet.length > 0 )
     {
         updates = []
-        
+
         while ( workSet.length > 0 && updates.length < 100 )
         {
             const c = workSet.pop()
@@ -2157,7 +2159,7 @@ async function packageUpdates ( workSet: any[], key: string, custConfig: custome
 
 
 
-async function storeAndQueueWork ( updates: any[], s3Key: string, config: customerConfig) {
+async function storeAndQueueWork ( updates: any[], s3Key: string, config: customerConfig ) {
 
     batchCount++
 
@@ -2197,14 +2199,14 @@ async function storeAndQueueWork ( updates: any[], s3Key: string, config: custom
     let key = s3Key.replace( '.', '_' )
     key = `${ key }_update_${ batchCount }_${ updateCount }.xml`
 
-    
+
     //if ( Object.values( updates ).length !== recs )
     //{
     //    if ( tcc.SelectiveDebug.indexOf( "_900," ) > -1 ) console.error( `(900) Recs Count ${ recs } does not reflect Updates Count ${ Object.values( updates ).length } ` )
     //}
-    
 
-    if ( tcLogDebug ) console.info( `Queuing Work File ${ key } for ${ s3Key }. Batch ${batchCount} of ${updateCount} records)` )
+
+    if ( tcLogDebug ) console.info( `Queuing Work File ${ key } for ${ s3Key }. Batch ${ batchCount } of ${ updateCount } records)` )
 
     let AddWorkToS3WorkBucketResults
     let AddWorkToSQSWorkQueueResults
@@ -2686,7 +2688,7 @@ async function addWorkToSQSWorkQueue ( config: customerConfig, key: string, vers
     }
 
 
-    if ( tcc.SelectiveDebug.indexOf( "_907," ) > -1 ) console.info( `Selective Debug 907 - Queued Work ${key} (${recCount} updates) to the Work Queue (${ tcc.S3DropBucketWorkQueue }) \nSQS Params: \n${ JSON.stringify( sqsParams ) } \nresults: \n${ JSON.stringify( {
+    if ( tcc.SelectiveDebug.indexOf( "_907," ) > -1 ) console.info( `Selective Debug 907 - Queued Work ${ key } (${ recCount } updates) to the Work Queue (${ tcc.S3DropBucketWorkQueue }) \nSQS Params: \n${ JSON.stringify( sqsParams ) } \nresults: \n${ JSON.stringify( {
         SQSWriteResult: sqsWriteResult,
         AddWorkToSQSQueueResult: sqsSendResult
     } ) }` )
@@ -3277,7 +3279,7 @@ async function maintainS3DropBucketQueueBucket () {
                         try
                         {
                             //build and write SQS Entry
-                            const qa = await addWorkToSQSWorkQueue( cc, key, '', parseInt(batch), updates, marker )
+                            const qa = await addWorkToSQSWorkQueue( cc, key, '', parseInt( batch ), updates, marker )
                             console.info( `Return from Maintenance - AddWorkToSQSWorkQueue: ${ JSON.stringify( qa ) }` )
                         } catch ( e )
                         {
