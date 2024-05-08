@@ -725,6 +725,11 @@ async function processS3ObjectContentStream ( key: string, bucket: string, custC
             s3ContentReadableStream = s3ContentReadableStream.pipe( jsonParser )
 
             s3ContentReadableStream.setMaxListeners( Number( tcc.EventEmitterMaxListeners ) )
+            
+            
+            chunks = []
+            batchCount = 0
+            recs = 0
 
             // const readStream = await new Promise(async (resolve, reject) => {
             await new Promise( async ( resolve, reject ) => {
@@ -839,7 +844,7 @@ async function processS3ObjectContentStream ( key: string, bucket: string, custC
                             return streamResult
                         }
 
-
+/*
 
                         //Next Process Step is Queue Work or Aggregate Small single Update files into larger Update files to improve Campaign Update performance.
                         try
@@ -898,7 +903,7 @@ async function processS3ObjectContentStream ( key: string, bucket: string, custC
                             // console.error(sErr)
                             return {...streamResult, OnEndStreamResult: sErr}
                         }
-
+*/
                         const streamEndResult = `S3 Content Stream Ended for ${ key }.Processed ${ recs } records as ${ batchCount } batches.`
 
                         streamResult = {
@@ -908,9 +913,9 @@ async function processS3ObjectContentStream ( key: string, bucket: string, custC
 
                         if ( tcc.SelectiveDebug.indexOf( "_902," ) > -1 ) console.info( `Selective Debug 902: Content Stream OnEnd for (${ key }) - Store and Queue Work of ${ batchCount } Batches of ${ recs } records - Result: \n${ JSON.stringify( streamResult ) } ` )
 
-                        chunks = []
-                        batchCount = 0
-                        recs = 0
+                        //chunks = []
+                        //batchCount = 0
+                        //recs = 0
 
                         resolve( {...streamResult} )
 
@@ -2122,13 +2127,16 @@ async function packageUpdates ( workSet: any[], key: string, custConfig: custome
     let packageResult: {} = {}
     let sqwResult: {} = {}
 
-    while ( workSet.length > 0 )
+
+    //Process everything out of the Global var Chunks array 
+    //Need to pull that scope down to something a little more local 
+    while ( chunks.length > 0 )
     {
         updates = []
 
-        while ( workSet.length > 0 && updates.length < 100 )
+        while ( chunks.length > 0 && updates.length < 100 )
         {
-            const c = workSet.pop()
+            const c = chunks.pop()
             updates.push( c )
         }
 
@@ -2150,13 +2158,13 @@ async function packageUpdates ( workSet: any[], key: string, custConfig: custome
     // streamResult.OnEndStoreAndQueueResult = sqwResult 
     //Object.assign( streamResult.OnEndStoreAndQueueResult, sqwResult )
     // streamResult = { ...streamResult, OnEndStoreAndQueueResult: sqwResult }
-    if ( workSet.length > 100 ) processS3ObjectStreamResolution.OnDataStoreQueueResult = sqwResult
+    if ( chunks.length > 100 ) processS3ObjectStreamResolution.OnDataStoreQueueResult = sqwResult
     else Object.assign( processS3ObjectStreamResolution.OnEndStoreAndQueueResult, sqwResult )
 
     if ( tcc.SelectiveDebug.indexOf( "_902," ) > -1 ) console.info( `Selective Debug 902: PackageUpdates StoreAndQueueWork for ${ key }. \nBatch ${ batchCount } of ${ recs } Updates.  Result: \n${ JSON.stringify( packageResult ) } ` )
 
     //}
-    return workSet
+    return //workSet
 }
 
 
