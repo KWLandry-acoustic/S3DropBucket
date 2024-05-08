@@ -820,6 +820,7 @@ async function processS3ObjectContentStream ( key: string, bucket: string, custC
                             while (chunks.length > 98 )
                             //if ( chunks.length > 9 )
                             {
+                                console.error(`OnData Processing ${key} for ${chunks.length}`)
                                 await packageUpdates( chunks, key, custConfig )
                             }
 
@@ -845,7 +846,7 @@ async function processS3ObjectContentStream ( key: string, bucket: string, custC
                         }
 
 
-
+/*
                         //Next Process Step is Queue Work or Aggregate Small single Update files into larger Update files to improve Campaign Update performance.
                         try
                         {
@@ -903,7 +904,7 @@ async function processS3ObjectContentStream ( key: string, bucket: string, custC
                             // console.error(sErr)
                             return {...streamResult, OnEndStreamResult: sErr}
                         }
-
+*/
                         const streamEndResult = `S3 Content Stream Ended for ${ key }.Processed ${ recs } records as ${ batchCount } batches.`
 
                         streamResult = {
