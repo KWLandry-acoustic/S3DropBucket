@@ -69,6 +69,7 @@ const SFTPClient = new sftpClient()
 
 let localTesting = false
 
+let chunks: any[] = []
 let xmlRows: string = ''
 let batchCount = 0
 let recs = 0
@@ -534,7 +535,6 @@ export default s3DropBucketHandler
 
 async function processS3ObjectContentStream ( key: string, bucket: string, custConfig: customerConfig ) {
 
-    let chunks: any[] = []
 
     // let processS3ObjectResults: processS3ObjectStreamResult = {
     //     OnClose_Result: '',
