@@ -791,6 +791,14 @@ async function processS3ObjectContentStream ( key: string, bucket: string, custC
                                 chunks.push( oa )
                             }
 
+                        } catch ( e )
+                        {
+                            debugger
+                            console.error( `Exception - First Catch - ReadStream-OnData Processing for ${ key } \nBatch ${ batchCount } of ${ recs } Updates. \n${ e } ` )
+                            streamResult = {...streamResult, OnDataReadStreamException: `Exception - Read Stream OnData Processing for ${ key } \nBatch ${ batchCount } of ${ recs } Updates. \n${ e } `}
+                        }
+
+                        try {
                             //Update Singular files will not reach 99 updates in a single file
                             // those will fall through to the OnEnd processing.
                             //Aggregate(d) Files will have > 99 updates in each file so
@@ -805,7 +813,7 @@ async function processS3ObjectContentStream ( key: string, bucket: string, custC
                         } catch ( e )
                         {
                             debugger
-                            console.error( `Exception - Read Stream OnData Processing for ${ key } \nBatch ${ batchCount } of ${ recs } Updates. \n${ e } ` )
+                            console.error( `Exception - Second Catch - ReadStream-OnData Processing for ${ key } \nBatch ${ batchCount } of ${ recs } Updates. \n${ e } ` )
                             streamResult = {...streamResult, OnDataReadStreamException: `Exception - Read Stream OnData Processing for ${ key } \nBatch ${ batchCount } of ${ recs } Updates. \n${ e } `}
                         }
 
