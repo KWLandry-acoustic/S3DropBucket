@@ -812,10 +812,10 @@ async function processS3ObjectContentStream ( key: string, bucket: string, custC
                             if ( !custConfig ) console.error( `CustConfig not defined` )
                             console.error( `Troubleshoot - Chunks - ${ chunks.length }, Key - ${ key }, CustomerConfig \n ${ custConfig }` )
 
-                            while ( chunks.length > 98 )
+                            while (chunks.length > 98 )
                             //if ( chunks.length > 9 )
                             {
-                                chunks = await packageUpdates( chunks, key, custConfig )
+                                await packageUpdates( chunks, key, custConfig )
                             }
 
                         } catch ( e )
@@ -839,11 +839,13 @@ async function processS3ObjectContentStream ( key: string, bucket: string, custC
                             return streamResult
                         }
 
-                        let packageResult
+
 
                         //Next Process Step is Queue Work or Aggregate Small single Update files into larger Update files to improve Campaign Update performance.
                         try
                         {
+                            let packageResult
+
                             // if Not an Aggregate file, there are chunks to process, and Bulk option set)
 
                             if ( ( chunks.length > 0 ) &&
