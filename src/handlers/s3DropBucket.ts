@@ -794,8 +794,8 @@ async function processS3ObjectContentStream ( key: string, bucket: string, custC
                         } catch ( e )
                         {
                             debugger
-                            console.error( `Exception - First Catch - ReadStream-OnData Processing for ${ key } \nBatch ${ batchCount } of ${ recs } Updates. \n${ e } ` )
-                            streamResult = {...streamResult, OnDataReadStreamException: `Exception - Read Stream OnData Processing for ${ key } \nBatch ${ batchCount } of ${ recs } Updates. \n${ e } `}
+                            console.error( `Exception - ReadStream-OnData - Chunk aggregation for ${ key } \nBatch ${ batchCount } of ${ recs } Updates. \n${ e } ` )
+                            streamResult = {...streamResult, OnDataReadStreamException: `Exception - First Catch - ReadStream-OnData Processing for ${ key } \nBatch ${ batchCount } of ${ recs } Updates. \n${ e } `}
                         }
 
                         try {
@@ -807,14 +807,20 @@ async function processS3ObjectContentStream ( key: string, bucket: string, custC
                             while ( chunks.length > 98 )
                             //if ( chunks.length > 9 )
                             {
+                                //Cannot convert undefined or null to object 
+                                if (!chunks) console.error(`Chunks not defined`)
+                                if ( !key ) console.error( `key not defined` )
+                                if ( !custConfig ) console.error( `CustConfig not defined` )
+
+                                console.error( `Troubleshoot - Chunks-${ chunks.length }, Key - ${ key }, CustomerConfig \n ${ custConfig }` )
                                 chunks = await packageUpdates( chunks, key, custConfig)
                             }
 
                         } catch ( e )
                         {
                             debugger
-                            console.error( `Exception - Second Catch - ReadStream-OnData Processing for ${ key } \nBatch ${ batchCount } of ${ recs } Updates. \n${ e } ` )
-                            streamResult = {...streamResult, OnDataReadStreamException: `Exception - Read Stream OnData Processing for ${ key } \nBatch ${ batchCount } of ${ recs } Updates. \n${ e } `}
+                            console.error( `Exception - ReadStream-OnData - Batch Packaging for ${ key } \nBatch ${ batchCount } of ${ recs } Updates. \n${ e } ` )
+                            streamResult = {...streamResult, OnDataReadStreamException: `Exception - Second Catch - ReadStream-OnData Processing for ${ key } \nBatch ${ batchCount } of ${ recs } Updates. \n${ e } `}
                         }
 
                     } )
