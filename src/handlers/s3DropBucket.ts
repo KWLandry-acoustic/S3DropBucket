@@ -2141,14 +2141,10 @@ async function packageUpdates ( workSet: any[], key: string, custConfig: custome
                 updates.push( c )
             }
 
-
-
             sqwResult = await storeAndQueueWork( updates, key, custConfig )
             packageResult = {...packageResult, OnStoreAndQueueWork: `PackageUpdates for ${ key } \nStore And Queue Work for Batch ${ batchCount } of ${ recs } Updates.`}
 
         }
-
-
 
         // streamResult.OnEndStoreAndQueueResult = sqwResult 
         //Object.assign( streamResult.OnEndStoreAndQueueResult, sqwResult )
