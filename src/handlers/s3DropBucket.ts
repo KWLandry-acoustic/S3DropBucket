@@ -459,7 +459,7 @@ debugger
 
                     return res
                 } )
-                .catch( ( e: any ) => {
+                .catch( ( e:Exception ) => {
                     const r = `Exception - Process S3 Object Stream Catch - \n${ e }`
                     console.error( r )
                     processS3ObjectStreamResolution = {...processS3ObjectStreamResolution, ProcessS3ObjectStreamCatch: r}
@@ -2202,7 +2202,7 @@ async function storeAndQueueWork ( updates: any[], s3Key: string, config: custom
     {
         const sqwError = `Exception - StoreAndQueueWork Add work to S3 Bucket exception \n${ e } `
         console.error( sqwError )
-        return {StoreS3WorkException: sqwError, StoreQueueWorkException: '', AddWorkToS3WorkBucketResults: JSON.stringify( AddWorkToS3WorkBucketResult )}
+        return {StoreS3WorkException: sqwError, StoreQueueWorkException: '', AddWorkToS3WorkBucketResult: JSON.stringify( AddWorkToS3WorkBucketResult )}
     }
 
     // v = AddWorkToS3WorkBucketResults.versionId ?? ''
