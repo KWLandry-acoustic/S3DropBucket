@@ -459,7 +459,7 @@ debugger
 
                     return res
                 } )
-                .catch( ( e:Exception ) => {
+                .catch( ( e ) => {
                     const r = `Exception - Process S3 Object Stream Catch - \n${ e }`
                     console.error( r )
                     processS3ObjectStreamResolution = {...processS3ObjectStreamResolution, ProcessS3ObjectStreamCatch: r}
