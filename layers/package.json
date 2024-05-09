@@ -10,7 +10,7 @@
     "@aws-sdk/fetch-http-handler": "^3.374.0",
     "@aws-sdk/protocol-http": "^3.374.0",
     "@streamparser/json": "^0.0.20",
-    "@streamparser/json-node": "^0.0.20",
+    "@streamparser/json-node": "^0.0.21",
     "@types/node-fetch": "^2.6.4",
     "csv-parse": "^5.5.0",
     "csv-stringify": "^6.4.2",

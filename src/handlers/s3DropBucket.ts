@@ -426,7 +426,7 @@ export const s3DropBucketHandler: Handler = async ( event: S3Event, context: Con
                     if ( localTesting ) key = 'TestData/S3Object_DoNotDelete'
                     //Do not delete in order to Capture Testing Data
                     // if (key.toLowerCase().indexOf('aggregat') > -1) key = 'TestData/S3Object_DoNotDelete'
-
+debugger
                     if ( ( res.PutToFireHoseAggregatorResult === "200" ) ||
                         ( res.OnEndStoreAndQueueResult.AddWorkToS3WorkBucketResults.S3ProcessBucketResult === "200" ) &&
                         res.OnEndStoreAndQueueResult.AddWorkToSQSWorkQueueResults.SQSWriteResult === "200" )
@@ -2608,7 +2608,7 @@ async function addWorkToS3WorkBucket ( queueUpdates: string, key: string ) {
         // return { StoreS3WorkException: e }
     }
 
-    //s3ProcessBucketResult = JSON.stringify( addWorkToS3ProcessBucket.$metadata.httpStatusCode, null, 2 )
+    s3ProcessBucketResult = JSON.stringify( addWorkToS3ProcessBucket.$metadata.httpStatusCode, null, 2 )
 
     const vid = addWorkToS3ProcessBucket.VersionId ?? ""
 
