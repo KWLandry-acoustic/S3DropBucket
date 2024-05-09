@@ -2109,7 +2109,7 @@ async function packageUpdates ( workSet: any[], key: string, custConfig: custome
 
             sqwResult = await storeAndQueueWork( updates, key, custConfig )
 
-            console.error(`sqwResult ${sqwResult}`)
+            console.error(`sqwResult ${JSON.stringify(sqwResult)}`)
             
             packageResult = {...packageResult, OnStoreAndQueueWork: `PackageUpdates for ${ key } \nStore And Queue Work for Batch ${ batchCount } of ${ recs } Updates.`}
 
