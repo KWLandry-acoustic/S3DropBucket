@@ -180,16 +180,17 @@ export interface processS3ObjectStreamResult {
     Key: string
     Processed: string
     OnDataReadStreamException: string,
-    OnDataStoreQueueResult: object,
+    OnDataBatchingResult: string,
+    OnDataStoreQueueResult: string,
     OnEndStoreAndQueueResult: {
         AddWorkToS3WorkBucketResults: {
             versionId: string,
             S3ProcessBucketResult: string,
-            AddWorkToS3ProcessBucket: object
+            AddWorkToS3ProcessBucket: string
         },
         AddWorkToSQSWorkQueueResults: {
             SQSWriteResult: string,
-            AddWorkToSQSQueueResult: object
+            AddWorkToSQSQueueResult: string
         },
         StoreQueueWorkException: string
         StoreS3WorkException: string
@@ -208,33 +209,34 @@ export interface processS3ObjectStreamResult {
 
 
 let processS3ObjectStreamResolution: processS3ObjectStreamResult = {
-    Key: '',
-    Processed: '',
-    OnClose_Result: '',
+    Key: "",
+    Processed: "",
+    OnDataReadStreamException: "",
+    OnDataBatchingResult: "",
+    OnDataStoreQueueResult: "",
     OnEndStoreAndQueueResult: {
         AddWorkToS3WorkBucketResults: {
-            versionId: '',
-            S3ProcessBucketResult: '',
-            AddWorkToS3ProcessBucket: {}
+            versionId: "",
+            S3ProcessBucketResult: "",
+            AddWorkToS3ProcessBucket: ""
         },
         AddWorkToSQSWorkQueueResults: {
-            SQSWriteResult: '',
-            AddWorkToSQSQueueResult: {}
+            SQSWriteResult: "",
+            AddWorkToSQSQueueResult: ""
         },
-        StoreQueueWorkException: '',
-        StoreS3WorkException: '',
+        StoreQueueWorkException: "",
+        StoreS3WorkException: ""
     },
-    PutToFireHoseAggregatorResult: '',
-    OnEnd_PutToFireHoseAggregator: '',
-    PutToFireHoseException: '',
-    ProcessS3ObjectStreamCatch: '',
-    OnDataReadStreamException: '',
-    OnEndRecordStatus: '',
-    OnEndStreamEndResult: '',
-    StreamReturnLocation: '',
-    DeleteResult: '',
-    OnDataStoreQueueResult: {},
-    OnEndNoRecordsException: '',
+    OnEndStreamEndResult: "",
+    OnEndRecordStatus: "",
+    OnEndNoRecordsException: "",
+    ProcessS3ObjectStreamCatch: "",
+    OnClose_Result: "",
+    StreamReturnLocation: "",
+    PutToFireHoseAggregatorResult: "",
+    PutToFireHoseException: "",
+    OnEnd_PutToFireHoseAggregator: "",
+    DeleteResult: ""
 }
 
 let sqsBatchFail: SQSBatchItemFails = {
@@ -573,7 +575,7 @@ async function processS3ObjectContentStream ( key: string, bucket: string, custC
     }
 
 
-    let streamResult = processS3ObjectStreamResolution
+    let streamResult:processS3ObjectStreamResult = processS3ObjectStreamResolution
 
     // processS3ObjectResults
     processS3ObjectStreamResolution = await s3.send( new GetObjectCommand( s3C )
@@ -730,6 +732,7 @@ async function processS3ObjectContentStream ( key: string, bucket: string, custC
             chunks = []
             batchCount = 0
             recs = 0
+            let packageResult
 
             // const readStream = await new Promise(async (resolve, reject) => {
             await new Promise( async ( resolve, reject ) => {
@@ -747,9 +750,8 @@ async function processS3ObjectContentStream ( key: string, bucket: string, custC
                         recs = 0
 
                         streamResult = {
-                            ...streamResult, OnDataStoreQueueResult: {
-                                s3ContentReadableStreamErrorMessage: errMessage
-                            }
+                            ...streamResult, OnDataStoreQueueResult: `s3ContentReadableStreamErrorMessage ${JSON.stringify(errMessage )}`
+                            
                         }
                         throw new Error( `Error on Readable Stream for s3DropBucket Object ${ key }.\nError Message: ${ errMessage } ` )
                     } )
@@ -813,7 +815,9 @@ async function processS3ObjectContentStream ( key: string, bucket: string, custC
                             //if ( chunks.length > 9 )
                             {
                                 
-                                await packageUpdates( chunks, key, custConfig )
+                                packageResult = await packageUpdates( chunks, key, custConfig )
+                                
+                                streamResult = {...streamResult, OnDataBatchingResult: JSON.stringify(packageResult)}
                             }
 
                         } catch ( e )
@@ -842,7 +846,6 @@ async function processS3ObjectContentStream ( key: string, bucket: string, custC
                         //Next Process Step is Queue Work or Aggregate Small single Update files into larger Update files to improve Campaign Update performance.
                         try
                         {
-                            let packageResult
 
                             // if Not an Aggregate file, there are chunks to process, and Bulk option set)
 
@@ -2135,6 +2138,9 @@ async function packageUpdates ( workSet: any[], key: string, custConfig: custome
             }
 
             sqwResult = await storeAndQueueWork( updates, key, custConfig )
+
+            console.error(`sqwResult ${sqwResult}`)
+            
             packageResult = {...packageResult, OnStoreAndQueueWork: `PackageUpdates for ${ key } \nStore And Queue Work for Batch ${ batchCount } of ${ recs } Updates.`}
 
         }
@@ -2142,10 +2148,10 @@ async function packageUpdates ( workSet: any[], key: string, custConfig: custome
         // streamResult.OnEndStoreAndQueueResult = sqwResult 
         //Object.assign( streamResult.OnEndStoreAndQueueResult, sqwResult )
         // streamResult = { ...streamResult, OnEndStoreAndQueueResult: sqwResult }
-        if ( chunks.length > 100 ) processS3ObjectStreamResolution.OnDataStoreQueueResult = sqwResult
+        if ( chunks.length > 100 ) processS3ObjectStreamResolution.OnDataStoreQueueResult = JSON.stringify(sqwResult)
         else Object.assign( processS3ObjectStreamResolution.OnEndStoreAndQueueResult, sqwResult )
 
-        if ( tcc.SelectiveDebug.indexOf( "_902," ) > -1 ) console.info( `Selective Debug 902: PackageUpdates StoreAndQueueWork for ${ key }. \nBatch ${ batchCount } of ${ recs } Updates.  Result: \n${ JSON.stringify( packageResult ) } ` )
+        if ( tcc.SelectiveDebug.indexOf( "_918," ) > -1 ) console.info( `Selective Debug 918: PackageUpdates StoreAndQueueWork for ${ key }. \nBatch ${ batchCount } of ${ recs } Updates.  Result: \n${ JSON.stringify( packageResult ) } ` )
     }
     catch ( e )
     {
@@ -2610,7 +2616,7 @@ async function addWorkToS3WorkBucket ( queueUpdates: string, key: string ) {
 
     return {
         versionId: vid,
-        AddWorkToS3ProcessBucket: addWorkToS3ProcessBucket,
+        AddWorkToS3ProcessBucket: JSON.stringify(addWorkToS3ProcessBucket),
         S3ProcessBucketResult: s3ProcessBucketResult
     }
 }
@@ -2690,7 +2696,7 @@ async function addWorkToSQSWorkQueue ( config: customerConfig, key: string, vers
 
     if ( tcc.SelectiveDebug.indexOf( "_907," ) > -1 ) console.info( `Selective Debug 907 - Queued Work ${ key } (${ recCount } updates) to the Work Queue (${ tcc.S3DropBucketWorkQueue }) \nSQS Params: \n${ JSON.stringify( sqsParams ) } \nresults: \n${ JSON.stringify( {
         SQSWriteResult: sqsWriteResult,
-        AddWorkToSQSQueueResult: sqsSendResult
+        AddWorkToSQSQueueResult: JSON.stringify(sqsSendResult)
     } ) }` )
 
 
@@ -2698,7 +2704,7 @@ async function addWorkToSQSWorkQueue ( config: customerConfig, key: string, vers
     return {
 
         SQSWriteResult: sqsWriteResult,
-        AddWorkToSQSQueueResult: sqsSendResult
+        AddWorkToSQSQueueResult: JSON.stringify(sqsSendResult)
     }
 }
 
@@ -3247,7 +3253,7 @@ async function maintainS3DropBucketQueueBucket () {
         const lastMod = Contents.map( ( {LastModified} ) => LastModified as Date )
         const sourceKeys = Contents.map( ( {Key} ) => Key )
 
-        console.log( `S3DropBucket Maintenance - Processing ${ Contents.length } records` )
+        console.info( `S3DropBucket Maintenance - Processing ${ Contents.length } records` )
 
         await Promise.all(
             new Array( concurrency ).fill( null ).map( async () => {
