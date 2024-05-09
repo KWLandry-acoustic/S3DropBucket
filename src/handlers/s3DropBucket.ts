@@ -846,7 +846,7 @@ async function processS3ObjectContentStream ( key: string, bucket: string, custC
                         }
 
 
-/*
+
                         //Next Process Step is Queue Work or Aggregate Small single Update files into larger Update files to improve Campaign Update performance.
                         try
                         {
@@ -904,7 +904,7 @@ async function processS3ObjectContentStream ( key: string, bucket: string, custC
                             // console.error(sErr)
                             return {...streamResult, OnEndStreamResult: sErr}
                         }
-*/
+
                         const streamEndResult = `S3 Content Stream Ended for ${ key }.Processed ${ recs } records as ${ batchCount } batches.`
 
                         streamResult = {
