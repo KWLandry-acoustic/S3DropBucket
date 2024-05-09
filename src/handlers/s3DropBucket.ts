@@ -725,8 +725,8 @@ async function processS3ObjectContentStream ( key: string, bucket: string, custC
             s3ContentReadableStream = s3ContentReadableStream.pipe( jsonParser )
 
             s3ContentReadableStream.setMaxListeners( Number( tcc.EventEmitterMaxListeners ) )
-            
-            
+
+
             chunks = []
             batchCount = 0
             recs = 0
@@ -741,7 +741,6 @@ async function processS3ObjectContentStream ( key: string, bucket: string, custC
                         const errMessage = `An error has stopped Content Parsing at record ${ recs++ } for s3 object ${ key }. Separator is ${ sep }.\n${ err } \n${ chunks }`
 
                         console.error( errMessage )
-
 
                         chunks = []
                         batchCount = 0
@@ -817,10 +816,10 @@ async function processS3ObjectContentStream ( key: string, bucket: string, custC
                             if ( !custConfig ) console.error( `CustConfig not defined` )
                             console.error( `Troubleshoot - Chunks - ${ chunks.length }, Key - ${ key }, CustomerConfig \n ${ custConfig }` )
 
-                            while (chunks.length > 98 )
+                            while ( chunks.length > 98 )
                             //if ( chunks.length > 9 )
                             {
-                                console.error(`OnData Processing ${key} for ${chunks.length}`)
+                                console.error( `OnData Processing ${ key } for ${ chunks.length }` )
                                 await packageUpdates( chunks, key, custConfig )
                             }
 
@@ -2128,43 +2127,44 @@ async function packageUpdates ( workSet: any[], key: string, custConfig: custome
     let packageResult: {} = {}
     let sqwResult: {} = {}
 
-
-    //Process everything out of the Global var Chunks array 
-    //Need to pull that scope down to something a little more local 
-    while ( chunks.length > 0 )
+    try
     {
-        updates = []
-
-        while ( chunks.length > 0 && updates.length < 100 )
+        //Process everything out of the Global var Chunks array 
+        //Need to pull that scope down to something a little more local 
+        while ( chunks.length > 0 )
         {
-            const c = chunks.pop()
-            updates.push( c )
-        }
+            updates = []
 
-        try
-        {
+            while ( chunks.length > 0 && updates.length < 100 )
+            {
+                const c = chunks.pop()
+                updates.push( c )
+            }
+
+
 
             sqwResult = await storeAndQueueWork( updates, key, custConfig )
             packageResult = {...packageResult, OnStoreAndQueueWork: `PackageUpdates for ${ key } \nStore And Queue Work for Batch ${ batchCount } of ${ recs } Updates.`}
 
-        } catch ( e )
-        {
-            debugger
-            console.error( `Exception - packageUpdates for ${ key } \n${ e } ` )
-            packageResult = {...packageResult, OnStoreAndQueueWork: `Exception - PackageUpdates StoreAndQueueWork for ${ key } \nBatch ${ batchCount } of ${ recs } Updates. \n${ e } `}
         }
+
+
+
+        // streamResult.OnEndStoreAndQueueResult = sqwResult 
+        //Object.assign( streamResult.OnEndStoreAndQueueResult, sqwResult )
+        // streamResult = { ...streamResult, OnEndStoreAndQueueResult: sqwResult }
+        if ( chunks.length > 100 ) processS3ObjectStreamResolution.OnDataStoreQueueResult = sqwResult
+        else Object.assign( processS3ObjectStreamResolution.OnEndStoreAndQueueResult, sqwResult )
+
+        if ( tcc.SelectiveDebug.indexOf( "_902," ) > -1 ) console.info( `Selective Debug 902: PackageUpdates StoreAndQueueWork for ${ key }. \nBatch ${ batchCount } of ${ recs } Updates.  Result: \n${ JSON.stringify( packageResult ) } ` )
+    }
+    catch ( e )
+    {
+        debugger
+        console.error( `Exception - packageUpdates for ${ key } \n${ e } ` )
+        packageResult = {...packageResult, OnStoreAndQueueWork: `Exception - PackageUpdates StoreAndQueueWork for ${ key } \nBatch ${ batchCount } of ${ recs } Updates. \n${ e } `}
     }
 
-
-    // streamResult.OnEndStoreAndQueueResult = sqwResult 
-    //Object.assign( streamResult.OnEndStoreAndQueueResult, sqwResult )
-    // streamResult = { ...streamResult, OnEndStoreAndQueueResult: sqwResult }
-    if ( chunks.length > 100 ) processS3ObjectStreamResolution.OnDataStoreQueueResult = sqwResult
-    else Object.assign( processS3ObjectStreamResolution.OnEndStoreAndQueueResult, sqwResult )
-
-    if ( tcc.SelectiveDebug.indexOf( "_902," ) > -1 ) console.info( `Selective Debug 902: PackageUpdates StoreAndQueueWork for ${ key }. \nBatch ${ batchCount } of ${ recs } Updates.  Result: \n${ JSON.stringify( packageResult ) } ` )
-
-    //}
     return //workSet
 }
 
