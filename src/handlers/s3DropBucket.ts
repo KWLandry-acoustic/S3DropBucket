@@ -809,17 +809,10 @@ async function processS3ObjectContentStream ( key: string, bucket: string, custC
                             //Aggregate(d) Files will have > 99 updates in each file so
                             //  those will need to be chunked up into 99 updates each as Work files.
 
-
-                            //Cannot convert undefined or null to object
-                            if ( !chunks ) console.error( `Chunks not defined` )
-                            if ( !key ) console.error( `key not defined` )
-                            if ( !custConfig ) console.error( `CustConfig not defined` )
-                            console.error( `Troubleshoot - Chunks - ${ chunks.length }, Key - ${ key }, CustomerConfig \n ${ custConfig }` )
-
                             while ( chunks.length > 98 )
                             //if ( chunks.length > 9 )
                             {
-                                console.error( `OnData Processing ${ key } for ${ chunks.length }` )
+                                
                                 await packageUpdates( chunks, key, custConfig )
                             }
 
