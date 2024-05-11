@@ -428,10 +428,21 @@ export const s3DropBucketHandler: Handler = async ( event: S3Event, context: Con
                     if ( localTesting ) key = 'TestData/S3Object_DoNotDelete'
                     //Do not delete in order to Capture Testing Data
                     // if (key.toLowerCase().indexOf('aggregat') > -1) key = 'TestData/S3Object_DoNotDelete'
-debugger
+                    debugger
+
+                    if ( res.OnEndStoreAndQueueResult.AddWorkToS3WorkBucketResults === undefined )
+                    {
+                        res.OnEndStoreAndQueueResult.AddWorkToS3WorkBucketResults = {
+                            versionId: '',
+                            S3ProcessBucketResult: '',
+                            AddWorkToS3ProcessBucket: ''
+                        }
+                        console.error(`Invalid Return from ProcessS3ObjectContentStream - AddWorkToS3WorkBucketResults Empty: \n${JSON.stringify(res)}`)
+                    }
+
                     if ( ( res.PutToFireHoseAggregatorResult === "200" ) ||
-                        ( res.OnEndStoreAndQueueResult.AddWorkToS3WorkBucketResults.S3ProcessBucketResult === "200" ) &&
-                        res.OnEndStoreAndQueueResult.AddWorkToSQSWorkQueueResults.SQSWriteResult === "200" )
+                        ( res.OnEndStoreAndQueueResult.AddWorkToS3WorkBucketResults.S3ProcessBucketResult === "200" &&
+                        res.OnEndStoreAndQueueResult.AddWorkToSQSWorkQueueResults.SQSWriteResult === "200" ))
                     {
                         try
                         {
@@ -545,7 +556,7 @@ async function processS3ObjectContentStream ( key: string, bucket: string, custC
     }
 
 
-    let streamResult:processS3ObjectStreamResult = processS3ObjectStreamResolution
+    let streamResult: processS3ObjectStreamResult = processS3ObjectStreamResolution
 
     // processS3ObjectResults
     processS3ObjectStreamResolution = await s3.send( new GetObjectCommand( s3C )
@@ -720,8 +731,8 @@ async function processS3ObjectContentStream ( key: string, bucket: string, custC
                         recs = 0
 
                         streamResult = {
-                            ...streamResult, OnDataStoreQueueResult: `s3ContentReadableStreamErrorMessage ${JSON.stringify(errMessage )}`
-                            
+                            ...streamResult, OnDataStoreQueueResult: `s3ContentReadableStreamErrorMessage ${ JSON.stringify( errMessage ) }`
+
                         }
                         throw new Error( `Error on Readable Stream for s3DropBucket Object ${ key }.\nError Message: ${ errMessage } ` )
                     } )
@@ -784,10 +795,10 @@ async function processS3ObjectContentStream ( key: string, bucket: string, custC
                             while ( chunks.length > 98 )
                             //if ( chunks.length > 9 )
                             {
-                                
+
                                 packageResult = await packageUpdates( chunks, key, custConfig )
-                                
-                                streamResult = {...streamResult, OnDataBatchingResult: JSON.stringify(packageResult)}
+
+                                streamResult = {...streamResult, OnDataBatchingResult: JSON.stringify( packageResult )}
                             }
 
                         } catch ( e )
@@ -2109,8 +2120,8 @@ async function packageUpdates ( workSet: any[], key: string, custConfig: custome
 
             sqwResult = await storeAndQueueWork( updates, key, custConfig )
 
-            console.error(`sqwResult ${JSON.stringify(sqwResult)}`)
-            
+            console.error( `sqwResult ${ JSON.stringify( sqwResult ) }` )
+
             packageResult = {...packageResult, OnStoreAndQueueWork: `PackageUpdates for ${ key } \nStore And Queue Work for Batch ${ batchCount } of ${ recs } Updates.`}
 
         }
@@ -2118,7 +2129,7 @@ async function packageUpdates ( workSet: any[], key: string, custConfig: custome
         // streamResult.OnEndStoreAndQueueResult = sqwResult 
         //Object.assign( streamResult.OnEndStoreAndQueueResult, sqwResult )
         // streamResult = { ...streamResult, OnEndStoreAndQueueResult: sqwResult }
-        if ( chunks.length > 100 ) processS3ObjectStreamResolution.OnDataStoreQueueResult = JSON.stringify(sqwResult)
+        if ( chunks.length > 100 ) processS3ObjectStreamResolution.OnDataStoreQueueResult = JSON.stringify( sqwResult )
         else Object.assign( processS3ObjectStreamResolution.OnEndStoreAndQueueResult, sqwResult )
 
         if ( tcc.SelectiveDebug.indexOf( "_918," ) > -1 ) console.info( `Selective Debug 918: PackageUpdates StoreAndQueueWork for ${ key }. \nBatch ${ batchCount } of ${ recs } Updates.  Result: \n${ JSON.stringify( packageResult ) } ` )
@@ -2586,7 +2597,7 @@ async function addWorkToS3WorkBucket ( queueUpdates: string, key: string ) {
 
     return {
         versionId: vid,
-        AddWorkToS3ProcessBucket: JSON.stringify(addWorkToS3ProcessBucket),
+        AddWorkToS3ProcessBucket: JSON.stringify( addWorkToS3ProcessBucket ),
         S3ProcessBucketResult: s3ProcessBucketResult
     }
 }
@@ -2666,7 +2677,7 @@ async function addWorkToSQSWorkQueue ( config: customerConfig, key: string, vers
 
     if ( tcc.SelectiveDebug.indexOf( "_907," ) > -1 ) console.info( `Selective Debug 907 - Queued Work ${ key } (${ recCount } updates) to the Work Queue (${ tcc.S3DropBucketWorkQueue }) \nSQS Params: \n${ JSON.stringify( sqsParams ) } \nresults: \n${ JSON.stringify( {
         SQSWriteResult: sqsWriteResult,
-        AddWorkToSQSQueueResult: JSON.stringify(sqsSendResult)
+        AddWorkToSQSQueueResult: JSON.stringify( sqsSendResult )
     } ) }` )
 
 
@@ -2674,7 +2685,7 @@ async function addWorkToSQSWorkQueue ( config: customerConfig, key: string, vers
     return {
 
         SQSWriteResult: sqsWriteResult,
-        AddWorkToSQSQueueResult: JSON.stringify(sqsSendResult)
+        AddWorkToSQSQueueResult: JSON.stringify( sqsSendResult )
     }
 }
 
