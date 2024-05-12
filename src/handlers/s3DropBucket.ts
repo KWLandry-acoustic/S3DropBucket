@@ -430,6 +430,8 @@ export const s3DropBucketHandler: Handler = async ( event: S3Event, context: Con
                     // if (key.toLowerCase().indexOf('aggregat') > -1) key = 'TestData/S3Object_DoNotDelete'
                     debugger
 
+                    console.error( `Return from ProcessS3ObjectContentStream - AddWorkToS3WorkBucketResults Empty: \n${ JSON.stringify( res ) }` )
+
                     if ( res.OnEndStoreAndQueueResult.AddWorkToS3WorkBucketResults === undefined )
                     {
                         res.OnEndStoreAndQueueResult.AddWorkToS3WorkBucketResults = {
@@ -2216,7 +2218,7 @@ async function storeAndQueueWork ( updates: any[], s3Key: string, config: custom
         return {StoreS3WorkException: sqwError, StoreQueueWorkException: '', AddWorkToS3WorkBucketResult: JSON.stringify( AddWorkToS3WorkBucketResult )}
     }
 
-    // v = AddWorkToS3WorkBucketResults.versionId ?? ''
+        // v = AddWorkToS3WorkBucketResults.versionId ?? ''
     const marker = 'Initially Queued on ' + new Date()
 
     try
