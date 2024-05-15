@@ -432,15 +432,15 @@ export const s3DropBucketHandler: Handler = async ( event: S3Event, context: Con
 
                     console.error( `Return from ProcessS3ObjectContentStream - Res: \n${ JSON.stringify( res ) }` )
 
-                    if ( res.OnEndStoreAndQueueResult.AddWorkToS3WorkBucketResults === undefined )
-                    {
-                        res.OnEndStoreAndQueueResult.AddWorkToS3WorkBucketResults = {
-                            versionId: '',
-                            S3ProcessBucketResult: '',
-                            AddWorkToS3ProcessBucket: ''
-                        }
-                        console.error(`Invalid Return from ProcessS3ObjectContentStream - AddWorkToS3WorkBucketResults Empty: \n${JSON.stringify(res)}`)
-                    }
+                    //if ( res.OnEndStoreAndQueueResult.AddWorkToS3WorkBucketResults === undefined )
+                    //{
+                    //    res.OnEndStoreAndQueueResult.AddWorkToS3WorkBucketResults = {
+                    //        versionId: '',
+                    //        S3ProcessBucketResult: '',
+                    //        AddWorkToS3ProcessBucket: ''
+                    //    }
+                    //    console.error(`Invalid Return from ProcessS3ObjectContentStream - AddWorkToS3WorkBucketResults Empty: \n${JSON.stringify(res)}`)
+                    //}
 
                     if ( ( res.PutToFireHoseAggregatorResult === "200" ) ||
                         ( res.OnEndStoreAndQueueResult.AddWorkToS3WorkBucketResults.S3ProcessBucketResult === "200" &&
