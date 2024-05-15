@@ -840,7 +840,7 @@ async function processS3ObjectContentStream ( key: string, bucket: string, custC
                                         return res
                                     } )
 
-                                streamResult = {...streamResult, OnEndStreamEndResult: packageResult }
+                                streamResult = {...streamResult, OnEndStoreAndQueueResult: packageResult as any}
                             }
 
 
