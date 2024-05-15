@@ -2139,10 +2139,11 @@ async function packageUpdates ( workSet: any[], key: string, custConfig: custome
         // streamResult.OnEndStoreAndQueueResult = sqwResult 
         //Object.assign( streamResult.OnEndStoreAndQueueResult, sqwResult )
         // streamResult = { ...streamResult, OnEndStoreAndQueueResult: sqwResult }
-        if ( chunks.length > 100 )
-            processS3ObjectStreamResolution.OnDataStoreQueueResult = JSON.stringify( sqwResult )
-        else Object.assign( processS3ObjectStreamResolution.OnEndStoreAndQueueResult, sqwResult )
+        //if ( chunks.length > 100 )
+        //    processS3ObjectStreamResolution.OnDataStoreQueueResult = JSON.stringify( sqwResult )
+        //else Object.assign( processS3ObjectStreamResolution.OnEndStoreAndQueueResult, sqwResult )
 
+        
         if ( tcc.SelectiveDebug.indexOf( "_918," ) > -1 ) console.info( `Selective Debug 918: PackageUpdates StoreAndQueueWork for ${ key }. \nBatch ${ batchCount } of ${ recs } Updates.  Result: \n${ JSON.stringify( packageResult ) } ` )
     }
     catch ( e )
