@@ -470,7 +470,7 @@ export const s3DropBucketHandler: Handler = async ( event: S3Event, context: Con
                         }
                     }
 
-                    return res
+                    //return res
                 } )
                 .catch( ( e ) => {
                     const r = `Exception - Process S3 Object Stream Catch - \n${ e }`
@@ -2143,7 +2143,7 @@ async function packageUpdates ( workSet: any[], key: string, custConfig: custome
         //    processS3ObjectStreamResolution.OnDataStoreQueueResult = JSON.stringify( sqwResult )
         //else Object.assign( processS3ObjectStreamResolution.OnEndStoreAndQueueResult, sqwResult )
 
-        
+
         if ( tcc.SelectiveDebug.indexOf( "_918," ) > -1 ) console.info( `Selective Debug 918: PackageUpdates StoreAndQueueWork for ${ key }. \nBatch ${ batchCount } of ${ recs } Updates.  Result: \n${ JSON.stringify( packageResult ) } ` )
     }
     catch ( e )
