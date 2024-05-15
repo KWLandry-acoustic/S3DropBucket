@@ -2123,7 +2123,7 @@ async function packageUpdates ( workSet: any[], key: string, custConfig: custome
             sqwResult = await storeAndQueueWork( updates, key, custConfig )
                 .then( ( res ) => {
 
-                    console.info( `Debug Await StoreAndQueueWork Result: ${ res }` )
+                    console.info( `Debug Await StoreAndQueueWork Result: ${ JSON.stringify(res) }` )
   
 
                     return {StoreAndQueueWorkResult: res}
