@@ -526,7 +526,7 @@ export const s3DropBucketHandler: Handler = async ( event: S3Event, context: Con
     const k = processS3ObjectStreamResolution.Key
     const p = processS3ObjectStreamResolution.Processed
 
-    if ( tcc.SelectiveDebug.indexOf( "_105," ) > -1 ) console.info( `(105) CompletingS3DropBucket Processing of Request Id ${ event.Records[ 0 ].responseElements[ 'x-amz-request-id' ] } for ${ k } \n${ p }` )
+    if ( tcc.SelectiveDebug.indexOf( "_105," ) > -1 ) console.info( `(105) Completing S3DropBucket Processing of Request Id ${ event.Records[ 0 ].responseElements[ 'x-amz-request-id' ] } for ${ k } \n${ p }` )
 
     if ( tcc.SelectiveDebug.indexOf( "_920," ) > -1 ) console.info( `Selective Debug 920 - \n${ JSON.stringify( osr ) }` )
 
@@ -2121,11 +2121,18 @@ async function packageUpdates ( workSet: any[], key: string, custConfig: custome
             }
 
             sqwResult = await storeAndQueueWork( updates, key, custConfig )
+                .then( ( res ) => {
 
-            console.error( `sqwResult ${ JSON.stringify( sqwResult ) }` )
+                    console.info( `Debug Await StoreAndQueueWork Result: ${ res }` )
+  
 
-            packageResult = {...packageResult, OnStoreAndQueueWork: `PackageUpdates for ${ key } \nStore And Queue Work for Batch ${ batchCount } of ${ recs } Updates.`}
-            packageResult = {...packageResult, StoreAndQueueWorkResult: sqwResult}
+                    return {StoreAndQueueWorkResult: res}
+            })
+            
+            console.info( `Debug sqwResult ${ JSON.stringify( sqwResult ) }` )
+            
+            //packageResult = {...packageResult, OnStoreAndQueueWork: `PackageUpdates for ${ key } \nStore And Queue Work for Batch ${ batchCount } of ${ recs } Updates.`}
+            //packageResult = {...packageResult, StoreAndQueueWorkResult: sqwResult}
             
         }
 
@@ -2145,7 +2152,7 @@ async function packageUpdates ( workSet: any[], key: string, custConfig: custome
         packageResult = {...packageResult, StoreAndQueueWorkResult: `Exception - PackageUpdates StoreAndQueueWork for ${ key } \nBatch ${ batchCount } of ${ recs } Updates. \n${ e } `}
     }
 
-    return packageResult
+    return sqwResult //packageResult
 }
 
 
@@ -2227,7 +2234,7 @@ async function storeAndQueueWork ( updates: any[], s3Key: string, config: custom
     {
         AddWorkToSQSWorkQueueResult = await addWorkToSQSWorkQueue( config, key, v, batchCount, updates.length.toString(), marker )
             .then( ( res ) => {
-                return res
+                return {AddWorkToSQSQueueResult: res}
             } )
         //     {
         //         sqsWriteResult: "200",
