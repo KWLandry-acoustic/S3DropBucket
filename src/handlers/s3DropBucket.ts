@@ -430,7 +430,7 @@ export const s3DropBucketHandler: Handler = async ( event: S3Event, context: Con
                     // if (key.toLowerCase().indexOf('aggregat') > -1) key = 'TestData/S3Object_DoNotDelete'
                     debugger
 
-                    console.error( `Return from ProcessS3ObjectContentStream - AddWorkToS3WorkBucketResults Empty: \n${ JSON.stringify( res ) }` )
+                    console.error( `Return from ProcessS3ObjectContentStream - Res: \n${ JSON.stringify( res ) }` )
 
                     if ( res.OnEndStoreAndQueueResult.AddWorkToS3WorkBucketResults === undefined )
                     {
@@ -890,7 +890,7 @@ async function processS3ObjectContentStream ( key: string, bucket: string, custC
                         }
 
 
-                        if ( tcc.SelectiveDebug.indexOf( "_902," ) > -1 ) console.info( `Selective Debug 902: Content Stream OnEnd for (${ key }) - Store and Queue Work of ${ batchCount } Batches of ${ recs } records - Result: \n${ JSON.stringify( streamResult ) } ` )
+                        if ( tcc.SelectiveDebug.indexOf( "_902," ) > -1 ) console.info( `Selective Debug 902: Content Stream OnEnd for (${ key }) - Store and Queue Work of ${ batchCount } Batches of ${ recs } records - Stream Result: \n${ JSON.stringify( streamResult ) } ` )
 
                         //chunks = []
                         //batchCount = 0
@@ -2125,13 +2125,15 @@ async function packageUpdates ( workSet: any[], key: string, custConfig: custome
             console.error( `sqwResult ${ JSON.stringify( sqwResult ) }` )
 
             packageResult = {...packageResult, OnStoreAndQueueWork: `PackageUpdates for ${ key } \nStore And Queue Work for Batch ${ batchCount } of ${ recs } Updates.`}
-
+            packageResult = {...packageResult, StoreAndQueueWorkResult: sqwResult}
+            
         }
 
         // streamResult.OnEndStoreAndQueueResult = sqwResult 
         //Object.assign( streamResult.OnEndStoreAndQueueResult, sqwResult )
         // streamResult = { ...streamResult, OnEndStoreAndQueueResult: sqwResult }
-        if ( chunks.length > 100 ) processS3ObjectStreamResolution.OnDataStoreQueueResult = JSON.stringify( sqwResult )
+        if ( chunks.length > 100 )
+            processS3ObjectStreamResolution.OnDataStoreQueueResult = JSON.stringify( sqwResult )
         else Object.assign( processS3ObjectStreamResolution.OnEndStoreAndQueueResult, sqwResult )
 
         if ( tcc.SelectiveDebug.indexOf( "_918," ) > -1 ) console.info( `Selective Debug 918: PackageUpdates StoreAndQueueWork for ${ key }. \nBatch ${ batchCount } of ${ recs } Updates.  Result: \n${ JSON.stringify( packageResult ) } ` )
@@ -2140,10 +2142,10 @@ async function packageUpdates ( workSet: any[], key: string, custConfig: custome
     {
         debugger
         console.error( `Exception - packageUpdates for ${ key } \n${ e } ` )
-        packageResult = {...packageResult, OnStoreAndQueueWork: `Exception - PackageUpdates StoreAndQueueWork for ${ key } \nBatch ${ batchCount } of ${ recs } Updates. \n${ e } `}
+        packageResult = {...packageResult, StoreAndQueueWorkResult: `Exception - PackageUpdates StoreAndQueueWork for ${ key } \nBatch ${ batchCount } of ${ recs } Updates. \n${ e } `}
     }
 
-    return //workSet
+    return packageResult
 }
 
 
