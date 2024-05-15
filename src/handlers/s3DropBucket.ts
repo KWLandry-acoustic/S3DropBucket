@@ -836,7 +836,7 @@ async function processS3ObjectContentStream ( key: string, bucket: string, custC
 
                                 packageResult = await packageUpdates( chunks, key, custConfig )
                                     .then( ( res ) => {
-                                        console.info(`Return Await PackageResult from PackageUpdates: ${res}`)
+                                        console.info(`Return Await PackageResult from PackageUpdates: ${JSON.stringify(res)}`)
                                         return res
                                     } )
 
