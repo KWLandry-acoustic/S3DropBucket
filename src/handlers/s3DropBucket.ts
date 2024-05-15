@@ -195,7 +195,7 @@ export interface processS3ObjectStreamResult {
         StoreQueueWorkException: string
         StoreS3WorkException: string
     },
-    OnEndStreamEndResult: string,
+    OnEndStreamEndResult: object,
     OnEndRecordStatus: string,
     OnEndNoRecordsException: string,
     ProcessS3ObjectStreamCatch: string,
@@ -227,7 +227,7 @@ let processS3ObjectStreamResolution: processS3ObjectStreamResult = {
         StoreQueueWorkException: "",
         StoreS3WorkException: ""
     },
-    OnEndStreamEndResult: "",
+    OnEndStreamEndResult: {},
     OnEndRecordStatus: "",
     OnEndNoRecordsException: "",
     ProcessS3ObjectStreamCatch: "",
@@ -446,7 +446,7 @@ export const s3DropBucketHandler: Handler = async ( event: S3Event, context: Con
 
                     if ( ( res.PutToFireHoseAggregatorResult === "200" ) ||
                         ( res.OnEndStoreAndQueueResult.AddWorkToS3WorkBucketResults.S3ProcessBucketResult === "200" &&
-                        res.OnEndStoreAndQueueResult.AddWorkToSQSWorkQueueResults.SQSWriteResult === "200" ))
+                            res.OnEndStoreAndQueueResult.AddWorkToSQSWorkQueueResults.SQSWriteResult === "200" ) )
                     {
                         try
                         {
@@ -480,7 +480,7 @@ export const s3DropBucketHandler: Handler = async ( event: S3Event, context: Con
                     processS3ObjectStreamResolution = {...processS3ObjectStreamResolution, ProcessS3ObjectStreamCatch: r}
                     return processS3ObjectStreamResolution
                 } )
-            
+
         } catch ( e )
         {
             console.error( `Exception - Processing S3 Object Content Stream for ${ key } \n${ e }` )
@@ -492,9 +492,6 @@ export const s3DropBucketHandler: Handler = async ( event: S3Event, context: Con
 
     //Check for important Config updates (which caches the config in Lambdas long-running cache)
     checkForTCConfigUpdates()
-
-
-
 
 
     if ( event.Records[ 0 ].s3.bucket.name && tcc.S3DropBucketMaintHours > 0 )
@@ -512,9 +509,7 @@ export const s3DropBucketHandler: Handler = async ( event: S3Event, context: Con
         }
     }
 
-
-
-    //Need to protect against this string becoming excessively long
+    //Need to protect against the Result String becoming excessively long
     const n = new Date().toISOString()
     let osr = n + "  -  " + JSON.stringify( processS3ObjectStreamResolution ) + '\n\n'
     const osrl = osr.length
@@ -532,7 +527,6 @@ export const s3DropBucketHandler: Handler = async ( event: S3Event, context: Con
     if ( tcc.SelectiveDebug.indexOf( "_105," ) > -1 ) console.info( `(105) Completing S3DropBucket Processing of Request Id ${ event.Records[ 0 ].responseElements[ 'x-amz-request-id' ] } for ${ k } \n${ p }` )
 
     if ( tcc.SelectiveDebug.indexOf( "_920," ) > -1 ) console.info( `Selective Debug 920 - \n${ JSON.stringify( osr ) }` )
-
 
 
     if ( tcc.S3DropBucketLog )
@@ -840,14 +834,16 @@ async function processS3ObjectContentStream ( key: string, bucket: string, custC
                                 key.toLowerCase().indexOf( 'aggregat' ) > 0 )
                             {
 
-                                //while ( chunks.length > 0 )
-                                //{
-
                                 packageResult = await packageUpdates( chunks, key, custConfig )
-                                //sqwResult = await storeAndQueueWork( chunks, key, custConfig )
-                                //}
+                                    .then( ( res ) => {
+                                        console.info(`Return Await PackageResult from PackageUpdates: ${res}`)
+                                        return res
+                                    } )
 
+                                streamResult = {...streamResult, OnEndStreamEndResult: packageResult }
                             }
+
+
                             // if (this is an aggregate file and chunks are not 0)
                             if ( chunks.length > 0 &&
                                 custConfig.updates.toLowerCase() === 'singular' &&
@@ -889,7 +885,7 @@ async function processS3ObjectContentStream ( key: string, bucket: string, custC
                         const streamEndResult = `S3 Content Stream Ended for ${ key }.Processed ${ recs } records as ${ batchCount } batches.`
 
                         streamResult = {
-                            ...streamResult, OnEndStreamEndResult: streamEndResult, OnEndRecordStatus: `Processed ${ recs } records as ${ batchCount } batches.`
+                            ...streamResult, OnEndStreamEndResult: {streamResult, streamEndResult}, OnEndRecordStatus: `Processed ${ recs } records as ${ batchCount } batches.`
                         }
 
 
@@ -2106,7 +2102,6 @@ async function validateCustomerConfig ( config: customerConfig ) {
 
 async function packageUpdates ( workSet: any[], key: string, custConfig: customerConfig ) {
     let updates: any[] = []
-    let packageResult: {} = {}
     let sqwResult: {} = {}
 
     try
@@ -2126,37 +2121,25 @@ async function packageUpdates ( workSet: any[], key: string, custConfig: custome
             sqwResult = await storeAndQueueWork( updates, key, custConfig )
                 .then( ( res ) => {
 
-                    console.info( `Debug Await StoreAndQueueWork Result: ${ JSON.stringify(res) }` )
-  
+                    console.info( `Debug Await StoreAndQueueWork Result: ${ JSON.stringify( res ) }` )
 
                     return {StoreAndQueueWorkResult: res}
-            })
-            
+                } )
+
             console.info( `Debug sqwResult ${ JSON.stringify( sqwResult ) }` )
-            
-            //packageResult = {...packageResult, OnStoreAndQueueWork: `PackageUpdates for ${ key } \nStore And Queue Work for Batch ${ batchCount } of ${ recs } Updates.`}
-            //packageResult = {...packageResult, StoreAndQueueWorkResult: sqwResult}
-            
+
         }
 
-        // streamResult.OnEndStoreAndQueueResult = sqwResult 
-        //Object.assign( streamResult.OnEndStoreAndQueueResult, sqwResult )
-        // streamResult = { ...streamResult, OnEndStoreAndQueueResult: sqwResult }
-        //if ( chunks.length > 100 )
-        //    processS3ObjectStreamResolution.OnDataStoreQueueResult = JSON.stringify( sqwResult )
-        //else Object.assign( processS3ObjectStreamResolution.OnEndStoreAndQueueResult, sqwResult )
-
-
-        if ( tcc.SelectiveDebug.indexOf( "_918," ) > -1 ) console.info( `Selective Debug 918: PackageUpdates StoreAndQueueWork for ${ key }. \nBatch ${ batchCount } of ${ recs } Updates.  Result: \n${ JSON.stringify( packageResult ) } ` )
+        if ( tcc.SelectiveDebug.indexOf( "_918," ) > -1 ) console.info( `Selective Debug 918: PackageUpdates StoreAndQueueWork for ${ key }. \nBatch ${ batchCount } of ${ recs } Updates.  Result: \n${ JSON.stringify( sqwResult ) } ` )
     }
     catch ( e )
     {
         debugger
         console.error( `Exception - packageUpdates for ${ key } \n${ e } ` )
-        packageResult = {...packageResult, StoreAndQueueWorkResult: `Exception - PackageUpdates StoreAndQueueWork for ${ key } \nBatch ${ batchCount } of ${ recs } Updates. \n${ e } `}
+        sqwResult = {...sqwResult, StoreAndQueueWorkResult: `Exception - PackageUpdates StoreAndQueueWork for ${ key } \nBatch ${ batchCount } of ${ recs } Updates. \n${ e } `}
     }
 
-    return sqwResult //packageResult
+    return sqwResult
 }
 
 
@@ -2231,7 +2214,7 @@ async function storeAndQueueWork ( updates: any[], s3Key: string, config: custom
         return {StoreS3WorkException: sqwError, StoreQueueWorkException: '', AddWorkToS3WorkBucketResults: JSON.stringify( AddWorkToS3WorkBucketResult )}
     }
 
-        // v = AddWorkToS3WorkBucketResults.versionId ?? ''
+    // v = AddWorkToS3WorkBucketResults.versionId ?? ''
     const marker = 'Initially Queued on ' + new Date()
 
     try
