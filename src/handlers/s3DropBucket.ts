@@ -2217,7 +2217,7 @@ async function storeAndQueueWork ( updates: any[], s3Key: string, config: custom
     {
         const sqwError = `Exception - StoreAndQueueWork Add work to S3 Bucket exception \n${ e } `
         console.error( sqwError )
-        return {StoreS3WorkException: sqwError, StoreQueueWorkException: '', AddWorkToS3WorkBucketResult: JSON.stringify( AddWorkToS3WorkBucketResult )}
+        return {StoreS3WorkException: sqwError, StoreQueueWorkException: '', AddWorkToS3WorkBucketResults: JSON.stringify( AddWorkToS3WorkBucketResult )}
     }
 
         // v = AddWorkToS3WorkBucketResults.versionId ?? ''
