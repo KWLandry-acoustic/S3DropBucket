@@ -417,8 +417,10 @@ export const s3DropBucketHandler: Handler = async ( event: S3Event, context: Con
             processS3ObjectStreamResolution = await processS3ObjectContentStream( key, bucket, customersConfig )
                 .then( async ( res ) => {
                     let delResultCode
-                    processS3ObjectStreamResolution.Key = key
-                    processS3ObjectStreamResolution.Processed = res.OnEndRecordStatus
+                    let streamResults = processS3ObjectStreamResolution
+
+                    streamResults.Key = key
+                    streamResults.Processed = res.OnEndRecordStatus
 
                     console.info( `Completed Processing Content Stream - ${ processS3ObjectStreamResolution.Key } ${ processS3ObjectStreamResolution.Processed }` )
 
@@ -456,12 +458,12 @@ export const s3DropBucketHandler: Handler = async ( event: S3Event, context: Con
 
                             if ( delResultCode !== '204' )
                             {
-                                res = {...res, DeleteResult: JSON.stringify( delResultCode )}
+                                streamResults = {...streamResults, DeleteResult: JSON.stringify( delResultCode )}
                                 if ( tcc.SelectiveDebug.indexOf( "_104," ) > -1 ) console.error( `Processing Successful, but Unsuccessful Delete of ${ key }, Expected 204 result code, received ${ delResultCode }` )
                             } else
                             {
                                 if ( tcc.SelectiveDebug.indexOf( "_104," ) > -1 ) console.info( `(104) Processing Successful, Delete of ${ key } Successful (Result ${ delResultCode }).` )
-                                res = {...res, DeleteResult: `Successful Delete of ${ key }  (Result ${ JSON.stringify( delResultCode ) })`}
+                                streamResults = {...streamResults, DeleteResult: `Successful Delete of ${ key }  (Result ${ JSON.stringify( delResultCode ) })`}
                             }
                         }
                         catch ( e )
@@ -470,7 +472,7 @@ export const s3DropBucketHandler: Handler = async ( event: S3Event, context: Con
                         }
                     }
 
-                    //return res
+                    return streamResults
                 } )
                 .catch( ( e ) => {
                     const r = `Exception - Process S3 Object Stream Catch - \n${ e }`
@@ -478,6 +480,7 @@ export const s3DropBucketHandler: Handler = async ( event: S3Event, context: Con
                     processS3ObjectStreamResolution = {...processS3ObjectStreamResolution, ProcessS3ObjectStreamCatch: r}
                     return processS3ObjectStreamResolution
                 } )
+            
         } catch ( e )
         {
             console.error( `Exception - Processing S3 Object Content Stream for ${ key } \n${ e }` )
