@@ -297,7 +297,7 @@ export const s3DropBucketHandler: Handler = async ( event: S3Event, context: Con
     //Ignore Aggregation Error Files 
     if ( event.Records[ 0 ].s3.object.key.indexOf( 'AggregationError' ) > -1 ) return ""
 
-    
+
     if (
         process.env[ "EventEmitterMaxListeners" ] === undefined ||
         process.env[ "EventEmitterMaxListeners" ] === '' ||
@@ -446,9 +446,9 @@ export const s3DropBucketHandler: Handler = async ( event: S3Event, context: Con
 
                     if ( ( res.PutToFireHoseAggregatorResult && res.PutToFireHoseAggregatorResult === "200" ) ||
                         ( res.OnEndStreamEndResult.OnEndStoreAndQueueResult.AddWorkToS3WorkBucketResults.S3ProcessBucketResult &&
-                        res.OnEndStreamEndResult.OnEndStoreAndQueueResult.AddWorkToS3WorkBucketResults.S3ProcessBucketResult === "200" &&
-                        res.OnEndStreamEndResult.OnEndStoreAndQueueResult.AddWorkToSQSWorkQueueResults.SQSWriteResult &&
-                        res.OnEndStreamEndResult.OnEndStoreAndQueueResult.AddWorkToSQSWorkQueueResults.SQSWriteResult === "200" ) )
+                            res.OnEndStreamEndResult.OnEndStoreAndQueueResult.AddWorkToS3WorkBucketResults.S3ProcessBucketResult === "200" &&
+                            res.OnEndStreamEndResult.OnEndStoreAndQueueResult.AddWorkToSQSWorkQueueResults.SQSWriteResult &&
+                            res.OnEndStreamEndResult.OnEndStoreAndQueueResult.AddWorkToSQSWorkQueueResults.SQSWriteResult === "200" ) )
                     {
                         try
                         {
@@ -838,12 +838,13 @@ async function processS3ObjectContentStream ( key: string, bucket: string, custC
 
                                 packageResult = await packageUpdates( chunks, key, custConfig )
                                     .then( ( res ) => {
-                                        console.info(`Return Await PackageResult from PackageUpdates: ${JSON.stringify(res)}`)
+                                        console.info( `Return Await PackageResult from PackageUpdates: ${ JSON.stringify( res ) }` )
                                         return res
                                     } )
 
-                                streamResult = {...streamResult, OnEndStreamEndResult: {OnEndStoreAndQueueResult: packageResult as any}
-}
+                                streamResult = {
+                                    ...streamResult, OnEndStreamEndResult: {OnEndStoreAndQueueResult: packageResult as any}
+                                }
                             }
 
 
@@ -2204,7 +2205,7 @@ async function storeAndQueueWork ( updates: any[], s3Key: string, config: custom
     {
         AddWorkToS3WorkBucketResult = await addWorkToS3WorkBucket( xmlRows, key )
             .then( ( res ) => {
-                return {"AddWorktoS3Results": res}
+                return res //{"AddWorktoS3Results": res}
             } )
             .catch( ( err ) => {
                 console.error( `Exception - AddWorkToS3WorkBucket ${ err }` )
