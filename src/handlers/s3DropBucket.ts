@@ -444,12 +444,18 @@ export const s3DropBucketHandler: Handler = async ( event: S3Event, context: Con
 
                     console.error( `Return from ProcessS3ObjectContentStream - Res: \n${ JSON.stringify( res ) }` )
 
-                    //if ( ( res.PutToFireHoseAggregatorResult && res.PutToFireHoseAggregatorResult === "200" ) ||
-                    //    ( res.OnEndStreamEndResult.OnEndStoreAndQueueResult.AddWorkToS3WorkBucketResults.S3ProcessBucketResult &&
-                    //        res.OnEndStreamEndResult.OnEndStoreAndQueueResult.AddWorkToS3WorkBucketResults.S3ProcessBucketResult === "200" &&
-                    //        res.OnEndStreamEndResult.OnEndStoreAndQueueResult.AddWorkToSQSWorkQueueResults.SQSWriteResult &&
-                    //        res.OnEndStreamEndResult.OnEndStoreAndQueueResult.AddWorkToSQSWorkQueueResults.SQSWriteResult === "200" ) )
-                    //{
+
+                    if ( res.PutToFireHoseAggregatorResult )
+                        res.PutToFireHoseAggregatorResult = ""
+                    if ( res.OnEndStreamEndResult.OnEndStoreAndQueueResult.AddWorkToS3WorkBucketResults.S3ProcessBucketResult )
+                        res.OnEndStreamEndResult.OnEndStoreAndQueueResult.AddWorkToS3WorkBucketResults.S3ProcessBucketResult === ""
+                    if ( res.OnEndStreamEndResult.OnEndStoreAndQueueResult.AddWorkToSQSWorkQueueResults.SQSWriteResult )
+                        res.OnEndStreamEndResult.OnEndStoreAndQueueResult.AddWorkToSQSWorkQueueResults.SQSWriteResult = ""
+
+                    if ( ( res.PutToFireHoseAggregatorResult === "200" ) ||
+                        ( res.OnEndStreamEndResult.OnEndStoreAndQueueResult.AddWorkToS3WorkBucketResults.S3ProcessBucketResult === "200" &&
+                            res.OnEndStreamEndResult.OnEndStoreAndQueueResult.AddWorkToSQSWorkQueueResults.SQSWriteResult === "200" ) )
+                    {
                         try
                         {
                             //Once File successfully processed delete the original S3 Object
@@ -472,7 +478,7 @@ export const s3DropBucketHandler: Handler = async ( event: S3Event, context: Con
                         {
                             console.error( `Exception - Deleting S3 Object after successful processing of the Content Stream for ${ key } \n${ e }` )
                         }
-                    //}
+                    }
 
                     return streamResults
                 } )
@@ -2226,11 +2232,11 @@ async function storeAndQueueWork ( updates: any[], s3Key: string, config: custom
         AddWorkToSQSWorkQueueResult = await addWorkToSQSWorkQueue( config, key, v, batchCount, updates.length.toString(), marker )
             .then( ( res ) => {
                 return {AddWorkToSQSQueueResult: res}
-        //     {
-        //         sqsWriteResult: "200",
-        //         workQueuedSuccess: true,
-        //         SQSSendResult: "{\"$metadata\":{\"httpStatusCode\":200,\"requestId\":\"e70fba06-94f2-5608-b104-e42dc9574636\",\"attempts\":1,\"totalRetryDelay\":0},\"MD5OfMessageAttributes\":\"0bca0dfda87c206313963daab8ef354a\",\"MD5OfMessageBody\":\"940f4ed5927275bc93fc945e63943820\",\"MessageId\":\"cf025cb3-dce3-4564-89a5-23dcae86dd42\"}",
-        // }
+                //     {
+                //         sqsWriteResult: "200",
+                //         workQueuedSuccess: true,
+                //         SQSSendResult: "{\"$metadata\":{\"httpStatusCode\":200,\"requestId\":\"e70fba06-94f2-5608-b104-e42dc9574636\",\"attempts\":1,\"totalRetryDelay\":0},\"MD5OfMessageAttributes\":\"0bca0dfda87c206313963daab8ef354a\",\"MD5OfMessageBody\":\"940f4ed5927275bc93fc945e63943820\",\"MessageId\":\"cf025cb3-dce3-4564-89a5-23dcae86dd42\"}",
+                // }
             } )
 
     } catch ( e )
