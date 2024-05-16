@@ -444,8 +444,10 @@ export const s3DropBucketHandler: Handler = async ( event: S3Event, context: Con
                     //    console.error(`Invalid Return from ProcessS3ObjectContentStream - AddWorkToS3WorkBucketResults Empty: \n${JSON.stringify(res)}`)
                     //}
 
-                    if ( ( res.PutToFireHoseAggregatorResult === "200" ) ||
-                        ( res.OnEndStoreAndQueueResult.AddWorkToS3WorkBucketResults.S3ProcessBucketResult === "200" &&
+                    if ( ( res.PutToFireHoseAggregatorResult && res.PutToFireHoseAggregatorResult === "200" ) ||
+                        ( res.OnEndStoreAndQueueResult.AddWorkToS3WorkBucketResults.S3ProcessBucketResult &&
+                            res.OnEndStoreAndQueueResult.AddWorkToS3WorkBucketResults.S3ProcessBucketResult === "200" &&
+                            res.OnEndStoreAndQueueResult.AddWorkToSQSWorkQueueResults.SQSWriteResult &&
                             res.OnEndStoreAndQueueResult.AddWorkToSQSWorkQueueResults.SQSWriteResult === "200" ) )
                     {
                         try
