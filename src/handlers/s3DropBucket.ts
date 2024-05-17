@@ -443,11 +443,11 @@ export const s3DropBucketHandler: Handler = async ( event: S3Event, context: Con
                     
                     debugger
 
-                    if ( !res.PutToFireHoseAggregatorResult ) res.PutToFireHoseAggregatorResult = ""
+                    if ( !res.PutToFireHoseAggregatorResult ) res.PutToFireHoseAggregatorResult = "null value"
                     if ( !res.OnEndStreamEndResult.OnEndStoreAndQueueResult.AddWorkToS3WorkBucketResults.S3ProcessBucketResult )
-                        res.OnEndStreamEndResult.OnEndStoreAndQueueResult.AddWorkToS3WorkBucketResults.S3ProcessBucketResult === ""
+                            res.OnEndStreamEndResult.OnEndStoreAndQueueResult.AddWorkToS3WorkBucketResults.S3ProcessBucketResult === "null value"
                     if ( !res.OnEndStreamEndResult.OnEndStoreAndQueueResult.AddWorkToSQSWorkQueueResults.SQSWriteResult )
-                        res.OnEndStreamEndResult.OnEndStoreAndQueueResult.AddWorkToSQSWorkQueueResults.SQSWriteResult = ""
+                            res.OnEndStreamEndResult.OnEndStoreAndQueueResult.AddWorkToSQSWorkQueueResults.SQSWriteResult = "null value"
 
                     if ( ( res.PutToFireHoseAggregatorResult === "200" ) ||
                         ( res.OnEndStreamEndResult.OnEndStoreAndQueueResult.AddWorkToS3WorkBucketResults.S3ProcessBucketResult === "200" &&
