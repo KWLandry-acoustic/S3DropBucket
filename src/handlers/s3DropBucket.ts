@@ -449,10 +449,10 @@ export const s3DropBucketHandler: Handler = async ( event: S3Event, context: Con
                     //if ( !res.OnEndStreamEndResult.OnEndStoreAndQueueResult.AddWorkToSQSWorkQueueResults.SQSWriteResult )
                     //        res.OnEndStreamEndResult.OnEndStoreAndQueueResult.AddWorkToSQSWorkQueueResults.SQSWriteResult = "null value"
 
-                    if ( ( res.PutToFireHoseAggregatorResult === "200" ) ||
-                        ( res.OnEndStreamEndResult.OnEndStoreAndQueueResult.AddWorkToS3WorkBucketResults.S3ProcessBucketResult === "200" &&
-                            res.OnEndStreamEndResult.OnEndStoreAndQueueResult.AddWorkToSQSWorkQueueResults.SQSWriteResult === "200" ) )
-                    {
+                    //if ( ( res.PutToFireHoseAggregatorResult === "200" ) ||
+                    //    ( res.OnEndStreamEndResult.OnEndStoreAndQueueResult.AddWorkToS3WorkBucketResults.S3ProcessBucketResult === "200" &&
+                    //        res.OnEndStreamEndResult.OnEndStoreAndQueueResult.AddWorkToSQSWorkQueueResults.SQSWriteResult === "200" ) )
+                    //{
                         try
                         {
                             //Once File successfully processed delete the original S3 Object
@@ -475,7 +475,7 @@ export const s3DropBucketHandler: Handler = async ( event: S3Event, context: Con
                         {
                             console.error( `Exception - Deleting S3 Object after successful processing of the Content Stream for ${ key } \n${ e }` )
                         }
-                    }
+                    //}
 
                     return streamResults
                 } )
