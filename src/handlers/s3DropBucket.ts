@@ -179,11 +179,24 @@ export interface SQSBatchItemFails {
 export interface processS3ObjectStreamResult {
     Key: string
     Processed: string
-    OnDataReadStreamException: string,
     OnDataBatchingResult: string,
-    OnDataStoreQueueResult: string,
+    OnDataStoreAndQueueWorkResult: {
+        StoreAndQueueWorkResult: {
+            AddWorkToS3WorkBucketResults: {
+                versionId: string,
+                S3ProcessBucketResult: string,
+                AddWorkToS3ProcessBucket: string
+            },
+            AddWorkToSQSWorkQueueResults: {
+                SQSWriteResult: string,
+                AddWorkToSQSQueueResult: string
+            },
+            StoreQueueWorkException: string
+            StoreS3WorkException: string
+        }
+    },
     OnEndStreamEndResult: {
-        OnEndStoreAndQueueResult: {
+        StoreAndQueueWorkResult: {
             AddWorkToS3WorkBucketResults: {
                 versionId: string,
                 S3ProcessBucketResult: string,
@@ -198,7 +211,9 @@ export interface processS3ObjectStreamResult {
         }
     },
     StreamEndResult: string,
+    StreamException: string,
     OnEndRecordStatus: string,
+    OnDataReadStreamException: string,
     OnEndNoRecordsException: string,
     ProcessS3ObjectStreamCatch: string,
     OnClose_Result: string,
@@ -213,11 +228,9 @@ export interface processS3ObjectStreamResult {
 let processS3ObjectStreamResolution: processS3ObjectStreamResult = {
     Key: "",
     Processed: "",
-    OnDataReadStreamException: "",
     OnDataBatchingResult: "",
-    OnDataStoreQueueResult: "",
-    OnEndStreamEndResult: {
-        OnEndStoreAndQueueResult: {
+    OnDataStoreAndQueueWorkResult: {
+        StoreAndQueueWorkResult: {
             AddWorkToS3WorkBucketResults: {
                 versionId: "",
                 S3ProcessBucketResult: "",
@@ -231,8 +244,25 @@ let processS3ObjectStreamResolution: processS3ObjectStreamResult = {
             StoreS3WorkException: ""
         }
     },
+    OnEndStreamEndResult: {
+            StoreAndQueueWorkResult: {
+                AddWorkToS3WorkBucketResults: {
+                    versionId: "",
+                    S3ProcessBucketResult: "",
+                    AddWorkToS3ProcessBucket: ""
+                },
+                AddWorkToSQSWorkQueueResults: {
+                    SQSWriteResult: "",
+                    AddWorkToSQSQueueResult: ""
+                },
+                StoreQueueWorkException: "",
+                StoreS3WorkException: ""
+            }
+        },
     StreamEndResult: "",
+    StreamException: "",
     OnEndRecordStatus: "",
+    OnDataReadStreamException: "",
     OnEndNoRecordsException: "",
     ProcessS3ObjectStreamCatch: "",
     OnClose_Result: "",
@@ -440,35 +470,35 @@ export const s3DropBucketHandler: Handler = async ( event: S3Event, context: Con
                     if ( localTesting ) key = 'TestData/S3Object_DoNotDelete'
                     //Do not delete in order to Capture Testing Data
                     // if (key.toLowerCase().indexOf('aggregat') > -1) key = 'TestData/S3Object_DoNotDelete'
-                    
+
                     debugger
 
                     try
                     {
                         if ( !res.PutToFireHoseAggregatorResult ) res.PutToFireHoseAggregatorResult = "null value"
 
-                        if ( !res.OnEndStreamEndResult?.OnEndStoreAndQueueResult?.AddWorkToS3WorkBucketResults )
-                            res.OnEndStreamEndResult.OnEndStoreAndQueueResult.AddWorkToS3WorkBucketResults = {
+                        if ( !res.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToS3WorkBucketResults )
+                            res.OnEndStreamEndResult.StoreAndQueueWorkResult.AddWorkToS3WorkBucketResults = {
                                 versionId: "string",
                                 S3ProcessBucketResult: "string",
                                 AddWorkToS3ProcessBucket: "string"
                             }
 
-                        if ( !res.OnEndStreamEndResult?.OnEndStoreAndQueueResult?.AddWorkToS3WorkBucketResults?.S3ProcessBucketResult )
-                            res.OnEndStreamEndResult.OnEndStoreAndQueueResult.AddWorkToS3WorkBucketResults.S3ProcessBucketResult = "null value"
-                        
-                        if ( !res.OnEndStreamEndResult?.OnEndStoreAndQueueResult?.AddWorkToSQSWorkQueueResults?.SQSWriteResult )
-                            res.OnEndStreamEndResult.OnEndStoreAndQueueResult.AddWorkToSQSWorkQueueResults.SQSWriteResult = "null value"
-                    } catch (e)
+                        if ( !res.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToS3WorkBucketResults?.S3ProcessBucketResult )
+                            res.OnEndStreamEndResult.StoreAndQueueWorkResult.AddWorkToS3WorkBucketResults.S3ProcessBucketResult = "null value"
+
+                        if ( !res.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToSQSWorkQueueResults?.SQSWriteResult )
+                            res.OnEndStreamEndResult.StoreAndQueueWorkResult.AddWorkToSQSWorkQueueResults.SQSWriteResult = "null value"
+                    } catch ( e )
                     {
-                        console.log(`Catch for Undefined: ${e}`)
+                        console.log( `Catch for Undefined: ${ e }` )
                     }
-                        
-                        
-                        
+
+
+
                     if ( ( res?.PutToFireHoseAggregatorResult === "200" ) ||
-                        ( res.OnEndStreamEndResult.OnEndStoreAndQueueResult.AddWorkToS3WorkBucketResults?.S3ProcessBucketResult === "200" &&
-                            res.OnEndStreamEndResult.OnEndStoreAndQueueResult.AddWorkToSQSWorkQueueResults?.SQSWriteResult === "200" ) )
+                        ( res.OnEndStreamEndResult.StoreAndQueueWorkResult.AddWorkToS3WorkBucketResults?.S3ProcessBucketResult === "200" &&
+                            res.OnEndStreamEndResult.StoreAndQueueWorkResult.AddWorkToSQSWorkQueueResults?.SQSWriteResult === "200" ) )
                     {
                         try
                         {
@@ -752,7 +782,7 @@ async function processS3ObjectContentStream ( key: string, bucket: string, custC
                         recs = 0
 
                         streamResult = {
-                            ...streamResult, OnDataStoreQueueResult: `s3ContentReadableStreamErrorMessage ${ JSON.stringify( errMessage ) }`
+                            ...streamResult, StreamException: `s3ContentReadableStreamErrorMessage ${ JSON.stringify( errMessage ) }`
 
                         }
                         throw new Error( `Error on Readable Stream for s3DropBucket Object ${ key }.\nError Message: ${ errMessage } ` )
@@ -863,7 +893,7 @@ async function processS3ObjectContentStream ( key: string, bucket: string, custC
                                     } )
 
                                 streamResult = {
-                                    ...streamResult, OnEndStreamEndResult: {OnEndStoreAndQueueResult: packageResult as any}
+                                    ...streamResult, OnEndStreamEndResult: {StoreAndQueueWorkResult: packageResult as any}
                                 }
                             }
 
