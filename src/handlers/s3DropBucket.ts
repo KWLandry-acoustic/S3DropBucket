@@ -440,13 +440,13 @@ export const s3DropBucketHandler: Handler = async ( event: S3Event, context: Con
                     if ( localTesting ) key = 'TestData/S3Object_DoNotDelete'
                     //Do not delete in order to Capture Testing Data
                     // if (key.toLowerCase().indexOf('aggregat') > -1) key = 'TestData/S3Object_DoNotDelete'
+                    
                     debugger
 
-                    if ( res.PutToFireHoseAggregatorResult )
-                        res.PutToFireHoseAggregatorResult = ""
-                    if ( res.OnEndStreamEndResult.OnEndStoreAndQueueResult.AddWorkToS3WorkBucketResults.S3ProcessBucketResult )
+                    if ( !res.PutToFireHoseAggregatorResult ) res.PutToFireHoseAggregatorResult = ""
+                    if ( !res.OnEndStreamEndResult.OnEndStoreAndQueueResult.AddWorkToS3WorkBucketResults.S3ProcessBucketResult )
                         res.OnEndStreamEndResult.OnEndStoreAndQueueResult.AddWorkToS3WorkBucketResults.S3ProcessBucketResult === ""
-                    if ( res.OnEndStreamEndResult.OnEndStoreAndQueueResult.AddWorkToSQSWorkQueueResults.SQSWriteResult )
+                    if ( !res.OnEndStreamEndResult.OnEndStoreAndQueueResult.AddWorkToSQSWorkQueueResults.SQSWriteResult )
                         res.OnEndStreamEndResult.OnEndStoreAndQueueResult.AddWorkToSQSWorkQueueResults.SQSWriteResult = ""
 
                     if ( ( res.PutToFireHoseAggregatorResult === "200" ) ||
