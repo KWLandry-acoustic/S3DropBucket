@@ -443,12 +443,20 @@ export const s3DropBucketHandler: Handler = async ( event: S3Event, context: Con
                     
                     debugger
 
-                    if ( !res.PutToFireHoseAggregatorResult ) res.PutToFireHoseAggregatorResult = "null value"
-                    if ( !res.OnEndStreamEndResult.OnEndStoreAndQueueResult.AddWorkToS3WorkBucketResults?.S3ProcessBucketResult )
+                    try
+                    {
+                        if ( !res.PutToFireHoseAggregatorResult ) res.PutToFireHoseAggregatorResult = "null value"
+                        if ( !res.OnEndStreamEndResult.OnEndStoreAndQueueResult.AddWorkToS3WorkBucketResults?.S3ProcessBucketResult )
                             res.OnEndStreamEndResult.OnEndStoreAndQueueResult.AddWorkToS3WorkBucketResults.S3ProcessBucketResult === "null value"
-                    if ( !res.OnEndStreamEndResult.OnEndStoreAndQueueResult.AddWorkToSQSWorkQueueResults?.SQSWriteResult )
+                        if ( !res.OnEndStreamEndResult.OnEndStoreAndQueueResult.AddWorkToSQSWorkQueueResults?.SQSWriteResult )
                             res.OnEndStreamEndResult.OnEndStoreAndQueueResult.AddWorkToSQSWorkQueueResults.SQSWriteResult = "null value"
-
+                    } catch (e)
+                    {
+                        console.log(`Catch for Undefined: ${e}`)
+                    }
+                        
+                        
+                        
                     if ( ( res?.PutToFireHoseAggregatorResult === "200" ) ||
                         ( res.OnEndStreamEndResult.OnEndStoreAndQueueResult.AddWorkToS3WorkBucketResults?.S3ProcessBucketResult === "200" &&
                             res.OnEndStreamEndResult.OnEndStoreAndQueueResult.AddWorkToSQSWorkQueueResults?.SQSWriteResult === "200" ) )
