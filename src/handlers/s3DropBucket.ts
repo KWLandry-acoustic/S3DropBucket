@@ -473,27 +473,6 @@ export const s3DropBucketHandler: Handler = async ( event: S3Event, context: Con
 
                     debugger
 
-                    //try
-                    //{
-                    //    if ( !res.PutToFireHoseAggregatorResult ) res.PutToFireHoseAggregatorResult = "null value"
-
-                    //    if ( !res.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToS3WorkBucketResults )
-                    //        res.OnEndStreamEndResult.StoreAndQueueWorkResult.AddWorkToS3WorkBucketResults = {
-                    //            versionId: "string",
-                    //            S3ProcessBucketResult: "string",
-                    //            AddWorkToS3ProcessBucket: "string"
-                    //        }
-
-                    //    if ( !res.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToS3WorkBucketResults?.S3ProcessBucketResult )
-                    //        res.OnEndStreamEndResult.StoreAndQueueWorkResult.AddWorkToS3WorkBucketResults.S3ProcessBucketResult = "null value"
-
-                    //    if ( !res.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToSQSWorkQueueResults?.SQSWriteResult )
-                    //        res.OnEndStreamEndResult.StoreAndQueueWorkResult.AddWorkToSQSWorkQueueResults.SQSWriteResult = "null value"
-                    //} catch ( e )
-                    //{
-                    //    console.log( `Catch for Undefined: ${ e }` )
-                    //}
-
 
 
                     if ( ( res?.PutToFireHoseAggregatorResult === "200" ) ||
@@ -2175,7 +2154,7 @@ async function packageUpdates ( workSet: any[], key: string, custConfig: custome
 
                     //console.info( `Debug Await StoreAndQueueWork Result: ${ JSON.stringify( res ) }` )
 
-                    return {res}
+                    return res
                 } )
 
             //console.info( `Debug sqwResult ${ JSON.stringify( sqwResult ) }` )
@@ -2188,7 +2167,7 @@ async function packageUpdates ( workSet: any[], key: string, custConfig: custome
     {
         debugger
         console.error( `Exception - packageUpdates for ${ key } \n${ e } ` )
-        sqwResult = {...sqwResult, StoreAndQueueWorkResult: `Exception - PackageUpdates StoreAndQueueWork for ${ key } \nBatch ${ batchCount } of ${ recs } Updates. \n${ e } `}
+        sqwResult = {...sqwResult, StoreQueueWorkException: `Exception - PackageUpdates StoreAndQueueWork for ${ key } \nBatch ${ batchCount } of ${ recs } Updates. \n${ e } `}
     }
 
     return {StoreAndQueueWorkResult: sqwResult}
