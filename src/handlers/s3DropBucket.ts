@@ -892,9 +892,7 @@ async function processS3ObjectContentStream ( key: string, bucket: string, custC
                                         return res
                                     } )
 
-                                streamResult = {
-                                    ...streamResult, OnEndStreamEndResult: {StoreAndQueueWorkResult: packageResult as any}
-                                }
+                                streamResult = {...streamResult, OnEndStreamEndResult: packageResult as any}
                             }
 
 
@@ -2177,7 +2175,7 @@ async function packageUpdates ( workSet: any[], key: string, custConfig: custome
 
                     //console.info( `Debug Await StoreAndQueueWork Result: ${ JSON.stringify( res ) }` )
 
-                    return {StoreAndQueueWorkResult: res}
+                    return {res}
                 } )
 
             //console.info( `Debug sqwResult ${ JSON.stringify( sqwResult ) }` )
@@ -2193,7 +2191,7 @@ async function packageUpdates ( workSet: any[], key: string, custConfig: custome
         sqwResult = {...sqwResult, StoreAndQueueWorkResult: `Exception - PackageUpdates StoreAndQueueWork for ${ key } \nBatch ${ batchCount } of ${ recs } Updates. \n${ e } `}
     }
 
-    return sqwResult
+    return {StoreAndQueueWorkResult: sqwResult}
 }
 
 
