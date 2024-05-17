@@ -442,9 +442,6 @@ export const s3DropBucketHandler: Handler = async ( event: S3Event, context: Con
                     // if (key.toLowerCase().indexOf('aggregat') > -1) key = 'TestData/S3Object_DoNotDelete'
                     debugger
 
-                    console.error( `Return from ProcessS3ObjectContentStream - Res: \n${ JSON.stringify( res ) }` )
-
-
                     if ( res.PutToFireHoseAggregatorResult )
                         res.PutToFireHoseAggregatorResult = ""
                     if ( res.OnEndStreamEndResult.OnEndStoreAndQueueResult.AddWorkToS3WorkBucketResults.S3ProcessBucketResult )
@@ -844,7 +841,7 @@ async function processS3ObjectContentStream ( key: string, bucket: string, custC
 
                                 packageResult = await packageUpdates( chunks, key, custConfig )
                                     .then( ( res ) => {
-                                        console.info( `Return Await PackageResult from PackageUpdates: ${ JSON.stringify( res ) }` )
+                                        //console.info( `Return Await PackageResult from PackageUpdates: ${ JSON.stringify( res ) }` )
                                         return res
                                     } )
 
@@ -2604,11 +2601,13 @@ async function addWorkToS3WorkBucket ( queueUpdates: string, key: string ) {
     if ( tcc.SelectiveDebug.indexOf( "_907," ) > -1 ) console.info( `Selective Debug 907 - Added Work File ${ key } to Work Bucket (${ tcc.S3DropBucketWorkBucket }) \n${ JSON.stringify( addWorkToS3ProcessBucket ) }` )
     //if ( tcc.SelectiveDebug.indexOf( "_907," ) > -1 ) console.info(`Selective Debug 907 - Wrote Work File (${ key } (versionId: ${ vid }) of ${ queueUpdates.length } characters) to S3 Processing Bucket. \nResult Code ${ s3ProcessBucketResult })`)
 
-    return {
+    const aw3pbr = {
         versionId: vid,
         AddWorkToS3ProcessBucket: JSON.stringify( addWorkToS3ProcessBucket ),
         S3ProcessBucketResult: s3ProcessBucketResult
     }
+
+    return aw3pbr
 }
 
 
