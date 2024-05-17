@@ -473,26 +473,26 @@ export const s3DropBucketHandler: Handler = async ( event: S3Event, context: Con
 
                     debugger
 
-                    try
-                    {
-                        if ( !res.PutToFireHoseAggregatorResult ) res.PutToFireHoseAggregatorResult = "null value"
+                    //try
+                    //{
+                    //    if ( !res.PutToFireHoseAggregatorResult ) res.PutToFireHoseAggregatorResult = "null value"
 
-                        if ( !res.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToS3WorkBucketResults )
-                            res.OnEndStreamEndResult.StoreAndQueueWorkResult.AddWorkToS3WorkBucketResults = {
-                                versionId: "string",
-                                S3ProcessBucketResult: "string",
-                                AddWorkToS3ProcessBucket: "string"
-                            }
+                    //    if ( !res.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToS3WorkBucketResults )
+                    //        res.OnEndStreamEndResult.StoreAndQueueWorkResult.AddWorkToS3WorkBucketResults = {
+                    //            versionId: "string",
+                    //            S3ProcessBucketResult: "string",
+                    //            AddWorkToS3ProcessBucket: "string"
+                    //        }
 
-                        if ( !res.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToS3WorkBucketResults?.S3ProcessBucketResult )
-                            res.OnEndStreamEndResult.StoreAndQueueWorkResult.AddWorkToS3WorkBucketResults.S3ProcessBucketResult = "null value"
+                    //    if ( !res.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToS3WorkBucketResults?.S3ProcessBucketResult )
+                    //        res.OnEndStreamEndResult.StoreAndQueueWorkResult.AddWorkToS3WorkBucketResults.S3ProcessBucketResult = "null value"
 
-                        if ( !res.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToSQSWorkQueueResults?.SQSWriteResult )
-                            res.OnEndStreamEndResult.StoreAndQueueWorkResult.AddWorkToSQSWorkQueueResults.SQSWriteResult = "null value"
-                    } catch ( e )
-                    {
-                        console.log( `Catch for Undefined: ${ e }` )
-                    }
+                    //    if ( !res.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToSQSWorkQueueResults?.SQSWriteResult )
+                    //        res.OnEndStreamEndResult.StoreAndQueueWorkResult.AddWorkToSQSWorkQueueResults.SQSWriteResult = "null value"
+                    //} catch ( e )
+                    //{
+                    //    console.log( `Catch for Undefined: ${ e }` )
+                    //}
 
 
 
