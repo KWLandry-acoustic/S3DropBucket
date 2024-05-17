@@ -446,9 +446,9 @@ export const s3DropBucketHandler: Handler = async ( event: S3Event, context: Con
                     try
                     {
                         if ( !res.PutToFireHoseAggregatorResult ) res.PutToFireHoseAggregatorResult = "null value"
-                        if ( !res.OnEndStreamEndResult.OnEndStoreAndQueueResult.AddWorkToS3WorkBucketResults?.S3ProcessBucketResult )
-                            res.OnEndStreamEndResult.OnEndStoreAndQueueResult.AddWorkToS3WorkBucketResults.S3ProcessBucketResult === "null value"
-                        if ( !res.OnEndStreamEndResult.OnEndStoreAndQueueResult.AddWorkToSQSWorkQueueResults?.SQSWriteResult )
+                        if ( !res.OnEndStreamEndResult?.OnEndStoreAndQueueResult?.AddWorkToS3WorkBucketResults?.S3ProcessBucketResult )
+                            res.OnEndStreamEndResult.OnEndStoreAndQueueResult.AddWorkToS3WorkBucketResults.S3ProcessBucketResult = "null value"
+                        if ( !res.OnEndStreamEndResult?.OnEndStoreAndQueueResult?.AddWorkToSQSWorkQueueResults?.SQSWriteResult )
                             res.OnEndStreamEndResult.OnEndStoreAndQueueResult.AddWorkToSQSWorkQueueResults.SQSWriteResult = "null value"
                     } catch (e)
                     {
