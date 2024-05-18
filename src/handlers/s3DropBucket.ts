@@ -397,21 +397,11 @@ export const s3DropBucketHandler: Handler = async ( event: S3Event, context: Con
         let key = r.s3.object.key ?? ''
         let bucket = r.s3.bucket.name ?? ''
 
-
-
-        while ( key.indexOf( '/' ) > -1 )
-        {
-            key = key.split( '/' ).at( -1 ) ?? key
-        }
-
-console.error(`Troubleshoot folder on Key: ${key}`)
-
-        if ( !key.startsWith( tcc.prefixFocus ) )
+        if ( tcc.prefixFocus !== "" && key.indexOf( tcc.prefixFocus ) < 0 )
         {
             //console.warn( `PrefixFocus is configured, File Name ${ key } does not fall within focus restricted by the configured PrefixFocus ${ tcc.prefixFocus }` )
             return
         }
-
 
         //ToDo: Resolve Duplicates Issue - S3 allows Duplicate Object Names but Delete marks all Objects of same Name Deleted. 
         //   Which causes an issue with Key Not Found after an Object of Name A is processed and deleted, then another Object of Name A comes up in a Trigger.
@@ -419,6 +409,9 @@ console.error(`Troubleshoot folder on Key: ${key}`)
         vid = r.s3.object.versionId ?? undefined
         et = r.s3.object.eTag ?? ""
 
+
+
+        //Initial work out for writing logs to S3 Bucket
         try
         {
             if ( key.indexOf( 'S3DropBucket-LogsS3DropBucket_Aggregator' ) > -1 ) console.warn( `Warning -- Found Invalid Aggregator File Name - ${ key }` )
@@ -2218,7 +2211,15 @@ async function storeAndQueueWork ( updates: any[], s3Key: string, config: custom
         s3Key = s3Key.split( '/' ).at( -1 ) ?? s3Key
     }
 
-    let key = s3Key.replace( '.', '_' )
+    let key = s3Key
+    
+
+    while ( key.indexOf( '/' ) > -1 )
+    {
+        key = key.split( '/' ).at( -1 ) ?? key
+    }
+
+    key = s3Key.replace( '.', '_' )
 
     key = `${ key }_update_${ batchCount }_${ updateCount }_${uuidv4()}.xml`
 

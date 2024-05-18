@@ -25,7 +25,8 @@
     "smithy": "^0.6.3",
     "ssh2-sftp-client": "^8.1.0",
     "stream-json": "^1.8.0",
-    "stream-transform": "^3.3.1"
+    "stream-transform": "^3.3.1",
+    "uuid": "^9.0.1"
   },
   "browser": {
     "crypto": false
