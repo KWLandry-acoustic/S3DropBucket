@@ -24,6 +24,7 @@ import fetch, {Headers, RequestInit, Response} from 'node-fetch'
 import {JSONParser, Tokenizer, TokenParser} from '@streamparser/json-node'
 // import JSONParserTransform from '@streamparser/json-node/jsonparser.js'
 
+import {v4 as uuidv4} from 'uuid'
 
 import {parse} from 'csv-parse'
 
@@ -395,6 +396,15 @@ export const s3DropBucketHandler: Handler = async ( event: S3Event, context: Con
     {
         let key = r.s3.object.key ?? ''
         let bucket = r.s3.bucket.name ?? ''
+
+
+
+        while ( key.indexOf( '/' ) > -1 )
+        {
+            key = key.split( '/' ).at( -1 ) ?? key
+        }
+
+console.error(`Troubleshoot folder on Key: ${key}`)
 
         if ( !key.startsWith( tcc.prefixFocus ) )
         {
@@ -1247,7 +1257,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async ( event: SQSEven
 
     }
 
-    if ( tcc.SelectiveDebug.indexOf( "_510," ) > -1 ) console.info( `(510) Processed ${ event.Records.length } Work Queue records. Items Retry Count: ${ sqsBatchFail.batchItemFailures.length } \nItems Retry List: ${ JSON.stringify( sqsBatchFail ) } ` )
+    if ( tcc.SelectiveDebug.indexOf( "_510," ) > -1 ) console.info( `(510) Processed ${ event.Records.length } Work Queue records. Posted: ${postResult}. \nItems Retry Count: ${ sqsBatchFail.batchItemFailures.length } \nItems Retry List: ${ JSON.stringify( sqsBatchFail ) } ` )
 
 
 
@@ -1868,11 +1878,6 @@ async function getCustomerConfig ( filekey: string ) {
     // Retrieve file's prefix as Customer Name
     if ( !filekey ) throw new Error( `Exception - Cannot resolve Customer Config without a valid Customer Prefix(file prefix is ${ filekey })` )
 
-    if ( filekey.indexOf( '/' ) > -1 )
-    {
-        filekey = filekey.split( '/' ).at( -1 ) ?? filekey
-    }
-
     const customer = filekey.split( '_' )[ 0 ] + '_'
 
     if ( customer === '_' || customer.length < 4 )
@@ -2209,11 +2214,13 @@ async function storeAndQueueWork ( updates: any[], s3Key: string, config: custom
 
     if ( s3Key.indexOf( 'TestData' ) > -1 )
     {
+        //strip /testdata folder from key
         s3Key = s3Key.split( '/' ).at( -1 ) ?? s3Key
     }
 
     let key = s3Key.replace( '.', '_' )
-    key = `${ key }_update_${ batchCount }_${ updateCount }.xml`
+
+    key = `${ key }_update_${ batchCount }_${ updateCount }_${uuidv4()}.xml`
 
 
     //if ( Object.values( updates ).length !== recs )
