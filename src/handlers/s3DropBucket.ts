@@ -1871,9 +1871,14 @@ async function getCustomerConfig ( filekey: string ) {
     // Retrieve file's prefix as Customer Name
     if ( !filekey ) throw new Error( `Exception - Cannot resolve Customer Config without a valid Customer Prefix(file prefix is ${ filekey })` )
 
+    while ( filekey.indexOf( '/' ) > -1 )
+    {
+        filekey = filekey.split( '/' ).at( -1 ) ?? filekey
+    }
+
     const customer = filekey.split( '_' )[ 0 ] + '_'
 
-    if ( customer === '_' || customer.length < 4 )
+    if ( customer === '_' || customer.length < 4 )   //shouldn't need this customer.indexOf('_') < 0 || 
     {
         throw new Error( `Exception - Customer cannot be determined from S3 Object Name '${ filekey }'      \n      ` )
     }
