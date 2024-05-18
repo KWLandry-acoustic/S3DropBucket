@@ -338,7 +338,9 @@ export const s3DropBucketHandler: Handler = async ( event: S3Event, context: Con
         tcc = await getValidateS3DropBucketConfig()
     }
 
-    if ( tcc.SelectiveDebug.indexOf( "_9," ) > -1 ) console.info( `Selective Debug 9 - Process Environment Vars: ${ JSON.stringify( process.env ) }` )
+    if ( tcc.SelectiveDebug.indexOf( "_98," ) > -1 ) console.info( `Selective Debug 98 - S3DropBucket Options: ${ JSON.stringify( tcc ) } ` )
+    if ( tcc.SelectiveDebug.indexOf( "_99," ) > -1 ) console.info( `Selective Debug 99 - S3DropBucket Logging Options: ${ tcc.SelectiveDebug! } ` )
+    if ( tcc.SelectiveDebug.indexOf( "_909," ) > -1 ) console.info( `Selective Debug 909 - Environment Vars: ${ JSON.stringify( process.env ) } ` )
 
 
     if ( event.Records[ 0 ].s3.object.key.indexOf( 'Aggregator' ) > -1 )
@@ -1065,10 +1067,9 @@ export const S3DropBucketQueueProcessorHandler: Handler = async ( event: SQSEven
         tcc = await getValidateS3DropBucketConfig()
     }
 
-    console.info( `S3 DropBucket WorkQueue Selective Debug Set is: ${ tcc.SelectiveDebug! } ` )
-
-    if ( tcc.SelectiveDebug.indexOf( "_9," ) > -1 ) console.info( `Selective Debug 9 - Process Environment Vars: ${ JSON.stringify( process.env ) } ` )
-
+    if ( tcc.SelectiveDebug.indexOf( "_98," ) > -1 ) console.info( `Selective Debug 98 - S3DropBucket Options: ${ JSON.stringify( tcc ) } ` )
+    if ( tcc.SelectiveDebug.indexOf( "_99," ) > -1 ) console.info( `Selective Debug 99 - S3DropBucket Logging Options: ${ tcc.SelectiveDebug! } ` )
+    if ( tcc.SelectiveDebug.indexOf( "_909," ) > -1 ) console.info( `Selective Debug 909 - Environment Vars: ${ JSON.stringify( process.env ) } ` )
 
     if ( tcc.WorkQueueQuiesce ) 
     {
@@ -1234,7 +1235,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async ( event: SQSEven
                     const d: string = await deleteS3Object( tqm.workKey, tcc.S3DropBucketWorkBucket )
                     if ( d === '204' )
                     {
-                        if ( tcc.SelectiveDebug.indexOf( "_924," ) > -1 ) console.info( `Selective Debug 924 - Successful Deletion of Queued Work file: ${ tqm.workKey }( versionId: ${ tqm.versionId } )` )
+                        if ( tcc.SelectiveDebug.indexOf( "_924," ) > -1 ) console.info( `Selective Debug 924 - Successful Deletion of Queued Work file: ${ tqm.workKey }` )
                     }
 
                     else if ( tcc.SelectiveDebug.indexOf( "_924," ) > -1 ) console.error( `Selective Debug 924 - Failed to Delete ${ tqm.workKey } (versionId: ${ tqm.versionId }). Expected '204' but received ${ d } ` )
@@ -1315,7 +1316,7 @@ export const s3DropBucketSFTPHandler: Handler = async ( event: SQSEvent, context
 
     console.info( `S3 Dropbucket SFTP Processor Selective Debug Set is: ${ tcc.SelectiveDebug! } ` )
 
-    if ( tcc.SelectiveDebug.indexOf( "_909," ) > -1 ) console.info( `Selective Debug 909 - Process Environment Vars: ${ JSON.stringify( process.env ) } ` )
+    if ( tcc.SelectiveDebug.indexOf( "_98," ) > -1 ) console.info( `Selective Debug 98 - Process Environment Vars: ${ JSON.stringify( process.env ) } ` )
 
 
     console.info( `SFTP  Received Event: ${ JSON.stringify( event ) } ` )
@@ -2164,7 +2165,7 @@ async function packageUpdates ( workSet: any[], key: string, custConfig: custome
 
         }
 
-        if ( tcc.SelectiveDebug.indexOf( "_918," ) > -1 ) console.info( `Selective Debug 918: PackageUpdates StoreAndQueueWork for ${ key }. \nBatch ${ batchCount } of ${ recs } Updates.  Result: \n${ JSON.stringify( sqwResult ) } ` )
+        if ( tcc.SelectiveDebug.indexOf( "_918," ) > -1 ) console.info( `Selective Debug 918: PackageUpdates StoreAndQueueWork for ${ key }. \nFor a total of ${ recs } Updates in ${ batchCount } Batches.  Result: \n${ JSON.stringify( sqwResult ) } ` )
     }
     catch ( e )
     {
@@ -2226,7 +2227,7 @@ async function storeAndQueueWork ( updates: any[], s3Key: string, config: custom
 
     key = s3Key.replace( '.', '_' )
 
-    key = `${ key }_update_${ batchCount }_${ updateCount }_${uuidv4()}.xml`
+    key = `${ key }_update-${ uuidv4()}_${ batchCount }_${ updateCount }.xml`
 
 
     //if ( Object.values( updates ).length !== recs )
