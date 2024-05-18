@@ -189,7 +189,7 @@ export interface processS3ObjectStreamResult {
             },
             AddWorkToSQSWorkQueueResults: {
                 SQSWriteResult: string,
-                AddWorkToSQSQueueResult: string
+                AddToSQSQueue: string
             },
             StoreQueueWorkException: string
             StoreS3WorkException: string
@@ -204,7 +204,7 @@ export interface processS3ObjectStreamResult {
             },
             AddWorkToSQSWorkQueueResults: {
                 SQSWriteResult: string,
-                AddWorkToSQSQueueResult: string
+                AddToSQSQueue: string
             },
             StoreQueueWorkException: string
             StoreS3WorkException: string
@@ -238,7 +238,7 @@ let processS3ObjectStreamResolution: processS3ObjectStreamResult = {
             },
             AddWorkToSQSWorkQueueResults: {
                 SQSWriteResult: "",
-                AddWorkToSQSQueueResult: ""
+                AddToSQSQueue: ""
             },
             StoreQueueWorkException: "",
             StoreS3WorkException: ""
@@ -253,7 +253,7 @@ let processS3ObjectStreamResolution: processS3ObjectStreamResult = {
                 },
                 AddWorkToSQSWorkQueueResults: {
                     SQSWriteResult: "",
-                    AddWorkToSQSQueueResult: ""
+                    AddToSQSQueue: ""
                 },
                 StoreQueueWorkException: "",
                 StoreS3WorkException: ""
@@ -291,7 +291,7 @@ let tcSelectiveDebug   //call out selective debug as an option
 
 
 
-
+//For local testing
 let testS3Key: string
 let testS3Bucket: string
 testS3Bucket = "s3dropbucket-configs"
@@ -2224,13 +2224,13 @@ async function storeAndQueueWork ( updates: any[], s3Key: string, config: custom
 
     if ( tcLogDebug ) console.info( `Queuing Work File ${ key } for ${ s3Key }. Batch ${ batchCount } of ${ updateCount } records)` )
 
-    let AddWorkToS3WorkBucketResult
-    let AddWorkToSQSWorkQueueResult
+    let addWorkToS3WorkBucketResult
+    let addWorkToSQSWorkQueueResult
     let v = ''
 
     try
     {
-        AddWorkToS3WorkBucketResult = await addWorkToS3WorkBucket( xmlRows, key )
+        addWorkToS3WorkBucketResult = await addWorkToS3WorkBucket( xmlRows, key )
             .then( ( res ) => {
                 return res //{"AddWorktoS3Results": res}
             } )
@@ -2242,7 +2242,7 @@ async function storeAndQueueWork ( updates: any[], s3Key: string, config: custom
     {
         const sqwError = `Exception - StoreAndQueueWork Add work to S3 Bucket exception \n${ e } `
         console.error( sqwError )
-        return {StoreS3WorkException: sqwError, StoreQueueWorkException: '', AddWorkToS3WorkBucketResults: JSON.stringify( AddWorkToS3WorkBucketResult )}
+        return {StoreS3WorkException: sqwError, StoreQueueWorkException: '', AddWorkToS3WorkBucketResults: JSON.stringify( addWorkToS3WorkBucketResult )}
     }
 
     // v = AddWorkToS3WorkBucketResults.versionId ?? ''
@@ -2250,9 +2250,9 @@ async function storeAndQueueWork ( updates: any[], s3Key: string, config: custom
 
     try
     {
-        AddWorkToSQSWorkQueueResult = await addWorkToSQSWorkQueue( config, key, v, batchCount, updates.length.toString(), marker )
+        addWorkToSQSWorkQueueResult = await addWorkToSQSWorkQueue( config, key, v, batchCount, updates.length.toString(), marker )
             .then( ( res ) => {
-                return {AddWorkToSQSQueueResult: res}
+                return {AddWorkToSQSQueue: res}
                 //     {
                 //         sqsWriteResult: "200",
                 //         workQueuedSuccess: true,
@@ -2267,9 +2267,9 @@ async function storeAndQueueWork ( updates: any[], s3Key: string, config: custom
         return {StoreQueueWorkException: sqwError, StoreS3WorkException: ''}
     }
 
-    if ( tcc.SelectiveDebug.indexOf( "_915," ) > -1 ) console.info( `Selective Debug 915 - Results of Store and Queue of Updates - Add to Process Bucket: ${ JSON.stringify( AddWorkToS3WorkBucketResult ) } \n Add to Process Queue: ${ JSON.stringify( AddWorkToSQSWorkQueueResult ) } ` )
+    if ( tcc.SelectiveDebug.indexOf( "_915," ) > -1 ) console.info( `Selective Debug 915 - Results of Store and Queue of Updates - Add to Process Bucket: ${ JSON.stringify( addWorkToS3WorkBucketResult ) } \n Add to Process Queue: ${ JSON.stringify( addWorkToSQSWorkQueueResult ) } ` )
 
-    return {AddWorkToS3WorkBucketResult, AddWorkToSQSWorkQueueResult}
+    return {AddWorkToS3WorkBucketResult: addWorkToS3WorkBucketResult, AddWorkToSQSWorkQueueResult: addWorkToSQSWorkQueueResult}
 
 }
 
@@ -2709,7 +2709,7 @@ async function addWorkToSQSWorkQueue ( config: customerConfig, key: string, vers
 
     if ( tcc.SelectiveDebug.indexOf( "_907," ) > -1 ) console.info( `Selective Debug 907 - Queued Work ${ key } (${ recCount } updates) to the Work Queue (${ tcc.S3DropBucketWorkQueue }) \nSQS Params: \n${ JSON.stringify( sqsParams ) } \nresults: \n${ JSON.stringify( {
         SQSWriteResult: sqsWriteResult,
-        AddWorkToSQSQueueResult: JSON.stringify( sqsSendResult )
+        AddToSQSQueue: JSON.stringify( sqsSendResult )
     } ) }` )
 
 
@@ -2717,7 +2717,7 @@ async function addWorkToSQSWorkQueue ( config: customerConfig, key: string, vers
     return {
 
         SQSWriteResult: sqsWriteResult,
-        AddWorkToSQSQueueResult: JSON.stringify( sqsSendResult )
+        AddToSQSQueue: JSON.stringify( sqsSendResult )
     }
 }
 
