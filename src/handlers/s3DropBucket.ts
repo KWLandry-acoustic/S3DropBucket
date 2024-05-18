@@ -1251,11 +1251,8 @@ export const S3DropBucketQueueProcessorHandler: Handler = async ( event: SQSEven
 
     }
 
-    if ( tcc.SelectiveDebug.indexOf( "_510," ) > -1 ) console.info( `(510) Processed ${ event.Records.length } Work Queue records. Posted: ${postResult}. \nItems Retry Count: ${ sqsBatchFail.batchItemFailures.length } \nItems Retry List: ${ JSON.stringify( sqsBatchFail ) } ` )
-
-
-
-
+    if ( tcc.SelectiveDebug.indexOf( "_510," ) > -1 ) console.info( `(510) Processed ${ event.Records.length } Work Queue records. Posted: ${ postResult }. \nItems Retry Count: ${ sqsBatchFail.batchItemFailures.length } \nItems Retry List: ${ JSON.stringify( sqsBatchFail ) } ` )
+    if ( tcc.SelectiveDebug.indexOf( "_511," ) > -1 ) console.info( `(511) Processed ${ event.Records.length } Updates, \n ${ postResult }. ` )
 
     let maintenance: ( number | string[] )[] = []
 
