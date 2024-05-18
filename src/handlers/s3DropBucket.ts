@@ -1211,7 +1211,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async ( event: SQSEven
                     console.warn( `Retry Marked for ${ tqm.workKey }. Returning Work Item ${ q.messageId } to Process Queue (Total Retry Count: ${ sqsBatchFail.batchItemFailures.length + 1 }). \n${ postResult } ` )
                     //Add to BatchFail array to Retry processing the work 
                     sqsBatchFail.batchItemFailures.push( {itemIdentifier: q.messageId} )
-                    if ( tcc.SelectiveDebug.indexOf( "_509," ) > -1 ) console.info( `(509) - Added ${ tqm.workKey } (versionId: ${ tqm.versionId }) to SQS Events Retry \n${ JSON.stringify( sqsBatchFail ) } ` )
+                    if ( tcc.SelectiveDebug.indexOf( "_509," ) > -1 ) console.info( `(509) - ${ tqm.workKey } added back to SQS for Retry \n${ JSON.stringify( sqsBatchFail ) } ` )
 
                 }
 
@@ -1223,12 +1223,12 @@ export const S3DropBucketQueueProcessorHandler: Handler = async ( event: SQSEven
                 {
                     if ( postResult.toLowerCase().indexOf( 'partially successful' ) > -1 )
                     {
-                        if ( tcc.SelectiveDebug.indexOf( "_508," ) > -1 ) console.info( `(508) Most Work was Successfully Posted to Campaign, however there were some exceptions: \n${ postResult } ` )
+                        if ( tcc.SelectiveDebug.indexOf( "_508," ) > -1 ) console.info( `(508) Most Work was Successfully Posted to Campaign (work file (${ tqm.workKey }, updated ${ tqm.custconfig.listName } from(${ tqm.workKey }), however there were some exceptions: \n${ postResult } ` )
                     }
 
                     else if ( postResult.toLowerCase().indexOf( 'successfully posted' ) > -1 )
                     {
-                        if ( tcc.SelectiveDebug.indexOf( "_508," ) > -1 ) console.info( `(508) Work Successfully Posted to Campaign - ${ postResult } (updated ${ tqm.custconfig.listName } from(${ tqm.workKey }), the Work will be deleted from the S3 Process Queue` )
+                        if ( tcc.SelectiveDebug.indexOf( "_508," ) > -1 ) console.info( `(508) Work Successfully Posted to Campaign - ${ postResult } (work file (${ tqm.workKey}, updated ${ tqm.custconfig.listName } from(${ tqm.workKey }), the Work will be deleted from the S3 Process Queue` )
                     }
 
                     //Delete the Work file
