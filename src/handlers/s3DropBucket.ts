@@ -2280,7 +2280,7 @@ async function storeAndQueueWork ( updates: any[], s3Key: string, config: custom
 
     if ( tcc.SelectiveDebug.indexOf( "_915," ) > -1 ) console.info( `Selective Debug 915 - Results of Store and Queue of Updates - Add to Process Bucket: ${ JSON.stringify( addWorkToS3WorkBucketResult ) } \n Add to Process Queue: ${ JSON.stringify( addWorkToSQSWorkQueueResult ) } ` )
 
-    return {AddWorkToS3WorkBucketResult: addWorkToS3WorkBucketResult, AddWorkToSQSWorkQueueResults: addWorkToSQSWorkQueueResult}
+    return {AddWorkToS3WorkBucketResults: addWorkToS3WorkBucketResult, AddWorkToSQSWorkQueueResults: addWorkToSQSWorkQueueResult}
 
 }
 
