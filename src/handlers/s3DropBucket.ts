@@ -1194,9 +1194,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async ( event: SQSEven
             if ( work.length > 0 )        //Retrieve Contents of the Work File  
             {
 
-
                 postResult = await postToCampaign( work, custconfig as customerConfig, tqm.updateCount )
-
 
                 //  postResult can contain: 
                 //retry
@@ -1241,6 +1239,9 @@ export const S3DropBucketQueueProcessorHandler: Handler = async ( event: SQSEven
                     else if ( tcc.SelectiveDebug.indexOf( "_924," ) > -1 ) console.error( `Selective Debug 924 - Failed to Delete ${ tqm.workKey } (versionId: ${ tqm.versionId }). Expected '204' but received ${ d } ` )
 
                 }
+
+                if ( tcc.SelectiveDebug.indexOf( "_511," ) > -1 ) console.info( `(511) Processed ${ tqm.updateCount } Updates from ${ tqm.workKey }` )
+                
             }
             else throw new Error( `Failed to retrieve work file(${ tqm.workKey }) ` )
 
@@ -1251,8 +1252,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async ( event: SQSEven
 
     }
 
-    if ( tcc.SelectiveDebug.indexOf( "_510," ) > -1 ) console.info( `(510) Processed ${ event.Records.length } Work Queue records. Posted: ${ postResult }. \nItems Retry Count: ${ sqsBatchFail.batchItemFailures.length } \nItems Retry List: ${ JSON.stringify( sqsBatchFail ) } ` )
-    if ( tcc.SelectiveDebug.indexOf( "_511," ) > -1 ) console.info( `(511) Processed ${ event.Records.length } Updates from ${tqm.workKey}` )
+    if ( tcc.SelectiveDebug.indexOf( "_510," ) > -1 ) console.info( `(510) Processed ${ event.Records.length } Work Queue Events. Posted: ${ postResult }. \nItems Retry Count: ${ sqsBatchFail.batchItemFailures.length } \nItems Retry List: ${ JSON.stringify( sqsBatchFail ) } ` )
 
     let maintenance: ( number | string[] )[] = []
 
@@ -1276,7 +1276,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async ( event: SQSEven
 
     }
 
-    if ( tcc.SelectiveDebug.indexOf( "_912," ) > -1 ) console.info( `Selective Debug 912 - Added ${ tqm.workKey } (versionId: ${ tqm.versionId }) to SQS Events Retry \n${ JSON.stringify( sqsBatchFail ) } ` )
+    if ( tcc.SelectiveDebug.indexOf( "_912," ) > -1 ) console.info( `Selective Debug 912 - ${ tqm.workKey } returned to Work Queue for Retry \n${ JSON.stringify( sqsBatchFail ) } ` )
 
     //ToDo: For Queue Processing - Complete the Final Processing Outcomes messaging for Queue Processing 
     // if (tcc.SelectiveDebug.indexOf("_921,") > -1) console.info(`Selective Debug 921 - \n${ JSON.stringify(processS3ObjectStreamResolution) } `)
