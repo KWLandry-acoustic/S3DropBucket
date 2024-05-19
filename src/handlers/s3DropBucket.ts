@@ -304,11 +304,11 @@ testS3Bucket = "s3dropbucket-configs"
 // testS3Key = "TestData/alerusrepsignature_sampleformatted_json_update_1_1.xml"
 
 //  Core - Key Set of Test Datasets 
-//testS3Key = "TestData/cloroxweather_99706.csv"
+testS3Key = "TestData/cloroxweather_99706.csv"
 //testS3Key = "TestData/pura_S3DropBucket_Aggregator-8-2024-03-19-16-42-48-46e884aa-8c6a-3ff9-8d32-c329395cf311.json"
 //testS3Key = "TestData/pura_2024_02_26T05_53_26_084Z.json"
 //testS3Key = "TestData/alerusrepsignature_sample.json"
-testS3Key = "TestData/alerusrepsignature_advisors.json"
+//testS3Key = "TestData/alerusrepsignature_advisors.json"
 // testS3Key = "TestData/alerusrepsignature_sampleformatted.json"
 // testS3Key = "TestData/alerusrepsignature_sample - min.json"
 
@@ -482,7 +482,7 @@ export const s3DropBucketHandler: Handler = async ( event: S3Event, context: Con
 
                     if ( ( res?.PutToFireHoseAggregatorResult === "200" ) ||
                         ( res.OnEndStreamEndResult.StoreAndQueueWorkResult.AddWorkToS3WorkBucketResults?.S3ProcessBucketResult === "200" &&
-                            res.OnEndStreamEndResult.StoreAndQueueWorkResult.AddWorkToSQSWorkQueueResults?.SQSWriteResult === "200" ) )
+                            res.OnEndStreamEndResult.StoreAndQueueWorkResult.AddWorkToSQSWorkQueueResult?.AddWorkToSQSQueue.SQSWriteResult === "200" ) )
                     {
                         try
                         {
@@ -2280,7 +2280,7 @@ async function storeAndQueueWork ( updates: any[], s3Key: string, config: custom
 
     if ( tcc.SelectiveDebug.indexOf( "_915," ) > -1 ) console.info( `Selective Debug 915 - Results of Store and Queue of Updates - Add to Process Bucket: ${ JSON.stringify( addWorkToS3WorkBucketResult ) } \n Add to Process Queue: ${ JSON.stringify( addWorkToSQSWorkQueueResult ) } ` )
 
-    return {AddWorkToS3WorkBucketResult: addWorkToS3WorkBucketResult, AddWorkToSQSWorkQueueResult: addWorkToSQSWorkQueueResult}
+    return {AddWorkToS3WorkBucketResult: addWorkToS3WorkBucketResult, AddWorkToSQSWorkQueueResults: addWorkToSQSWorkQueueResult}
 
 }
 
