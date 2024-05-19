@@ -2222,7 +2222,7 @@ async function storeAndQueueWork ( updates: any[], s3Key: string, config: custom
         key = key.split( '/' ).at( -1 ) ?? key
     }
 
-    key = s3Key.replace( '.', '_' )
+    key = key.replace( '.', '_' )
 
     key = `${ key }_update-${ uuidv4()}_${ batchCount }_${ updateCount }.xml`
 
@@ -2596,6 +2596,7 @@ async function addWorkToS3WorkBucket ( queueUpdates: string, key: string ) {
         console.warn( `Work/Process Bucket Quiesce is in effect, no New Work Files are being written to the S3 Queue Bucket. This work file is for ${ key }` )
         return {versionId: '', S3ProcessBucketResult: '', AddWorkToS3ProcessBucket: 'In Quiesce'}
     }
+
 
     const s3WorkPutInput = {
         Body: queueUpdates,
