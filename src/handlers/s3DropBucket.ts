@@ -482,7 +482,7 @@ export const s3DropBucketHandler: Handler = async ( event: S3Event, context: Con
 
                     if ( ( res?.PutToFireHoseAggregatorResult === "200" ) ||
                         ( res.OnEndStreamEndResult.StoreAndQueueWorkResult.AddWorkToS3WorkBucketResults?.S3ProcessBucketResult === "200" &&
-                            res.OnEndStreamEndResult.StoreAndQueueWorkResult.AddWorkToSQSWorkQueueResult?.AddWorkToSQSQueue.SQSWriteResult === "200" ) )
+                            res.OnEndStreamEndResult.StoreAndQueueWorkResult.AddWorkToSQSWorkQueueResults?.SQSWriteResult === "200" ) )
                     {
                         try
                         {
@@ -2263,7 +2263,7 @@ async function storeAndQueueWork ( updates: any[], s3Key: string, config: custom
     {
         addWorkToSQSWorkQueueResult = await addWorkToSQSWorkQueue( config, key, v, batchCount, updates.length.toString(), marker )
             .then( ( res ) => {
-                return {AddWorkToSQSQueue: res}
+                return res
                 //     {
                 //         sqsWriteResult: "200",
                 //         workQueuedSuccess: true,
