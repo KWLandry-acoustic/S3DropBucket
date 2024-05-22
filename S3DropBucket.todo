@@ -1,28 +1,29 @@
 Production Migration: 
-  ☐ ToDo: Create Case for Refund @created(24-03-18 11:39)
-  ☐ ToDo: Complete Production Candidate paperwork Aaron forwarded @created(24-03-18 11:39)
-
+  ✔ ToDo: Create Case for Refund @created(24-03-18 11:39) @done(24-05-22 12:19)
+  ✔ ToDo: Complete Production Candidate paperwork Aaron forwarded @created(24-03-18 11:39) @done(24-05-22 12:19)
 
 Future: 
   ☐ ToDo: Add UnZip capability @created(24-02-14 12:12) @started(24-02-14 12:12)
-  ☐ ToDo: CleanUp/ReQueue capability for TricklerCache bucket @created(24-03-18 11:38)
-  ☐ ToDo: CleanUp/ReQueue capability for Tricklercache-process bucket @created(24-03-18 11:38)
+  ☐ ToDo: CleanUp/ReQueue capability for S3DropBucket bucket @created(24-03-18 11:38)
+    Refactor to Reporting - not ReQueuing
+  ☐ ToDo: CleanUp/ReQueue capability for S3DropBucket-process bucket @created(24-03-18 11:38)
+     Refactor to Reporting - not ReQueuing
 
 Documentation DropBucket: 
-  ToDo: Word Template
+  ✔ ToDo: Word Template @created(24-05-22 12:18) @done(24-05-22 12:18)
 
 Documentation Data Cookbook - Ingesting and Transforming Data using S3 DropBucket and other methods:
   ✔ ToDo: Word Template @created(24-03-06 20:53) @done(24-03-06 20:53)
-  ToDo: OPs Chapter
-  ToDo: Troubleshooting Chapter 
-  ToDo: Core Setup/Configuration Options 
-  ToDo: Customer Configuration Options
-  ToDo: Helpful AWS CLI Commands
+  ✔ ToDo: OPs Chapter @created(24-05-22 12:18) @done(24-05-22 12:18)
+  ✔ ToDo: Troubleshooting Chapter @created(24-05-22 12:18) @done(24-05-22 12:18)
+  ✔ ToDo: Core Setup/Configuration Options @created(24-05-22 12:18) @done(24-05-22 12:18)
+  ✔ ToDo: Customer Configuration Options @created(24-05-22 12:17) @done(24-05-22 12:17)
+  ✔ ToDo: Helpful AWS CLI Commands @created(24-05-22 12:17) @done(24-05-22 12:17)
 
 DropBucket S3 Processor: 
   ✔ ToDo: Confirm Relational Table update is correct/works @created(24-03-06 20:49) @done(24-03-18 11:40)
-  ☐ ToDo: Confirm Keyed DB update is correct/works @created(24-03-06 20:49)
-  ☐ ToDo: Confirm NonKeyed DB update is correct/works @created(24-03-06 20:49)
+  ✔ ToDo: Confirm Keyed DB update is correct/works @created(24-03-06 20:49) @done(24-05-22 12:17)
+  ✔ ToDo: Confirm NonKeyed DB update is correct/works @created(24-03-06 20:49) @done(24-05-22 12:17)
 
   ✔ ToDo: Fix messaging for Firehose results @created(24-03-06 17:45) @done(24-03-12 22:38)
 
@@ -30,22 +31,38 @@ DropBucket S3 Processor:
 
   ✔ Debug: Unknown application error occurred @created(24-03-06 11:45) @done(24-03-06 20:49)
 
-  ☐ Debug: S3 Event delivered to Lambda but Lambda then reports File Key Not Found.... @created(24-01-31 12:35)
-    Turns out S3 allows duplicate Objects without means to delete a specific Object (ETag and Version not working well at all) 
-    So, for previously deleted the SDK makes it look like current referenced Object does not exist. 
+  ✔ Debug: S3 Event delivered to Lambda but Lambda then reports File Key Not Found.... @created(24-01-31 12:35) @done(24-05-22 12:17)
+    ✔ Turns out S3 allows duplicate Objects without means to delete a specific Object (ETag and Version not working well at all) @created(24-05-22 12:17) @done(24-05-22 12:17)
+    ✔ So, for previously deleted the SDK makes it look like current referenced Object does not exist. @created(24-05-22 12:17) @done(24-05-22 12:17)
+✔ @created(24-05-22 12:17) @done(24-05-22 12:17)
+  ✔ Debug: SQS Event in Batch, file processed and deleted Same event in Batch again, but file already deleted. @created(24-01-31 12:36) @done(24-05-22 12:16)
+    ✔ Same as previous, @created(24-05-22 12:16) @done(24-05-22 12:16)
+    ✔ Turns out S3 allows duplicate Objects without means to delete a specific Object (ETag and Version not working well at all) @created(24-05-22 12:17) @done(24-05-22 12:17)
+    ✔ So, for previously deleted SDK makes it look like current Object does not exist. @created(24-05-22 12:17) @done(24-05-22 12:17)
+    ✔ added uuid to file name @created(24-05-22 12:17) @done(24-05-22 12:17)
 
-  ☐ Debug: SQS Event in Batch, file processed and deleted Same event in Batch again, but file already deleted. @created(24-01-31 12:36)
-    Same as previous, 
-    Turns out S3 allows duplicate Objects without means to delete a specific Object (ETag and Version not working well at all) 
-    So, for previously deleted SDK makes it look like current Object does not exist. 
+  ✔ ToDo: Refactor messaging to reference Object properties versus stringifying and adding additional overhead @created(24-05-22 12:28) @done(24-05-22 12:28)
+  ✔ ToDo: Refactor to be consistent in using the response object across all processes @created(24-05-22 12:28) @done(24-05-22 12:28)
+  ✔ ToDo: Refactor messaging to be more consistent across all processes @created(24-05-22 12:28) @done(24-05-22 12:28)
+    // {
+    //     "OnEnd_StreamEndResult": "S3 Content Stream Ended for pura_2024_03_04T20_42_23_797Z.json. Processed 1 records as 1 batches.",
+    //         "OnClose_Result": "S3 Content Stream Closed for pura_2024_03_04T20_42_23_797Z.json",
+    //             "OnEnd_PutToFireHoseAggregator": "{}",
+    //                 "ReturnLocation": "...End of ReadStream Promise"
+    // }
+    // DeleteResult: "Successful Delete of pura_2024_03_04T20_42_23_797Z.json  (Result 204)"
+    //}
+
+
+
 
   ☐ Debug: DropBucket file deleted after Exception processing the file, @created(24-01-31 12:36)
 
   ✔ Debug: VisualCrossing not updating @created(24-01-31 12:36) @done(24-02-14 12:10)
 
-  ✘ Debug: Resolve SaveSample exception @created(24-01-31 12:36) @cancelled(24-03-18 11:41)
-    ✘ `   2024-01 - 31T02: 18: 59.176Z	624ac595 - 1a20 - 4fc8 - 9919 -09c4d51cb07c	ERROR	Unhandled Promise Rejection @created(24-03-18 11:41) @cancelled(24-03-18 11:41)
-✘ @created(24-03-18 11:41) @cancelled(24-03-18 11:41)
+  ✔ Debug: Resolve SaveSample exception @created(24-01-31 12:36) @done(24-05-22 12:16)
+    ✔ `   2024-01 - 31T02: 18: 59.176Z	624ac595 - 1a20 - 4fc8 - 9919 -09c4d51cb07c	ERROR	Unhandled Promise Rejection @created(24-03-18 11:41) @done(24-05-22 12:16)
+✔ @created(24-03-18 11:41) @done(24-05-22 12:16)
 
     ✔ ToDo: Confirm Retry of SQS Events (When Campaign throttles) works @created(24-02-03 18:24) @done(24-02-03 18:24)
 
@@ -56,7 +73,7 @@ DropBucket S3 Processor:
 
   ✔ ToDo: Add JSON Path to Map capability for JSON files in DropBucket @created(24-01-31 12:55) @started(24-02-14 12:12) @done(24-03-18 11:41) @lasted(4w4d22h29m56s)
   
-  ☐ Todo: Test JSONPath capabilty @created(24-02-14 12:11)
+  ✔ Todo: Test JSONPath capabilty @created(24-02-14 12:11) @done(24-05-22 12:16)
   ✔ ToDo: - as of 10/2023 CSV handled as the papaparse engine handles the record boundary, @created(24-01-31 12:31) @done(24-01-31 12:31)
   ✔ ToDo:  Now need to solve for JSON content @created(24-01-31 12:31) @done(24-01-31 12:31)
 
@@ -78,7 +95,7 @@ DropBucket Queue Processor:
     ✔ Todo: Currently throttled to a single event each time, Add processing of multiple Events per invocation @created(24-02-14 12:04) @done(24-02-14 12:04)
     ✔ ToDo: Process to ReParse Cache and create Work Files @created(24-02-03 18:29) @done(24-02-03 18:29)
     
-    ToDo: Column mapping - Inbound Column Name to Table Column Mapping
+    ✔ ToDo: Column mapping - Inbound Column Name to Table Column Mapping @created(24-05-22 12:15) @done(24-05-22 12:15)
     ToDo: Type Validation - Inbound Data type validation to Mapping Type
         ✔ ToDo: Confirm SQS Queue deletes queued work @created(24-02-03 18:24) @done(24-02-03 18:24)
 
@@ -135,8 +152,8 @@ SegmentConnector:
   ✔ Todo: Complete Test of latest @created(24-02-14 12:03) @done(24-02-14 12:03)
   ✔ Todo: Create PR @created(24-02-14 12:03) @done(24-02-14 12:03)
   ✔ ToDo: Confirm last update data arriving, no issues, @created(24-03-12 22:37) @done(24-03-12 22:37)
-  ToDo: review all material for Catalog PR 
-  ToDo: Create PR for Catalog Entry
+  ✔ ToDo: review all material for Catalog PR @created(24-05-22 12:15) @done(24-05-22 12:15)
+  ✔ ToDo: Create PR for Catalog Entry @created(24-05-22 12:15) @done(24-05-22 12:15)
   ToDo: Confirm Catalog Entry correctness and completion
 
 

@@ -246,20 +246,20 @@ let processS3ObjectStreamResolution: processS3ObjectStreamResult = {
         }
     },
     OnEndStreamEndResult: {
-            StoreAndQueueWorkResult: {
-                AddWorkToS3WorkBucketResults: {
-                    versionId: "",
-                    S3ProcessBucketResult: "",
-                    AddWorkToS3ProcessBucket: ""
-                },
-                AddWorkToSQSWorkQueueResults: {
-                    SQSWriteResult: "",
-                    AddToSQSQueue: ""
-                },
-                StoreQueueWorkException: "",
-                StoreS3WorkException: ""
-            }
-        },
+        StoreAndQueueWorkResult: {
+            AddWorkToS3WorkBucketResults: {
+                versionId: "",
+                S3ProcessBucketResult: "",
+                AddWorkToS3ProcessBucket: ""
+            },
+            AddWorkToSQSWorkQueueResults: {
+                SQSWriteResult: "",
+                AddToSQSQueue: ""
+            },
+            StoreQueueWorkException: "",
+            StoreS3WorkException: ""
+        }
+    },
     StreamEndResult: "",
     StreamException: "",
     OnEndRecordStatus: "",
@@ -301,10 +301,10 @@ testS3Bucket = "s3dropbucket-configs"
 // testS3Key = "TestData/pura_2024_02_25T00_00_00_090Z.json"
 
 // testS3Key = "TestData/pura_S3DropBucket_Aggregator-8-2024-03-23-09-23-55-123cb0f9-9552-3303-a451-a65dca81d3c4_json_update_53_99.xml"
-// testS3Key = "TestData/alerusrepsignature_sampleformatted_json_update_1_1.xml"
-
+//testS3Key = "TestData/alerusrepsignature_sampleformatted_json_update_1_1.xml"
+testS3Key = "TestData/alerusrepsignature_advisors_2_json_update-3c74bfb2-1997-4653-bd8e-73bf030b4f2d_26_14.xml"
 //  Core - Key Set of Test Datasets 
-testS3Key = "TestData/cloroxweather_99706.csv"
+//testS3Key = "TestData/cloroxweather_99706.csv"
 //testS3Key = "TestData/pura_S3DropBucket_Aggregator-8-2024-03-19-16-42-48-46e884aa-8c6a-3ff9-8d32-c329395cf311.json"
 //testS3Key = "TestData/pura_2024_02_26T05_53_26_084Z.json"
 //testS3Key = "TestData/alerusrepsignature_sample.json"
@@ -411,14 +411,12 @@ export const s3DropBucketHandler: Handler = async ( event: S3Event, context: Con
         vid = r.s3.object.versionId ?? undefined
         et = r.s3.object.eTag ?? ""
 
-
+        customersConfig = await getCustomerConfig( key )
 
         //Initial work out for writing logs to S3 Bucket
         try
         {
             if ( key.indexOf( 'S3DropBucket-LogsS3DropBucket_Aggregator' ) > -1 ) console.warn( `Warning -- Found Invalid Aggregator File Name - ${ key }` )
-
-            customersConfig = await getCustomerConfig( key )
             if ( tcc.SelectiveDebug.indexOf( "_101," ) > -1 ) console.info( `(101) Processing inbound data for ${ customersConfig.Customer } - ${ key }` )
 
         }
@@ -427,35 +425,31 @@ export const s3DropBucketHandler: Handler = async ( event: S3Event, context: Con
             throw new Error( `Exception - Retrieving Customer Config for ${ key } \n${ e }` )
         }
 
+        //ReQueue .xml files - in lieu of requeing through config, have work files (....xml) moved to the S3DropBucket bucket and drive 
+        //  an object creation event to the handler
+        try
+        {
+            if ( key.indexOf( '.xml' ) > -1 )
+            {
+                console.warn( `Warning -- Found Invalid Aggregator File Name - ${ key }` )
 
-        //Deprecated?? Already have Key and Bucket set if in debug??
-        //// If running Locally/Debug-get test files from the testdata folder of the s3dropbucket-configs/TestData/ bucket
-        //if ( testS3Key )
-        //{
-        //    key = testS3Key
-        //    bucket = 'S3DropBucket'
-        //}
-        //if ( testS3Bucket )
-        //{
-        //    bucket = testS3Bucket
-        //}
+                const getWork = await getS3Work( key, bucket )
+                    .then( async ( work ) => {
+                        const workSet = work.split('</Envelope>')
+                        const reQueueWorkRes = await packageUpdates( workSet, key, customersConfig )
+                })
 
-
+                if ( tcc.SelectiveDebug.indexOf( "_101," ) > -1 ) console.info( `(101) Processing inbound data for ${ customersConfig.Customer } - ${ key }` )
+            }
+        }
+        catch ( e )
+        {
+            throw new Error( `Exception - ReQueing Work from ${bucket} for ${ key } \n${ e }` )
+        }
 
         batchCount = 0
         recs = 0
 
-        //ToDo: Refactor messaging to reference Object properties versus stringifying and adding additional overhead
-        //ToDo: Refactor to be consistent in using the response object across all processes
-        //ToDo: Refactor messaging to be more consistent across all processes
-        // {
-        //     "OnEnd_StreamEndResult": "S3 Content Stream Ended for pura_2024_03_04T20_42_23_797Z.json. Processed 1 records as 1 batches.",
-        //         "OnClose_Result": "S3 Content Stream Closed for pura_2024_03_04T20_42_23_797Z.json",
-        //             "OnEnd_PutToFireHoseAggregator": "{}",
-        //                 "ReturnLocation": "...End of ReadStream Promise"
-        // }
-        // DeleteResult: "Successful Delete of pura_2024_03_04T20_42_23_797Z.json  (Result 204)"
-        //}
 
         try
         {
@@ -743,7 +737,6 @@ async function processS3ObjectContentStream ( key: string, bucket: string, custC
             s3ContentReadableStream = s3ContentReadableStream.pipe( jsonParser )
 
             s3ContentReadableStream.setMaxListeners( Number( tcc.EventEmitterMaxListeners ) )
-
 
             chunks = []
             batchCount = 0
@@ -1204,18 +1197,21 @@ export const S3DropBucketQueueProcessorHandler: Handler = async ( event: SQSEven
 
                 if ( tcc.SelectiveDebug.indexOf( "_908," ) > -1 ) console.info( `Selective Debug 908 - POST Result for ${ tqm.workKey }(versionId: ${ tqm.versionId }): ${ postResult } ` )
 
+                debugger
+
                 if ( postResult.indexOf( 'retry' ) > -1 )
                 {
                     console.warn( `Retry Marked for ${ tqm.workKey }. Returning Work Item ${ q.messageId } to Process Queue (Total Retry Count: ${ sqsBatchFail.batchItemFailures.length + 1 }). \n${ postResult } ` )
                     //Add to BatchFail array to Retry processing the work 
                     sqsBatchFail.batchItemFailures.push( {itemIdentifier: q.messageId} )
-                    if ( tcc.SelectiveDebug.indexOf( "_509," ) > -1 ) console.info( `(509) - ${ tqm.workKey } added back to SQS for Retry \n${ JSON.stringify( sqsBatchFail ) } ` )
+
+                    if ( tcc.SelectiveDebug.indexOf( "_509," ) > -1 ) console.info( `(509) - ${ tqm.workKey } added back to Queue for Retry \n${ JSON.stringify( sqsBatchFail ) } ` )
 
                 }
 
                 else if ( postResult.toLowerCase().indexOf( 'unsuccessful post' ) > -1 )
                 {
-                    console.error( `Error - Unsuccessful POST (Hard Failure) for ${ tqm.workKey }(versionId: ${ tqm.versionId }): \n${ postResult }\nCustomer: ${ custconfig.Customer }, ListId: ${ custconfig.listId } ListName: ${ custconfig.listName } ` )
+                    console.error( `Error - Unsuccessful POST (Hard Failure) for ${ tqm.workKey }: \n${ postResult }\nCustomer: ${ custconfig.Customer }, ListId: ${ custconfig.listId } ListName: ${ custconfig.listName } ` )
                 }
                 else
                 {
@@ -1230,18 +1226,16 @@ export const S3DropBucketQueueProcessorHandler: Handler = async ( event: SQSEven
                     }
 
                     //Delete the Work file
-                    const d: string = await deleteS3Object( tqm.workKey, tcc.S3DropBucketWorkBucket )
+                    const d = await deleteS3Object( tqm.workKey, tcc.S3DropBucketWorkBucket )
                     if ( d === '204' )
                     {
                         if ( tcc.SelectiveDebug.indexOf( "_924," ) > -1 ) console.info( `Selective Debug 924 - Successful Deletion of Queued Work file: ${ tqm.workKey }` )
                     }
 
-                    else if ( tcc.SelectiveDebug.indexOf( "_924," ) > -1 ) console.error( `Selective Debug 924 - Failed to Delete ${ tqm.workKey } (versionId: ${ tqm.versionId }). Expected '204' but received ${ d } ` )
+                    else if ( tcc.SelectiveDebug.indexOf( "_924," ) > -1 ) console.error( `Selective Debug 924 - Failed to Delete ${ tqm.workKey }. Expected '204' but received ${ d } ` )
 
                 }
 
-                if ( tcc.SelectiveDebug.indexOf( "_511," ) > -1 ) console.info( `(511) Processed ${ tqm.updateCount } Updates from ${ tqm.workKey }` )
-                
             }
             else throw new Error( `Failed to retrieve work file(${ tqm.workKey }) ` )
 
@@ -1251,6 +1245,9 @@ export const S3DropBucketQueueProcessorHandler: Handler = async ( event: SQSEven
         }
 
     }
+
+
+    if ( tcc.SelectiveDebug.indexOf( "_511," ) > -1 ) console.info( `(511) Processed ${ tqm.updateCount } Updates from ${ tqm.workKey }` )
 
     if ( tcc.SelectiveDebug.indexOf( "_510," ) > -1 ) console.info( `(510) Processed ${ event.Records.length } Work Queue Events. Posted: ${ postResult }. \nItems Retry Count: ${ sqsBatchFail.batchItemFailures.length } \nItems Retry List: ${ JSON.stringify( sqsBatchFail ) } ` )
 
@@ -2215,7 +2212,7 @@ async function storeAndQueueWork ( updates: any[], s3Key: string, config: custom
     }
 
     let key = s3Key
-    
+
 
     while ( key.indexOf( '/' ) > -1 )
     {
@@ -2224,7 +2221,7 @@ async function storeAndQueueWork ( updates: any[], s3Key: string, config: custom
 
     key = key.replace( '.', '_' )
 
-    key = `${ key }_update-${ uuidv4()}_${ batchCount }_${ updateCount }.xml`
+    key = `${ key }-update-${ batchCount }-${ updateCount }-${ uuidv4() }.xml`
 
 
     //if ( Object.values( updates ).length !== recs )
@@ -2792,37 +2789,12 @@ async function deleteS3Object ( s3ObjKey: string, bucket: string ) {
 
     let delRes = ''
 
-    //  
-    //ToDo: Attempt to uniquely delete one object with a duplicate name of another object (Yep, that's a thing in S3)
-    //
-    // const listObjectCommand = {
-    //     Bucket: bucket, // required
-    //     // KeyMarker: s3ObjKey,
-    //     Prefix: s3ObjKey,
-    //     // versionId: ver,
-    //     IfMatch: entity
-    // }
-    // // console.info("Debug: ", entity, "Debug: ", ver)
-    // const loc = new ListObjectVersionsCommand(listObjectCommand)
-    // const locResponse = await s3.send(loc)
-    //     .then(async (listResult: ListObjectsV2CommandOutput) => {
-    //         console.info(`ListObject Response: ${JSON.stringify(listResult)}`)
-    //
-    //     })
-    //
-    //
-
-
-
     const s3D = {
         Key: s3ObjKey,
         Bucket: bucket
     }
 
-
     const d = new DeleteObjectCommand( s3D )
-
-    // d.setMatchingETagConstraints(Collections.singletonList(et));
 
     try
     {
