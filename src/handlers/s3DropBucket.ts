@@ -1213,6 +1213,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async ( event: SQSEven
                 {
                     console.error( `Error - Unsuccessful POST (Hard Failure) for ${ tqm.workKey }: \n${ postResult }\nCustomer: ${ custconfig.Customer }, ListId: ${ custconfig.listId } ListName: ${ custconfig.listName } ` )
                 }
+                    
                 else
                 {
                     if ( postResult.toLowerCase().indexOf( 'partially successful' ) > -1 )
@@ -1234,6 +1235,11 @@ export const S3DropBucketQueueProcessorHandler: Handler = async ( event: SQSEven
 
                     else if ( tcc.SelectiveDebug.indexOf( "_924," ) > -1 ) console.error( `Selective Debug 924 - Failed to Delete ${ tqm.workKey }. Expected '204' but received ${ d } ` )
 
+                    
+                    if ( tcc.SelectiveDebug.indexOf( "_511," ) > -1 ) console.info( `(511) Processed ${ tqm.updateCount } Updates from ${ tqm.workKey }` )
+
+                    if ( tcc.SelectiveDebug.indexOf( "_510," ) > -1 ) console.info( `(510) Processed ${ event.Records.length } Work Queue Events. Posted: ${ postResult }. \nItems Retry Count: ${ sqsBatchFail.batchItemFailures.length } \nItems Retry List: ${ JSON.stringify( sqsBatchFail ) } ` )
+                    
                 }
 
             }
@@ -1246,10 +1252,6 @@ export const S3DropBucketQueueProcessorHandler: Handler = async ( event: SQSEven
 
     }
 
-
-    if ( tcc.SelectiveDebug.indexOf( "_511," ) > -1 ) console.info( `(511) Processed ${ tqm.updateCount } Updates from ${ tqm.workKey }` )
-
-    if ( tcc.SelectiveDebug.indexOf( "_510," ) > -1 ) console.info( `(510) Processed ${ event.Records.length } Work Queue Events. Posted: ${ postResult }. \nItems Retry Count: ${ sqsBatchFail.batchItemFailures.length } \nItems Retry List: ${ JSON.stringify( sqsBatchFail ) } ` )
 
     let maintenance: ( number | string[] )[] = []
 
