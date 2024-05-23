@@ -1204,7 +1204,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async ( event: SQSEven
                 //partially successful
                 //successfully posted
 
-                if ( tcc.SelectiveDebug.indexOf( "_908," ) > -1 ) console.info( `Selective Debug 908 - POST Result for ${ tqm.workKey }(versionId: ${ tqm.versionId }): ${ postResult } ` )
+                if ( tcc.SelectiveDebug.indexOf( "_908," ) > -1 ) console.info( `Selective Debug 908 - POST Result for ${ tqm.workKey }: ${ postResult } ` )
 
                 debugger
 
@@ -2920,7 +2920,7 @@ export async function postToCampaign ( xmlCalls: string, config: customerConfig,
             // console.error(`Debug POST Response: ${result}`)
             let faults: string[] = []
 
-            const f = result.split( /<FaultString><!\[CDATA\[(.*)\]\]/g )
+            //const f = result.split( /<FaultString><!\[CDATA\[(.*)\]\]/g )
 
             //Add this fail
             //<RESULT>
@@ -2946,7 +2946,7 @@ export async function postToCampaign ( xmlCalls: string, config: customerConfig,
                 result.toLowerCase().indexOf( 'Error saving row' ) > -1
             )
             {
-                console.error( `Temporary Failure - POST of the Updates - Marked for Retry. \n${ result }` )
+                console.error( `Temporary Failure - POST Updates - Marked for Retry. \n${ result }` )
                 return 'retry'
             }
             else if ( result.indexOf( '<FaultString><![CDATA[' ) > -1 )
@@ -2959,18 +2959,15 @@ export async function postToCampaign ( xmlCalls: string, config: customerConfig,
                         faults.push( fl )
                     }
                 }
+                console.error( `Partially Successful POST of the Updates (${ f.length } of ${ count }) - \nResults\n ${ JSON.stringify( faults ) }` )
                 return `Partially Successful - (${ f.length } of ${ count }) \n${ JSON.stringify( faults ) }`
             }
-            //else if ( result.indexOf('<FAILURE failure_type') > -1 )
-            //{
-
 
             //Add this Fail 
             //    //<SUCCESS> true < /SUCCESS>
             //    //    < FAILURES >
             //    //    <FAILURE failure_type="permanent" description = "There is no column registeredAdvisorTitle" >
             //    const m = result.match( /<FAILURE failure_(.*)"/gm )
-
 
             else if ( result.indexOf( "<FAILURE  failure_type" ) > -1 )
             {
