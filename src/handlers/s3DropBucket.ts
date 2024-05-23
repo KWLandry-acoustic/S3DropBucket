@@ -302,7 +302,7 @@ testS3Bucket = "s3dropbucket-configs"
 
 // testS3Key = "TestData/pura_S3DropBucket_Aggregator-8-2024-03-23-09-23-55-123cb0f9-9552-3303-a451-a65dca81d3c4_json_update_53_99.xml"
 //testS3Key = "TestData/alerusrepsignature_sampleformatted_json_update_1_1.xml"
-testS3Key = "TestData/alerusrepsignature_advisors_2_json_update-3c74bfb2-1997-4653-bd8e-73bf030b4f2d_26_14.xml"
+//testS3Key = "TestData/alerusrepsignature_advisors_2_json_update-3c74bfb2-1997-4653-bd8e-73bf030b4f2d_26_14.xml"
 //  Core - Key Set of Test Datasets 
 //testS3Key = "TestData/cloroxweather_99706.csv"
 //testS3Key = "TestData/pura_S3DropBucket_Aggregator-8-2024-03-19-16-42-48-46e884aa-8c6a-3ff9-8d32-c329395cf311.json"
@@ -311,6 +311,7 @@ testS3Key = "TestData/alerusrepsignature_advisors_2_json_update-3c74bfb2-1997-46
 //testS3Key = "TestData/alerusrepsignature_advisors.json"
 // testS3Key = "TestData/alerusrepsignature_sampleformatted.json"
 // testS3Key = "TestData/alerusrepsignature_sample - min.json"
+testS3Key = "TestData/alerusreassignrepsignature_advisors.json"
 
 let vid: string | undefined
 let et: string | undefined
@@ -411,7 +412,15 @@ export const s3DropBucketHandler: Handler = async ( event: S3Event, context: Con
         vid = r.s3.object.versionId ?? undefined
         et = r.s3.object.eTag ?? ""
 
-        customersConfig = await getCustomerConfig( key )
+        try
+        {
+            customersConfig = await getCustomerConfig( key )
+        } catch (e)
+        {
+            console.error( `Exception - Pulling Customer Config \n${ e } ` )
+            break
+        }
+
 
         //Initial work out for writing logs to S3 Bucket
         try
@@ -1921,6 +1930,7 @@ async function getCustomerConfig ( filekey: string ) {
             } )
     } catch ( e )
     {
+        debugger
         throw new Error( `Exception - Pulling Customer Config \n${ ccr } \n${ e } ` )
     }
 
