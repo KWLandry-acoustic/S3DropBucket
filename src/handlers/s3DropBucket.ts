@@ -142,7 +142,7 @@ export interface tcConfig {
     xmlapiurl: string
     restapiurl: string
     authapiurl: string
-    separator: string
+    jsonSeparator: string
     MaxBatchesWarning: number,
     SelectiveDebug: string,
     WorkQueueQuiesce: boolean
@@ -415,7 +415,7 @@ export const s3DropBucketHandler: Handler = async ( event: S3Event, context: Con
         try
         {
             customersConfig = await getCustomerConfig( key )
-        } catch (e)
+        } catch ( e )
         {
             console.error( `Exception - Pulling Customer Config \n${ e } ` )
             break
@@ -444,16 +444,16 @@ export const s3DropBucketHandler: Handler = async ( event: S3Event, context: Con
 
                 const getWork = await getS3Work( key, bucket )
                     .then( async ( work ) => {
-                        const workSet = work.split('</Envelope>')
+                        const workSet = work.split( '</Envelope>' )
                         const reQueueWorkRes = await packageUpdates( workSet, key, customersConfig )
-                })
+                    } )
 
                 if ( tcc.SelectiveDebug.indexOf( "_101," ) > -1 ) console.info( `(101) Processing inbound data for ${ customersConfig.Customer } - ${ key }` )
             }
         }
         catch ( e )
         {
-            throw new Error( `Exception - ReQueing Work from ${bucket} for ${ key } \n${ e }` )
+            throw new Error( `Exception - ReQueing Work from ${ bucket } for ${ key } \n${ e }` )
         }
 
         batchCount = 0
@@ -713,15 +713,15 @@ async function processS3ObjectContentStream ( key: string, bucket: string, custC
             //if ( key.indexOf( 'aggregate_' ) > -1 ) console.info( `Begin Stream Parsing aggregate file ${ key }` )
 
 
-            let sep = tcc.separator
-            if ( custConfig.separator && key.indexOf( 'aggregate_' ) < 0 ) sep = custConfig.separator
+            let jsonSep = tcc.jsonSeparator
+            if ( custConfig.separator && key.indexOf( 'aggregate_' ) < 0 ) jsonSep = custConfig.separator
 
             const jsonParser = new JSONParser( {
                 // numberBufferSize: 64,        //64, //0, //undefined, // set to 0 to don't buffer.
                 stringBufferSize: undefined,        //64, //0, //undefined,
                 //separator: '\n',               // separator between object. For example `\n` for nd-js.
                 //separator: `''`,               // separator between object. For example `\n` for nd-js.
-                separator: sep,               // separator between object. For example `\n` for nd-js.
+                separator: jsonSep,               // separator between object. For example `\n` for nd-js.
                 paths: [ '$' ],              //ToDo: Possible data transform oppty
                 keepStack: false,
                 emitPartialTokens: false    // whether to emit tokens mid-parsing.
@@ -759,7 +759,7 @@ async function processS3ObjectContentStream ( key: string, bucket: string, custC
                     .on( 'error', async function ( err: string ) {
                         debugger
 
-                        const errMessage = `An error has stopped Content Parsing at record ${ recs++ } for s3 object ${ key }. Separator is ${ sep }.\n${ err } \n${ chunks }`
+                        const errMessage = `An error has stopped Content Parsing at record ${ recs++ } for s3 object ${ key }. Separator is ${ jsonSep }.\n${ err } \n${ chunks }`
 
                         console.error( errMessage )
 
@@ -1222,7 +1222,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async ( event: SQSEven
                 {
                     console.error( `Error - Unsuccessful POST (Hard Failure) for ${ tqm.workKey }: \n${ postResult }\nCustomer: ${ custconfig.Customer }, ListId: ${ custconfig.listId } ListName: ${ custconfig.listName } ` )
                 }
-                    
+
                 else
                 {
                     if ( postResult.toLowerCase().indexOf( 'partially successful' ) > -1 )
@@ -1244,11 +1244,11 @@ export const S3DropBucketQueueProcessorHandler: Handler = async ( event: SQSEven
 
                     else if ( tcc.SelectiveDebug.indexOf( "_924," ) > -1 ) console.error( `Selective Debug 924 - Failed to Delete ${ tqm.workKey }. Expected '204' but received ${ d } ` )
 
-                    
+
                     if ( tcc.SelectiveDebug.indexOf( "_511," ) > -1 ) console.info( `(511) Processed ${ tqm.updateCount } Updates from ${ tqm.workKey }` )
 
                     if ( tcc.SelectiveDebug.indexOf( "_510," ) > -1 ) console.info( `(510) Processed ${ event.Records.length } Work Queue Events. Posted: ${ postResult }. \nItems Retry Count: ${ sqsBatchFail.batchItemFailures.length } \nItems Retry List: ${ JSON.stringify( sqsBatchFail ) } ` )
-                    
+
                 }
 
             }
@@ -1686,14 +1686,15 @@ async function getValidateS3DropBucketConfig () {
         if ( tc.authapiurl !== undefined ) process.env[ "authapiurl" ] = tc.authapiurl
         else throw new Error( `S3DropBucket Config invalid definition: authapiurl - ${ tcc.authapiurl } ` )
 
-        if ( tc.separator !== undefined )
+        //Default Seperator 
+        if ( tc.jsonSeparator !== undefined )
         {
-            if ( tc.separator.toLowerCase() === "null" ) tc.separator = `''`
-            if ( tc.separator.toLowerCase() === "empty" ) tc.separator = `""`
-            if ( tc.separator.toLowerCase() === "\n" ) tc.separator = '\n'
+            if ( tc.jsonSeparator.toLowerCase() === "null" ) tc.jsonSeparator = `''`
+            if ( tc.jsonSeparator.toLowerCase() === "empty" ) tc.jsonSeparator = `""`
+            if ( tc.jsonSeparator.toLowerCase() === "\n" ) tc.jsonSeparator = '\n'
         }
-        else tc.separator = '\n'
-        process.env[ 'separator' ] = tc.separator
+        else tc.jsonSeparator = '\n'
+        process.env[ 'jsonSeparator' ] = tc.jsonSeparator
 
 
         if ( tc.WorkQueueQuiesce !== undefined )
@@ -2006,6 +2007,8 @@ async function validateCustomerConfig ( config: customerConfig ) {
         config.separator = '\n'
     }
 
+
+    //Customer specific separator 
     if ( config.separator.toLowerCase() === "null" ) config.separator = `''`
     if ( config.separator.toLowerCase() === "empty" ) config.separator = `""`
     if ( config.separator.toLowerCase() === "\n" ) config.separator = '\n'
@@ -2418,7 +2421,15 @@ function transforms ( updates: any[], config: customerConfig ) {
 
     //Clorox Weather Data
     //Add dateday column
-    if ( config.Customer.toLowerCase().indexOf( 'cloroxweather_' ) > -1 )
+    
+    // Prep to add transform in Config file:
+    //Get Method to apply - const method = config.transforms.method (if "dateDay") )
+    //Get column to update - const column = config.transforms.methods[0].updColumn
+    //Get column to reference const refColumn = config.transforms.method.refColumn
+    
+    if ( config.Customer.toLowerCase().indexOf( 'kingsfordweather_' ) > -1 )
+
+    
     {
         let t: typeof updates = []
 
@@ -2946,7 +2957,7 @@ export async function postToCampaign ( xmlCalls: string, config: customerConfig,
                 result.toLowerCase().indexOf( 'Error saving row' ) > -1
             )
             {
-                console.error( `Temporary Failure - POST Updates - Marked for Retry. \n${ result }` )
+                console.warn( `Temporary Failure - POST Updates - Marked for Retry. \n${ result }` )
                 return 'retry'
             }
             else if ( result.indexOf( '<FaultString><![CDATA[' ) > -1 )
@@ -2959,7 +2970,7 @@ export async function postToCampaign ( xmlCalls: string, config: customerConfig,
                         faults.push( fl )
                     }
                 }
-                console.error( `Partially Successful POST of the Updates (${ f.length } of ${ count }) - \nResults\n ${ JSON.stringify( faults ) }` )
+                console.warn( `Partially Successful POST of the Updates (${ f.length } of ${ count }) - \nResults\n ${ JSON.stringify( faults ) }` )
                 return `Partially Successful - (${ f.length } of ${ count }) \n${ JSON.stringify( faults ) }`
             }
 

@@ -1,6 +1,6 @@
 {
-  "name": "tricklercache_lambda_s3_dropbucket",
-  "description": "TricklerCache Lambda-S3 DropBucket Project",
+  "name": "lambda_s3dropbucket",
+  "description": "Lambda - S3DropBucket Project",
   "version": "0.0.1",
   "private": true,
   "type": "module",
@@ -66,8 +66,8 @@
   "main": ".eslintrc.js",
   "repository": {
     "type": "git",
-    "url": "tricklercache"
+    "url": "s3dropbucket"
   },
-  "author": "",
+  "author": "kip.landry@acoustic.co",
   "license": "ISC"
 }
