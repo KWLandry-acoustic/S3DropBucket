@@ -2025,7 +2025,7 @@ async function validateCustomerConfig ( config: customerConfig ) {
         throw new Error( 'Invalid Config - Pod is not 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, A, or B. ' )
     }
 
-
+    //
     //    XMLAPI Endpoints
     //Pod 1 - https://api-campaign-us-1.goacoustic.com/XMLAPI
     //Pod 2 - https://api-campaign-us-2.goacoustic.com/XMLAPI
