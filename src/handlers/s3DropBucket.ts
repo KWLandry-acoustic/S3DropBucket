@@ -568,6 +568,9 @@ export const s3DropBucketHandler: Handler = async ( event: S3Event, context: Con
     if ( tcc.SelectiveDebug.indexOf( "_920," ) > -1 ) console.info( `Selective Debug 920 - \n${ JSON.stringify( osr ) }` )
 
 
+    //
+    //Possible Logging Option
+    //
     if ( tcc.S3DropBucketLog )
     {
         const logMsg = [ osr ]
