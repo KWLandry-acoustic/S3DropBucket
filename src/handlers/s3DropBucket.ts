@@ -1602,7 +1602,7 @@ async function getValidateS3DropBucketConfig () {
     else
     {
         getObjectCmd = {
-            Bucket: 's3dropbucket-configs',
+            Bucket: process.env.S3DropBucketConfigBucket,    //'s3dropbucket-configs',
             Key: 's3dropbucket_config.jsonc',
         }
     }
@@ -1628,7 +1628,7 @@ async function getValidateS3DropBucketConfig () {
             } )
     } catch ( e )
     {
-        console.error( `Exception - Pulling S3DropBucket Config File \n${ tcr } \n${ e } ` )
+        console.error( `Exception - Pulling S3DropBucket Config File \nResult: ${ tcr } \nException: \n${ e } ` )
     }
 
     try
