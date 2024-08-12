@@ -1611,7 +1611,6 @@ async function getValidateS3DropBucketConfig () {
     let tcr
     let tc = {} as tcConfig
 
-
     try
     {
         tc = await s3.send( new GetObjectCommand( getObjectCmd ) )
@@ -1619,7 +1618,7 @@ async function getValidateS3DropBucketConfig () {
 
                 tcr = ( await getConfigS3Result.Body?.transformToString( 'utf8' ) ) as string
 
-                //Parse comments out of the json before parse
+                //Parse comments out of the json before returning parsed config json
                 tcr = tcr.replaceAll( new RegExp( /[^:](\/\/.*(,|$|")?)/g ), '' )
                 tcr = tcr.replaceAll( ' ', '' )
                 tcr = tcr.replaceAll( '\n', '' )
@@ -1628,7 +1627,8 @@ async function getValidateS3DropBucketConfig () {
             } )
     } catch ( e )
     {
-        console.error( `Exception - Pulling S3DropBucket Config File \nResult: ${ tcr } \nException: \n${ e } ` )
+        console.error( `Exception - Pulling S3DropBucket Config File (bucket:${ getObjectCmd.Bucket }  key:${ getObjectCmd.Key }) \nResult: ${ tcr } \nException: \n${ e } ` )
+        return
     }
 
     try
@@ -1652,7 +1652,7 @@ async function getValidateS3DropBucketConfig () {
 
         if ( !tc.S3DropBucket || tc.S3DropBucket === "" )
         {
-            throw new Error( `Exception -S3DropBucket Configuration is not correct: ${ tc.S3DropBucket }.` )
+            throw new Error( `Exception - S3DropBucket Configuration is not correct: ${ tc.S3DropBucket }.` )
         }
         else process.env[ "s3DropBucket" ] = tc.S3DropBucket
 
