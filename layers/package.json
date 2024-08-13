@@ -1,6 +1,6 @@
 {
   "name": "lambda_s3dropbucket",
-  "description": "Lambda - S3DropBucket Project",
+  "description": "Lambda-S3DropBucket Project",
   "version": "0.0.1",
   "private": true,
   "type": "module",
