@@ -86,7 +86,7 @@ interface customerConfig {
     Customer: string
     format: string // CSV or JSON 
     separator: string
-    updates: string // singular or bulk (default)
+    updates: string // singular or Multiple (default)
     listId: string
     listName: string
     listType: string
@@ -874,10 +874,10 @@ async function processS3ObjectContentStream ( key: string, bucket: string, custC
                         try
                         {
 
-                            // if Not an Aggregate file, there are chunks to process, and Bulk option set)
+                            // if Not an Aggregate file, there are chunks to process, and Multiple option set)
 
                             if ( ( chunks.length > 0 ) &&
-                                ( custConfig.updates.toLowerCase() === 'bulk' ) ||
+                                ( custConfig.updates.toLowerCase() === 'multiple' ) ||
                                 key.toLowerCase().indexOf( 'aggregat' ) > 0 )
                             {
 
@@ -2034,7 +2034,7 @@ async function validateCustomerConfig ( config: customerConfig ) {
 
     if ( !config.updates.toLowerCase().match( /^(?:singular|multiple)$/gim ) )
     {
-        throw new Error( "Invalid Customer Config - Updates is not 'Singular' or 'Bulk' " )
+        throw new Error( "Invalid Customer Config - Updates is not 'Singular' or 'Multiple' " )
     }
 
 
@@ -2746,6 +2746,7 @@ async function addWorkToSQSWorkQueue ( config: customerConfig, key: string, vers
                 debugger
                 const storeQueueWorkException =
                     `Failed writing to SQS Process Queue (${ err }) \nQueue URL: ${ sqsParams.QueueUrl })\nWork to be Queued: ${ sqsQMsgBody.workKey }\nSQS Params: ${ JSON.stringify( sqsParams ) }`
+                console.error( `Failed to Write to SQS Process Queue. \n${ storeQueueWorkException}`)
                 return {StoreQueueWorkException: storeQueueWorkException}
             } )
     } catch ( e )
@@ -2987,8 +2988,9 @@ export async function postToCampaign ( xmlCalls: string, config: customerConfig,
                         faults.push( fl )
                     }
                 }
-                console.warn( `Partially Successful POST of the Updates (${ f.length } of ${ count }) - \nResults\n ${ JSON.stringify( faults ) }` )
-                return `Partially Successful - (${ f.length } of ${ count }) \n${ JSON.stringify( faults ) }`
+                debugger
+                console.warn( `Partially Successful POST of the Updates (${ f.length } FaultStrings on ${ count } updates) - \nResults\n ${ JSON.stringify( faults ) }` )
+                return `Partially Successful - (${ f.length } FaultStrings on ${ count } updates) \n${ JSON.stringify( faults ) }`
             }
 
             //Add this Fail 
@@ -3043,6 +3045,14 @@ export async function postToCampaign ( xmlCalls: string, config: customerConfig,
     //successfully posted
 
     return postRes
+}
+
+
+
+function updateConnect () {
+
+//query getDataSetById() 
+
 }
 
 
