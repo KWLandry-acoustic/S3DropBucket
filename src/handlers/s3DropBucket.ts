@@ -86,7 +86,7 @@ interface customerConfig {
     Customer: string
     format: string // CSV or JSON 
     separator: string
-    updates: string // singular or Multiple (default)
+    updates: string // singular or Multiple (default) (also 'bulk' as legacy)
     listId: string
     listName: string
     listType: string
@@ -833,10 +833,10 @@ async function processS3ObjectContentStream ( key: string, bucket: string, custC
 
                         try
                         {
-                            //Update Singular files will not reach 99 updates in a single file
-                            // those will fall through to the OnEnd processing.
-                            //Aggregate(d) Files will have > 99 updates in each file so
-                            //  those will need to be chunked up into 99 updates each as Work files.
+                            //Update files with Singular updates per file do not reach 99 updates in a single file,
+                            // these will fall through to the OnEnd processing.
+                            //Aggregate(d) Files with Multiple updates per file can have > 99 updates in each file so
+                            //  those will need to be chunked up into 99 updates each and stored as Work files.
 
                             while ( chunks.length > 98 )
                             //if ( chunks.length > 9 )
@@ -1066,9 +1066,11 @@ export const S3DropBucketQueueProcessorHandler: Handler = async ( event: SQSEven
 
 
     //ToDo: Build aggregate results and outcomes block  
+    s3 = new S3Client( {region: process.env.s3DropBucketRegion} )
 
 
     //Populate Config Options in process.env as a means of Caching the config across invocations occurring within 15 secs of each other.
+    //If an obscure config does not exist in process.env then we need to get them all
     if (
         process.env[ "WorkQueueVisibilityTimeout" ] === undefined ||
         process.env[ "WorkQueueVisibilityTimeout" ] === '' ||
@@ -2032,7 +2034,7 @@ async function validateCustomerConfig ( config: customerConfig ) {
     if ( config.separator.toLowerCase() === "\n" ) config.separator = '\n'
 
 
-    if ( !config.updates.toLowerCase().match( /^(?:singular|multiple)$/gim ) )
+    if ( !config.updates.toLowerCase().match( /^(?:singular|multiple|bulk)$/gim ) )
     {
         throw new Error( "Invalid Customer Config - Updates is not 'Singular' or 'Multiple' " )
     }
