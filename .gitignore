@@ -1,5 +1,6 @@
+./node_modules
 node_modules
-
+OLD_node_modules
 *.txt
 *.csv
 *.gz
@@ -238,3 +239,4 @@ scratchTests/out/main.js.map
 scratchTests/out/main.js
 *.todo
 S3DropBucket.todo
+OLD_node_modules/.bin/acorn

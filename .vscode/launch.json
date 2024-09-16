@@ -5,20 +5,21 @@
   "version": "0.2.0",
   "configurations": [
 
-    {      
+    {
       "name": "1.S3-Direct Invoke Lambda Template - s3DropBucketfunction",
       "type": "aws-sam",
       "request": "direct-invoke",
       "preLaunchTask": "cleanUpdateDependencies",
+      //"preLaunchTask": "docker-run: debug",
       "invokeTarget": {
         "target": "template",
         "templatePath": "${workspaceFolder}/template.yml",
         "logicalId": "s3DropBucketFunction"
       },
       "lambda": {
-        "runtime": "nodejs18.x",
+        "runtime": "nodejs20.x",
         "environmentVariables": {
-          "NODE_OPTIONS": "--enable-source-map --trace-warnings --unhandled-rejections=warn",
+          "NODE_OPTIONS": "--enable-source-map --trace-warnings --unhandled-rejections=warn --stopOnEntry",
           "S3DropBucketConfigBucket": "s3dropbucket-configs-fr",
           "S3DropBucketConfigsFile": "s3dropbucket_config.jsonc",
           "s3DropBucketRegion": "us-east-1",
@@ -76,16 +77,16 @@
       "invokeTarget": {
         "target": "template",
         "templatePath": "${workspaceFolder}/template.yml",
-        "logicalId": "S3DropBucketQueueProcessorFunction" //"S3DropBucketQueueProcessorFunction"
+        "logicalId": "S3DropBucketQueueProcessorFunction"
       },
       "lambda": {
-        "runtime": "nodejs18.x",
-       "environmentVariables": {
-        "NODE_OPTIONS": "--enable-source-map --trace-warnings --unhandled-rejections=warn",
-        "S3DropBucketConfigBucket": "s3dropbucket-configs-fr",
-        "S3DropBucketConfigsFile": "s3dropbucket_config.jsonc",
-        "s3DropBucketRegion": "us-east-1",
-      },
+        "runtime": "nodejs20.x",
+        "environmentVariables": {
+          "NODE_OPTIONS": "--enable-source-map --trace-warnings --unhandled-rejections=warn",
+          "S3DropBucketConfigBucket": "s3dropbucket-configs-fr",
+          "S3DropBucketConfigsFile": "s3dropbucket_config.jsonc",
+          "s3DropBucketRegion": "us-east-1",
+        },
         "payload": {
           "json": {
             "Records": [
@@ -99,7 +100,7 @@
         "credentials": "profile:Acoustic-cis-dev-ecs-devteam-user"
       }
     },
-    {      
+    {
       "name": "3.aws-sam Direct Invoke Function Code - s3jsonLoggerFunction",
       "type": "aws-sam",
       "request": "direct-invoke",
@@ -109,7 +110,7 @@
         "lambdaHandler": "s3DropBucket.s3DropBucketHandler",
       },
       "lambda": {
-        "runtime": "nodejs18.x",
+        "runtime": "nodejs20.x",
         "environmentVariables": {
           "NODE_OPTIONS": "--enable-source-map --trace-warnings --unhandled-rejections=warn",
           "S3DropBucketConfigBucket": "s3dropbucket-configs-fr",
@@ -169,7 +170,7 @@
     //   "protocol": "inspector",
     //   "stopOnEntry": false
     // },
-    {      
+    {
       "name": "4.Invoke Lambda Code ",
       "type": "aws-sam",
       "request": "direct-invoke",
@@ -191,7 +192,7 @@
         }
       }
     },
-    {      
+    {
       "name": "5.Invoke Template - S3DropBucket:s3JsonLoggerFunction",
       "type": "aws-sam",
       "request": "direct-invoke",
@@ -205,7 +206,7 @@
         "environmentVariables": { }
       }
     },
-    {      
+    {
       "name": "6.Invoke Lambda Template - s3jsonloggerfunction",
       "type": "aws-sam",
       "request": "direct-invoke",
@@ -220,7 +221,7 @@
         }
       }
     },
-    {      
+    {
       "name": "7.Debug Lambda Code - S3DropBucketHandlerFunction",
       "type": "aws-sam",
       "request": "direct-invoke",
@@ -230,7 +231,7 @@
         "lambdaHandler": "S3DropBucketHandler"
       },
       "lambda": {
-        "runtime": "nodejs18.x",
+        "runtime": "nodejs20.x",
         "payload": { },
         "environmentVariables": {
           "NODE_OPTIONS": "--enable-source-map --trace-warnings --unhandled-rejections=warn",
@@ -240,7 +241,7 @@
         },
       }
     },
-    {      
+    {
       "name": "8.Debug .aws-sam Lambda Code - s3jsonLoggerFunction",
       "type": "aws-sam",
       "request": "direct-invoke",
@@ -250,7 +251,7 @@
         "lambdaHandler": "s3JsonLoggerHandler"
       },
       "lambda": {
-        "runtime": "nodejs18.x",
+        "runtime": "nodejs20.x",
         "payload": { },
         "environmentVariables": { }
       }

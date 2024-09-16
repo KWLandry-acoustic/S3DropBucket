@@ -15,8 +15,9 @@ import {SchedulerClient, ListSchedulesCommand, ListSchedulesCommandInput} from '
 
 import {Handler, S3Event, Context, SQSEvent, SQSRecord, S3EventRecord} from 'aws-lambda'
 
-import fetch, {Headers, RequestInit, Response} from 'node-fetch'
-
+//import fetch from 'node-fetch'
+//import {Headers, RequestInit, Response} from 'node-fetch'
+//import fetch, {FetchHttpHandler} from "@smithy/fetch-http-handler"
 
 // import { JSONParser } from '@streamparser/json'
 // const jsonParser = new JSONParser()
@@ -485,10 +486,6 @@ export const s3DropBucketHandler: Handler = async (event: S3Event, context: Cont
                     //Do not delete in order to Capture Testing Data
                     // if (key.toLowerCase().indexOf('aggregat') > -1) key = 'TestData/S3Object_DoNotDelete'
 
-                    debugger
-
-
-
                     if ((res?.PutToFireHoseAggregatorResult === "200") ||
                         (res.OnEndStreamEndResult.StoreAndQueueWorkResult.AddWorkToS3WorkBucketResults?.S3ProcessBucketResult === "200" &&
                             res.OnEndStreamEndResult.StoreAndQueueWorkResult.AddWorkToSQSWorkQueueResults?.SQSWriteResult === "200"))
@@ -766,7 +763,6 @@ async function processS3ObjectContentStream(key: string, bucket: string, custCon
 
                 s3ContentReadableStream
                     .on('error', async function (err: string) {
-                        debugger
 
                         const errMessage = `An error has stopped Content Parsing at record ${recs++} for s3 object ${key}. Separator is ${jsonSep}.\n${err} \n${chunks}`
 
@@ -826,7 +822,6 @@ async function processS3ObjectContentStream(key: string, bucket: string, custCon
 
                         } catch (e)
                         {
-                            debugger
                             console.error(`Exception - ReadStream-OnData - Chunk aggregation for ${key} \nBatch ${batchCount} of ${recs} Updates. \n${e} `)
                             streamResult = {...streamResult, OnDataReadStreamException: `Exception - First Catch - ReadStream-OnData Processing for ${key} \nBatch ${batchCount} of ${recs} Updates. \n${e} `}
                         }
@@ -849,7 +844,6 @@ async function processS3ObjectContentStream(key: string, bucket: string, custCon
 
                         } catch (e)
                         {
-                            debugger
                             console.error(`Exception - ReadStream-OnData - Batch Packaging for ${key} \nBatch ${batchCount} of ${recs} Updates. \n${e} `)
                             streamResult = {...streamResult, OnDataReadStreamException: `Exception - Second Catch - ReadStream-OnData Processing for ${key} \nBatch ${batchCount} of ${recs} Updates. \n${e} `}
                         }
@@ -1219,8 +1213,6 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (event: SQSEvent
 
                 if (s3db_cc.SelectiveDebug.indexOf("_908,") > -1) console.info(`Selective Debug 908 - POST Result for ${tqm.workKey}: ${postResult} `)
 
-                debugger
-
                 if (postResult.indexOf('retry') > -1)
                 {
                     console.warn(`Retry Marked for ${tqm.workKey}. Returning Work Item ${q.messageId} to Process Queue (Total Retry Count: ${sqsBatchFail.batchItemFailures.length + 1}). \n${postResult} `)
@@ -1282,7 +1274,6 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (event: SQSEvent
         try
         {
             maintenance = await maintainS3DropBucketQueueBucket() ?? [0, '']
-
 
             if (s3db_cc.SelectiveDebug.indexOf("_927,") > -1)
             {

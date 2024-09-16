@@ -2,7 +2,7 @@
 
 [function_build_definitions.507a273e-7695-457a-a57f-d8a51f1d92ce]
 codeuri = "./"
-runtime = "nodejs18.x"
+runtime = "nodejs20.x"
 architecture = "x86_64"
 handler = "s3DropBucket.s3DropBucketHandler"
 manifest_hash = "4de50a0c776047a913288081b082ede1"
@@ -24,4 +24,4 @@ External = ['@aws-sdk/client-s3', 'node-fetch', '@aws-sdk/protocol-http']
 
 
 [layer_build_definitions]
-BuildMethod = "nodejs18.x"
+BuildMethod = "nodejs20.x"
