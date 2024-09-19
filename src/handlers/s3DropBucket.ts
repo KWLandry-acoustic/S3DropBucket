@@ -54,6 +54,8 @@ import {setUncaughtExceptionCaptureCallback} from 'process'
 import {LargeNumberLike} from 'crypto'
 
 
+const s3db_version = `3.3.003 - ${new Date().toUTCString()}`
+
 let s3 = {} as S3Client
 
 const SFTPClient = new sftpClient()
@@ -1887,15 +1889,22 @@ async function getValidateS3DropBucketConfig() {
 
 async function getCustomerConfig(filekey: string) {
 
-    // Retrieve file's prefix as Customer Name
-    if (!filekey) throw new Error(`Exception - Cannot resolve Customer Config without a valid Customer Prefix(file prefix is ${filekey})`)
+    // Retrieve file's prefix as the Customer Name 
+    if (!filekey) throw new Error(`Exception - Cannot resolve Customer Config without a valid Customer Prefix (file is ${filekey})`)
 
-    while (filekey.indexOf('/') > -1)
+    while (filekey.indexOf('/') > -1)  //remove any folders from name
     {
         filekey = filekey.split('/').at(-1) ?? filekey
     }
 
-    const customer = filekey.split('_')[0] + '_'
+    const r = new RegExp(/\d{4}_\d{2}_\d{2}T.*Z.*/, 'gm')
+    if (filekey.match(r))
+    {
+        filekey = filekey.replace(r, '')   //remove timestamp from name
+    }
+
+    const customer = filekey
+    //const customer = filekey.split('_')[0] + '_'      //initial treatment, get prefix up to first underscore
 
     if (customer === '_' || customer.length < 4)   //shouldn't need this customer.indexOf('_') < 0 || 
     {
@@ -2978,7 +2987,7 @@ export async function postToCampaign(xmlCalls: string, config: customerConfig, c
                 {
                     for (const fl in f)
                     {
-                        faults.push(fl)
+                        faults.push(f[fl])
                     }
                 }
                 debugger

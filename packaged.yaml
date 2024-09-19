@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Transform: AWS::Serverless-2016-10-31
-Description: Lambda-S3 Logging Project
+Description: S3DropBucket Lambda-S3 Project
 Globals:
   Function:
     PermissionsBoundary: arn:aws:iam::777957353822:policy/tricklercache-us-east-1-PermissionsBoundary
@@ -57,7 +57,7 @@ Resources:
   S3DropBucketQueueProcessorFunction:
     Type: AWS::Serverless::Function
     Properties:
-      Description: A Lambda function triggered on a file sent to an S3 bucket.
+      Description: S3DropBucket Work Queue and Work Repository.
       Role: arn:aws:iam::777957353822:role/tricklercacheExecutionRole
       CodeUri: s3://aws-us-east-1-777957353822-tricklercache-pipe/8c9dbf85b43c564e8ae403c9efdff0ed
       Handler: s3DropBucket.S3DropBucketQueueProcessorHandler
@@ -95,7 +95,7 @@ Resources:
   s3DropBucketSFTPFunction:
     Type: AWS::Serverless::Function
     Properties:
-      Description: A Lambda function triggered on a file sent to an S3 bucket.
+      Description: S3DropBucket SFTP Capabilities.
       Role: arn:aws:iam::777957353822:role/tricklercacheExecutionRole
       CodeUri: s3://aws-us-east-1-777957353822-tricklercache-pipe/8c9dbf85b43c564e8ae403c9efdff0ed
       Handler: s3DropBucket.s3DropBucketSFTPHandler

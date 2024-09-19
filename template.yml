@@ -51,6 +51,7 @@ Resources:
     Metadata:
       BuildMethod: esbuild
       Architecture: x86_64
+      #VersionDescription: !GetAtt s3DropBucketFunction.AWS::Lambda::Version
       BuildProperties:
         # Target: es2020
         #Target: node20.17.0
