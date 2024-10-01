@@ -7,23 +7,26 @@ Globals:
 Parameters:
   AppId:
     Type: String
+Default: googoo
 Resources:
   dependencyLayer:
     # Type: AWS::Lambda::LayerVersion
     Type: AWS::Serverless::LayerVersion
     Metadata:
       #     BuildMethod: makefile
-      BuildMethod: nodejs18.x
+      BuildMethod: nodejs20.x
+
     Properties:
       # arn: arn:aws:lambda:us-east-1:777957353822:layer:dependencyLayer
       # RetentionPolicy: Retain
       LayerName: dependencyLayer
       Description: Layer to Hold all Dependencies (reduce package size)
-      ContentUri: layers/
+      ContentUri: node_modules
       #   # S3Bucket: s3JsonLoggerDependenciesLayer
       #   # S3Key: nodejs.zip
       CompatibleRuntimes:
         - nodejs18.x
+      RetentionPolicy: Delete
 
   s3DropBucketFunction:
     # Type: "AWS::Lambda::Function"
@@ -39,7 +42,7 @@ Resources:
           NODE_OPTIONS: '--trace-warnings --unhandled-rejections=warn'
       Role: arn:aws:iam::777957353822:role/tricklercacheExecutionRole
       CodeUri: ./
-      # CodeUri: src/handlers/          #---Gets reBuilt in SAM Package 
+      # CodeUri: src/handlers/          #---Gets reBuilt in SAM Package
       Handler: s3DropBucket.s3DropBucketHandler
       Runtime: nodejs18.x
       Architectures:
@@ -61,7 +64,7 @@ Resources:
         Format: esm
         Platform: node
         Packages: external
-        # mainFields: 
+        # mainFields:
         #   --main-fields=module, main
         Minify: false
         OutExtension:
@@ -88,7 +91,7 @@ Resources:
           NODE_OPTIONS: '--trace-warnings --unhandled-rejections=warn'
       Role: arn:aws:iam::777957353822:role/tricklercacheExecutionRole
       CodeUri: ./
-      # CodeUri: src/handlers/          #---Gets reBuilt in SAM Package 
+      # CodeUri: src/handlers/          #---Gets reBuilt in SAM Package
       Handler: s3DropBucket.S3DropBucketQueueProcessorHandler
       Runtime: nodejs18.x
       Architectures:
@@ -110,7 +113,7 @@ Resources:
         Format: esm
         Platform: node
         Packages: external
-        # mainFields: 
+        # mainFields:
         #   --main-fields=module, main
         Minify: false
         OutExtension:
@@ -154,7 +157,7 @@ Resources:
           NODE_OPTIONS: '--trace-warnings --unhandled-rejections=warn'
       Role: arn:aws:iam::777957353822:role/tricklercacheExecutionRole
       CodeUri: ./
-      # CodeUri: src/handlers/          #---Gets reBuilt in SAM Package 
+      # CodeUri: src/handlers/          #---Gets reBuilt in SAM Package
       Handler: s3DropBucket.s3DropBucketSFTPHandler
       Runtime: nodejs18.x
       Architectures:
@@ -176,7 +179,7 @@ Resources:
         Format: esm
         Platform: node
         Packages: external
-        # mainFields: 
+        # mainFields:
         #   --main-fields=module, main
         Minify: false
         OutExtension:
@@ -214,12 +217,9 @@ Resources:
   #         QueueName: "tricklercache-DeadLetterQueue"
   #         MessageRetentionPeriod: 1209600   # 14 days in seconds
 
-
   # S3 Bucket - tricklercache-process
 
-
-
-  #Can only define a new S3 Bucket on creation (first run), and then an existing bucket can only have a trigger added manually, 
+  #Can only define a new S3 Bucket on creation (first run), and then an existing bucket can only have a trigger added manually,
   # tricklercache:
   #   Type: AWS::S3::Bucket
   #   Properties:
@@ -229,13 +229,13 @@ Resources:
   #         - ServerSideEncryptionByDefault:
   #             SSEAlgorithm: AES256
 
-  #Can only define a trigger on creation, existing buckets can only have a trigger added manually, 
-  # Events:                 
+  #Can only define a trigger on creation, existing buckets can only have a trigger added manually,
+  # Events:
   #   tricklercacheEvent:
   #     Type: S3
   #     Properties:
   #       # Bucket: !Sub ${BucketName}
-  #       Bucket: tricklercache 
+  #       Bucket: tricklercache
   #       Events: s3:ObjectCreated:*
   #       Filter:
   #         S3Key:

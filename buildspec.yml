@@ -17,8 +17,9 @@ phases:
 
   build:
     commands:
-      - npm i -g esbuild --bundle --minify --keep-names --sourcemap --platform=node #--target=node20.x
+      - npm i -g esbuild --bundle --minify --keep-names --sourcemap --platform=node --debug #--target=node20.x
 
+      #sam build deploy or package
       - sam build --debug
 
       # - sam package --s3-bucket aws-us-east-1-777957353822-tricklercache-pipe --force-upload --debug

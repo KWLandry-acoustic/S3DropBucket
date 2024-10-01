@@ -3,7 +3,6 @@
   "description": "Lambda-S3DropBucket Project",
   "version": "20.17.0",
   "private": true,
-  "type": "module",
   "dependencies": {
     "@aws-sdk/client-firehose": "^3.521.0",
     "@aws-sdk/client-scheduler": "^3.515.0",

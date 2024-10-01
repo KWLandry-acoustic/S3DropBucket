@@ -13,6 +13,16 @@
 			"label": "cleanDependencyDirectory",
 			"detail": "Clean Dependencies Directory",
 			"command": " rm -r .aws-sam/deps"
+		}, {
+			"type": "shell",
+			"problemMatcher": [ ],
+			"label": "removeAWSSam",
+			"detail": "remove aws-sam dir",
+			"command": "rm -r .aws-sam",
+			//"command": "shellCommand.execute",
+			//	"args": [
+			//		"rm -r .aws-sam"
+			//	]
 		},
 		{
 			"type": "shell",
