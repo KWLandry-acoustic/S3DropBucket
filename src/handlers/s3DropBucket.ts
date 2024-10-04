@@ -201,7 +201,7 @@ export interface s3dbConfig {
   WorkQueueBucketPurge: string
 }
 
-let s3db_cc = {} as s3dbConfig
+let S3DBConfig = {} as s3dbConfig
 
 export interface SQSBatchItemFails {
   batchItemFailures: [
@@ -369,24 +369,24 @@ export const s3DropBucketHandler: Handler = async (
     process.env["EventEmitterMaxListeners"] === "" ||
     process.env["EventEmitterMaxListeners"] === null
   ) {
-    s3db_cc = await getValidateS3DropBucketConfig()
+    S3DBConfig = await getValidateS3DropBucketConfig()
   }
 
-  if (s3db_cc.SelectiveDebug.indexOf("_98,") > -1)
+  if (S3DBConfig.SelectiveDebug.indexOf("_98,") > -1)
     console.info(
-      `Selective Debug 98 - S3DropBucket Options: ${JSON.stringify(s3db_cc)} `
+      `Selective Debug 98 - S3DropBucket Options: ${JSON.stringify(S3DBConfig)} `
     )
-  if (s3db_cc.SelectiveDebug.indexOf("_99,") > -1)
+  if (S3DBConfig.SelectiveDebug.indexOf("_99,") > -1)
     console.info(
-      `Selective Debug 99 - S3DropBucket Logging Options: ${s3db_cc.SelectiveDebug!} `
+      `Selective Debug 99 - S3DropBucket Logging Options: ${S3DBConfig.SelectiveDebug!} `
     )
-  if (s3db_cc.SelectiveDebug.indexOf("_909,") > -1)
+  if (S3DBConfig.SelectiveDebug.indexOf("_909,") > -1)
     console.info(
       `Selective Debug 909 - Environment Vars: ${JSON.stringify(process.env)} `
     )
 
   if (event.Records[0].s3.object.key.indexOf("Aggregator") > -1) {
-    if (s3db_cc.SelectiveDebug.indexOf("_925,") > -1)
+    if (S3DBConfig.SelectiveDebug.indexOf("_925,") > -1)
       console.info(
         `Selective Debug 925 - Processing an Aggregated File ${event.Records[0].s3.object.key}`
       )
@@ -416,27 +416,27 @@ export const s3DropBucketHandler: Handler = async (
     localTesting = false
   }
 
-  if (s3db_cc.S3DropBucketPurgeCount > 0) {
+  if (S3DBConfig.S3DropBucketPurgeCount > 0) {
     console.warn(
-      `Purge Requested, Only action will be to Purge ${s3db_cc.S3DropBucketPurge} of ${s3db_cc.S3DropBucketPurgeCount} Records. `
+      `Purge Requested, Only action will be to Purge ${S3DBConfig.S3DropBucketPurge} of ${S3DBConfig.S3DropBucketPurgeCount} Records. `
     )
     const d = await purgeBucket(
-      Number(s3db_cc.S3DropBucketPurgeCount!),
-      s3db_cc.S3DropBucketPurge!
+      Number(S3DBConfig.S3DropBucketPurgeCount!),
+      S3DBConfig.S3DropBucketPurge!
     )
     return d
   }
 
-  if (s3db_cc.S3DropBucketQuiesce) {
+  if (S3DBConfig.S3DropBucketQuiesce) {
     if (!localTesting) {
       console.warn(
-        `S3DropBucket Quiesce is in effect, new Files from ${s3db_cc.S3DropBucket} will be ignored and not processed. \nTo Process files that have arrived during a Quiesce of the Cache, reference the S3DropBucket Guide appendix for AWS cli commands.`
+        `S3DropBucket Quiesce is in effect, new Files from ${S3DBConfig.S3DropBucket} will be ignored and not processed. \nTo Process files that have arrived during a Quiesce of the Cache, reference the S3DropBucket Guide appendix for AWS cli commands.`
       )
       return
     }
   }
 
-  if (s3db_cc.SelectiveDebug.indexOf("_100,") > -1)
+  if (S3DBConfig.SelectiveDebug.indexOf("_100,") > -1)
     console.info(
       `(100) Received S3DropBucket Event Batch.There are ${event.Records.length} S3DropBucket Event Records in this batch. (Event Id: ${event.Records[0].responseElements["x-amz-request-id"]}).`
     )
@@ -447,7 +447,7 @@ export const s3DropBucketHandler: Handler = async (
     let key = r.s3.object.key ?? ""
     const bucket = r.s3.bucket.name ?? ""
 
-    if (s3db_cc.prefixFocus !== "" && key.indexOf(s3db_cc.prefixFocus) < 0) {
+    if (S3DBConfig.prefixFocus !== "" && key.indexOf(S3DBConfig.prefixFocus) < 0) {
       //console.warn( `PrefixFocus is configured, File Name ${ key } does not fall within focus restricted by the configured PrefixFocus ${ tcc.prefixFocus }` )
       return
     }
@@ -469,7 +469,7 @@ export const s3DropBucketHandler: Handler = async (
     try {
       if (key.indexOf("S3DropBucket-LogsS3DropBucket_Aggregator") > -1)
         console.warn(`Warning -- Found Invalid Aggregator File Name - ${key}`)
-      if (s3db_cc.SelectiveDebug.indexOf("_101,") > -1)
+      if (S3DBConfig.SelectiveDebug.indexOf("_101,") > -1)
         console.info(
           `(101) Processing inbound data for ${customersConfig.Customer} - ${key}`
         )
@@ -494,7 +494,7 @@ export const s3DropBucketHandler: Handler = async (
           )
         })
 
-        if (s3db_cc.SelectiveDebug.indexOf("_101,") > -1)
+        if (S3DBConfig.SelectiveDebug.indexOf("_101,") > -1)
           console.info(
             `(101) Processing inbound data for ${customersConfig.Customer} - ${key}`
           )
@@ -525,7 +525,7 @@ export const s3DropBucketHandler: Handler = async (
             `Completed Processing Content Stream - ${processS3ObjectStreamResolution.Key} ${processS3ObjectStreamResolution.Processed}`
           )
 
-          if (s3db_cc.SelectiveDebug.indexOf("_103,") > -1)
+          if (S3DBConfig.SelectiveDebug.indexOf("_103,") > -1)
             console.info(
               `(103) Completed processing all records of the S3 Object ${key}. ${res.OnEndRecordStatus}`
             )
@@ -553,12 +553,12 @@ export const s3DropBucketHandler: Handler = async (
                   ...streamResults,
                   DeleteResult: JSON.stringify(delResultCode),
                 }
-                if (s3db_cc.SelectiveDebug.indexOf("_104,") > -1)
+                if (S3DBConfig.SelectiveDebug.indexOf("_104,") > -1)
                   console.error(
                     `Processing Successful, but Unsuccessful Delete of ${key}, Expected 204 result code, received ${delResultCode}`
                   )
               } else {
-                if (s3db_cc.SelectiveDebug.indexOf("_104,") > -1)
+                if (S3DBConfig.SelectiveDebug.indexOf("_104,") > -1)
                   console.info(
                     `(104) Processing Successful, Delete of ${key} Successful (Result ${delResultCode}).`
                   )
@@ -593,7 +593,7 @@ export const s3DropBucketHandler: Handler = async (
       )
     }
 
-    if (s3db_cc.SelectiveDebug.indexOf("_903,") > -1)
+    if (S3DBConfig.SelectiveDebug.indexOf("_903,") > -1)
       console.info(
         `Selective Debug 903 - Returned from Processing S3 Object Content Stream for ${key}. Result: ${JSON.stringify(
           processS3ObjectStreamResolution
@@ -604,13 +604,13 @@ export const s3DropBucketHandler: Handler = async (
   //Check for important Config updates (which caches the config in Lambdas long-running cache)
   checkForS3DBConfigUpdates()
 
-  if (event.Records[0].s3.bucket.name && s3db_cc.S3DropBucketMaintHours > 0) {
+  if (event.Records[0].s3.bucket.name && S3DBConfig.S3DropBucketMaintHours > 0) {
     const maintenance = await maintainS3DropBucket(customersConfig)
 
     const l = maintenance[0] as number
     // console.info( `- ${ l } File(s) met criteria and are marked for reprocessing ` )
 
-    if (s3db_cc.SelectiveDebug.indexOf("_926,") > -1) {
+    if (S3DBConfig.SelectiveDebug.indexOf("_926,") > -1) {
       const filesProcessed = maintenance[1]
       if (l > 0)
         console.info(
@@ -636,25 +636,25 @@ export const s3DropBucketHandler: Handler = async (
       1000
     )} ... ${osr.substring(osrl - 1000, osrl)}`
 
-    if (s3db_cc.SelectiveDebug.indexOf("_920,") > -1)
+    if (S3DBConfig.SelectiveDebug.indexOf("_920,") > -1)
       console.warn(`Selective Debug 920 - \n ${JSON.stringify(osr)} `)
     return osr
   }
   const k = processS3ObjectStreamResolution.Key
   const p = processS3ObjectStreamResolution.Processed
 
-  if (s3db_cc.SelectiveDebug.indexOf("_105,") > -1)
+  if (S3DBConfig.SelectiveDebug.indexOf("_105,") > -1)
     console.info(
       `(105) Completing S3DropBucket Processing of Request Id ${event.Records[0].responseElements["x-amz-request-id"]} for ${k} \n${p}`
     )
 
-  if (s3db_cc.SelectiveDebug.indexOf("_920,") > -1)
+  if (S3DBConfig.SelectiveDebug.indexOf("_920,") > -1)
     console.info(`Selective Debug 920 - \n${JSON.stringify(osr)}`)
 
   //
   //Possible Logging Option
   //
-  if (s3db_cc.S3DropBucketLog) {
+  if (S3DBConfig.S3DropBucketLog) {
     const logMsg = [osr]
     const logKey = `S3DropBucket_Log_${new Date()
       .toISOString()
@@ -808,7 +808,7 @@ async function processS3ObjectContentStream(
 
       //if ( key.indexOf( 'aggregate_' ) > -1 ) console.info( `Begin Stream Parsing aggregate file ${ key }` )
 
-      let jsonSep = s3db_cc.jsonSeparator
+      let jsonSep = S3DBConfig.jsonSeparator
       if (custConfig.separator && key.indexOf("aggregate_") < 0)
         jsonSep = custConfig.separator
 
@@ -842,7 +842,7 @@ async function processS3ObjectContentStream(
 
 
       s3ContentReadableStream.setMaxListeners(
-        Number(s3db_cc.EventEmitterMaxListeners)
+        Number(S3DBConfig.EventEmitterMaxListeners)
       )
 
       chunks = []
@@ -885,10 +885,10 @@ async function processS3ObjectContentStream(
                 recs > custConfig.updateMaxRows
               )
                 throw new Error(
-                  `The number of Updates in this batch (${recs}) Exceeds Max Row Updates allowed in the Customers Config (${custConfig.updateMaxRows}).  ${key} will not be deleted from ${s3db_cc.S3DropBucket} to allow for review and possible restaging.`
+                  `The number of Updates in this batch (${recs}) Exceeds Max Row Updates allowed in the Customers Config (${custConfig.updateMaxRows}).  ${key} will not be deleted from ${S3DBConfig.S3DropBucket} to allow for review and possible restaging.`
                 )
 
-              if (s3db_cc.SelectiveDebug.indexOf("_913,") > -1)
+              if (S3DBConfig.SelectiveDebug.indexOf("_913,") > -1)
                 console.info(
                   `Selective Debug 913 - s3ContentStream OnData - Another Batch ${
                     batchCount + 1
@@ -1047,7 +1047,7 @@ async function processS3ObjectContentStream(
               OnEndRecordStatus: `Processed ${recs} records as ${batchCount} batches.`,
             }
 
-            if (s3db_cc.SelectiveDebug.indexOf("_902,") > -1)
+            if (S3DBConfig.SelectiveDebug.indexOf("_902,") > -1)
               console.info(
                 `Selective Debug 902: Content Stream OnEnd for (${key}) - Store and Queue Work of ${batchCount} Batches of ${recs} records - Stream Result: \n${JSON.stringify(
                   streamResult
@@ -1070,7 +1070,7 @@ async function processS3ObjectContentStream(
             }
           })
 
-        if (s3db_cc.SelectiveDebug.indexOf("_102,") > -1)
+        if (S3DBConfig.SelectiveDebug.indexOf("_102,") > -1)
           console.info(`(102) S3 Content Stream Opened for ${key}`)
       })
         .then((r) => {
@@ -1144,7 +1144,7 @@ async function putToFirehose(chunks: any[], key: string, cust: string) {
           .send(fireCommand)
           .then((res: PutRecordCommandOutput) => {
             if (fireHoseStream !== "S3DropBucket_Log") {
-              if (s3db_cc.SelectiveDebug.indexOf("_922,") > -1)
+              if (S3DBConfig.SelectiveDebug.indexOf("_922,") > -1)
                 console.info(
                   `Selective Debug 922 - Put to Firehose Aggregator for ${key} - \n${JSON.stringify(
                     fd
@@ -1213,32 +1213,32 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
     process.env["WorkQueueVisibilityTimeout"] === "" ||
     process.env["WorkQueueVisibilityTimeout"] === null
   ) {
-    s3db_cc = await getValidateS3DropBucketConfig()
+    S3DBConfig = await getValidateS3DropBucketConfig()
   }
 
-  if (s3db_cc.SelectiveDebug.indexOf("_98,") > -1)
+  if (S3DBConfig.SelectiveDebug.indexOf("_98,") > -1)
     console.info(
-      `Selective Debug 98 - S3DropBucket Options: ${JSON.stringify(s3db_cc)} `
+      `Selective Debug 98 - S3DropBucket Options: ${JSON.stringify(S3DBConfig)} `
     )
-  if (s3db_cc.SelectiveDebug.indexOf("_99,") > -1)
+  if (S3DBConfig.SelectiveDebug.indexOf("_99,") > -1)
     console.info(
-      `Selective Debug 99 - S3DropBucket Logging Options: ${s3db_cc.SelectiveDebug!} `
+      `Selective Debug 99 - S3DropBucket Logging Options: ${S3DBConfig.SelectiveDebug!} `
     )
-  if (s3db_cc.SelectiveDebug.indexOf("_909,") > -1)
+  if (S3DBConfig.SelectiveDebug.indexOf("_909,") > -1)
     console.info(
       `Selective Debug 909 - Environment Vars: ${JSON.stringify(process.env)} `
     )
 
-  if (s3db_cc.WorkQueueQuiesce) {
+  if (S3DBConfig.WorkQueueQuiesce) {
     console.info(
       `WorkQueue Quiesce is in effect, no New Work will be Queued up in the SQS Process Queue.`
     )
     return
   }
 
-  if (s3db_cc.WorkQueueBucketPurgeCount > 0) {
+  if (S3DBConfig.WorkQueueBucketPurgeCount > 0) {
     console.info(
-      `Purge Requested, Only action will be to Purge ${s3db_cc.WorkQueueBucketPurge} of ${s3db_cc.WorkQueueBucketPurgeCount} Records. `
+      `Purge Requested, Only action will be to Purge ${S3DBConfig.WorkQueueBucketPurge} of ${S3DBConfig.WorkQueueBucketPurgeCount} Records. `
     )
     const d = await purgeBucket(
       Number(process.env["WorkQueueBucketPurgeCount"]!),
@@ -1266,12 +1266,12 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
   
   let postResult: string = "false"
 
-  if (s3db_cc.SelectiveDebug.indexOf("_506,") > -1)
+  if (S3DBConfig.SelectiveDebug.indexOf("_506,") > -1)
     console.info(
       `(506) Received SQS Events Batch of ${event.Records.length} records.`
     )
 
-  if (s3db_cc.SelectiveDebug.indexOf("_904,") > -1)
+  if (S3DBConfig.SelectiveDebug.indexOf("_904,") > -1)
     console.info(
       `Selective Debug 904 - Received ${
         event.Records.length
@@ -1329,13 +1329,13 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
     //When Testing locally  (Launch config has pre-stored payload) - get some actual work queued
     if (tqm.workKey === "") {
       tqm.workKey =
-        (await getAnS3ObjectforTesting(s3db_cc.S3DropBucketWorkBucket)) ?? ""
+        (await getAnS3ObjectforTesting(S3DBConfig.S3DropBucketWorkBucket)) ?? ""
     }
 
     if (tqm.workKey === "devtest.xml") {
       //tqm.workKey = await getAnS3ObjectforTesting( tcc.s3DropBucketWorkBucket! ) ?? ""
       tqm.workKey = testS3Key
-      s3db_cc.S3DropBucketWorkBucket = testS3Bucket
+      S3DBConfig.S3DropBucketWorkBucket = testS3Bucket
       localTesting = true
     } else {
       testS3Key = ""
@@ -1345,24 +1345,24 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
     //
     //
 
-    if (s3db_cc.SelectiveDebug.indexOf("_507,") > -1)
+    if (S3DBConfig.SelectiveDebug.indexOf("_507,") > -1)
       console.info(`(507) Processing Work off the Queue - ${tqm.workKey}`)
 
-    if (s3db_cc.SelectiveDebug.indexOf("_911,") > -1)
+    if (S3DBConfig.SelectiveDebug.indexOf("_911,") > -1)
       console.info(
         `Selective Debug 911 - Processing a Batch Item. SQS Event Message: ${JSON.stringify(
           q
         )}`
       )
 
-    custconfig = (await getCustomerConfig(tqm.workKey)) as customerConfig
+    custconfig = await getCustomerConfig(tqm.custconfig.Customer) as customerConfig
 
     try {
-      const work = await getS3Work(tqm.workKey, s3db_cc.S3DropBucketWorkBucket)
+      const work = await getS3Work(tqm.workKey, S3DBConfig.S3DropBucketWorkBucket)
 
       if (work.length > 0) {
         //Retrieve Contents of the Work File
-        if (s3db_cc.SelectiveDebug.indexOf("_512,") > -1)
+        if (S3DBConfig.SelectiveDebug.indexOf("_512,") > -1)
           console.info(
             `Selective Debug 512 - S3 Retrieve results for Work file ${
               tqm.workKey
@@ -1381,7 +1381,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
         //partially successful
         //successfully posted
 
-        if (s3db_cc.SelectiveDebug.indexOf("_908,") > -1)
+        if (S3DBConfig.SelectiveDebug.indexOf("_908,") > -1)
           console.info(
             `Selective Debug 908 - POST Result for ${tqm.workKey}: ${postResult} `
           )
@@ -1397,7 +1397,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
           //Add to BatchFail array to Retry processing the work
           sqsBatchFail.batchItemFailures.push({ itemIdentifier: q.messageId })
 
-          if (s3db_cc.SelectiveDebug.indexOf("_509,") > -1)
+          if (S3DBConfig.SelectiveDebug.indexOf("_509,") > -1)
             console.warn(
               `(509) - ${
                 tqm.workKey
@@ -1411,14 +1411,14 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
           )
         } else {
           if (postResult.toLowerCase().indexOf("partially successful") > -1) {
-            if (s3db_cc.SelectiveDebug.indexOf("_508,") > -1)
+            if (S3DBConfig.SelectiveDebug.indexOf("_508,") > -1)
               console.info(
                 `(508) Most Work was Successfully Posted to Campaign (work file (${tqm.workKey}, updated ${tqm.custconfig.listName} from ${tqm.workKey}, however there were some exceptions: \n${postResult} `
               )
           } else if (
             postResult.toLowerCase().indexOf("successfully posted") > -1
           ) {
-            if (s3db_cc.SelectiveDebug.indexOf("_508,") > -1)
+            if (S3DBConfig.SelectiveDebug.indexOf("_508,") > -1)
               console.info(
                 `(508) Work Successfully Posted to Campaign (work file (${tqm.workKey}, updated ${tqm.custconfig.listName} from ${tqm.workKey}, \n${postResult} \nThe Work will be deleted from the S3 Process Queue`
               )
@@ -1427,24 +1427,24 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
           //Delete the Work file
           const d = await deleteS3Object(
             tqm.workKey,
-            s3db_cc.S3DropBucketWorkBucket
+            S3DBConfig.S3DropBucketWorkBucket
           )
           if (d === "204") {
-            if (s3db_cc.SelectiveDebug.indexOf("_924,") > -1)
+            if (S3DBConfig.SelectiveDebug.indexOf("_924,") > -1)
               console.info(
                 `Selective Debug 924 - Successful Deletion of Queued Work file: ${tqm.workKey}`
               )
-          } else if (s3db_cc.SelectiveDebug.indexOf("_924,") > -1)
+          } else if (S3DBConfig.SelectiveDebug.indexOf("_924,") > -1)
             console.error(
               `Selective Debug 924 - Failed to Delete ${tqm.workKey}. Expected '204' but received ${d} `
             )
 
-          if (s3db_cc.SelectiveDebug.indexOf("_511,") > -1)
+          if (S3DBConfig.SelectiveDebug.indexOf("_511,") > -1)
             console.info(
               `(511) Processed ${tqm.updateCount} Updates from ${tqm.workKey}`
             )
 
-          if (s3db_cc.SelectiveDebug.indexOf("_510,") > -1)
+          if (S3DBConfig.SelectiveDebug.indexOf("_510,") > -1)
             console.info(
               `(510) Processed ${
                 event.Records.length
@@ -1463,11 +1463,11 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
 
   let maintenance: (number | string[])[] = []
 
-  if (s3db_cc.S3DropBucketWorkQueueMaintHours > 0) {
+  if (S3DBConfig.S3DropBucketWorkQueueMaintHours > 0) {
     try {
       maintenance = (await maintainS3DropBucketQueueBucket()) ?? [0, ""]
 
-      if (s3db_cc.SelectiveDebug.indexOf("_927,") > -1) {
+      if (S3DBConfig.SelectiveDebug.indexOf("_927,") > -1) {
         const l = maintenance[0] as number
         if (l > 0)
           console.info(
@@ -1483,7 +1483,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
     }
   }
 
-  if (s3db_cc.SelectiveDebug.indexOf("_912,") > -1)
+  if (S3DBConfig.SelectiveDebug.indexOf("_912,") > -1)
     console.info(
       `Selective Debug 912 - ${
         tqm.workKey
@@ -1516,14 +1516,14 @@ export const s3DropBucketSFTPHandler: Handler = async (
     process.env["WorkQueueVisibilityTimeout"] === "" ||
     process.env["WorkQueueVisibilityTimeout"] === null
   ) {
-    s3db_cc = await getValidateS3DropBucketConfig()
+    S3DBConfig = await getValidateS3DropBucketConfig()
   }
 
   console.info(
-    `S3 Dropbucket SFTP Processor Selective Debug Set is: ${s3db_cc.SelectiveDebug!} `
+    `S3 Dropbucket SFTP Processor Selective Debug Set is: ${S3DBConfig.SelectiveDebug!} `
   )
 
-  if (s3db_cc.SelectiveDebug.indexOf("_98,") > -1)
+  if (S3DBConfig.SelectiveDebug.indexOf("_98,") > -1)
     console.info(
       `Selective Debug 98 - Process Environment Vars: ${JSON.stringify(
         process.env
@@ -1592,7 +1592,7 @@ export const s3DropBucketSFTPHandler: Handler = async (
     `Received SFTP SQS Events Batch of ${event.Records.length} records.`
   )
 
-  if (s3db_cc.SelectiveDebug.indexOf("_4,") > -1)
+  if (S3DBConfig.SelectiveDebug.indexOf("_4,") > -1)
     console.info(
       `Selective Debug 4 - Received ${
         event.Records.length
@@ -1622,11 +1622,11 @@ export const s3DropBucketSFTPHandler: Handler = async (
 
     //When Testing - get some actual work queued
     if (tqm.workKey === "process_2_pura_2023_10_27T15_11_40_732Z.csv") {
-      tqm.workKey = (await getAnS3ObjectforTesting(s3db_cc.S3DropBucket!)) ?? ""
+      tqm.workKey = (await getAnS3ObjectforTesting(S3DBConfig.S3DropBucket!)) ?? ""
     }
 
     console.info(`Processing Work Queue for ${tqm.workKey}`)
-    if (s3db_cc.SelectiveDebug.indexOf("_11,") > -1)
+    if (S3DBConfig.SelectiveDebug.indexOf("_11,") > -1)
       console.info(
         `Selective Debug 11 - SQS Events - Processing Batch Item ${JSON.stringify(
           q
@@ -1763,12 +1763,12 @@ async function sftpDeleteFile(remoteFile: string) {
 
 async function checkForS3DBConfigUpdates() {
   if (s3dbLogDebug) console.info(`Checking for S3DropBucket Config updates`)
-  s3db_cc = await getValidateS3DropBucketConfig()
+  S3DBConfig = await getValidateS3DropBucketConfig()
 
-  if (s3db_cc.SelectiveDebug.indexOf("_901,") > -1)
+  if (S3DBConfig.SelectiveDebug.indexOf("_901,") > -1)
     console.info(
       `Selective Debug 901 - Refreshed S3DropBucket Queue Config \n ${JSON.stringify(
-        s3db_cc
+        S3DBConfig
       )} `
     )
 }
@@ -1902,7 +1902,7 @@ async function getValidateS3DropBucketConfig() {
       process.env["authapiurl"] = s3dbc.authapiurl
     else
       throw new Error(
-        `S3DropBucket Config invalid definition: authapiurl - ${s3db_cc.authapiurl} `
+        `S3DropBucket Config invalid definition: authapiurl - ${S3DBConfig.authapiurl} `
       )
 
     //Default Seperator
@@ -2130,7 +2130,7 @@ async function getCustomerConfig(filekey: string) {
           "utf8"
         )) as string
 
-        if (s3db_cc.SelectiveDebug.indexOf("_910,") > -1)
+        if (S3DBConfig.SelectiveDebug.indexOf("_910,") > -1)
           console.info(
             `Selective Debug 910 - Customers (${customer}) Config: \n ${ccr} `
           )
@@ -2147,16 +2147,16 @@ async function getCustomerConfig(filekey: string) {
 
         if (err.indexOf("specified key does not exist") > -1)
           throw new Error(
-            `Exception - Customer Config - ${customer}config.jsonc does not exist on ${s3db_cc.S3DropBucketConfigs} bucket \nException ${e} `
+            `Exception - Customer Config - ${customer}config.jsonc does not exist on ${S3DBConfig.S3DropBucketConfigs} bucket \nException ${e} `
           )
 
         if (err.indexOf("NoSuchKey") > -1)
           throw new Error(
-            `Exception - Customer Config Not Found(${customer}config.jsonc) on ${s3db_cc.S3DropBucketConfigs}. \nException ${e} `
+            `Exception - Customer Config Not Found(${customer}config.jsonc) on ${S3DBConfig.S3DropBucketConfigs}. \nException ${e} `
           )
 
         throw new Error(
-          `Exception - Retrieving Config (${customer}config.jsonc) from ${s3db_cc.S3DropBucketConfigs} \nException ${e} `
+          `Exception - Retrieving Config (${customer}config.jsonc) from ${S3DBConfig.S3DropBucketConfigs} \nException ${e} `
         )
       })
   } catch (e) {
@@ -2393,7 +2393,7 @@ async function packageUpdates(
       //console.info( `Debug sqwResult ${ JSON.stringify( sqwResult ) }` )
     }
 
-    if (s3db_cc.SelectiveDebug.indexOf("_918,") > -1)
+    if (S3DBConfig.SelectiveDebug.indexOf("_918,") > -1)
       console.info(
         `Selective Debug 918: PackageUpdates StoreAndQueueWork for ${key}. \nFor a total of ${recs} Updates in ${batchCount} Batches.  Result: \n${JSON.stringify(
           sqwResult
@@ -2418,9 +2418,9 @@ async function storeAndQueueWork(
 ) {
   batchCount++
 
-  if (batchCount > s3db_cc.MaxBatchesWarning)
+  if (batchCount > S3DBConfig.MaxBatchesWarning)
     console.warn(
-      `Warning: Updates from the S3 Object(${s3Key}) are exceeding(${batchCount}) the Warning Limit of ${s3db_cc.MaxBatchesWarning} Batches per Object.`
+      `Warning: Updates from the S3 Object(${s3Key}) are exceeding(${batchCount}) the Warning Limit of ${S3DBConfig.MaxBatchesWarning} Batches per Object.`
     )
   // throw new Error(`Updates from the S3 Object(${ s3Key }) Exceed(${ batch }) Safety Limit of 20 Batches of 99 Updates each.Exiting...`)
 
@@ -2517,7 +2517,7 @@ async function storeAndQueueWork(
     return { StoreQueueWorkException: sqwError, StoreS3WorkException: "" }
   }
 
-  if (s3db_cc.SelectiveDebug.indexOf("_915,") > -1)
+  if (S3DBConfig.SelectiveDebug.indexOf("_915,") > -1)
     console.info(
       `Selective Debug 915 - Results of Store and Queue of Updates - Add to Process Bucket: ${JSON.stringify(
         addWorkToS3WorkBucketResult
@@ -2570,13 +2570,13 @@ function convertJSONToXML_RTUpdates(updates: any[], config: customerConfig) {
         Object.values(updates).length
       } rows as updates to ${config.Customer}'s ${config.listName}`
     )
-  if (s3db_cc.SelectiveDebug.indexOf("_906,") > -1)
+  if (S3DBConfig.SelectiveDebug.indexOf("_906,") > -1)
     console.info(
       `Selective Debug 906 - JSON to be converted to XML RT Updates(${
         config.Customer
       } - ${config.listName}): ${JSON.stringify(updates)}`
     )
-  if (s3db_cc.SelectiveDebug.indexOf("_917,") > -1)
+  if (S3DBConfig.SelectiveDebug.indexOf("_917,") > -1)
     console.info(
       `Selective Debug 917 - XML from JSON for RT Updates (${config.Customer} - ${config.listName}): ${xmlRows}`
     )
@@ -2646,13 +2646,13 @@ function convertJSONToXML_DBUpdates(updates: any[], config: customerConfig) {
         Object.values(updates).length
       } rows as updates to ${config.Customer}'s ${config.listName}`
     )
-  if (s3db_cc.SelectiveDebug.indexOf("_916,") > -1)
+  if (S3DBConfig.SelectiveDebug.indexOf("_916,") > -1)
     console.info(
       `Selective Debug 916 - JSON to be converted to XML DB Updates: ${JSON.stringify(
         updates
       )}`
     )
-  if (s3db_cc.SelectiveDebug.indexOf("_917,") > -1)
+  if (S3DBConfig.SelectiveDebug.indexOf("_917,") > -1)
     console.info(
       `Selective Debug 917 - XML from JSON for DB Updates: ${xmlRows}`
     )
@@ -2808,7 +2808,7 @@ function applyJSONMap(jsonObj: object, map: { [key: string]: string }) {
     try {
       const j = jsonpath.value(jsonObj, v)
       if (!j) {
-        if (s3db_cc.SelectiveDebug.indexOf("_930,") > -1)
+        if (S3DBConfig.SelectiveDebug.indexOf("_930,") > -1)
           console.warn(
             `Selective Debug 930 - Warning: Data not Found for JSONPath statement ${k}: ${v},  \nTarget Data: \n${JSON.stringify(
               jsonObj
@@ -2840,7 +2840,7 @@ function applyJSONMap(jsonObj: object, map: { [key: string]: string }) {
 }
 
 async function addWorkToS3WorkBucket(queueUpdates: string, key: string) {
-  if (s3db_cc.QueueBucketQuiesce) {
+  if (S3DBConfig.QueueBucketQuiesce) {
     console.warn(
       `Work/Process Bucket Quiesce is in effect, no New Work Files are being written to the S3 Queue Bucket. This work file is for ${key}`
     )
@@ -2853,7 +2853,7 @@ async function addWorkToS3WorkBucket(queueUpdates: string, key: string) {
 
   const s3WorkPutInput = {
     Body: queueUpdates,
-    Bucket: s3db_cc.S3DropBucketWorkBucket,
+    Bucket: S3DBConfig.S3DropBucketWorkBucket,
     Key: key,
   }
 
@@ -2875,13 +2875,13 @@ async function addWorkToS3WorkBucket(queueUpdates: string, key: string) {
       })
       .catch((err) => {
         throw new Error(
-          `PutObjectCommand Results Failed for (${key} of ${queueUpdates.length} characters) to S3 Processing bucket (${s3db_cc.S3DropBucketWorkBucket}): \n${err}`
+          `PutObjectCommand Results Failed for (${key} of ${queueUpdates.length} characters) to S3 Processing bucket (${S3DBConfig.S3DropBucketWorkBucket}): \n${err}`
         )
         //return {StoreS3WorkException: err}
       })
   } catch (e) {
     throw new Error(
-      `Exception - Put Object Command for writing work(${key} to S3 Processing bucket(${s3db_cc.S3DropBucketWorkBucket}): \n${e}`
+      `Exception - Put Object Command for writing work(${key} to S3 Processing bucket(${S3DBConfig.S3DropBucketWorkBucket}): \n${e}`
     )
     // return { StoreS3WorkException: e }
   }
@@ -2894,10 +2894,10 @@ async function addWorkToS3WorkBucket(queueUpdates: string, key: string) {
 
   const vidString = addWorkToS3ProcessBucket.VersionId ?? ""
 
-  if (s3db_cc.SelectiveDebug.indexOf("_907,") > -1)
+  if (S3DBConfig.SelectiveDebug.indexOf("_907,") > -1)
     console.info(
       `Selective Debug 907 - Added Work File ${key} to Work Bucket (${
-        s3db_cc.S3DropBucketWorkBucket
+        S3DBConfig.S3DropBucketWorkBucket
       }) \n${JSON.stringify(addWorkToS3ProcessBucket)}`
     )
 
@@ -2918,7 +2918,7 @@ async function addWorkToSQSWorkQueue(
   recCount: string,
   marker: string
 ) {
-  if (s3db_cc.QueueBucketQuiesce) {
+  if (S3DBConfig.QueueBucketQuiesce) {
     console.warn(
       `Work/Process Bucket Quiesce is in effect, no New Work Files are being written to the SQS Queue of S3 Work Bucket. This work file is for ${key}`
     )
@@ -2941,7 +2941,7 @@ async function addWorkToSQSWorkQueue(
 
   const sqsParams = {
     MaxNumberOfMessages: 1,
-    QueueUrl: s3db_cc.S3DropBucketWorkQueue,
+    QueueUrl: S3DBConfig.S3DropBucketWorkQueue,
     //Defer to setting these on the Queue in AWS SQS Interface
     // VisibilityTimeout: parseInt(tcc.WorkQueueVisibilityTimeout),
     // WaitTimeSeconds: parseInt(tcc.WorkQueueWaitTimeSeconds),
@@ -2979,7 +2979,7 @@ async function addWorkToSQSWorkQueue(
         }
         sqsSendResult = sqsSendMessageResult
 
-        if (s3db_cc.SelectiveDebug.indexOf("_914,") > -1)
+        if (S3DBConfig.SelectiveDebug.indexOf("_914,") > -1)
           console.info(
             `Selective Debug 914 - Queued Work to SQS Process Queue (${sqsQMsgBody.workKey}) - Result: ${sqsWriteResult} `
           )
@@ -3008,10 +3008,10 @@ async function addWorkToSQSWorkQueue(
     )
   }
 
-  if (s3db_cc.SelectiveDebug.indexOf("_907,") > -1)
+  if (S3DBConfig.SelectiveDebug.indexOf("_907,") > -1)
     console.info(
       `Selective Debug 907 - Queued Work ${key} (${recCount} updates) to the Work Queue (${
-        s3db_cc.S3DropBucketWorkQueue
+        S3DBConfig.S3DropBucketWorkQueue
       }) \nSQS Params: \n${JSON.stringify(
         sqsParams
       )} \nresults: \n${JSON.stringify({
@@ -3203,7 +3203,7 @@ export async function postToCampaign(
 
   const host = `https://api-campaign-${config.region}-${config.pod}.goacoustic.com/XMLAPI`
 
-  if (s3db_cc.SelectiveDebug.indexOf("_905,") > -1)
+  if (S3DBConfig.SelectiveDebug.indexOf("_905,") > -1)
     console.info(`Selective Debug 905 - Updates to POST are: ${xmlCalls}`)
 
   
@@ -3338,7 +3338,7 @@ async function getAnS3ObjectforTesting(bucket: string) {
   const listReq = {
     Bucket: bucket,
     MaxKeys: 101,
-    Prefix: s3db_cc.prefixFocus,
+    Prefix: S3DBConfig.prefixFocus,
   } as ListObjectsV2CommandInput
 
   await s3
@@ -3391,7 +3391,7 @@ function saveSampleJSON(body: string) {
   saveS3Work(
     `${path}sampleJSON_${Date.now().toString()}.json`,
     body,
-    s3db_cc.S3DropBucketConfigs
+    S3DBConfig.S3DropBucketConfigs
   )
   // s3://s3dropbucket-configs/Saved/
 }
@@ -3428,16 +3428,16 @@ async function maintainS3DropBucket(cust: customerConfig) {
   
   cust.LookupKeys //future
   
-  const bucket = s3db_cc.S3DropBucket
+  const bucket = S3DBConfig.S3DropBucket
   let limit = 0
   if (bucket.indexOf("-process") > -1)
-    limit = s3db_cc.S3DropBucketWorkQueueMaintLimit
-  else limit = s3db_cc.S3DropBucketMaintLimit
+    limit = S3DBConfig.S3DropBucketWorkQueueMaintLimit
+  else limit = S3DBConfig.S3DropBucketMaintLimit
 
   let ContinuationToken: string | undefined
   const reProcess: string[] = []
   //const deleteSource = false
-  const concurrency = s3db_cc.S3DropBucketMaintConcurrency
+  const concurrency = S3DBConfig.S3DropBucketMaintConcurrency
 
   const copyFile = async (sourceKey: string) => {
     // const targetKey = sourceKey.replace(sourcePrefix, targetPrefix)
@@ -3499,7 +3499,7 @@ async function maintainS3DropBucket(cust: customerConfig) {
 
   const d: Date = new Date()
   // 3,600,000 millisecs = 1 hour
-  const a = 3600000 * s3db_cc.S3DropBucketMaintHours //Older Than X Hours
+  const a = 3600000 * S3DBConfig.S3DropBucketMaintHours //Older Than X Hours
 
   do {
     const { Contents = [], NextContinuationToken } = await s3.send(
@@ -3545,17 +3545,17 @@ async function maintainS3DropBucket(cust: customerConfig) {
 }
 
 async function maintainS3DropBucketQueueBucket() {
-  const bucket = s3db_cc.S3DropBucketWorkBucket
+  const bucket = S3DBConfig.S3DropBucketWorkBucket
   let ContinuationToken: string | undefined
   const reQueue: string[] = []
   // let deleteSource = false
-  const concurrency = s3db_cc.S3DropBucketWorkQueueMaintConcurrency
+  const concurrency = S3DBConfig.S3DropBucketWorkQueueMaintConcurrency
 
   // if ( new Date().getTime() > 0 ) return
 
   const d: Date = new Date()
   // 3,600,000 millisecs = 1 hour
-  const age = 3600000 * s3db_cc.S3DropBucketMaintHours //Older Than X Hours
+  const age = 3600000 * S3DBConfig.S3DropBucketMaintHours //Older Than X Hours
 
   do {
     const { Contents = [], NextContinuationToken } = await s3.send(
