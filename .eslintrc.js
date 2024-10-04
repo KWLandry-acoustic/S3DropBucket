@@ -11,8 +11,8 @@ module.exports = {
   rules: {
     // Place to specify ESLint rules. Can be used to overwrite rules specified from the extended configs
     // e.g. "@typescript-eslint/explicit-function-return-type": "off",
-    "prettier/prettier": ["error", { semi: false }],
     "space-infix-ops": ["error", { int32Hint: true }],
-    "no-multiple-empty-lines": ["error", { max: 4 }],
+    "no-multiple-empty-lines": false,
+    "prettier/prettier": ["error", { semi: false }],
   },
 }

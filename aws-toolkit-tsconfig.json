@@ -4,9 +4,9 @@
     "module": "nodenext",
     "resolveJsonModule": true,
     "inlineSourceMap": true,
-    "outDir": "/Users/kwlandry/Dropbox/Documents/A.Campaign/CodeFolder/A. S3DropBucket_main/s3dropbucketcache/.aws-sam",
+    "outDir": ".aws-sam",
     "rootDir": ".",
-    "sourceRoot": "/Users/kwlandry/Dropbox/Documents/A.Campaign/CodeFolder/A. S3DropBucket_main/tricklercache",
+    "sourceRoot": "/Users/kwlandry/Dropbox/Documents/A.Campaign/CodeFolder/A. S3DropBucket_main/s3dropbucket",
     "typeRoots": [
       "node_modules/@types"
     ],

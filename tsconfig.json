@@ -20,7 +20,8 @@
     "forceConsistentCasingInFileNames": true,
     "outDir": ".aws-sam",
     "paths": {
-        "esbuild": ["./node_modules/.bin/esbuild"]
+        "esbuild": ["./node_modules/.bin/esbuild"],
+        "*": [ "./node_modules" ]
     }, 
     // "rootDir": "src/handlers",
     /* Visit https://aka.ms/tsconfig to read more about this file */

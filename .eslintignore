@@ -5,6 +5,5 @@ nodejs.zip
 *.tgz
 __tests__/**
 .ds*
-scratch*
-
-
+setaside
+layers

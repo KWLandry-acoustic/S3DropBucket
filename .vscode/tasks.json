@@ -29,7 +29,7 @@
 			"problemMatcher": [ ],
 			"label": "updateDependencies",
 			"detail": "install dependencies from package",
-			"command": " cp -f package.json layers"
+			"command": "cp -f package.json layers; cp -f package-lock.json layers; cd layers; npm install --omit=dev; cd .. "
 		}
 	]
 }

@@ -50,23 +50,20 @@ import {
 //import {Headers, RequestInit, Response} from 'node-fetch'
 //import fetch, {FetchHttpHandler} from "@smithy/fetch-http-handler"
 
-// import { JSONParser } from '@streamparser/json'
-// const jsonParser = new JSONParser()
 
-//json-node Stream compatible package
-
-import { JSONParser } from "@streamparser/json"
-// import JSONParserTransform from '@streamparser/json-node/jsonparser.js'
+//json-node = Stream compatible package
+import {JSONParser, Tokenizer, TokenParser} from '@streamparser/json-node'
+//import JSONParser from "@streamparser/json-node"
+//import {transform} from '@streamparser/json-node'
+import {transform} from "stream-transform"
 
 import { v4 as uuidv4 } from "uuid"
 
 import { parse } from "csv-parse"
 
-import { transform } from "stream-transform"
-
 import jsonpath from "jsonpath"
 
-import sftpClient from "ssh2-sftp-client"
+import sftpClient, {type ListFilterFunction} from "ssh2-sftp-client"
 //import { type SFTPClient } from "ssh2-sftp-client"
 //import {type SFTPClientOptions} from "ssh2-sftp-client/lib/typescript/sftp-client"
 //import {type SFTPClientError} from "ssh2-sftp-client/lib/typescript/sftp-client"
@@ -358,6 +355,7 @@ export const s3DropBucketHandler: Handler = async (
   event: S3Event,
   context: Context
 ) => {
+
   context.clientContext
   //Ignore Aggregation Error Files
   if (event.Records[0].s3.object.key.indexOf("AggregationError") > -1) return ""
@@ -457,8 +455,8 @@ export const s3DropBucketHandler: Handler = async (
     //ToDo: Resolve Duplicates Issue - S3 allows Duplicate Object Names but Delete marks all Objects of same Name Deleted.
     //   Which causes an issue with Key Not Found after an Object of Name A is processed and deleted, then another Object of Name A comes up in a Trigger.
 
-    vid = r.s3.object.versionId
-    et = r.s3.object.eTag
+    vid = r.s3.object.versionId ?? ""
+    et = r.s3.object.eTag ?? ""
 
     try {
       customersConfig = await getCustomerConfig(key)
@@ -699,7 +697,8 @@ async function processS3ObjectContentStream(
   processS3ObjectStreamResolution = await s3
     .send(new GetObjectCommand(s3C))
     .then(async (getS3StreamResult: GetObjectCommandOutput) => {
-      if (getS3StreamResult.$metadata.httpStatusCode != 200) {
+      if (getS3StreamResult.$metadata.httpStatusCode != 200)
+      {
         const errMsg = JSON.stringify(getS3StreamResult.$metadata)
         //throw new Error( `Get S3 Object Command failed for ${ key }. Result is ${ errMsg }` )
         return {
@@ -708,8 +707,7 @@ async function processS3ObjectContentStream(
         }
       }
 
-      let s3ContentReadableStream =
-        getS3StreamResult.Body as NodeJS.ReadableStream
+      let s3ContentReadableStream = getS3StreamResult.Body as NodeJS.ReadableStream
 
       const t = transform(function (data) {
         //"The \"chunk\" argument must be of type string or an instance of Buffer or Uint8Array. Received an instance of Object"
@@ -723,7 +721,8 @@ async function processS3ObjectContentStream(
       if (
         key.indexOf("aggregate_") < 0 &&
         custConfig.format.toLowerCase() === "csv"
-      ) {
+      )
+      {
         const csvParser = parse({
           delimiter: ",",
           columns: true,
@@ -759,12 +758,14 @@ async function processS3ObjectContentStream(
         //
         // })
         //#region
-      } else {
+      } else
+      {
         s3ContentReadableStream = s3ContentReadableStream.pipe(t)
       }
 
       //Placeholder - Everything should be JSON by the time we get here
-      if (custConfig.format.toLowerCase() === "json") {
+      if (custConfig.format.toLowerCase() === "json")
+      {
       }
 
       //Options to Handling Large JSON Files
@@ -777,7 +778,7 @@ async function processS3ObjectContentStream(
             //The following are what make up StreamJSON JSONParser but can be broken out to process data more granularly
             //Might be helpful in future capabilities 
 
-            const jsonTZParser = new Tokenizer({
+            const jsonTzerParser = new Tokenizer({
                 "stringBufferSize": 64,
                 "numberBufferSize": 64,
                 "separator": "",
@@ -813,14 +814,14 @@ async function processS3ObjectContentStream(
 
       const jsonParser = new JSONParser({
         // numberBufferSize: 64,        //64, //0, //undefined, // set to 0 to don't buffer.
-        stringBufferSize: undefined, //64, //0, //undefined,
-        //separator: '\n',               // separator between object. For example `\n` for nd-js.
-        //separator: `''`,               // separator between object. For example `\n` for nd-js.
-        separator: jsonSep, // separator between object. For example `\n` for nd-js.
-        paths: ["$"], //ToDo: Possible data transform oppty
-        keepStack: false,
-        emitPartialTokens: false, // whether to emit tokens mid-parsing.
-      }) //, { objectMode: true })
+        stringBufferSize: undefined,    //64, //0, //undefined,
+        //separator: '\n',              // separator between object. For example `\n` for nd-js.
+        //separator: `''`,              // separator between object. For example `\n` for nd-js.
+        separator: jsonSep,             // separator between object. For example `\n` for nd-js.
+        paths: ["$"],                   //ToDo: Possible data transform oppty
+        keepStack: false,               //Save Memory, tradeoff not complete info
+        emitPartialTokens: false,       // whether to emit tokens mid-parsing.
+      })
 
       //At this point, all data, whether a json file or a csv file parsed by csvparser should come through
       //  as a series of Objects (One at a time in the Stream) with a line break after each Object.
@@ -837,6 +838,8 @@ async function processS3ObjectContentStream(
 
       // s3ContentReadableStream = s3ContentReadableStream.pipe(t).pipe(jsonParser)
       s3ContentReadableStream = s3ContentReadableStream.pipe(jsonParser)
+      //s3ContentReadableStream = s3ContentReadableStream.pipe(tJsonParser)
+
 
       s3ContentReadableStream.setMaxListeners(
         Number(s3db_cc.EventEmitterMaxListeners)
@@ -3405,6 +3408,9 @@ async function purgeBucket(count: number, bucket: string) {
 }
 
 async function maintainS3DropBucket(cust: customerConfig) {
+  
+  cust.LookupKeys //future
+  
   const bucket = s3db_cc.S3DropBucket
   let limit = 0
   if (bucket.indexOf("-process") > -1)
@@ -3413,7 +3419,7 @@ async function maintainS3DropBucket(cust: customerConfig) {
 
   let ContinuationToken: string | undefined
   const reProcess: string[] = []
-  const deleteSource = false
+  //const deleteSource = false
   const concurrency = s3db_cc.S3DropBucketMaintConcurrency
 
   const copyFile = async (sourceKey: string) => {

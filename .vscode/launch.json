@@ -9,7 +9,7 @@
       "name": "1.S3-Direct Invoke Lambda Template - s3DropBucketfunction",
       "type": "aws-sam",
       "request": "direct-invoke",
-      "preLaunchTask": "removeAWSSam",
+      "preLaunchTask": "updateDependencies",
       //"preLaunchTask": "docker-run: debug",
       "invokeTarget": {
         "target": "template",
