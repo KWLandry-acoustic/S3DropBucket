@@ -2071,7 +2071,7 @@ async function getCustomerConfig(filekey: string) {
   // Retrieve file's prefix as the Customer Name
   if (!filekey)
     throw new Error(
-      `Exception - Cannot resolve Customer Config without a valid Customer Prefix (file is ${filekey})`
+        `Exception - Cannot resolve Customer Config without a valid Customer Prefix in filename (filename is ${filekey})`
     )
 
   while (filekey.indexOf("/") > -1) {
@@ -2079,21 +2079,38 @@ async function getCustomerConfig(filekey: string) {
     filekey = filekey.split("/").at(-1) ?? filekey
   }
 
+  //Check for timestamp - if timestamp - remove timestamp (remove underscores) 
   const r = new RegExp(/\d{4}_\d{2}_\d{2}T.*Z.*/, "gm")
   if (filekey.match(r)) {
     filekey = filekey.replace(r, "") //remove timestamp from name
   }
 
-  const customer = filekey
-  //const customer = filekey.split('_')[0] + '_'      //initial treatment, get prefix up to first underscore
+  if (filekey.indexOf('_') > -1)
+  {
+    filekey = filekey.substring(0, filekey.lastIndexOf("_") + 1)
+    }
+  
+  //  const customer = filekey.split('_')[0] + '_'      //initial treatment, get prefix up to first underscore
 
-  if (customer === "_" || customer.length < 4) {
-    //shouldn't need this customer.indexOf('_') < 0 ||
+    
+  //Should be left with customername, data flow and trailing underscore
+  if (!filekey.endsWith('_'))
+  {
     throw new Error(
-      `Exception - Customer cannot be determined from S3 Object Name '${filekey}'      \n      `
+      `Exception - Cannot resolve Customer Config without a valid Customer Prefix (filename is ${filekey})`
     )
+    
   }
 
+  if (filekey === "_" || filekey.length < 4) {
+    throw new Error(
+      `Exception - Cannot resolve Customer Config without a valid Customer Prefix in filename (filename is ${filekey})`
+   )
+  }
+
+    //const customer = filekey.split('_')[0] + '_'      //initial treatment, get prefix up to first underscore
+
+  const customer = filekey
   let configJSON = {} as customerConfig
   // const configObjs = [new Uint8Array()]
 
