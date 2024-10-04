@@ -9,7 +9,7 @@ phases:
 
   pre_build:
     commands:
-      - console.log("Running dependencies cleanup\n\n")
+      #- console.log("Running dependencies cleanup\n\n")
       - cp package.json layers
       - cp package-lock.json layers
       - cd layers
