@@ -82,7 +82,7 @@ import sftpClient, {ListFilterFunction} from "ssh2-sftp-client"
 //import {type sftpClientEventStat} from "ssh2-sftp-client/lib/typescript/sftp-client"
 
 
-
+//Useful for internal process references
 //import { type FileResultCallback } from "@babel/core"
 //import { freemem } from "os"
 //import { env } from "node:process"
@@ -337,7 +337,7 @@ testS3Bucket = "s3dropbucket-configs"
 //testS3Key = "TestData/alerusrepsignature_sampleformatted_json_update_1_1.xml"
 //testS3Key = "TestData/alerusrepsignature_advisors_2_json_update-3c74bfb2-1997-4653-bd8e-73bf030b4f2d_26_14.xml"
 //  Core - Key Set of Test Datasets
-//testS3Key = "TestData/cloroxweather_99706.csv"
+testS3Key = "TestData/cloroxweather_99706.csv"
 //testS3Key = "TestData/pura_S3DropBucket_Aggregator-8-2024-03-19-16-42-48-46e884aa-8c6a-3ff9-8d32-c329395cf311.json"
 //testS3Key = "TestData/pura_2024_02_26T05_53_26_084Z.json"
 //testS3Key = "TestData/alerusrepsignature_sample.json"
@@ -345,7 +345,7 @@ testS3Bucket = "s3dropbucket-configs"
 // testS3Key = "TestData/alerusrepsignature_sampleformatted.json"
 // testS3Key = "TestData/alerusrepsignature_sample - min.json"
 //testS3Key = "TestData/alerusreassignrepsignature_advisors.json"
-testS3Key = "TestData/Funding_Circle_Limited_CampaignRelationalTable1_2024_10_08T10_16_49_700Z.json"
+//testS3Key = "TestData/Funding_Circle_Limited_CampaignRelationalTable1_2024_10_08T10_16_49_700Z.json"
 //testS3Key = "TestData/Funding_Circle_Limited_CampaignDatabase1_2024_10_08T09_52_13_903Z.json"
 
 
@@ -447,7 +447,7 @@ export const s3DropBucketHandler: Handler = async (
   //Future: Left this for possible switch of the Trigger from S3 being an SQS Trigger of an S3 Write,
   // Drive higher concurrency in each Lambda invocation by running batches of 10 files written at a time(SQS Batch)
   for (const r of event.Records) {
-    let key = r.s3.object.key ?? ""
+    const key = r.s3.object.key ?? ""
     const bucket = r.s3.bucket.name ?? ""
 
     if (S3DBConfig.prefixFocus !== "" && key.indexOf(S3DBConfig.prefixFocus) < 0) {
@@ -664,7 +664,7 @@ export const s3DropBucketHandler: Handler = async (
     console.info(`Selective Debug 920 - \n${JSON.stringify(objectStreamResolution)}`)
 
   //
-  //Possible Logging Option
+  //Possible Logging Option - Using Firehose
   //
  /*
  if (S3DBConfig.S3DropBucketLog) {
@@ -993,11 +993,10 @@ async function processS3ObjectContentStream(
               //throw new Error( `Exception - onEnd ${ JSON.stringify( streamResult ) } ` )
               return streamResult
             }
-
+            debugger;
             //Next Process Step is Queue Work or Aggregate Small single Update files into larger Update files to improve Campaign Update performance.
             try {
               // if Not an Aggregate file, there are chunks to process, and Multiple option set)
-
               if (
                 (chunks.length > 0 &&
                   custConfig.updates.toLowerCase() === "multiple") ||
@@ -1011,7 +1010,7 @@ async function processS3ObjectContentStream(
                   //console.info( `Return Await PackageResult from PackageUpdates: ${ JSON.stringify( res ) }` )
                   return res
                 })
-debugger
+
                /* streamResult = {
                   ...streamResult,
                   processS3ObjectStreamResult: packageResult.StoreAndQueueWorkResult
@@ -2285,11 +2284,14 @@ async function validateCustomerConfig(config: customerConfig) {
   if (config.separator.toLowerCase() === "empty") config.separator = `""`
   if (config.separator.toLowerCase() === "\n") config.separator = "\n"
 
-  if (!config.updates.toLowerCase().match(/^(?:singular|multiple|bulk)$/gim)) {
+  if (!config.updates.toLowerCase().match(/^(?:singular|multiple|bulk)$/gim))
+  {
     throw new Error(
       "Invalid Customer Config - Updates is not 'Singular' or 'Multiple' "
     )
   }
+  //Remove legacy config value
+  if (config.updates.toLowerCase() === "bulk") config.updates = "Multiple"
 
   if (!config.pod.match(/^(?:0|1|2|3|4|5|6|7|8|9|a|b)$/gim)) {
     throw new Error(
@@ -2832,6 +2834,8 @@ function transforms(updates: object[], config: customerConfig) {
   //       "Col_DE": 2,
   //       "Col_DF": 3
   // },
+
+  debugger;
 
   if (Object.keys(config.transforms.csvMap).indexOf("none") < 0) {
     const c: typeof updates = []
