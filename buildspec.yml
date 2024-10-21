@@ -9,7 +9,6 @@ phases:
 
   pre_build:
     commands:
-      - console.log("Running PreBuild - dependencies cleanup\n\n")
       - npm run cleanUp-AWSSAM
       - npm cache clean --force
       - npm remove node_modules
@@ -21,7 +20,6 @@ phases:
 
   build:
     commands:
-      - console.log("Running Build - Installing Dependencies omit-dev\n\n")
       - npm install --omit=dev
       - npm prune --production
       #- npm install -g serverless
