@@ -21,5 +21,6 @@
             "editor.autoIndent": "advanced"
       }
       "eslint.format.enable": true,
-      "html.format.contentUnformatted": ""
+      "html.format.contentUnformatted": "",
+      "terminal.integrated.inheritEnv": false
 }

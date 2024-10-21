@@ -1,3 +1,4 @@
+/* eslint-disable no-debugger */
 "use strict"
 
 import {
@@ -15,7 +16,7 @@ import {
   S3Client,
   GetObjectCommand,
   DeleteObjectCommand,
-  CopyObjectCommand,
+  //CopyObjectCommand,
 } from "@aws-sdk/client-s3"
 
 import {
@@ -35,7 +36,7 @@ import {
   SchedulerClient,
   ListSchedulesCommand,
   ListSchedulesCommandInput,
-} from "@aws-sdk/client-scheduler" // ES Modules import
+} from "@aws-sdk/client-scheduler" 
 
 import {
   Handler,
@@ -52,7 +53,8 @@ import {
 
 
 //json-node = Stream compatible package
-import {JSONParser, Tokenizer, TokenParser} from '@streamparser/json-node'
+//import {JSONParser, Tokenizer, TokenParser} from '@streamparser/json-node'
+import {JSONParser} from '@streamparser/json-node'
 //import JSONParser from "@streamparser/json-node"
 //import {transform} from '@streamparser/json-node'
 import {transform} from "stream-transform"
@@ -63,22 +65,21 @@ import { parse } from "csv-parse"
 
 import jsonpath from "jsonpath"
 
-import sftpClient, {type ListFilterFunction} from "ssh2-sftp-client"
-//import { type SFTPClient } from "ssh2-sftp-client"
-//import {type SFTPClientOptions} from "ssh2-sftp-client/lib/typescript/sftp-client"
-//import {type SFTPClientError} from "ssh2-sftp-client/lib/typescript/sftp-client"
-//import {type SFTPClientEvent} from "ssh2-sftp-client/lib/typescript/sftp-client"
-//import {type SFTPClientEventError} from "ssh2-sftp-client/lib/typescript/sftp-client"
-//import {type SFTPClientEventClose} from "ssh2-sftp-client/lib/typescript/sftp-client"
-//import {type SFTPClientEventData} from "ssh2-sftp-client/lib/typescript/sftp-client"
-//import {type SFTPClientEventEnd} from "ssh2-sftp-client/lib/typescript/sftp-client"
-//import {type SFTPClientEventOpen} from "ssh2-sftp-client/lib/typescript/sftp-client"
-//import {type SFTPClientEventRead} from "ssh2-sftp-client/lib/typescript/sftp-client"
-//import {type SFTPClientEventWrite} from "ssh2-sftp-client/lib/typescript/sftp-client"
-//import {type SFTPClientEventRename} from "ssh2-sftp-client/lib/typescript/sftp-client"
-//import {type SFTPClientEventCreate} from "ssh2-sftp-client/lib/typescript/sftp-client"
-//import {type SFTPClientEventDelete} from "ssh2-sftp-client/lib/typescript/sftp-client"
-//import {type SFTPClientEventStat} from "ssh2-sftp-client/lib/typescript/sftp-client"
+import sftpClient, {ListFilterFunction} from "ssh2-sftp-client"
+//import {type sftpClientOptions} from "ssh2-sftp-client/lib/typescript/sftp-client"
+//import {type sftpClientError} from "ssh2-sftp-client/lib/typescript/sftp-client"
+//import {type sftpClientEvent} from "ssh2-sftp-client/lib/typescript/sftp-client"
+//import {type sftpClientEventError} from "ssh2-sftp-client/lib/typescript/sftp-client"
+//import {type sftpClientEventClose} from "ssh2-sftp-client/lib/typescript/sftp-client"
+//import {type sftpClientEventData} from "ssh2-sftp-client/lib/typescript/sftp-client"
+//import {type sftpClientEventEnd} from "ssh2-sftp-client/lib/typescript/sftp-client"
+//import {type sftpClientEventOpen} from "ssh2-sftp-client/lib/typescript/sftp-client"
+//import {type sftpClientEventRead} from "ssh2-sftp-client/lib/typescript/sftp-client"
+//import {type sftpClientEventWrite} from "ssh2-sftp-client/lib/typescript/sftp-client"
+//import {type sftpClientEventRename} from "ssh2-sftp-client/lib/typescript/sftp-client"
+//import {type sftpClientEventCreate} from "ssh2-sftp-client/lib/typescript/sftp-client"
+//import {type sftpClientEventDelete} from "ssh2-sftp-client/lib/typescript/sftp-client"
+//import {type sftpClientEventStat} from "ssh2-sftp-client/lib/typescript/sftp-client"
 
 
 
@@ -95,7 +96,7 @@ console.info(s3db_version)
 let s3 = {} as S3Client
 
 const SFTPClient = new sftpClient()
-SFTPClient.exists
+
 
 //For when needed to reference Lambda execution environment /tmp folder
 // import { ReadStream, close } from 'fs'
@@ -109,7 +110,7 @@ export type sqsObject = {
 
 let localTesting = false
 
-let chunks: unknown[] = []
+let chunks: object[]
 
 let xmlRows = ""
 let batchCount = 0
@@ -317,11 +318,12 @@ const sqsBatchFail: SQSBatchItemFails = {
 
 sqsBatchFail.batchItemFailures.pop()
 
+let vid = ""
+let et = ""
+
 let s3dbLogDebug = false
-
-let s3dbLogVerbose = false
-
-let s3dbLogNormal = false
+//let s3dbLogVerbose = false
+//let s3dbLogNormal = false
 
 //For local testing
 let testS3Key: string
@@ -342,10 +344,11 @@ testS3Bucket = "s3dropbucket-configs"
 //testS3Key = "TestData/alerusrepsignature_advisors.json"
 // testS3Key = "TestData/alerusrepsignature_sampleformatted.json"
 // testS3Key = "TestData/alerusrepsignature_sample - min.json"
-testS3Key = "TestData/alerusreassignrepsignature_advisors.json"
+//testS3Key = "TestData/alerusreassignrepsignature_advisors.json"
+testS3Key = "TestData/Funding_Circle_Limited_CampaignRelationalTable1_2024_10_08T10_16_49_700Z.json"
+//testS3Key = "TestData/Funding_Circle_Limited_CampaignDatabase1_2024_10_08T09_52_13_903Z.json"
 
-let vid = ""
-let et = ""
+
 
 /**
  * A Lambda function to process the Event payload received from S3.
@@ -356,7 +359,6 @@ export const s3DropBucketHandler: Handler = async (
   context: Context
 ) => {
 
-  context.clientContext
   //Ignore Aggregation Error Files
   if (event.Records[0].s3.object.key.indexOf("AggregationError") > -1) return ""
 
@@ -392,6 +394,7 @@ export const s3DropBucketHandler: Handler = async (
       )
   }
 
+  
   //When Local Testing - pull an S3 Object and so avoid the not-found error
   if (
     !event.Records[0].s3.object.key ||
@@ -416,16 +419,16 @@ export const s3DropBucketHandler: Handler = async (
     localTesting = false
   }
 
-  if (S3DBConfig.S3DropBucketPurgeCount > 0) {
-    console.warn(
-      `Purge Requested, Only action will be to Purge ${S3DBConfig.S3DropBucketPurge} of ${S3DBConfig.S3DropBucketPurgeCount} Records. `
-    )
-    const d = await purgeBucket(
-      Number(S3DBConfig.S3DropBucketPurgeCount!),
-      S3DBConfig.S3DropBucketPurge!
-    )
-    return d
-  }
+  //if (S3DBConfig.S3DropBucketPurgeCount > 0) {
+  //  console.warn(
+  //    `Purge Requested, Only action will be to Purge ${S3DBConfig.S3DropBucketPurge} of ${S3DBConfig.S3DropBucketPurgeCount} Records. `
+  //  )
+  //  const d = await purgeBucket(
+  //    Number(S3DBConfig.S3DropBucketPurgeCount!),
+  //    S3DBConfig.S3DropBucketPurge!
+  //  )
+  //  return d
+  //}
 
   if (S3DBConfig.S3DropBucketQuiesce) {
     if (!localTesting) {
@@ -438,7 +441,7 @@ export const s3DropBucketHandler: Handler = async (
 
   if (S3DBConfig.SelectiveDebug.indexOf("_100,") > -1)
     console.info(
-      `(100) Received S3DropBucket Event Batch.There are ${event.Records.length} S3DropBucket Event Records in this batch. (Event Id: ${event.Records[0].responseElements["x-amz-request-id"]}).`
+      `(100) Received S3DropBucket Event Batch.There are ${event.Records.length} S3DropBucket Event Records in this batch. (Event Id: ${event.Records[0].responseElements["x-amz-request-id"]}, \nContext: ${context}).`
     )
 
   //Future: Left this for possible switch of the Trigger from S3 being an SQS Trigger of an S3 Write,
@@ -466,9 +469,10 @@ export const s3DropBucketHandler: Handler = async (
     }
 
     //Initial work out for writing logs to S3 Bucket
+    /*
     try {
       if (key.indexOf("S3DropBucket-LogsS3DropBucket_Aggregator") > -1)
-        console.warn(`Warning -- Found Invalid Aggregator File Name - ${key}`)
+        console.warn(`Warning -- Found Invalid Aggregator File Name - ${key} \nVersionID: ${vid}, \neTag: ${et}`)
       if (S3DBConfig.SelectiveDebug.indexOf("_101,") > -1)
         console.info(
           `(101) Processing inbound data for ${customersConfig.Customer} - ${key}`
@@ -478,32 +482,36 @@ export const s3DropBucketHandler: Handler = async (
         `Exception - Retrieving Customer Config for ${key} \n${e}`
       )
     }
+    */
 
-    //ReQueue .xml files - in lieu of requeing through config, have work files (....xml) moved to the S3DropBucket bucket and drive
-    //  an object creation event to the handler
+    //ReQueue .xml files - in lieu of requeing through config, have work files (....xml) moved 
+    // to the S3DropBucket bucket and drive an object creation event to the handler
+    /*
     try {
       if (key.indexOf(".xml") > -1) {
-        console.warn(`Warning -- Found Invalid Aggregator File Name - ${key}`)
+        console.warn(`Warning -- Found Invalid Aggregator File Name - ${key} \nVersionID: ${vid}, \neTag: ${et}`)
 
-        const getWork = await getS3Work(key, bucket).then(async (work) => {
-          const workSet = work.split("</Envelope>")
-          const reQueueWorkRes = await packageUpdates(
-            workSet,
-            key,
-            customersConfig
-          )
+        await getS3Work(key, bucket)
+          .then(async (work) => {
+            const workSet = work.split("</Envelope>")
+            await packageUpdates(
+              workSet,
+              key,
+              customersConfig
+            )
         })
 
         if (S3DBConfig.SelectiveDebug.indexOf("_101,") > -1)
           console.info(
-            `(101) Processing inbound data for ${customersConfig.Customer} - ${key}`
+            `(101) Processing inbound data for ${customersConfig.Customer} - ${key} \nVersionID: ${vid}, \neTag: ${et}`
           )
       }
     } catch (e) {
       throw new Error(
-        `Exception - ReQueing Work from ${bucket} for ${key} \n${e}`
+        `Exception - ReQueing Work from ${bucket} for ${key} \nVersionID: ${vid}, \neTag: ${et} \n${e}`
       )
     }
+    */  
 
     batchCount = 0
     recs = 0
@@ -522,17 +530,20 @@ export const s3DropBucketHandler: Handler = async (
           streamResults.Processed = res.OnEndRecordStatus
 
           console.info(
-            `Completed Processing Content Stream - ${processS3ObjectStreamResolution.Key} ${processS3ObjectStreamResolution.Processed}`
+            `Completed Processing Content Stream - ${streamResults.Key} ${streamResults.Processed}`
           )
 
           if (S3DBConfig.SelectiveDebug.indexOf("_103,") > -1)
             console.info(
-              `(103) Completed processing all records of the S3 Object ${key}. ${res.OnEndRecordStatus}`
+              `(103) Completed processing all records of the S3 Object ${key} \nVersionID: ${vid}, \neTag: ${et}. \nStatus: ${res.OnEndRecordStatus}`
             )
 
           //Don't delete the test data
-          if (localTesting) key = "TestData/S3Object_DoNotDelete"
-          //Do not delete in order to Capture Testing Data
+          if (localTesting)
+          {
+            streamResults= {...streamResults, DeleteResult: `Test Data - Not Deleting ${key}`}
+            return streamResults
+          }
           // if (key.toLowerCase().indexOf('aggregat') > -1) key = 'TestData/S3Object_DoNotDelete'
 
           if (
@@ -579,11 +590,11 @@ export const s3DropBucketHandler: Handler = async (
           return streamResults
         })
         .catch((e) => {
-          const r = `Exception - Process S3 Object Stream Catch - \n${e}`
-          console.error(r)
+          const err = `Exception - Process S3 Object Stream Catch - \n${e}`
+          console.error(err)
           processS3ObjectStreamResolution = {
             ...processS3ObjectStreamResolution,
-            ProcessS3ObjectStreamCatch: r,
+            ProcessS3ObjectStreamCatch: err,
           }
           return processS3ObjectStreamResolution
         })
@@ -604,41 +615,42 @@ export const s3DropBucketHandler: Handler = async (
   //Check for important Config updates (which caches the config in Lambdas long-running cache)
   checkForS3DBConfigUpdates()
 
-  if (event.Records[0].s3.bucket.name && S3DBConfig.S3DropBucketMaintHours > 0) {
-    const maintenance = await maintainS3DropBucket(customersConfig)
+  //if (event.Records[0].s3.bucket.name && S3DBConfig.S3DropBucketMaintHours > 0) {
+  //  const maintenance = await maintainS3DropBucket(customersConfig)
 
-    const l = maintenance[0] as number
-    // console.info( `- ${ l } File(s) met criteria and are marked for reprocessing ` )
+  //  const l = maintenance[0] as number
+  //  // console.info( `- ${ l } File(s) met criteria and are marked for reprocessing ` )
 
-    if (S3DBConfig.SelectiveDebug.indexOf("_926,") > -1) {
-      const filesProcessed = maintenance[1]
-      if (l > 0)
-        console.info(
-          `Selective Debug 926 - ${l} Files met criteria and are returned for Processing: \n${filesProcessed}`
-        )
-      else
-        console.info(
-          `Selective Debug 926 - No files met the criteria to return for Reprocessing`
-        )
-    }
-  }
+  //  if (S3DBConfig.SelectiveDebug.indexOf("_926,") > -1) {
+  //    const filesProcessed = maintenance[1]
+  //    if (l > 0)
+  //      console.info(
+  //        `Selective Debug 926 - ${l} Files met criteria and are returned for Processing: \n${filesProcessed}`
+  //      )
+  //    else
+  //      console.info(
+  //        `Selective Debug 926 - No files met the criteria to return for Reprocessing`
+  //      )
+  //  }
+  //}
 
   //Need to protect against the Result String becoming excessively long
+  
   const n = new Date().toISOString()
-  let osr =
+  let objectStreamResolution =
     n + "  -  " + JSON.stringify(processS3ObjectStreamResolution) + "\n\n"
-  const osrl = osr.length
+  const osrl = objectStreamResolution.length
 
   if (osrl > 10000) {
     //100K Characters
-    osr = `Excessive Length of ProcessS3ObjectStreamResolution: ${osrl} Truncated: \n ${osr.substring(
+    objectStreamResolution = `Excessive Length of ProcessS3ObjectStreamResolution: ${osrl} Truncated: \n ${objectStreamResolution.substring(
       0,
       1000
-    )} ... ${osr.substring(osrl - 1000, osrl)}`
+    )} ... ${objectStreamResolution.substring(osrl - 1000, osrl)}`
 
     if (S3DBConfig.SelectiveDebug.indexOf("_920,") > -1)
-      console.warn(`Selective Debug 920 - \n ${JSON.stringify(osr)} `)
-    return osr
+      console.warn(`Selective Debug 920 - \n ${JSON.stringify(objectStreamResolution)} `)
+    return objectStreamResolution
   }
   const k = processS3ObjectStreamResolution.Key
   const p = processS3ObjectStreamResolution.Processed
@@ -649,13 +661,15 @@ export const s3DropBucketHandler: Handler = async (
     )
 
   if (S3DBConfig.SelectiveDebug.indexOf("_920,") > -1)
-    console.info(`Selective Debug 920 - \n${JSON.stringify(osr)}`)
+    console.info(`Selective Debug 920 - \n${JSON.stringify(objectStreamResolution)}`)
 
   //
   //Possible Logging Option
   //
-  if (S3DBConfig.S3DropBucketLog) {
-    const logMsg = [osr]
+ /*
+ if (S3DBConfig.S3DropBucketLog) {
+    const logMsg: object[] = [{osr}]      //need to check this one, 
+    debugger
     const logKey = `S3DropBucket_Log_${new Date()
       .toISOString()
       .replace(/:/g, "_")}`
@@ -670,10 +684,12 @@ export const s3DropBucketHandler: Handler = async (
       )}`
     )
   }
+  */
 
+  //Done with logging the results of this pass, empty the object for the next processing cycle
   processS3ObjectStreamResolution = {} as processS3ObjectStreamResult
 
-  return osr
+  return objectStreamResolution   //Return the results logging object
 }
 
 export default s3DropBucketHandler
@@ -693,6 +709,7 @@ async function processS3ObjectContentStream(
   let streamResult: processS3ObjectStreamResult =
     processS3ObjectStreamResolution
 
+
   // processS3ObjectResults
   processS3ObjectStreamResolution = await s3
     .send(new GetObjectCommand(s3C))
@@ -711,7 +728,7 @@ async function processS3ObjectContentStream(
 
       const t = transform(function (data) {
         //"The \"chunk\" argument must be of type string or an instance of Buffer or Uint8Array. Received an instance of Object"
-
+        //Future - Opportunity for Transforms
         let r
         if (Buffer.isBuffer(data)) r = data.toString("utf8")
         else r = JSON.stringify(data) + "\n"
@@ -766,9 +783,11 @@ async function processS3ObjectContentStream(
       //Placeholder - Everything should be JSON by the time we get here
       if (custConfig.format.toLowerCase() === "json")
       {
+        if (S3DBConfig.SelectiveDebug.indexOf("____,") > -1)  //Future Logging Opportunity
+          console.info(` `)
       }
 
-      //Options to Handling Large JSON Files
+      //Notes: Options to Handling Large JSON Files
       // Send the JSON objects formatted without newlines and use a newline as the delimiter.
       // Send the JSON objects concatenated with a record separator control character as the delimiter.
       // Send the JSON objects concatenated with no delimiters and rely on a streaming parser to extract them.
@@ -851,7 +870,7 @@ async function processS3ObjectContentStream(
       let packageResult
 
       // const readStream = await new Promise(async (resolve, reject) => {
-      await new Promise(async (resolve, reject) => {
+      await new Promise( (resolve, reject) => {
         s3ContentReadableStream
           .on("error", async function (err: string) {
             const errMessage = `An error has stopped Content Parsing at record ${recs++} for s3 object ${key}. Separator is ${jsonSep}.\n${err} \n${chunks}`
@@ -868,6 +887,7 @@ async function processS3ObjectContentStream(
                 errMessage
               )}`,
             }
+            reject(errMessage)
             throw new Error(
               `Error on Readable Stream for s3DropBucket Object ${key}.\nError Message: ${errMessage} `
             )
@@ -957,7 +977,7 @@ async function processS3ObjectContentStream(
                 )
                 streamResult = {
                   ...streamResult,
-                  OnDataReadStreamException: `Exception - Second Catch - ReadStream-OnData Processing for ${key} \nBatch ${batchCount} of ${recs} Updates. \n${e} `,
+                  OnDataReadStreamException: `Exception - Second Catch - ReadStream-OnData - Batch Packaging for ${key} \nBatch ${batchCount} of ${recs} Updates. \n${e} `,
                 }
               }
             }
@@ -991,11 +1011,11 @@ async function processS3ObjectContentStream(
                   //console.info( `Return Await PackageResult from PackageUpdates: ${ JSON.stringify( res ) }` )
                   return res
                 })
-
-                streamResult = {
+debugger
+               /* streamResult = {
                   ...streamResult,
-                  OnEndStreamEndResult: packageResult as any,
-                }
+                  processS3ObjectStreamResult: packageResult.StoreAndQueueWorkResult
+                }*/
               }
 
               // if (this is an aggregate file and chunks are not 0)
@@ -1004,10 +1024,10 @@ async function processS3ObjectContentStream(
                 custConfig.updates.toLowerCase() === "singular" &&
                 key.toLowerCase().indexOf("aggregat") < 0
               ) {
-                let pfhRes
+ 
 
                 try {
-                  pfhRes = await putToFirehose(
+                  await putToFirehose(
                     chunks,
                     key,
                     custConfig.Customer
@@ -1083,7 +1103,7 @@ async function processS3ObjectContentStream(
           const err = `Exception - ReadStream(catch) - Process S3 Object Content Stream for ${key}. \n${e} `
           //console.error( err )
           //throw new Error( err )
-          return { ...streamResult, OnCloseReadStreamException: `${err}` }
+          return {...streamResult, OnCloseReadStreamException: `${err}`}
         })
 
       // return { ...readStream, ReturnLocation: `...End of ReadStream Promise` }
@@ -1107,7 +1127,7 @@ async function processS3ObjectContentStream(
   return processS3ObjectStreamResolution
 }
 
-async function putToFirehose(chunks: any[], key: string, cust: string) {
+async function putToFirehose(chunks: object[], key: string, cust: string) {
   const client = new FirehoseClient()
 
   // S3DropBucket_Aggregator
@@ -1120,14 +1140,16 @@ async function putToFirehose(chunks: any[], key: string, cust: string) {
 
   try {
     for (const j in chunks) {
-      const jo = chunks[j]
+      //const jo = chunks[j]
 
       //const j = JSON.parse( chunks[ fhchunk ] )
 
-      if (cust !== "S3DropBucket_Log_")
-        cust === Object.assign(jo, { Customer: cust })
-
-      const fd = Buffer.from(JSON.stringify(jo), "utf-8")
+      //if (cust !== "S3DropBucket_Log_")
+        //cust = Object.assign(jo, { Customer: cust })
+      cust = j
+      
+      //const fd = Buffer.from(JSON.stringify(jo), "utf-8")
+      const fd = Buffer.from(JSON.stringify(j), "utf-8")
 
       const fp = {
         DeliveryStreamName: fireHoseStream,
@@ -1236,16 +1258,16 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
     return
   }
 
-  if (S3DBConfig.WorkQueueBucketPurgeCount > 0) {
-    console.info(
-      `Purge Requested, Only action will be to Purge ${S3DBConfig.WorkQueueBucketPurge} of ${S3DBConfig.WorkQueueBucketPurgeCount} Records. `
-    )
-    const d = await purgeBucket(
-      Number(process.env["WorkQueueBucketPurgeCount"]!),
-      process.env["WorkQueueBucketPurge"]!
-    )
-    return d
-  }
+  //if (S3DBConfig.WorkQueueBucketPurgeCount > 0) {
+  //  console.info(
+  //    `Purge Requested, Only action will be to Purge ${S3DBConfig.WorkQueueBucketPurge} of ${S3DBConfig.WorkQueueBucketPurgeCount} Records. `
+  //  )
+  //  const d = await purgeBucket(
+  //    Number(process.env["WorkQueueBucketPurgeCount"]!),
+  //    process.env["WorkQueueBucketPurge"]!
+  //  )
+  //  return d
+  //}
 
   // Backoff strategy for failed invocations
 
@@ -1268,7 +1290,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
 
   if (S3DBConfig.SelectiveDebug.indexOf("_506,") > -1)
     console.info(
-      `(506) Received SQS Events Batch of ${event.Records.length} records.`
+      `(506) Received SQS Events Batch of ${event.Records.length} records. \nContext: ${context}`
     )
 
   if (S3DBConfig.SelectiveDebug.indexOf("_904,") > -1)
@@ -1369,6 +1391,13 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
             }: ${JSON.stringify(work)}`
           )
 
+        if (custconfig.listType.toLowerCase() === 'referenceset')
+          postResult = await postToConnect(
+            work,
+            custconfig as customerConfig,
+            tqm.updateCount
+          )
+        if (custconfig.listType.toLowerCase() === 'relational' || custconfig.listType.toLowerCase() === 'dbkeyed' || custconfig.listType.toLowerCase() === 'dbnonkeyed')
         postResult = await postToCampaign(
           work,
           custconfig as customerConfig,
@@ -1461,27 +1490,26 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
     }
   }
 
-  let maintenance: (number | string[])[] = []
+  //let maintenance: (number | string[])[] = []
+  //if (S3DBConfig.S3DropBucketWorkQueueMaintHours > 0) {
+  //  try {
+  //    maintenance = (await maintainS3DropBucketQueueBucket()) ?? [0, ""]
 
-  if (S3DBConfig.S3DropBucketWorkQueueMaintHours > 0) {
-    try {
-      maintenance = (await maintainS3DropBucketQueueBucket()) ?? [0, ""]
-
-      if (S3DBConfig.SelectiveDebug.indexOf("_927,") > -1) {
-        const l = maintenance[0] as number
-        if (l > 0)
-          console.info(
-            `Selective Debug 927 - ReQueued Work Files: \n${maintenance} `
-          )
-        else
-          console.info(
-            `Selective Debug 927 - No Work files met criteria to ReQueue`
-          )
-      }
-    } catch (e) {
-      debugger
-    }
-  }
+  //    if (S3DBConfig.SelectiveDebug.indexOf("_927,") > -1) {
+  //      const l = maintenance[0] as number
+  //      if (l > 0)
+  //        console.info(
+  //          `Selective Debug 927 - ReQueued Work Files: \n${maintenance} `
+  //        )
+  //      else
+  //        console.info(
+  //          `Selective Debug 927 - No Work files met criteria to ReQueue`
+  //        )
+  //    }
+  //  } catch (e) {
+  //    debugger
+  //  }
+  //}
 
   if (S3DBConfig.SelectiveDebug.indexOf("_912,") > -1)
     console.info(
@@ -1509,13 +1537,14 @@ export const s3DropBucketSFTPHandler: Handler = async (
   event: SQSEvent,
   context: Context
 ) => {
-  // const sftpClient = new sftpClient()
+  // const SFTPClient = new sftpClient()
 
   if (
     process.env["WorkQueueVisibilityTimeout"] === undefined ||
     process.env["WorkQueueVisibilityTimeout"] === "" ||
     process.env["WorkQueueVisibilityTimeout"] === null
-  ) {
+  )
+  {
     S3DBConfig = await getValidateS3DropBucketConfig()
   }
 
@@ -1530,7 +1559,7 @@ export const s3DropBucketSFTPHandler: Handler = async (
       )} `
     )
 
-  console.info(`SFTP  Received Event: ${JSON.stringify(event)} `)
+  console.info(`SFTP  Received Event: ${JSON.stringify(event)}.\nContext: ${context} `)
   //Existing Event Emit at every 1 minute
 
   //For all work defined confirm a Scheduler2 Event exists for that work
@@ -1568,6 +1597,17 @@ export const s3DropBucketSFTPHandler: Handler = async (
   const command = new ListSchedulesCommand(input)
 
   const response = await client.send(command)
+    .then((res): string => {
+      console.info(res)
+      return response
+    })
+    .catch((err) => {
+      console.error(
+        `Error - Failed to retrieve SFTP Scheduler2 Events: ${err} `
+      )
+      return err
+    })
+  
   // { // ListSchedulesOutput
   //   NextToken: "STRING_VALUE",
   //   Schedules: [ // ScheduleList // required
@@ -1585,19 +1625,39 @@ export const s3DropBucketSFTPHandler: Handler = async (
   //   ],
   // };
 
-  //Avoid following code until refactoring completed
-  if (new Date().getTime() > 0) return
-
+  
   console.info(
     `Received SFTP SQS Events Batch of ${event.Records.length} records.`
   )
 
   if (S3DBConfig.SelectiveDebug.indexOf("_4,") > -1)
     console.info(
-      `Selective Debug 4 - Received ${
-        event.Records.length
+      `Selective Debug 4 - Received ${event.Records.length
       } SFTP Queue Records.Records are: \n${JSON.stringify(event)} `
     )
+
+  
+
+  //This test provides avoiding the following code until we can get the rest of the refactoring completed
+  if (new Date().getTime() > 0) return
+
+  SFTPClient.uploadDir('srcBucket', 'destBucket')
+
+
+  sftpDeleteFile('remotefilepath')
+  sftpDownloadFile('remoteFile', 'localFile')
+  sftpUploadFile('localFile', 'remoteFile') 
+  sftpListFiles('remoteDir', {} as ListFilterFunction)
+  sftpDisconnect()
+  sftpConnect(
+    {
+      host: '',
+      port: '',
+      username: '',
+      password: ''
+    })
+
+
 
   // event.Records.forEach((i) => {
   //     sqsBatchFail.batchItemFailures.push({ itemIdentifier: i.messageId })
@@ -1689,28 +1749,28 @@ export const s3DropBucketSFTPHandler: Handler = async (
 }
 
 async function sftpConnect(options: {
-  host: any
-  port: any
+  host: string
+  port: string
   username?: string
   password?: string
 }) {
   console.info(`Connecting to ${options.host}: ${options.port}`)
   try {
-    // await sftpClient.connect(options)
+    // await SFTPClient.connect(options)
   } catch (err) {
     console.info("Failed to connect:", err)
   }
 }
 
 async function sftpDisconnect() {
-  // await sftpClient.end()
+  // await SFTPClient.end()
 }
 
 async function sftpListFiles(remoteDir: string, fileGlob: ListFilterFunction) {
   console.info(`Listing ${remoteDir} ...`)
-  const fileObjects: sftpClient.FileInfo[] = []
+  let fileObjects: sftpClient.FileInfo[] = []
   try {
-    // fileObjects = await sftpClient.list(remoteDir, fileGlob)
+     fileObjects = await SFTPClient.list(remoteDir, fileGlob)
   } catch (err) {
     console.info("Listing failed:", err)
   }
@@ -1737,7 +1797,7 @@ async function sftpListFiles(remoteDir: string, fileGlob: ListFilterFunction) {
 async function sftpUploadFile(localFile: string, remoteFile: string) {
   console.info(`Uploading ${localFile} to ${remoteFile} ...`)
   try {
-    // await sftpClient.put(localFile, remoteFile)
+    // await SFTPClient.put(localFile, remoteFile)
   } catch (err) {
     console.error("Uploading failed:", err)
   }
@@ -1746,7 +1806,7 @@ async function sftpUploadFile(localFile: string, remoteFile: string) {
 async function sftpDownloadFile(remoteFile: string, localFile: string) {
   console.info(`Downloading ${remoteFile} to ${localFile} ...`)
   try {
-    // await sftpClient.get(remoteFile, localFile)
+    // await SFTPClient.get(remoteFile, localFile)
   } catch (err) {
     console.error("Downloading failed:", err)
   }
@@ -1755,7 +1815,7 @@ async function sftpDownloadFile(remoteFile: string, localFile: string) {
 async function sftpDeleteFile(remoteFile: string) {
   console.info(`Deleting ${remoteFile}`)
   try {
-    // await sftpClient.delete(remoteFile)
+    // await SFTPClient.delete(remoteFile)
   } catch (err) {
     console.error("Deleting failed:", err)
   }
@@ -1786,7 +1846,7 @@ async function getValidateS3DropBucketConfig() {
     Bucket: undefined,
     Key: undefined,
   }
-  debugger
+
 
   if (!process.env.S3DropBucketConfigBucket)
     process.env.S3DropBucketConfigBucket = "s3dropbucket-configs"
@@ -1846,13 +1906,13 @@ async function getValidateS3DropBucketConfig() {
       process.env.s3dbLogDebug = "true"
     }
 
-    if (
-      s3dbc.LOGLEVEL !== undefined &&
-      s3dbc.LOGLEVEL.toLowerCase().indexOf("verbose") > -1
-    ) {
-      s3dbLogVerbose = true
-      process.env["s3dbLogVerbose"] = "true"
-    }
+    //if (
+    //  s3dbc.LOGLEVEL !== undefined &&
+    //  s3dbc.LOGLEVEL.toLowerCase().indexOf("verbose") > -1
+    //) {
+    //  s3dbLogVerbose = true
+    //  process.env["s3dbLogVerbose"] = "true"
+    //}
 
     if (s3dbc.SelectiveDebug !== undefined)
       process.env["SelectiveDebug"] = s3dbc.SelectiveDebug
@@ -2137,7 +2197,6 @@ async function getCustomerConfig(filekey: string) {
 
         //Parse comments out of the json before parse
         ccr = ccr.replaceAll(new RegExp(/[^:](\/\/.*(,|$|")?)/g), "")
-        ccr = ccr.replaceAll(" ", "")
         ccr = ccr.replaceAll("\n", "")
 
         configJSON = JSON.parse(ccr)
@@ -2312,15 +2371,27 @@ async function validateCustomerConfig(config: customerConfig) {
     config.sftp = { user: "", password: "", filepattern: "", schedule: "" }
   }
 
-  if (config.sftp.user && config.sftp.user !== "") {
+  if (config.sftp.user && config.sftp.user !== "")
+  {
+    console.info(`${config.sftp.user}`)
   }
-  if (config.sftp.password && config.sftp.password !== "") {
+  if (config.sftp.password && config.sftp.password !== "")
+  {
+    console.info(`${config.sftp.password}`)
+
   }
-  if (config.sftp.filepattern && config.sftp.filepattern !== "") {
+  if (config.sftp.filepattern && config.sftp.filepattern !== "")
+  {
+    console.info(`${config.sftp.filepattern}`)
+
   }
-  if (config.sftp.schedule && config.sftp.schedule !== "") {
+  if (config.sftp.schedule && config.sftp.schedule !== "")
+  {
+    console.info(`${config.sftp.schedule}`)
+
   }
 
+  debugger;
   if (!config.transforms) {
     Object.assign(config, { transforms: {} })
   }
@@ -2338,7 +2409,9 @@ async function validateCustomerConfig(config: customerConfig) {
   }
 
   // if (Object.keys(config.transform[0].jsonMap)[0].indexOf('none'))
-  if (!config.transforms.jsonMap.hasOwnProperty("none")) {
+  if (!config.transforms.jsonMap)
+  {
+    debugger
     const tmpMap: { [key: string]: string } = {}
     const jm = config.transforms.jsonMap as unknown as {
       [key: string]: string
@@ -2346,9 +2419,14 @@ async function validateCustomerConfig(config: customerConfig) {
     for (const m in jm) {
       try {
         const p = jm[m]
-        const v = jsonpath.parse(p)
+        const v = jsonpath.parse(p)  //checking for parse exception highlighting invalid jsonpath
         tmpMap[m] = jm[m]
         // tmpmap2.m = jm.m
+        if (S3DBConfig.SelectiveDebug.indexOf("_930,") > -1)
+        {
+          console.info(`Selective Debug 930 - Validate Customer Config - transforms - JSONPath - ${JSON.stringify(v)}`)
+        }
+        
       } catch (e) {
         console.error(
           `Invalid JSONPath defined in Customer config: ${m}: "${m}", \nInvalid JSONPath - ${e} `
@@ -2362,23 +2440,24 @@ async function validateCustomerConfig(config: customerConfig) {
 }
 
 async function packageUpdates(
-  workSet: any[],
+  workSet: object[],
   key: string,
   custConfig: customerConfig
 ) {
   
+  debugger
 
-  let updates: unknown[] = []
+  let updates: object[] = []
   let sqwResult: object = {}
 
   try {
     //Process everything out of the Global var Chunks array
     //Need to pull that scope down to something a little more local
     while (chunks.length > 0) {
-      updates = []
-
+      updates = [] as object[]
+      //Stand out 100 updates at a time, 
       while (chunks.length > 0 && updates.length < 100) {
-        const c = chunks.pop()
+        const c = chunks.pop() ?? {}
         updates.push(c)
       }
 
@@ -2412,7 +2491,7 @@ async function packageUpdates(
 }
 
 async function storeAndQueueWork(
-  updates: any[],
+  updates: object[],
   s3Key: string,
   config: customerConfig
 ) {
@@ -2428,7 +2507,10 @@ async function storeAndQueueWork(
 
   //Customers marked as "Singular" updates files are not transformed, but sent to Firehose before this,
   //  therefore need to transform Aggregate files as well as files marked as "Multiple" updates
-  try {
+  try
+  {
+    debugger;
+    //Apply Transforms, if any, 
     updates = transforms(updates, config)
   } catch (e) {
     throw new Error(`Exception - Transforms - ${e}`)
@@ -2532,7 +2614,7 @@ async function storeAndQueueWork(
   }
 }
 
-function convertJSONToXML_RTUpdates(updates: any[], config: customerConfig) {
+function convertJSONToXML_RTUpdates(updates: object[], config: customerConfig) {
   if (updates.length < 1) {
     throw new Error(
       `Exception - Convert JSON to XML for RT - No Updates(${updates.length}) were passed to process into XML. Customer ${config.Customer} `
@@ -2555,7 +2637,8 @@ function convertJSONToXML_RTUpdates(updates: any[], config: customerConfig) {
 
     for (const uv in updAtts) {
       // console.info(`Record ${r} as ${key}: ${value}`)
-      xmlRows += `<COLUMN name="${uv}"> <![CDATA[${updAtts[uv]}]]> </COLUMN>`
+      //xmlRows += `<COLUMN name="${uv}"> <![CDATA[${updAtts[uv]}]]> </COLUMN>`
+      xmlRows += `<COLUMN name="${uv}"> <![CDATA[${uv}]]> </COLUMN>`
     }
 
     xmlRows += `</ROW>`
@@ -2566,7 +2649,7 @@ function convertJSONToXML_RTUpdates(updates: any[], config: customerConfig) {
 
   if (s3dbLogDebug)
     console.info(
-      `Converting S3 Content to XML RT Updates. Packaging ${
+      `Converting ${r} updates to XML RT Updates. Packaged ${
         Object.values(updates).length
       } rows as updates to ${config.Customer}'s ${config.listName}`
     )
@@ -2584,7 +2667,7 @@ function convertJSONToXML_RTUpdates(updates: any[], config: customerConfig) {
   return xmlRows
 }
 
-function convertJSONToXML_DBUpdates(updates: any[], config: customerConfig) {
+function convertJSONToXML_DBUpdates(updates: object[], config: customerConfig) {
   if (updates.length < 1) {
     throw new Error(
       `Exception - Convert JSON to XML for DB - No Updates (${updates.length}) were passed to process. Customer ${config.Customer} `
@@ -2595,7 +2678,7 @@ function convertJSONToXML_DBUpdates(updates: any[], config: customerConfig) {
   let r = 0
 
   try {
-    for (const upd in updates) {
+    for ( const upd in updates) {
       r++
 
       const updAtts = updates[upd]
@@ -2615,7 +2698,7 @@ function convertJSONToXML_DBUpdates(updates: any[], config: customerConfig) {
         for (let k in lk) {
           //lk.forEach( k => {
           k = k.trim()
-          const sf = `<SYNC_FIELD><NAME>${k}</NAME><VALUE><![CDATA[${updAtts[k]}]]></VALUE></SYNC_FIELD>`
+          const sf = `<SYNC_FIELD><NAME>${k}</NAME><VALUE><![CDATA[${upd[k]}]]></VALUE></SYNC_FIELD>`
           xmlRows += sf
         } //)
 
@@ -2628,8 +2711,12 @@ function convertJSONToXML_DBUpdates(updates: any[], config: customerConfig) {
         //Don't need to do anything with DBKey, it's superfluous but documents the keys of the keyed DB
       }
 
-      for (const uv in updAtts) {
-        xmlRows += `<COLUMN><NAME>${uv}</NAME><VALUE><![CDATA[${updAtts[uv]}]]></VALUE></COLUMN>`
+      for (const uv in updAtts)
+      {
+        debugger
+        //xmlRows += `<COLUMN><NAME>${uv}</NAME><VALUE><![CDATA[${updAtts[uv]}]]></VALUE></COLUMN>`
+        xmlRows += `<COLUMN><NAME>${uv}</NAME><VALUE><![CDATA[${uv}]]></VALUE></COLUMN>`
+
       }
 
       xmlRows += `</AddRecipient>`
@@ -2642,7 +2729,7 @@ function convertJSONToXML_DBUpdates(updates: any[], config: customerConfig) {
 
   if (s3dbLogDebug)
     console.info(
-      `Converting S3 Content to XML DB Updates. Packaging ${
+      `Converting ${r} updates to XML DB Updates. Packaging ${
         Object.values(updates).length
       } rows as updates to ${config.Customer}'s ${config.listName}`
     )
@@ -2660,7 +2747,7 @@ function convertJSONToXML_DBUpdates(updates: any[], config: customerConfig) {
   return xmlRows
 }
 
-function transforms(updates: any[], config: customerConfig) {
+function transforms(updates: object[], config: customerConfig) {
   //Apply Transforms
 
   //Clorox Weather Data
@@ -2686,8 +2773,11 @@ function transforms(updates: any[], config: customerConfig) {
 
     for (const jo of updates) {
       //const j = JSON.parse( l )
+      /*
+      const d = jo.datetime
+        */
+      const d = ''
 
-      const d = jo.datetime ?? ""
       if (d !== "") {
         const dt = new Date(d)
         const day = { dateday: days[dt.getDay()] }
@@ -2751,12 +2841,15 @@ function transforms(updates: any[], config: customerConfig) {
 
         const map = config.transforms.csvMap as { [key: string]: string }
         Object.entries(map).forEach(([k, v]) => {
+          debugger
+          console.log(`${k}, ${v}`)
           if (typeof v !== "number") jo[k] = jo[v] ?? ""
           else {
             const vk = Object.keys(jo)[v]
             // const vkk = vk[v]
             jo[k] = jo[vk] ?? ""
           }
+          
         })
         c.push(jo)
       }
@@ -2772,14 +2865,18 @@ function transforms(updates: any[], config: customerConfig) {
 
   // Ignore must be last to take advantage of cleaning up any extraneous columns after previous transforms
   if (config.transforms.ignore.length > 0) {
-    const i: typeof updates = []
+    const i: typeof updates = []  //start an ignore list
     try {
       for (const jo of updates) {
         //const jo = JSON.parse( l )
         for (const ig of config.transforms.ignore) {
           // const { [keyToRemove]: removedKey, ...newObject } = originalObject;
           // const { [ig]: , ...i } = jo
+          debugger
+          console.log(`${ig}`)
+          /*
           delete jo[ig]
+          */ 
         }
         i.push(jo)
       }
@@ -2815,7 +2912,6 @@ function applyJSONMap(jsonObj: object, map: { [key: string]: string }) {
             )} `
           )
       } else {
-        // Object.assign(jsonObj, { [k]: jsonpath.value(jsonObj, v) })
         Object.assign(jsonObj, { [k]: j })
       }
     } catch (e) {
@@ -3059,32 +3155,32 @@ async function getS3Work(s3Key: string, bucket: string) {
   return work
 }
 
-async function saveS3Work(s3Key: string, body: string, bucket: string) {
-  if (s3dbLogDebug) console.info(`Debug - SaveS3Work Key: ${s3Key}`)
+//async function saveS3Work(s3Key: string, body: string, bucket: string) {
+//  if (s3dbLogDebug) console.info(`Debug - SaveS3Work Key: ${s3Key}`)
 
-  const putObjectCmd = {
-    Bucket: bucket,
-    Key: s3Key,
-    Body: body,
-    // ContentLength: Number(`${body.length}`),
-  } as GetObjectCommandInput
+//  const putObjectCmd = {
+//    Bucket: bucket,
+//    Key: s3Key,
+//    Body: body,
+//    // ContentLength: Number(`${body.length}`),
+//  } as GetObjectCommandInput
 
   
-  let saveS3: string = ""
+//  let saveS3: string = ""
 
-  try {
-    await s3
-      .send(new PutObjectCommand(putObjectCmd))
-      .then(async (getS3Result: GetObjectCommandOutput) => {
-        saveS3 = (await getS3Result.Body?.transformToString("utf8")) as string
-        if (s3dbLogDebug)
-          console.info(`Work Saved (${saveS3.length} chars): ${s3Key}`)
-      })
-  } catch (e) {
-    throw new Error(`Exception - Saving Work for ${s3Key}. \n ${e}`)
-  }
-  return saveS3
-}
+//  try {
+//    await s3
+//      .send(new PutObjectCommand(putObjectCmd))
+//      .then(async (getS3Result: GetObjectCommandOutput) => {
+//        saveS3 = (await getS3Result.Body?.transformToString("utf8")) as string
+//        if (s3dbLogDebug)
+//          console.info(`Work Saved (${saveS3.length} chars): ${s3Key}`)
+//      })
+//  } catch (e) {
+//    throw new Error(`Exception - Saving Work for ${s3Key}. \n ${e}`)
+//  }
+//  return saveS3
+//}
 
 async function deleteS3Object(s3ObjKey: string, bucket: string) {
   let delRes = ""
@@ -3320,15 +3416,25 @@ export async function postToCampaign(
   return postRes
 }
 
-function updateConnect() {
-  //query getDataSetById()
+async function postToConnect(updates: string, custconfig: customerConfig, updateCount: string) {
+  //get access token
+  //post to connect
+  //return result
+  console.info(`${updates}, ${custconfig}, ${updateCount}`)
+
+  return "postToConnect"
 }
 
-function checkMetadata() {
-  //Pull metadata for table/db defined in config
-  // confirm updates match Columns
-  //ToDo:  Log where Columns are not matching
-}
+
+
+
+
+
+//function checkMetadata() {
+//  //Pull metadata for table/db defined in config
+//  // confirm updates match Columns
+//  //ToDo:  Log where Columns are not matching
+//}
 
 async function getAnS3ObjectforTesting(bucket: string) {
   let s3Key: string = ""
@@ -3347,14 +3453,14 @@ async function getAnS3ObjectforTesting(bucket: string) {
       let i: number = 0
 
       if (s3ListResult.Contents) {
-        let kc: number = (s3ListResult.KeyCount as number) - 1
-        if ((kc = 0))
+        const kc: number = (s3ListResult.KeyCount as number) - 1
+        if ((kc == 0))
           throw new Error("No S3 Objects to retrieve as Test Data, exiting")
 
         if (kc > 10) {
           i = Math.floor(Math.random() * (10 - 1 + 1) + 1)
         }
-        if ((kc = 1)) i = 0
+        if ((kc == 1)) i = 0
         s3Key = s3ListResult.Contents?.at(i)?.Key as string
 
         while (s3Key.toLowerCase().indexOf("aggregat") > -1) {
@@ -3386,308 +3492,308 @@ async function getAnS3ObjectforTesting(bucket: string) {
   // return 'pura_2023_11_12T01_43_58_170Z.csv'
 }
 
-function saveSampleJSON(body: string) {
-  const path = "Saved/"
-  saveS3Work(
-    `${path}sampleJSON_${Date.now().toString()}.json`,
-    body,
-    S3DBConfig.S3DropBucketConfigs
-  )
-  // s3://s3dropbucket-configs/Saved/
-}
+//function saveSampleJSON(body: string) {
+//  const path = "Saved/"
+//  saveS3Work(
+//    `${path}sampleJSON_${Date.now().toString()}.json`,
+//    body,
+//    S3DBConfig.S3DropBucketConfigs
+//  )
+//  // s3://s3dropbucket-configs/Saved/
+//}
 
-async function purgeBucket(count: number, bucket: string) {
-  const listReq = {
-    Bucket: bucket,
-    MaxKeys: count,
-  } as ListObjectsV2CommandInput
+//async function purgeBucket(count: number, bucket: string) {
+//  const listReq = {
+//    Bucket: bucket,
+//    MaxKeys: count,
+//  } as ListObjectsV2CommandInput
 
-  let d = 0
-  let r = ""
-  try {
-    await s3
-      .send(new ListObjectsV2Command(listReq))
-      .then(async (s3ListResult: ListObjectsV2CommandOutput) => {
-        s3ListResult.Contents?.forEach(async (listItem) => {
-          d++
-          r = await deleteS3Object(listItem.Key as string, bucket)
-          if (r !== "204")
-            console.error(
-              `Non Successful return (Expected 204 but received ${r} ) on Delete of ${listItem.Key} `
-            )
-        })
-      })
-  } catch (e) {
-    console.error(`Exception - Attempting Purge of Bucket ${bucket}: \n${e} `)
-  }
-  console.info(`Deleted ${d} Objects from ${bucket} `)
-  return `Deleted ${d} Objects from ${bucket} `
-}
+//  let d = 0
+//  let r = ""
+//  try {
+//    await s3
+//      .send(new ListObjectsV2Command(listReq))
+//      .then(async (s3ListResult: ListObjectsV2CommandOutput) => {
+//        s3ListResult.Contents?.forEach(async (listItem) => {
+//          d++
+//          r = await deleteS3Object(listItem.Key as string, bucket)
+//          if (r !== "204")
+//            console.error(
+//              `Non Successful return (Expected 204 but received ${r} ) on Delete of ${listItem.Key} `
+//            )
+//        })
+//      })
+//  } catch (e) {
+//    console.error(`Exception - Attempting Purge of Bucket ${bucket}: \n${e} `)
+//  }
+//  console.info(`Deleted ${d} Objects from ${bucket} `)
+//  return `Deleted ${d} Objects from ${bucket} `
+//}
 
-async function maintainS3DropBucket(cust: customerConfig) {
+//async function maintainS3DropBucket(cust: customerConfig) {
   
-  cust.LookupKeys //future
+//  cust.LookupKeys //future
   
-  const bucket = S3DBConfig.S3DropBucket
-  let limit = 0
-  if (bucket.indexOf("-process") > -1)
-    limit = S3DBConfig.S3DropBucketWorkQueueMaintLimit
-  else limit = S3DBConfig.S3DropBucketMaintLimit
+//  const bucket = S3DBConfig.S3DropBucket
+//  let limit = 0
+//  if (bucket.indexOf("-process") > -1)
+//    limit = S3DBConfig.S3DropBucketWorkQueueMaintLimit
+//  else limit = S3DBConfig.S3DropBucketMaintLimit
 
-  let ContinuationToken: string | undefined
-  const reProcess: string[] = []
-  //const deleteSource = false
-  const concurrency = S3DBConfig.S3DropBucketMaintConcurrency
+//  let ContinuationToken: string | undefined
+//  const reProcess: string[] = []
+//  //const deleteSource = false
+//  const concurrency = S3DBConfig.S3DropBucketMaintConcurrency
 
-  const copyFile = async (sourceKey: string) => {
-    // const targetKey = sourceKey.replace(sourcePrefix, targetPrefix)
+//  const copyFile = async (sourceKey: string) => {
+//    // const targetKey = sourceKey.replace(sourcePrefix, targetPrefix)
 
-    debugger
+//    debugger
 
-    await s3
-      .send(
-        new CopyObjectCommand({
-          Bucket: bucket,
-          Key: sourceKey,
-          CopySource: `${bucket}/${sourceKey}`,
-          MetadataDirective: "COPY",
-          // CopySourceIfUnmodifiedSince: dd
-        })
-      )
-      .then((res) => {
-        return res
-      })
-      .catch((err) => {
-        // console.error(`Error - Maintain S3DropBucket - Copy of ${sourceKey} \n${e}`)
-        reProcess.push(
-          `Copy Error on ${sourceKey}  -->  \n${JSON.stringify(err)}`
-        )
-        if (err !== undefined && err !== "" && err.indexOf("NoSuchKey") > -1)
-          reProcess.push(
-            `S3DropBucket Maintenance - Reprocess Error - MaintainS3DropBucket - File Not Found(${sourceKey} \nException ${err} `
-          )
-        else
-          reProcess.push(
-            `S3DropBucket Maintenance - Reprocess Error for ${sourceKey} --> \n${JSON.stringify(
-              err
-            )}`
-          )
-      })
+//    await s3
+//      .send(
+//        new CopyObjectCommand({
+//          Bucket: bucket,
+//          Key: sourceKey,
+//          CopySource: `${bucket}/${sourceKey}`,
+//          MetadataDirective: "COPY",
+//          // CopySourceIfUnmodifiedSince: dd
+//        })
+//      )
+//      .then((res) => {
+//        return res
+//      })
+//      .catch((err) => {
+//        // console.error(`Error - Maintain S3DropBucket - Copy of ${sourceKey} \n${e}`)
+//        reProcess.push(
+//          `Copy Error on ${sourceKey}  -->  \n${JSON.stringify(err)}`
+//        )
+//        if (err !== undefined && err !== "" && err.indexOf("NoSuchKey") > -1)
+//          reProcess.push(
+//            `S3DropBucket Maintenance - Reprocess Error - MaintainS3DropBucket - File Not Found(${sourceKey} \nException ${err} `
+//          )
+//        else
+//          reProcess.push(
+//            `S3DropBucket Maintenance - Reprocess Error for ${sourceKey} --> \n${JSON.stringify(
+//              err
+//            )}`
+//          )
+//      })
 
-    // if ( deleteSource )
-    // {
-    //     await s3.send(
-    //         new DeleteObjectCommand( {
-    //             Bucket: bucket,
-    //             Key: sourceKey,
-    //         } ),
-    //     )
-    //         .then( ( res ) => {
-    //             // console.info(`${JSON.stringify(res)}`)
-    //             reProcess.push( `Delete of ${ sourceKey }  -->  \n${ JSON.stringify( res ) }` )
-    //         } )
-    //         .catch( ( e ) => {
-    //             console.error( `Error - Maintain S3DropBucket - Delete of ${ sourceKey } \n${ e }` )
-    //             reProcess.push( `Delete Error on ${ sourceKey }  -->  \n${ JSON.stringify( e ) }` )
-    //         } )
-    // }
+//    // if ( deleteSource )
+//    // {
+//    //     await s3.send(
+//    //         new DeleteObjectCommand( {
+//    //             Bucket: bucket,
+//    //             Key: sourceKey,
+//    //         } ),
+//    //     )
+//    //         .then( ( res ) => {
+//    //             // console.info(`${JSON.stringify(res)}`)
+//    //             reProcess.push( `Delete of ${ sourceKey }  -->  \n${ JSON.stringify( res ) }` )
+//    //         } )
+//    //         .catch( ( e ) => {
+//    //             console.error( `Error - Maintain S3DropBucket - Delete of ${ sourceKey } \n${ e }` )
+//    //             reProcess.push( `Delete Error on ${ sourceKey }  -->  \n${ JSON.stringify( e ) }` )
+//    //         } )
+//    // }
 
-    return reProcess
-  }
+//    return reProcess
+//  }
 
-  debugger
+//  debugger
 
-  const d: Date = new Date()
-  // 3,600,000 millisecs = 1 hour
-  const a = 3600000 * S3DBConfig.S3DropBucketMaintHours //Older Than X Hours
+//  const d: Date = new Date()
+//  // 3,600,000 millisecs = 1 hour
+//  const a = 3600000 * S3DBConfig.S3DropBucketMaintHours //Older Than X Hours
 
-  do {
-    const { Contents = [], NextContinuationToken } = await s3.send(
-      new ListObjectsV2Command({
-        Bucket: bucket,
-        //Prefix: cust.Customer,
-        ContinuationToken,
-        //MaxKeys: limit,
-      })
-    )
+//  do {
+//    const { Contents = [], NextContinuationToken } = await s3.send(
+//      new ListObjectsV2Command({
+//        Bucket: bucket,
+//        //Prefix: cust.Customer,
+//        ContinuationToken,
+//        //MaxKeys: limit,
+//      })
+//    )
 
-    const lastMod = Contents.map(({ LastModified }) => LastModified as Date)
-    const sourceKeys = Contents.map(({ Key }) => Key)
+//    const lastMod = Contents.map(({ LastModified }) => LastModified as Date)
+//    const sourceKeys = Contents.map(({ Key }) => Key)
 
-    await Promise.all(
-      new Array(concurrency).fill(null).map(async () => {
-        while (sourceKeys.length) {
-          const key = sourceKeys.pop() ?? ""
-          const mod = lastMod.pop() as Date
+//    await Promise.all(
+//      new Array(concurrency).fill(null).map(async () => {
+//        while (sourceKeys.length) {
+//          const key = sourceKeys.pop() ?? ""
+//          const mod = lastMod.pop() as Date
 
-          const s3d: Date = new Date(mod)
-          const df = d.getTime() - s3d.getTime()
-          // const dd = new Date(s3d.setHours(-tcc.S3DropBucketMaintHours))
+//          const s3d: Date = new Date(mod)
+//          const df = d.getTime() - s3d.getTime()
+//          // const dd = new Date(s3d.setHours(-tcc.S3DropBucketMaintHours))
 
-          if (df > a) {
-            const rp = await copyFile(key)
-            reProcess.push(`Copy of ${key}  -->  \n${JSON.stringify(rp)}`)
-            if (reProcess.length >= limit) ContinuationToken = ""
-          }
-        }
-      })
-    )
+//          if (df > a) {
+//            const rp = await copyFile(key)
+//            reProcess.push(`Copy of ${key}  -->  \n${JSON.stringify(rp)}`)
+//            if (reProcess.length >= limit) ContinuationToken = ""
+//          }
+//        }
+//      })
+//    )
 
-    ContinuationToken = NextContinuationToken ?? ""
-  } while (ContinuationToken)
+//    ContinuationToken = NextContinuationToken ?? ""
+//  } while (ContinuationToken)
 
-  console.info(
-    `S3DropBucketMaintenance - Copy Log: ${JSON.stringify(reProcess)}`
-  )
+//  console.info(
+//    `S3DropBucketMaintenance - Copy Log: ${JSON.stringify(reProcess)}`
+//  )
 
-  const l = reProcess.length
-  return [l, reProcess]
-}
+//  const l = reProcess.length
+//  return [l, reProcess]
+//}
 
-async function maintainS3DropBucketQueueBucket() {
-  const bucket = S3DBConfig.S3DropBucketWorkBucket
-  let ContinuationToken: string | undefined
-  const reQueue: string[] = []
-  // let deleteSource = false
-  const concurrency = S3DBConfig.S3DropBucketWorkQueueMaintConcurrency
+//async function maintainS3DropBucketQueueBucket() {
+//  const bucket = S3DBConfig.S3DropBucketWorkBucket
+//  let ContinuationToken: string | undefined
+//  const reQueue: string[] = []
+//  // let deleteSource = false
+//  const concurrency = S3DBConfig.S3DropBucketWorkQueueMaintConcurrency
 
-  // if ( new Date().getTime() > 0 ) return
+//  // if ( new Date().getTime() > 0 ) return
 
-  const d: Date = new Date()
-  // 3,600,000 millisecs = 1 hour
-  const age = 3600000 * S3DBConfig.S3DropBucketMaintHours //Older Than X Hours
+//  const d: Date = new Date()
+//  // 3,600,000 millisecs = 1 hour
+//  const age = 3600000 * S3DBConfig.S3DropBucketMaintHours //Older Than X Hours
 
-  do {
-    const { Contents = [], NextContinuationToken } = await s3.send(
-      new ListObjectsV2Command({
-        Bucket: bucket,
-        //Prefix: config.Customer,   //Need some option to limit millions of records
-        ContinuationToken,
-      })
-    )
+//  do {
+//    const { Contents = [], NextContinuationToken } = await s3.send(
+//      new ListObjectsV2Command({
+//        Bucket: bucket,
+//        //Prefix: config.Customer,   //Need some option to limit millions of records
+//        ContinuationToken,
+//      })
+//    )
 
-    const lastMod = Contents.map(({ LastModified }) => LastModified as Date)
-    const sourceKeys = Contents.map(({ Key }) => Key)
+//    const lastMod = Contents.map(({ LastModified }) => LastModified as Date)
+//    const sourceKeys = Contents.map(({ Key }) => Key)
 
-    console.info(
-      `S3DropBucket Maintenance - Processing ${Contents.length} records`
-    )
+//    console.info(
+//      `S3DropBucket Maintenance - Processing ${Contents.length} records`
+//    )
 
-    await Promise.all(
-      new Array(concurrency).fill(null).map(async () => {
-        while (sourceKeys.length) {
-          const key = sourceKeys.pop() ?? ""
-          const mod = lastMod.pop() as Date
+//    await Promise.all(
+//      new Array(concurrency).fill(null).map(async () => {
+//        while (sourceKeys.length) {
+//          const key = sourceKeys.pop() ?? ""
+//          const mod = lastMod.pop() as Date
 
-          const cc = await getCustomerConfig(key)
+//          const cc = await getCustomerConfig(key)
 
-          const s3d: Date = new Date(mod)
-          const tdf = d.getTime() - s3d.getTime()
-          // const dd = new Date(s3d.setHours(-tcc.S3DropBucketMaintHours))
+//          const s3d: Date = new Date(mod)
+//          const tdf = d.getTime() - s3d.getTime()
+//          // const dd = new Date(s3d.setHours(-tcc.S3DropBucketMaintHours))
 
-          if (tdf > age) {
-            let batch = ""
-            let updates = ""
+//          if (tdf > age) {
+//            let batch = ""
+//            let updates = ""
 
-            const r1 = new RegExp(/json_update_(.*)_/g)
-            let rm = r1.exec(key) ?? ""
-            batch = rm[1]
+//            const r1 = new RegExp(/json_update_(.*)_/g)
+//            let rm = r1.exec(key) ?? ""
+//            batch = rm[1]
 
-            const r2 = new RegExp(/json_update_.*?_(.*)\./g)
-            rm = r2.exec(key) ?? ""
-            updates = rm[1]
+//            const r2 = new RegExp(/json_update_.*?_(.*)\./g)
+//            rm = r2.exec(key) ?? ""
+//            updates = rm[1]
 
-            const marker = "ReQueued on: " + new Date()
-            try {
-              //build and write SQS Entry
-              const qa = await addWorkToSQSWorkQueue(
-                cc,
-                key,
-                "",
-                parseInt(batch),
-                updates,
-                marker
-              )
-              console.info(
-                `Return from Maintenance - AddWorkToSQSWorkQueue: ${JSON.stringify(
-                  qa
-                )}`
-              )
-            } catch (e) {
-              debugger
-            }
-          }
-        }
-      })
-    )
+//            const marker = "ReQueued on: " + new Date()
+//            try {
+//              //build and write SQS Entry
+//              const qa = await addWorkToSQSWorkQueue(
+//                cc,
+//                key,
+//                "",
+//                parseInt(batch),
+//                updates,
+//                marker
+//              )
+//              console.info(
+//                `Return from Maintenance - AddWorkToSQSWorkQueue: ${JSON.stringify(
+//                  qa
+//                )}`
+//              )
+//            } catch (e) {
+//              debugger
+//            }
+//          }
+//        }
+//      })
+//    )
 
-    ContinuationToken = NextContinuationToken ?? ""
-  } while (ContinuationToken)
+//    ContinuationToken = NextContinuationToken ?? ""
+//  } while (ContinuationToken)
 
-  // const listReq = {
-  //     Bucket: bucket,
-  //     MaxKeys: 1000,
-  //     Prefix: `config.Customer`,
-  //     ContinuationToken,
-  // } as ListObjectsV2CommandInput
+//  // const listReq = {
+//  //     Bucket: bucket,
+//  //     MaxKeys: 1000,
+//  //     Prefix: `config.Customer`,
+//  //     ContinuationToken,
+//  // } as ListObjectsV2CommandInput
 
-  // await s3.send( new ListObjectsV2Command( listReq ) )
-  //     .then( async ( s3ListResult: ListObjectsV2CommandOutput ) => {
+//  // await s3.send( new ListObjectsV2Command( listReq ) )
+//  //     .then( async ( s3ListResult: ListObjectsV2CommandOutput ) => {
 
-  //         // 3,600,000 millisecs = 1 hour
-  //         const a = 3600000 * tcc.S3DropBucketWorkQueueMaintHours  //Older Than X Hours
+//  //         // 3,600,000 millisecs = 1 hour
+//  //         const a = 3600000 * tcc.S3DropBucketWorkQueueMaintHours  //Older Than X Hours
 
-  //         const d: Date = new Date()
+//  //         const d: Date = new Date()
 
-  //         try
-  //         {
-  //             for ( const o in s3ListResult.Contents )
-  //             {
-  //                 const n = parseInt( o )
-  //                 const s3d: Date = new Date( s3ListResult.Contents[ n ].LastModified ?? new Date() )
-  //                 const df = d.getTime() - s3d.getTime()
-  //                 const dd = s3d.setHours( -tcc.S3DropBucketMaintHours )
+//  //         try
+//  //         {
+//  //             for ( const o in s3ListResult.Contents )
+//  //             {
+//  //                 const n = parseInt( o )
+//  //                 const s3d: Date = new Date( s3ListResult.Contents[ n ].LastModified ?? new Date() )
+//  //                 const df = d.getTime() - s3d.getTime()
+//  //                 const dd = s3d.setHours( -tcc.S3DropBucketMaintHours )
 
-  //                 let rm: string[] = []
-  //                 if ( df > a )
-  //                 {
+//  //                 let rm: string[] = []
+//  //                 if ( df > a )
+//  //                 {
 
-  //                     const obj = s3ListResult.Contents[ n ]
-  //                     const key = obj.Key ?? ""
-  //                     let versionId = ''
-  //                     let batch = ''
-  //                     let updates = ''
+//  //                     const obj = s3ListResult.Contents[ n ]
+//  //                     const key = obj.Key ?? ""
+//  //                     let versionId = ''
+//  //                     let batch = ''
+//  //                     let updates = ''
 
-  //                     const r1 = new RegExp( /json_update_(.*)_/g )
-  //                     let rm = r1.exec( key ) ?? ""
-  //                     batch = rm[ 1 ]
+//  //                     const r1 = new RegExp( /json_update_(.*)_/g )
+//  //                     let rm = r1.exec( key ) ?? ""
+//  //                     batch = rm[ 1 ]
 
-  //                     const r2 = new RegExp( /json_update_.*?_(.*)\./g )
-  //                     rm = r2.exec( key ) ?? ""
-  //                     updates = rm[ 1 ]
+//  //                     const r2 = new RegExp( /json_update_.*?_(.*)\./g )
+//  //                     rm = r2.exec( key ) ?? ""
+//  //                     updates = rm[ 1 ]
 
-  //                     const marker = "ReQueued on: " + new Date()
+//  //                     const marker = "ReQueued on: " + new Date()
 
-  //                     debugger
+//  //                     debugger
 
-  //                     //build SQS Entry
-  //                     const qa = await addWorkToSQSWorkQueue( config, key, versionId, batch, updates, marker )
+//  //                     //build SQS Entry
+//  //                     const qa = await addWorkToSQSWorkQueue( config, key, versionId, batch, updates, marker )
 
-  //                     reQueue.push( "ReQueue Work" + key + " --> " + JSON.stringify( qa ) )
+//  //                     reQueue.push( "ReQueue Work" + key + " --> " + JSON.stringify( qa ) )
 
-  //                 }
-  //             }
-  //         } catch ( e )
-  //         {
-  //             throw new Error( `Exception - Maintain S3DropBucket - List Results processing - \n${ e }` )
-  //         }
-  //     } )
-  //     .catch( ( e ) => {
-  //         console.error( `Exception - On S3 List Command for Maintaining Objects on ${ bucket }: ${ e } ` )
-  //     } )
+//  //                 }
+//  //             }
+//  //         } catch ( e )
+//  //         {
+//  //             throw new Error( `Exception - Maintain S3DropBucket - List Results processing - \n${ e }` )
+//  //         }
+//  //     } )
+//  //     .catch( ( e ) => {
+//  //         console.error( `Exception - On S3 List Command for Maintaining Objects on ${ bucket }: ${ e } ` )
+//  //     } )
 
-  debugger
+//  debugger
 
-  const l = reQueue.length
-  return [l, reQueue]
-}
+//  const l = reQueue.length
+//  return [l, reQueue]
+//}

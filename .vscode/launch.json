@@ -5,16 +5,7 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Launch NodeJS Program",
-      "program": "${file}",
-      "request": "launch",
-      "skipFiles": [
-        "<node_internals>/**"
-      ],
-      "type": "node"
-    },
-    {
-      "name": "1.S3-Direct Invoke Lambda Template - s3DropBucketfunction",
+      "name": "1.Template-S3DropBucket",
       "type": "aws-sam",
       "request": "direct-invoke",
       "preLaunchTask": "updateDependencies",
@@ -78,7 +69,7 @@
       }
     },
     {
-      "name": "2.SQS-Direct Invoke Lambda Template - S3DropBucketQueueProcessorHandler",
+      "name": "2.Template-S3DropBucketQueueProcessorHandler",
       "type": "aws-sam",
       "request": "direct-invoke",
       "preLaunchTask": "cleanUpdateDependencies",
@@ -108,65 +99,6 @@
         "credentials": "profile:Acoustic-cis-dev-ecs-devteam-user"
       }
     },
-    {
-      "name": "3.aws-sam Direct Invoke Function Code - s3jsonLoggerFunction",
-      "type": "aws-sam",
-      "request": "direct-invoke",
-      "invokeTarget": {
-        "target": "code",
-        "projectRoot": "tricklercache/.aws-sam/build/s3JsonLoggerFunction",
-        "lambdaHandler": "s3DropBucket.s3DropBucketHandler",
-      },
-      "lambda": {
-        "runtime": "nodejs20.x",
-        "environmentVariables": {
-          "NODE_OPTIONS": "--enable-source-map --trace-warnings --unhandled-rejections=warn",
-          "S3DropBucketConfigBucket": "s3dropbucket-configs-fr",
-          "S3DropBucketConfigsFile": "s3dropbucket_config.jsonc",
-          "s3DropBucketRegion": "us-east-1",
-        },
-        "payload": {
-          "json": {
-            "Records": [
-              {
-                "eventVersion": "2.0",
-                "eventSource": "aws:s3",
-                "awsRegion": "us-east-1",
-                "eventTime": "1970-01-01T00:00:00.000Z",
-                "eventName": "ObjectCreated:Put",
-                "userIdentity": {
-                  "principalId": "EXAMPLE"
-                },
-                "requestParameters": {
-                  "sourceIPAddress": "127.0.0.1"
-                },
-                "responseElements": {
-                  "x-amz-request-id": "EXAMPLE123456789",
-                  "x-amz-id-2": "EXAMPLE123/5678abcdefghijklambdaisawesome/mnopqrstuvwxyzABCDEFGH"
-                },
-                "s3": {
-                  "s3SchemaVersion": "1.0",
-                  "configurationId": "testConfigRule",
-                  "bucket": {
-                    "name": "example-bucket",
-                    "ownerIdentity": {
-                      "principalId": "EXAMPLE"
-                    },
-                    "arn": "arn:aws:s3:::aws-us-east-1-777957353822-s3dropbucket"
-                  },
-                  "object": {
-                    "key": "test%2Fkey",
-                    "size": 1024,
-                    "eTag": "0123456789abcdef0123456789abcdef",
-                    "sequencer": "0A1B2C3D4E5F678901"
-                  }
-                }
-              }
-            ]
-          }
-        }
-      }
-    },
     // {
     //   "name": "3.Attach to SAM CLI",
     //   "type": "node",
@@ -178,57 +110,6 @@
     //   "protocol": "inspector",
     //   "stopOnEntry": false
     // },
-    {
-      "name": "4.Invoke Lambda Code ",
-      "type": "aws-sam",
-      "request": "direct-invoke",
-      "invokeTarget": {
-        "target": "code",
-        "lambdaHandler": "Function Handler",
-        "projectRoot": "${workspaceFolder}/.aws-sam"
-      },
-      "lambda": {
-        "runtime": "Lambda Runtime",
-        "environmentVariables": {
-          "NODE_OPTIONS": "--enable-source-map --trace-warnings --unhandled-rejections=warn",
-          "S3DropBucketConfigBucket": "s3dropbucket-configs-fr",
-          "S3DropBucketConfigsFile": "s3dropbucket_config.jsonc",
-          "s3DropBucketRegion": "us-east-1",
-        },
-        "payload": {
-          "json": { }
-        }
-      }
-    },
-    {
-      "name": "5.Invoke Template - S3DropBucket:s3JsonLoggerFunction",
-      "type": "aws-sam",
-      "request": "direct-invoke",
-      "invokeTarget": {
-        "target": "template",
-        "templatePath": "${workspaceFolder}/template.yml",
-        "logicalId": "s3JsonLoggerFunction"
-      },
-      "lambda": {
-        "payload": { },
-        "environmentVariables": { }
-      }
-    },
-    {
-      "name": "6.Invoke Lambda Template - s3jsonloggerfunction",
-      "type": "aws-sam",
-      "request": "direct-invoke",
-      "invokeTarget": {
-        "target": "template",
-        "templatePath": "${workspaceFolder}/template.yml",
-        "logicalId": "s3jsonLoggerFunction"
-      },
-      "lambda": {
-        "payload": {
-          "json": { }
-        }
-      }
-    },
     {
       "name": "7.Debug Lambda Code - S3DropBucketHandlerFunction",
       "type": "aws-sam",
@@ -274,6 +155,15 @@
         "run-script",
         "debug"
       ]
+    }, 
+    {
+      "name": "Launch a NodeJS Program",
+      "program": "${file}",
+      "request": "launch",
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
+      "type": "node"
     }
   ]
 }

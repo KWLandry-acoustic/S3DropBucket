@@ -6,5 +6,5 @@ __tests__/*
 nodejs.zip
 *.txt
 *.tgz
-__tests__/*
 .ds*
+.json*

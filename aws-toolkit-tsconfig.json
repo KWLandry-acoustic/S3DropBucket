@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "target": "es6",
-    "module": "nodenext",
+    "module": "NodeNext",
     "resolveJsonModule": true,
     "inlineSourceMap": true,
     "outDir": ".aws-sam",

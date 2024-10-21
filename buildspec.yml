@@ -9,7 +9,10 @@ phases:
 
   pre_build:
     commands:
-      #- console.log("Running dependencies cleanup\n\n")
+      - console.log('Running PreBuild - dependencies cleanup\n\n')
+      - npm run cleanUp-AWSSAM
+      - npm cache clean --force
+      - npm remove node_modules
       - cp package.json layers
       - cp package-lock.json layers
       - cd layers
@@ -18,10 +21,14 @@ phases:
 
   build:
     commands:
-      - npm i -g esbuild --bundle --minify --keep-names --sourcemap --platform=node --debug #--target=node20.x
+      - console.log("Running Build - Installing Dependencies omit-dev\n\n")
+      - npm install --omit=dev
+      - npm prune --production
+      #- npm install -g serverless
+      #- npm i -g esbuild --bundle --minify --keep-names --sourcemap --platform: nodejs20.x --debug #--target=node20.x
 
       #sam build deploy or package
-      - sam build --debug
+      - sam build --cached --parallel --debug --packages=external
 
       # - sam package --s3-bucket aws-us-east-1-777957353822-tricklercache-pipe --force-upload --debug
       - sam package --s3-bucket aws-us-east-1-777957353822-tricklercache-pipe --output-template-file packaged.yaml --debug

@@ -8,12 +8,14 @@ version = 0.1
 [default.global.parameters]
 stack_name = "s3DropBucket"
 resolve_s3 = false
+loglevel="debug"
 
 [default.build.parameters]
 cached = true
 parallel = false
 # sourcemap = true
 inlinesourcemap = true
+cache_dir=".aws-sam/cache"
 
 [default.validate.parameters]
 lint = true

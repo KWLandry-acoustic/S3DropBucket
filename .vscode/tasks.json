@@ -29,7 +29,11 @@
 			"problemMatcher": [ ],
 			"label": "updateDependencies",
 			"detail": "install dependencies from package",
-			"command": "cp -f package.json layers; cp -f package-lock.json layers; cd layers; npm install --omit=dev; cd .. "
+			//"command": "bash",
+			//"args": ["console.log('Running Tasks.json updateDependencies....');", "docker stop $(docker ps -a -q);", "cp -f package.json layers;", "cp -f package-lock.json layers;",  "cd layers;", "npm install --omit=dev;", "cd .. ;", "rm -rf .aws-sam; "]
+			"command": "console.log('Running Tasks.json updateDependencies....'); docker stop $(docker ps -a -q); rm -rf .aws-sam; cp -f package.json layers; cp -f package-lock.json layers; cd layers; npm install --omit=dev; cd .. ; "
+			//"command": "console.log('Running Tasks.json updateDependencies....');"
+		
 		}
 	]
 }
