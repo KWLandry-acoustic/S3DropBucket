@@ -9,7 +9,7 @@ phases:
 
   pre_build:
     commands:
-      - console.log('Running PreBuild - dependencies cleanup\n\n')
+      - console.log("Running PreBuild - dependencies cleanup\n\n")
       - npm run cleanUp-AWSSAM
       - npm cache clean --force
       - npm remove node_modules
