@@ -26,7 +26,7 @@ phases:
       #- npm i -g esbuild --bundle --minify --keep-names --sourcemap --platform: nodejs20.x --debug #--target=node20.x
 
       #sam build deploy or package
-      - sam build --cached --parallel --debug --packages=external
+      - sam build --cached --parallel --debug 
 
       # - sam package --s3-bucket aws-us-east-1-777957353822-tricklercache-pipe --force-upload --debug
       - sam package --s3-bucket aws-us-east-1-777957353822-tricklercache-pipe --output-template-file packaged.yaml --debug
