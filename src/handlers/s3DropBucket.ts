@@ -2375,33 +2375,33 @@ async function validateCustomerConfig(config: customerConfig) {
 
   if (config.sftp.user && config.sftp.user !== "")
   {
-    console.info(`${config.sftp.user}`)
+    console.info(`SFTP User: ${config.sftp.user}`)
   }
   if (config.sftp.password && config.sftp.password !== "")
   {
-    console.info(`${config.sftp.password}`)
-
+    console.info(`SFTP Pswd: ${config.sftp.password}`)
   }
   if (config.sftp.filepattern && config.sftp.filepattern !== "")
   {
-    console.info(`${config.sftp.filepattern}`)
+    console.info(`SFTP File Pattern: ${config.sftp.filepattern}`)
 
   }
   if (config.sftp.schedule && config.sftp.schedule !== "")
   {
-    console.info(`${config.sftp.schedule}`)
+    console.info(`SFTP Schedule: ${config.sftp.schedule}`)
 
   }
 
-  debugger;
+  debugger
+
   if (!config.transforms) {
     Object.assign(config, { transforms: {} })
   }
   if (!config.transforms.jsonMap) {
-    Object.assign(config.transforms, { jsonMap: { none: "" } })
+    Object.assign(config.transforms, { jsonMap: {} })
   }
   if (!config.transforms.csvMap) {
-    Object.assign(config.transforms, { csvMap: { none: "" } })
+    Object.assign(config.transforms, { csvMap: {} })
   }
   if (!config.transforms.ignore) {
     Object.assign(config.transforms, { ignore: [] })
@@ -2413,7 +2413,6 @@ async function validateCustomerConfig(config: customerConfig) {
   // if (Object.keys(config.transform[0].jsonMap)[0].indexOf('none'))
   if (!config.transforms.jsonMap)
   {
-    debugger
     const tmpMap: { [key: string]: string } = {}
     const jm = config.transforms.jsonMap as unknown as {
       [key: string]: string
@@ -2447,8 +2446,6 @@ async function packageUpdates(
   custConfig: customerConfig
 ) {
   
-  debugger
-
   let updates: object[] = []
   let sqwResult: object = {}
 
@@ -2507,11 +2504,10 @@ async function storeAndQueueWork(
 
   const updateCount = updates.length
 
-  //Customers marked as "Singular" updates files are not transformed, but sent to Firehose before this,
-  //  therefore need to transform Aggregate files as well as files marked as "Multiple" updates
+  //Customers marked as "Singular" updates files are not transformed, but sent to Firehose prior to getting here.
+  //  therefore if Aggregate file, or files config'd as "Multiple" updates, then need to perform Transforms
   try
   {
-    debugger;
     //Apply Transforms, if any, 
     updates = transforms(updates, config)
   } catch (e) {
@@ -2715,7 +2711,6 @@ function convertJSONToXML_DBUpdates(updates: object[], config: customerConfig) {
 
       for (const uv in updAtts)
       {
-        debugger
         //xmlRows += `<COLUMN><NAME>${uv}</NAME><VALUE><![CDATA[${updAtts[uv]}]]></VALUE></COLUMN>`
         xmlRows += `<COLUMN><NAME>${uv}</NAME><VALUE><![CDATA[${uv}]]></VALUE></COLUMN>`
 
@@ -2760,7 +2755,7 @@ function transforms(updates: object[], config: customerConfig) {
   //Get column to update - const column = config.transforms.methods[0].updColumn
   //Get column to reference const refColumn = config.transforms.method.refColumn
 
-  if (config.Customer.toLowerCase().indexOf("kingsfordweather_") > -1) {
+  if (config.Customer.toLowerCase().indexOf("kingsfordweather_") > -1 || config.Customer.toLowerCase().indexOf("cloroxweather_") > -1) {
     const t: typeof updates = []
 
     const days = [
@@ -2773,13 +2768,11 @@ function transforms(updates: object[], config: customerConfig) {
       "Saturday",
     ]
 
-    for (const jo of updates) {
-      //const j = JSON.parse( l )
-      /*
+    debugger 
+    
+    for (const jo of updates) {    
+      
       const d = jo.datetime
-        */
-      const d = ''
-
       if (d !== "") {
         const dt = new Date(d)
         const day = { dateday: days[dt.getDay()] }
@@ -2804,7 +2797,8 @@ function transforms(updates: object[], config: customerConfig) {
   //              "zipcode": "$.context.traits.address.postalCode"
   //      },
 
-  if (Object.keys(config.transforms.jsonMap).indexOf("none") < 0) {
+  //Need failsafe test of empty object jsonMap has no transforms. 
+  if (Object.keys(config.transforms.jsonMap).length > 0) {
     const r: typeof updates = []
     try {
       let jmr
@@ -2837,7 +2831,7 @@ function transforms(updates: object[], config: customerConfig) {
 
   debugger;
 
-  if (Object.keys(config.transforms.csvMap).indexOf("none") < 0) {
+  if (Object.keys(config.transforms.csvMap).length > 0) {
     const c: typeof updates = []
     try {
       for (const jo of updates) {
@@ -3552,8 +3546,6 @@ async function getAnS3ObjectforTesting(bucket: string) {
 //  const copyFile = async (sourceKey: string) => {
 //    // const targetKey = sourceKey.replace(sourcePrefix, targetPrefix)
 
-//    debugger
-
 //    await s3
 //      .send(
 //        new CopyObjectCommand({
@@ -3604,8 +3596,6 @@ async function getAnS3ObjectforTesting(bucket: string) {
 
 //    return reProcess
 //  }
-
-//  debugger
 
 //  const d: Date = new Date()
 //  // 3,600,000 millisecs = 1 hour
