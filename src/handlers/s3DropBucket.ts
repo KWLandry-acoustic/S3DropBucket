@@ -337,7 +337,7 @@ testS3Bucket = "s3dropbucket-configs"
 //testS3Key = "TestData/alerusrepsignature_sampleformatted_json_update_1_1.xml"
 //testS3Key = "TestData/alerusrepsignature_advisors_2_json_update-3c74bfb2-1997-4653-bd8e-73bf030b4f2d_26_14.xml"
 //  Core - Key Set of Test Datasets
-testS3Key = "TestData/cloroxweather_99706.csv"
+//testS3Key = "TestData/cloroxweather_99706.csv"
 //testS3Key = "TestData/pura_S3DropBucket_Aggregator-8-2024-03-19-16-42-48-46e884aa-8c6a-3ff9-8d32-c329395cf311.json"
 //testS3Key = "TestData/pura_2024_02_26T05_53_26_084Z.json"
 //testS3Key = "TestData/alerusrepsignature_sample.json"
@@ -347,8 +347,8 @@ testS3Key = "TestData/cloroxweather_99706.csv"
 //testS3Key = "TestData/alerusreassignrepsignature_advisors.json"
 //testS3Key = "TestData/Funding_Circle_Limited_CampaignRelationalTable1_2024_10_08T10_16_49_700Z.json"
 //testS3Key = "TestData/Funding_Circle_Limited_CampaignDatabase1_2024_10_08T09_52_13_903Z.json"
-
-
+//testS3Key = "alerusrepsignature_advisors.json"
+testS3Key = "alerusreassignrepsignature_advisors.json"
 
 /**
  * A Lambda function to process the Event payload received from S3.
@@ -2747,7 +2747,7 @@ function convertJSONToXML_DBUpdates(updates: object[], config: customerConfig) {
 function transforms(updates: object[], config: customerConfig) {
   //Apply Transforms
 
-  //Clorox Weather Data
+  //Clorox/Kingsford Weather Data
   //Add dateday column
 
   // Prep to add transform in Config file:
@@ -2755,7 +2755,8 @@ function transforms(updates: object[], config: customerConfig) {
   //Get column to update - const column = config.transforms.methods[0].updColumn
   //Get column to reference const refColumn = config.transforms.method.refColumn
 
-  if (config.Customer.toLowerCase().indexOf("kingsfordweather_") > -1 || config.Customer.toLowerCase().indexOf("cloroxweather_") > -1) {
+  if (config.Customer.toLowerCase().indexOf("kingsfordweather_") > -1 || config.Customer.toLowerCase().indexOf("cloroxweather_") > -1)
+  {
     const t: typeof updates = []
 
     const days = [
@@ -2768,127 +2769,148 @@ function transforms(updates: object[], config: customerConfig) {
       "Saturday",
     ]
 
-    debugger 
-    
-    for (const jo of updates) {    
-      
-      const d = jo.datetime
-      if (d !== "") {
-        const dt = new Date(d)
-        const day = { dateday: days[dt.getDay()] }
+    debugger
 
-        Object.assign(jo, day)
-        //t.push( JSON.stringify( l ) )
-        t.push(jo)
-      }
-    }
-
-    if (t.length !== updates.length) {
-      throw new Error(
-        `Error - Transform - Applying Clorox Custom Transform returns fewer records (${t.length}) than initial set ${updates.length}`
-      )
-    } else updates = t
-  }
-
-  //Apply the JSONMap -
-  //  JSONPath statements
-  //      "jsonMap": {
-  //          "email": "$.uniqueRecipient",
-  //              "zipcode": "$.context.traits.address.postalCode"
-  //      },
-
-  //Need failsafe test of empty object jsonMap has no transforms. 
-  if (Object.keys(config.transforms.jsonMap).length > 0) {
-    const r: typeof updates = []
-    try {
-      let jmr
-      for (const jo of updates) {
-        //const jo = JSON.parse( l )
-        jmr = applyJSONMap(jo, config.transforms.jsonMap)
-        r.push(jmr)
-      }
-    } catch (e) {
-      console.error(`Exception - Transform - Applying JSONMap \n${e}`)
-    }
-
-    if (r.length !== updates.length) {
-      throw new Error(
-        `Error - Transform - Applying JSONMap returns fewer records (${r.length}) than initial set ${updates.length}`
-      )
-    } else updates = r
-  }
-
-  //Apply CSVMap
-  // "csvMap": { //Mapping when processing CSV files
-  //       "Col_AA": "COL_XYZ", //Write Col_AA with data from Col_XYZ in the CSV file
-  //       "Col_BB": "COL_MNO",
-  //       "Col_CC": "COL_GHI",
-
-  //       "Col_DD": 1, //Write Col_DD with data from the 1st column of data in the CSV file.
-  //       "Col_DE": 2,
-  //       "Col_DF": 3
-  // },
-
-  debugger;
-
-  if (Object.keys(config.transforms.csvMap).length > 0) {
-    const c: typeof updates = []
-    try {
-      for (const jo of updates) {
-        //const jo = JSON.parse( l )
-
-        const map = config.transforms.csvMap as { [key: string]: string }
-        Object.entries(map).forEach(([k, v]) => {
-          debugger
-          console.log(`${k}, ${v}`)
-          if (typeof v !== "number") jo[k] = jo[v] ?? ""
-          else {
-            const vk = Object.keys(jo)[v]
-            // const vkk = vk[v]
-            jo[k] = jo[vk] ?? ""
-          }
-          
-        })
-        c.push(jo)
-      }
-    } catch (e) {
-      console.error(`Exception - Transforms - Applying CSVMap \n${e}`)
-    }
-    if (c.length !== updates.length) {
-      throw new Error(
-        `Error - Transform - Applying CSVMap returns fewer records (${c.length}) than initial set ${updates.length}`
-      )
-    } else updates = c
-  }
-
-  // Ignore must be last to take advantage of cleaning up any extraneous columns after previous transforms
-  if (config.transforms.ignore.length > 0) {
-    const i: typeof updates = []  //start an ignore list
-    try {
-      for (const jo of updates) {
-        //const jo = JSON.parse( l )
-        for (const ig of config.transforms.ignore) {
-          // const { [keyToRemove]: removedKey, ...newObject } = originalObject;
-          // const { [ig]: , ...i } = jo
-          debugger
-          console.log(`${ig}`)
-          /*
-          delete jo[ig]
-          */ 
+    let d: string
+    for (const jo of updates)
+    {
+      if ("datetime" in jo)
+      {
+        d = jo.datetime as string
+        if (d !== "")
+        {
+          const dt = new Date(d)
+          const day = {dateday: days[dt.getDay()]}
+          Object.assign(jo, day)
+          t.push(jo)
         }
-        i.push(jo)
       }
-    } catch (e) {
-      console.error(`Exception - Transform - Applying Ignore - \n${e}`)
+
+      if (t.length !== updates.length)
+      {
+        throw new Error(
+          `Error - Transform - Applying Clorox Custom Transform returns fewer records (${t.length}) than initial set ${updates.length}`
+        )
+      } else updates = t
+    }
+  }
+    //Apply the JSONMap -
+    //  JSONPath statements
+    //      "jsonMap": {
+    //          "email": "$.uniqueRecipient",
+    //              "zipcode": "$.context.traits.address.postalCode"
+    //      },
+
+    //Need failsafe test of empty object jsonMap has no transforms. 
+    if (Object.keys(config.transforms.jsonMap).length > 0)
+    {
+      const r: typeof updates = []
+      try
+      {
+        let jmr
+        for (const jo of updates)
+        {
+          //const jo = JSON.parse( l )
+          jmr = applyJSONMap(jo, config.transforms.jsonMap)
+          r.push(jmr)
+        }
+      } catch (e)
+      {
+        console.error(`Exception - Transform - Applying JSONMap \n${e}`)
+      }
+
+      if (r.length !== updates.length)
+      {
+        throw new Error(
+          `Error - Transform - Applying JSONMap returns fewer records (${r.length}) than initial set ${updates.length}`
+        )
+      } else updates = r
     }
 
-    if (i.length !== updates.length) {
-      throw new Error(
-        `Error - Transform - Applying Ignore returns fewer records ${i.length} than initial set ${updates.length}`
-      )
-    } else updates = i
-  }
+    //Apply CSVMap
+    // "csvMap": { //Mapping when processing CSV files
+    //       "Col_AA": "COL_XYZ", //Write Col_AA with data from Col_XYZ in the CSV file
+    //       "Col_BB": "COL_MNO",
+    //       "Col_CC": "COL_GHI",
 
+    //       "Col_DD": 1, //Write Col_DD with data from the 1st column of data in the CSV file.
+    //       "Col_DE": 2,
+    //       "Col_DF": 3
+    // },
+
+    debugger
+
+    if (Object.keys(config.transforms.csvMap).length > 0)
+    {
+      const c: typeof updates = []
+      try
+      {
+        for (const jo of updates)
+        {
+          //const jo = JSON.parse( l )
+
+          const map = config.transforms.csvMap as {[key: string]: string}
+          Object.entries(map).forEach(([k, v]) => {
+            
+            debugger
+            
+            if (typeof v !== "number") jo[k] = jo[v] ?? ""
+            else
+            {
+              const vk = Object.keys(jo)[v]
+              // const vkk = vk[v]
+              jo[k] = jo[vk] ?? ""
+            }
+          
+          })
+          c.push(jo)
+        }
+      } catch (e)
+      {
+        console.error(`Exception - Transforms - Applying CSVMap \n${e}`)
+      }
+      if (c.length !== updates.length)
+      {
+        throw new Error(
+          `Error - Transform - Applying CSVMap returns fewer records (${c.length}) than initial set ${updates.length}`
+        )
+      } else updates = c
+    }
+
+    // Ignore must be last to take advantage of cleaning up any extraneous columns after previous transforms
+    if (config.transforms.ignore.length > 0)
+    {
+      const i: typeof updates = []  //start an ignore list
+      try
+      {
+        for (const jo of updates)
+        {
+          //const jo = JSON.parse( l )
+          for (const ig of config.transforms.ignore)
+          {
+            // const { [keyToRemove]: removedKey, ...newObject } = originalObject;
+            // const { [ig]: , ...i } = jo
+            debugger
+            console.log(`${ig}`)
+            /*
+            delete jo[ig]
+            */
+          }
+          i.push(jo)
+        }
+      } catch (e)
+      {
+        console.error(`Exception - Transform - Applying Ignore - \n${e}`)
+      }
+
+      if (i.length !== updates.length)
+      {
+        throw new Error(
+          `Error - Transform - Applying Ignore returns fewer records ${i.length} than initial set ${updates.length}`
+        )
+      } else updates = i
+    }
+  
   return updates
 }
 
