@@ -333,7 +333,7 @@ testS3Bucket = "s3dropbucket-configs"
 // testS3Key = "TestData/visualcrossing_00213.csv"
 // testS3Key = "TestData/pura_2024_02_25T00_00_00_090Z.json"
 
-// testS3Key = "TestData/pura_S3DropBucket_Aggregator-8-2024-03-23-09-23-55-123cb0f9-9552-3303-a451-a65dca81d3c4_json_update_53_99.xml"
+//testS3Key = "TestData/pura_S3DropBucket_Aggregator-8-2024-03-23-09-23-55-123cb0f9-9552-3303-a451-a65dca81d3c4_json_update_53_99.xml"
 //testS3Key = "TestData/alerusrepsignature_sampleformatted_json_update_1_1.xml"
 //testS3Key = "TestData/alerusrepsignature_advisors_2_json_update-3c74bfb2-1997-4653-bd8e-73bf030b4f2d_26_14.xml"
 //  Core - Key Set of Test Datasets
@@ -342,13 +342,13 @@ testS3Bucket = "s3dropbucket-configs"
 //testS3Key = "TestData/pura_2024_02_26T05_53_26_084Z.json"
 //testS3Key = "TestData/alerusrepsignature_sample.json"
 //testS3Key = "TestData/alerusrepsignature_advisors.json"
-// testS3Key = "TestData/alerusrepsignature_sampleformatted.json"
-// testS3Key = "TestData/alerusrepsignature_sample - min.json"
+//testS3Key = "TestData/alerusrepsignature_sampleformatted.json"
+//testS3Key = "TestData/alerusrepsignature_sample - min.json"
 //testS3Key = "TestData/alerusreassignrepsignature_advisors.json"
 //testS3Key = "TestData/Funding_Circle_Limited_CampaignRelationalTable1_2024_10_08T10_16_49_700Z.json"
 //testS3Key = "TestData/Funding_Circle_Limited_CampaignDatabase1_2024_10_08T09_52_13_903Z.json"
-//testS3Key = "alerusrepsignature_advisors.json"
-testS3Key = "alerusreassignrepsignature_advisors.json"
+//testS3Key = "TestData/alerusrepsignature_advisors.json"
+testS3Key = "TestData/alerusreassignrepsignature_advisors.json"
 
 /**
  * A Lambda function to process the Event payload received from S3.
@@ -686,6 +686,8 @@ export const s3DropBucketHandler: Handler = async (
   }
   */
 
+  debugger
+
   //Done with logging the results of this pass, empty the object for the next processing cycle
   processS3ObjectStreamResolution = {} as processS3ObjectStreamResult
 
@@ -996,7 +998,7 @@ async function processS3ObjectContentStream(
             debugger;
             //Next Process Step is Queue Work or Aggregate Small single Update files into larger Update files to improve Campaign Update performance.
             try {
-              // if Not an Aggregate file, there are chunks to process, and Multiple option set)
+              // if Not an Aggregate file, there are chunks to process, and Multiple option)
               if (
                 (chunks.length > 0 &&
                   custConfig.updates.toLowerCase() === "multiple") ||
@@ -2392,8 +2394,6 @@ async function validateCustomerConfig(config: customerConfig) {
 
   }
 
-  debugger
-
   if (!config.transforms) {
     Object.assign(config, { transforms: {} })
   }
@@ -2838,8 +2838,6 @@ function transforms(updates: object[], config: customerConfig) {
     //       "Col_DF": 3
     // },
 
-    debugger
-
     if (Object.keys(config.transforms.csvMap).length > 0)
     {
       const c: typeof updates = []
@@ -2850,17 +2848,24 @@ function transforms(updates: object[], config: customerConfig) {
           //const jo = JSON.parse( l )
 
           const map = config.transforms.csvMap as {[key: string]: string}
-          Object.entries(map).forEach(([k, v]) => {
-            
-            debugger
-            
-            if (typeof v !== "number") jo[k] = jo[v] ?? ""
-            else
-            {
-              const vk = Object.keys(jo)[v]
-              // const vkk = vk[v]
-              jo[k] = jo[vk] ?? ""
-            }
+          Object.entries(map).forEach(([key, val]) => {
+
+            //type dk = keyof typeof jo
+            //const k: dk = ig as dk
+            //delete jo[k]
+            type kk = keyof typeof jo
+            type vv = keyof typeof jo
+            const k: kk = key as kk
+            const v: vv = val as vv
+            jo[k] = jo[v]
+
+            //if (typeof v !== "number") jo[k] = jo[v] ?? ""    //Number because looking to use Column Index (column 1) as reference instead of Column Name.
+            //else
+            //{
+            //  const vk = Object.keys(jo)[v]
+            //  // const vkk = vk[v]
+            //  jo[k] = jo[vk] ?? ""
+            //}
           
           })
           c.push(jo)
@@ -2880,21 +2885,19 @@ function transforms(updates: object[], config: customerConfig) {
     // Ignore must be last to take advantage of cleaning up any extraneous columns after previous transforms
     if (config.transforms.ignore.length > 0)
     {
-      const i: typeof updates = []  //start an ignore list
+      const i: typeof updates = []  //start an ignore processed update set
       try
       {
         for (const jo of updates)
         {
           //const jo = JSON.parse( l )
+
+
           for (const ig of config.transforms.ignore)
           {
-            // const { [keyToRemove]: removedKey, ...newObject } = originalObject;
-            // const { [ig]: , ...i } = jo
-            debugger
-            console.log(`${ig}`)
-            /*
-            delete jo[ig]
-            */
+          type dk = keyof typeof jo
+          const k: dk = ig as dk
+          delete jo[k]
           }
           i.push(jo)
         }
