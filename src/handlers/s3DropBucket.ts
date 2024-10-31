@@ -348,7 +348,10 @@ testS3Bucket = "s3dropbucket-configs"
 //testS3Key = "TestData/Funding_Circle_Limited_CampaignRelationalTable1_2024_10_08T10_16_49_700Z.json"
 //testS3Key = "TestData/Funding_Circle_Limited_CampaignDatabase1_2024_10_08T09_52_13_903Z.json"
 //testS3Key = "TestData/alerusrepsignature_advisors.json"
-testS3Key = "TestData/alerusreassignrepsignature_advisors.json"
+//testS3Key = "TestData/alerusreassignrepsignature_advisors.json"
+//testS3Key = "TestData/KingsfordWeather_00210.csv"
+//testS3Key = "TestData/KingsfordWeather_00211.csv"
+testS3Key = "TestData/KingsfordWeather_00212.csv"
 
 /**
  * A Lambda function to process the Event payload received from S3.
@@ -1825,6 +1828,9 @@ async function sftpDeleteFile(remoteFile: string) {
 async function checkForS3DBConfigUpdates() {
   if (s3dbLogDebug) console.info(`Checking for S3DropBucket Config updates`)
   S3DBConfig = await getValidateS3DropBucketConfig()
+  
+  //Populate/Refresh Customer Config List 
+
 
   if (S3DBConfig.SelectiveDebug.indexOf("_901,") > -1)
     console.info(
@@ -2129,6 +2135,7 @@ async function getValidateS3DropBucketConfig() {
 }
 
 async function getCustomerConfig(filekey: string) {
+  
   // Retrieve file's prefix as the Customer Name
   if (!filekey)
     throw new Error(
@@ -2169,9 +2176,14 @@ async function getCustomerConfig(filekey: string) {
    )
   }
 
-    //const customer = filekey.split('_')[0] + '_'      //initial treatment, get prefix up to first underscore
+  //const customer = filekey.split('_')[0] + '_'      //initial treatment, get prefix up to first underscore
 
-  const customer = filekey
+
+  //ToDo: Need to change this up to getting a listing of all configs and matching up against filename,
+  //  allowing Configs to match on filename regardless of case
+  //  populate 'process.env.S3DropBucketConfigsList' and walk over it to match config to filename
+  const customer = filekey  //.toLowerCase()
+  
   let configJSON = {} as customerConfig
   // const configObjs = [new Uint8Array()]
 
@@ -2634,7 +2646,7 @@ function convertJSONToXML_RTUpdates(updates: object[], config: customerConfig) {
     // Object.entries(jo).forEach(([key, value]) => {
         
     type ua = keyof typeof updAtts
-debugger
+
     for (const uv in updAtts) {
             const uVal: ua = uv as ua
       // console.info(`Record ${r} as ${key}: ${value}`)
@@ -2790,14 +2802,14 @@ function transforms(updates: object[], config: customerConfig) {
           t.push(jo)
         }
       }
-
+   }
       if (t.length !== updates.length)
       {
         throw new Error(
           `Error - Transform - Applying Clorox Custom Transform returns fewer records (${t.length}) than initial set ${updates.length}`
         )
       } else updates = t
-    }
+ 
   }
     //Apply the JSONMap -
     //  JSONPath statements
