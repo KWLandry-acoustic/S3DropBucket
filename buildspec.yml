@@ -28,7 +28,8 @@ phases:
       #sam build deploy or package
       #- sam build --cached --parallel --debug
       #- sam build --cached --parallel --debug --use-container
-      - sam build --cached --parallel --debug --use-container --template-file packaged.yaml
+      #- sam build --cached --parallel --debug --use-container --template-file packaged.yaml      
+      - sam build --cached --parallel --debug --use-container
 
       # - sam package --s3-bucket aws-us-east-1-777957353822-tricklercache-pipe --force-upload --debug
       - sam package --s3-bucket aws-us-east-1-777957353822-tricklercache-pipe --output-template-file packaged.yaml --debug
