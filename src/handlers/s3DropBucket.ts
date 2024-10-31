@@ -2632,11 +2632,13 @@ function convertJSONToXML_RTUpdates(updates: object[], config: customerConfig) {
     r++
     xmlRows += `<ROW>`
     // Object.entries(jo).forEach(([key, value]) => {
-
+        
+    type ua = keyof typeof updAtts
+debugger
     for (const uv in updAtts) {
+            const uVal: ua = uv as ua
       // console.info(`Record ${r} as ${key}: ${value}`)
-      //xmlRows += `<COLUMN name="${uv}"> <![CDATA[${updAtts[uv]}]]> </COLUMN>`
-      xmlRows += `<COLUMN name="${uv}"> <![CDATA[${uv}]]> </COLUMN>`
+      xmlRows += `<COLUMN name="${uVal}"> <![CDATA[${updAtts[uVal]}]]> </COLUMN>`
     }
 
     xmlRows += `</ROW>`
@@ -2709,10 +2711,13 @@ function convertJSONToXML_DBUpdates(updates: object[], config: customerConfig) {
         //Don't need to do anything with DBKey, it's superfluous but documents the keys of the keyed DB
       }
 
+      
+      type ua = keyof typeof updAtts
+
       for (const uv in updAtts)
       {
-        //xmlRows += `<COLUMN><NAME>${uv}</NAME><VALUE><![CDATA[${updAtts[uv]}]]></VALUE></COLUMN>`
-        xmlRows += `<COLUMN><NAME>${uv}</NAME><VALUE><![CDATA[${uv}]]></VALUE></COLUMN>`
+        const uVal: ua = uv as ua
+        xmlRows += `<COLUMN><NAME>${uVal}</NAME><VALUE><![CDATA[${updAtts[uVal]}]]></VALUE></COLUMN>`
 
       }
 
