@@ -464,7 +464,7 @@ export const s3DropBucketHandler: Handler = async (
   //  console.info(
   //    `(100) Received S3DropBucket Event Batch.There are ${event.Records.length} S3DropBucket Event Records in this batch. (Event Id: ${event.Records[0].responseElements["x-amz-request-id"]}, \nContext: ${context}).`
   //  )
-  selectiveLogging("info", "100", `Received S3DropBucket Event Batch.There are ${event.Records.length} S3DropBucket Event Records in this batch. (Event Id: ${event.Records[0].responseElements["x-amz-request-id"]}, \nContext: ${context}).`
+  selectiveLogging("info", "500", `Received S3DropBucket Event Batch.There are ${event.Records.length} S3DropBucket Event Records in this batch. (Event Id: ${event.Records[0].responseElements["x-amz-request-id"]}, \nContext: ${context}).`
   )
 
   //Future: Left this for possible switch of the Trigger from S3 being an SQS Trigger of an S3 Write,
@@ -563,11 +563,11 @@ export const s3DropBucketHandler: Handler = async (
           //)
           selectiveLogging("info", "999", `Completed Processing Content Stream - ${streamResults.Key} ${streamResults.Processed}`)
 
-          //if (S3DBConfig.SelectiveDebug.indexOf("_103,") > -1)
+          //if (S3DBConfig.SelectiveDebug.indexOf("_503,") > -1)
           //  console.info(
           //    `(103) Completed processing all records of the S3 Object ${key} \nVersionID: ${vid}, \neTag: ${et}. \nStatus: ${res.OnEndRecordStatus}`
           //  )
-          selectiveLogging("info", "103", `Completed processing all records of the S3 Object ${key} \nVersionID: ${vid}, \neTag: ${et}. \nStatus: ${res.OnEndRecordStatus}`
+          selectiveLogging("info", "503", `Completed processing all records of the S3 Object ${key} \nVersionID: ${vid}, \neTag: ${et}. \nStatus: ${res.OnEndRecordStatus}`
           )
           
           debugger
@@ -605,11 +605,11 @@ export const s3DropBucketHandler: Handler = async (
                   ...streamResults,
                   DeleteResult: JSON.stringify(delResultCode),
                 }
-                //if (S3DBConfig.SelectiveDebug.indexOf("_104,") > -1)
+                //if (S3DBConfig.SelectiveDebug.indexOf("_504,") > -1)
                 //  console.error(
                 //    `Processing Successful, but Unsuccessful Delete of ${key}, Expected 204 result code, received ${delResultCode}`
                 //  )
-                selectiveLogging("error", "104", `Processing Successful, but Unsuccessful Delete of ${key}, Expected 204 result code, received ${delResultCode}`
+                selectiveLogging("error", "504", `Processing Successful, but Unsuccessful Delete of ${key}, Expected 204 result code, received ${delResultCode}`
                 )
               } else
               {
@@ -617,7 +617,7 @@ export const s3DropBucketHandler: Handler = async (
                 //  console.info(
                 //    `(104) Processing Successful, Delete of ${key} Successful (Result ${delResultCode}).`
                 //  )
-                selectiveLogging("info", "104", `Processing Successful, Delete of ${key} Successful (Result ${delResultCode}).`
+                selectiveLogging("info", "504", `Processing Successful, Delete of ${key} Successful (Result ${delResultCode}).`
                 )
                 streamResults = {
                   ...streamResults,
@@ -712,11 +712,11 @@ export const s3DropBucketHandler: Handler = async (
     const k = processS3ObjectStreamResolution.Key
     const p = processS3ObjectStreamResolution.Processed
 
-    //if (S3DBConfig.SelectiveDebug.indexOf("_105,") > -1)
+    //if (S3DBConfig.SelectiveDebug.indexOf("_505,") > -1)
     //  console.info(
-    //    `(105) Completing S3DropBucket Processing of Request Id ${event.Records[0].responseElements["x-amz-request-id"]} for ${k} \n${p}`
+    //    `(505) Completing S3DropBucket Processing of Request Id ${event.Records[0].responseElements["x-amz-request-id"]} for ${k} \n${p}`
     //  )
-    selectiveLogging("info", "105", `Completing S3DropBucket Processing of Request Id ${event.Records[0].responseElements["x-amz-request-id"]} for ${k} \n${p}`)
+    selectiveLogging("info", "505", `Completing S3DropBucket Processing of Request Id ${event.Records[0].responseElements["x-amz-request-id"]} for ${k} \n${p}`)
 
     //if (S3DBConfig.SelectiveDebug.indexOf("_920,") > -1)
     //  console.info(`Selective Debug 920 - \n${JSON.stringify(objectStreamResolution)}`)
@@ -738,10 +738,13 @@ function selectiveLogging(level:string, index: string,  msg:string) {
 
   if (S3DBConfig.SelectiveDebug.indexOf(`_${index},`) > -1 || index === '999')
   {
-    if (level.toLowerCase() === "info") console.info(`SelectiveLogging ${index}- ${msg} `)
-    if (level.toLowerCase() === "warn") console.warn(`SelectiveLogging ${index}- ${msg} `)
-    if (level.toLowerCase() === "error") console.error(`SelectiveLogging ${index}- ${msg} `)
-    if (level.toLowerCase() === "debug") console.debug(`SelectiveLogging ${index}- ${msg} `)
+    if (index === '999') index = ''
+    if (index.startsWith('5') || index.startsWith('4')) index = `(${index})`
+    else index = `(Debug-${index})`
+    if (level.toLowerCase() === "info") console.info(`S3DB-Log ${index}-${msg} `)
+    if (level.toLowerCase() === "warn") console.warn(`S3DB-Log ${index}-${msg} `)
+    if (level.toLowerCase() === "error") console.error(`S3DB-Log ${index}-${msg} `)
+    if (level.toLowerCase() === "debug") console.debug(`S3DB-Log ${index} - ${msg} `)
 
 
     //Send Logging to Firehose Aggregator 
@@ -1205,9 +1208,9 @@ async function processS3ObjectContentStream(
             }
           })
 
-        if (S3DBConfig.SelectiveDebug.indexOf("_102,") > -1)
-          //console.info(`(102) S3 Content Stream Opened for ${key}`)
-        selectiveLogging("info", "102", `S3 Content Stream Opened for ${key}`)
+        //if (S3DBConfig.SelectiveDebug.indexOf("_502,") > -1)
+          //console.info(`(502) S3 Content Stream Opened for ${key}`)
+        selectiveLogging("info", "502", `S3 Content Stream Opened for ${key}`)
       })
         .then((r) => {
           return {
@@ -1549,7 +1552,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
           //console.info(
           //  `Selective Debug 908 - POST Result for ${tqm.workKey}: ${postResult} `
           //)
-        selectiveLogging("info", "999", `Selective Debug 908 - POST Result for ${tqm.workKey}: ${postResult} `)
+        selectiveLogging("info", "999", `POST Result for ${tqm.workKey}: ${postResult} `)
 
         if (postResult.indexOf("retry") > -1) {
           //console.warn(
@@ -1662,13 +1665,13 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
   //  }
   //}
 
-  if (S3DBConfig.SelectiveDebug.indexOf("_912,") > -1)
+  //if (S3DBConfig.SelectiveDebug.indexOf("_912,") > -1)
     //console.info(
     //  `Selective Debug 912 - ${
     //    tqm.workKey
     //  } returned to Work Queue for Retry \n${JSON.stringify(sqsBatchFail)} `
     //)
-  selectiveLogging("info", "912", `Selective Debug 912 - ${tqm.workKey} returned to Work Queue for Retry \n${JSON.stringify(sqsBatchFail)} `)
+  selectiveLogging("info", "912", `Returned ${tqm.workKey} to Work Queue for Retry \n${JSON.stringify(sqsBatchFail)} `)
 
   //ToDo: For Queue Processing - Complete the Final Processing Outcomes Messaging for Queue Processing
   // if (tcc.SelectiveDebug.indexOf("_921,") > -1) console.info(`Selective Debug 921 - \n${ JSON.stringify(processS3ObjectStreamResolution) } `)
@@ -1848,13 +1851,13 @@ export const s3DropBucketSFTPHandler: Handler = async (
     //console.info(`Processing Work Queue for ${tqm.workKey}`)
     selectiveLogging("info", "999", `Processing Work Queue for ${tqm.workKey}`)
 
-    if (S3DBConfig.SelectiveDebug.indexOf("_11,") > -1)
+    //if (S3DBConfig.SelectiveDebug.indexOf("_513,") > -1)
       //console.info(
-      //  `Selective Debug 11 - SQS Events - Processing Batch Item ${JSON.stringify(
+      //  `Selective Debug 513 - SQS Events - Processing Batch Item ${JSON.stringify(
       //    q
       //  )} `
       //)
-    selectiveLogging("info", "11", `SQS Events - Processing Batch Item ${JSON.stringify(q)} `) 
+    selectiveLogging("info", "513", `SQS Events - Processing Batch Item ${JSON.stringify(q)} `) 
 
     // try
     // {
