@@ -323,7 +323,7 @@ sqsBatchFail.batchItemFailures.pop()
 let vid = ""
 let et = ""
 
-let s3dbLogDebug = false
+//let s3dbLogDebug = false
 //let s3dbLogVerbose = false
 //let s3dbLogNormal = false
 
@@ -2090,7 +2090,7 @@ async function getValidateS3DropBucketConfig() {
       s3dbc.LOGLEVEL !== undefined &&
       s3dbc.LOGLEVEL.toLowerCase().indexOf("debug") > -1
     ) {
-      s3dbLogDebug = true
+      //s3dbLogDebug = true
       process.env.s3dbLogDebug = "true"
     }
 
