@@ -672,7 +672,6 @@ function selectiveLogging(level:string, index: string,  msg:string) {
   
   const selDeb = process.env.S3DropBucketSelectiveDebug ?? S3DBConfig.SelectiveDebug ?? "_103,_104,_511,"
     
-  debugger
   const li = `_${index},`
   if ( Number(index) < 100 || selDeb.indexOf(li) > -1 || index === dVerb )
   {
