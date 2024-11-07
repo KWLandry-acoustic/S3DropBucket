@@ -453,11 +453,11 @@ export const s3DropBucketHandler: Handler = async (
   {
     const key = r.s3.object.key ?? ""
     const bucket = r.s3.bucket.name ?? ""
-
-    if (S3DBConfig.prefixFocus !== "" && key.indexOf(S3DBConfig.prefixFocus) < 0)
+  
+    if (process.env.S3DropBucketprefixFocus !== undefined && process.env.S3DropBucketprefixFocus != "")
     {
       //ToDo: Assign a specific debug number for this message (can bee voluminous) 
-      selectiveLogging("info", "9999", `PrefixFocus is configured, File Name ${key} does not fall within focus restricted by the configured PrefixFocus ${S3DBConfig.prefixFocus}`)
+        selectiveLogging("warn", "9999", `PrefixFocus is configured, File Name ${key} does not fall within focus restricted by the configured PrefixFocus ${process.env.S3DropBucketprefixFocus}`)
 
       return
     }
@@ -667,7 +667,7 @@ export default s3DropBucketHandler
 
 function selectiveLogging(level:string, index: string,  msg:string) {
 
-  const dVerb = 'Caution! Debug is Verbose:'
+  const dVerb = '-Caution! Debug is Verbose:'
 
   
   const selDeb = process.env.S3DropBucketSelectiveDebug ?? S3DBConfig.SelectiveDebug ?? "_103,_104,_511,"
@@ -675,7 +675,7 @@ function selectiveLogging(level:string, index: string,  msg:string) {
   const li = `_${index},`
   if ( Number(index) < 100 || selDeb.indexOf(li) > -1 )
   {
-    if (index === '999') index = dVerb
+    if (index === '999') index = index+dVerb
     if (Number(index) > 998) index = `(Debug-${index})`
 
     if (level.toLowerCase() === "info") console.info(`S3DBLog ${index}: ${msg} `)
