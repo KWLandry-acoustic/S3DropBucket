@@ -344,13 +344,13 @@ testS3Bucket = "s3dropbucket-configs"
 //testS3Key = "TestData/alerusrepsignature_sampleformatted.json"
 //testS3Key = "TestData/alerusrepsignature_sample - min.json"
 //testS3Key = "TestData/alerusreassignrepsignature_advisors.json"
-//testS3Key = "TestData/Funding_Circle_Limited_CampaignRelationalTable1_2024_10_08T10_16_49_700Z.json"
+testS3Key = "TestData/Funding_Circle_Limited_CampaignRelationalTable1_2024_10_08T10_16_49_700Z.json"
 //testS3Key = "TestData/Funding_Circle_Limited_CampaignDatabase1_2024_10_08T09_52_13_903Z.json"
 //testS3Key = "TestData/alerusrepsignature_advisors.json"
 //testS3Key = "TestData/alerusreassignrepsignature_advisors.json"
 //testS3Key = "TestData/KingsfordWeather_00210.csv"
 //testS3Key = "TestData/KingsfordWeather_00211.csv"
-testS3Key = "TestData/KingsfordWeather_00212.csv"
+//testS3Key = "TestData/KingsfordWeather_00212.csv"
 
 
 const s3db_version = `S3DB Version: 3.3.003 ( ${new Date().toUTCString()} )`
@@ -2727,6 +2727,7 @@ function transforms(updates: object[], config: customerConfig) {
    }
       if (t.length !== updates.length)
       {
+        selectiveLogging("error","933", `Error - Transform - Applying Clorox Custom Transform returns fewer records (${t.length}) than initial set ${updates.length}`)
         throw new Error(
           `Error - Transform - Applying Clorox Custom Transform returns fewer records (${t.length}) than initial set ${updates.length}`
         )
@@ -2755,11 +2756,12 @@ function transforms(updates: object[], config: customerConfig) {
         }
       } catch (e)
       {
-        selectiveLogging("error", "999", `Exception - Transform - Applying JSONMap \n${e}`)
+        selectiveLogging("error", "930", `Exception - Transform - Applying JSONMap \n${e}`)
       }
 
       if (r.length !== updates.length)
       {
+        selectiveLogging("error", "930", `Error - Transform - Applying JSONMap returns fewer records(${r.length}) than initial set ${updates.length}`)
         throw new Error(
           `Error - Transform - Applying JSONMap returns fewer records (${r.length}) than initial set ${updates.length}`
         )
@@ -2811,16 +2813,17 @@ function transforms(updates: object[], config: customerConfig) {
         }
       } catch (e)
       {
-        selectiveLogging("error", "999", `Exception - Transforms - Applying CSVMap \n${e}`)
+        selectiveLogging("error", "931", `Exception - Transforms - Applying CSVMap \n${e}`)
       }
       if (c.length !== updates.length)
       {
+        selectiveLogging("error", "931", `Error - Transform - Applying CSVMap returns fewer records(${c.length}) than initial set ${updates.length}`)
         throw new Error(
           `Error - Transform - Applying CSVMap returns fewer records (${c.length}) than initial set ${updates.length}`
         )
       } else updates = c
     }
-
+debugger
     // Ignore must be last to take advantage of cleaning up any extraneous columns after previous transforms
     if (config.transforms.ignore.length > 0)
     {
@@ -2842,11 +2845,12 @@ function transforms(updates: object[], config: customerConfig) {
         }
       } catch (e)
       {
-        selectiveLogging("error", "999", `Exception - Transform - Applying Ignore - \n${e}`)
+        selectiveLogging("error", "932", `Exception - Transform - Applying Ignore - \n${e}`)
       }
 
       if (i.length !== updates.length)
       {
+        selectiveLogging("error", "932", `Error - Transform - Applying Ignore returns fewer records ${i.length} than initial set ${updates.length}`)
         throw new Error(
           `Error - Transform - Applying Ignore returns fewer records ${i.length} than initial set ${updates.length}`
         )
