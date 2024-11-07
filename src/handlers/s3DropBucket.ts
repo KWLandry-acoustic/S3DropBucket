@@ -546,8 +546,6 @@ export const s3DropBucketHandler: Handler = async (
           selectiveLogging("info", "503", `Completed processing all records of the S3 Object ${key} \nVersionID: ${vid}, \neTag: ${et}. \nStatus: ${streamRes.OnEndRecordStatus}`
           )
           
-          debugger
-          
           //Don't delete the test data
           if (localTesting)
           {
@@ -568,7 +566,7 @@ export const s3DropBucketHandler: Handler = async (
                 .catch((e) => {
                   selectiveLogging("error", "999", `Exception - DeleteS3Object - ${e}`)
               })
-              debugger
+
               if (delResultCode !== "204")
               {
                 streamRes = {
@@ -657,9 +655,6 @@ export const s3DropBucketHandler: Handler = async (
 
     selectiveLogging("info", "505", `Completing S3DropBucket Processing of Request Id ${event.Records[0].responseElements["x-amz-request-id"]} for ${k} \n${p}`)
     selectiveLogging("info", "920", `\n${JSON.stringify(objectStreamResolution)}`)
-  
-
-    debugger  //Look things over before ending 
 
     //Done with logging the results of this pass, empty the object for the next processing cycle
     ProcessS3ObjectStreamResolution = {} as ProcessS3ObjectStreamResult
@@ -675,12 +670,13 @@ function selectiveLogging(level:string, index: string,  msg:string) {
   const dVerb = 'Caution! Debug is Verbose:'
   if (index === '999') index = dVerb
   
-  const selDeb = process.env.S3DropBucketSelectiveDebug ?? S3DBConfig.SelectiveDebug ?? ""
+  const selDeb = process.env.S3DropBucketSelectiveDebug ?? S3DBConfig.SelectiveDebug ?? "_103,_104,_511,"
     
-  if (selDeb.indexOf(`_${index},`) > -1 || index === dVerb)
+  debugger
+  const li = `_${index},`
+  if ( Number(index) < 100 || selDeb.indexOf(li) > -1 || index === dVerb )
   {
-    if (index.startsWith('3') || index.startsWith('4') || index.startsWith('5')) index = `(${index})`
-    else index = `(Debug-${index})`
+    if (Number(index) > 998) index = `(Debug-${index})`
 
     if (level.toLowerCase() === "info") console.info(`S3DBLog ${index}: ${msg} `)
     if (level.toLowerCase() === "warn") console.warn(`S3DBLog ${index}: ${msg} `)
@@ -695,7 +691,7 @@ function selectiveLogging(level:string, index: string,  msg:string) {
     // Send All debug messaging regardless of S3DropBucket Config??
     // Send All info messaging regardless of S3DropBucket Config??
     //  
-    //ToDo: Add firehose Logging
+    //ToDo: Add Firehose Logging
     //ToDo: Add DataDog Logging
 
     //
@@ -972,8 +968,6 @@ async function processS3ObjectContentStream(
               } catch (e)
               {
                 selectiveLogging("info", "999", `Exception - ReadStream-OnData - Chunk aggregation for ${key} \nBatch ${batchCount} of ${recs} Updates. \n${e}`)
-                
-                debugger
 
                 streamResult = {
                   ...streamResult,
@@ -992,10 +986,6 @@ async function processS3ObjectContentStream(
                 {
                   packageResult = await packageUpdates(chunks, key, custConfig) as unknown as StoreAndQueueWorkResult
 
-                  debugger
-                  
-                  //streamResult.OnDataStoreAndQueueWorkResult = packageResult // as typeof streamResult.OnDataStoreAndQueueWorkResult
-                  
                   streamResult = {
                     ...streamResult,
                     OnDataStoreAndQueueWorkResult: {StoreAndQueueWorkResult: packageResult}
@@ -1031,8 +1021,6 @@ async function processS3ObjectContentStream(
               return streamResult
             }
 
-            debugger 
-
             //Next Process Step is Queue the Work or Aggregate Small single Update files into larger Update files to improve Campaign Update performance.
             try           //Overall Try/Catch for On-End processing
             {
@@ -1049,8 +1037,6 @@ async function processS3ObjectContentStream(
                   return res as StoreAndQueueWorkResult
               })
             }
-              
-              debugger
               
               //seems to be returning double messaging
               streamResult = {      
