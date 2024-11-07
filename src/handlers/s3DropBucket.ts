@@ -374,16 +374,17 @@ export const s3DropBucketHandler: Handler = async (
   else
   {
     s3 = new S3Client({region: 'us-east-1'})
-    S3DBConfig = await getValidateS3DropBucketConfig()
   }
 
-  //if (
-  //  process.env["EventEmitterMaxListeners"] === undefined ||
-  //  process.env["EventEmitterMaxListeners"] === "" ||
-  //  process.env["EventEmitterMaxListeners"] === null
-  //)
-  //{
-  //}
+  if (
+    process.env["EventEmitterMaxListeners"] === undefined ||
+    process.env["EventEmitterMaxListeners"] === "" ||
+    process.env["EventEmitterMaxListeners"] === null
+  )
+  {
+  S3DBConfig = await getValidateS3DropBucketConfig()
+  }
+
 
   selectiveLogging("info", "98", `S3DropBucket Options: ${JSON.stringify(S3DBConfig)} `)
   selectiveLogging("info", "99", `S3DropBucket Logging Options(process.env): ${process.env.S3DropBucketSelectiveDebug} `)
@@ -1259,12 +1260,12 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
   }
   
   //If an obscure config does not exist in process.env then we need to get them all
-  //ToDo:  Change up the Env used to check if we still have env for config vars 
   if (
-    process.env["WorkQueueVisibilityTimeout"] === undefined ||
-    process.env["WorkQueueVisibilityTimeout"] === "" ||
-    process.env["WorkQueueVisibilityTimeout"] === null
-  ) {
+    process.env["EventEmitterMaxListeners"] === undefined ||
+    process.env["EventEmitterMaxListeners"] === "" ||
+    process.env["EventEmitterMaxListeners"] === null
+  )
+  {
     S3DBConfig = await getValidateS3DropBucketConfig()
   }
 
