@@ -3223,7 +3223,7 @@ export async function postToCampaign(
   postRes = await fetch(host, requestOptions)
     .then((response) => response.text())
     .then(async (result) => {
-      selectiveLogging("info", "9999", `Debug POST Response: ${result}`)
+      selectiveLogging("info", "908", `POST Response: ${result}`)
 
       const faults: string[] = []
 
@@ -3252,7 +3252,7 @@ export async function postToCampaign(
         result.toLowerCase().indexOf("access token has expired") > -1 ||
         result.toLowerCase().indexOf("Error saving row") > -1
       ) {
-        selectiveLogging("warn", "999", `Temporary Failure - POST Updates - Marked for Retry. \n${result}`)
+        selectiveLogging("warn", "929", `Temporary Failure - POST Updates - Marked for Retry. \n${result}`)
         
         return "retry"
       } else if (result.indexOf("<FaultString><![CDATA[") > -1) {
@@ -3263,7 +3263,7 @@ export async function postToCampaign(
           }
         }
         debugger
-        selectiveLogging("warn", "999", `Partially Successful POST of the Updates (${f.length} FaultStrings on ${count} updates) - \nResults\n ${JSON.stringify(faults)}`)
+        selectiveLogging("warn", "928", `Partially Successful POST of the Updates (${f.length} FaultStrings on ${count} updates) - \nResults\n ${JSON.stringify(faults)}`)
 
         return `Partially Successful - (${
           f.length
@@ -3288,7 +3288,7 @@ export async function postToCampaign(
             msg += l
           }
 
-          selectiveLogging("error", "999", `Unsuccessful POST of the Updates (${m.length} of ${count}) - \nFailure Msg: ${JSON.stringify(msg)}`)
+          selectiveLogging("error", "927", `Unsuccessful POST of the Updates (${m.length} of ${count}) - \nFailure Msg: ${JSON.stringify(msg)}`)
           
           return `Error - Unsuccessful POST of the Updates (${
             m.length
@@ -3297,16 +3297,17 @@ export async function postToCampaign(
       }
 
       result = result.replace("\n", " ")
+      selectiveLogging("info", "926", `Successful POST Result: ${result}`)
       return `Successfully POSTed (${count}) Updates - Result: ${result}`
     })
     .catch((e) => {
 
       if (e.indexOf("econnreset") > -1) {
-        selectiveLogging("error", "999", `Error - Temporary failure to POST the Updates - Marked for Retry. ${e}`)
+        selectiveLogging("error", "929", `Error - Temporary failure to POST the Updates - Marked for Retry. ${e}`)
 
         return "retry"
       } else {
-        selectiveLogging("error", "999", `Error - Unsuccessful POST of the Updates: ${e}`)
+        selectiveLogging("error", "927", `Error - Unsuccessful POST of the Updates: ${e}`)
         //throw new Error( `Exception - Unsuccessful POST of the Updates \n${ e }` )
         return "Unsuccessful POST of the Updates"
       }
