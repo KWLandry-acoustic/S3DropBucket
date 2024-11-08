@@ -238,8 +238,8 @@ export interface ProcessS3ObjectStreamResult {
     StoreS3WorkException?: string
     },
   //Additional Messaging on each process step
-  StreamEndResult: string                 
-  StreamException: string
+  ReadStreamEndResult: string                 
+  ReadStreamException: string
   OnEndRecordStatus: string
   OnDataReadStreamException: string
   OnEndNoRecordsException: string
@@ -292,8 +292,8 @@ let ProcessS3ObjectStreamResolution: ProcessS3ObjectStreamResult = {
     StoreS3WorkException: ""
   },
   //Additional Messaging on each process step
-  StreamEndResult: "",
-  StreamException: "",
+  ReadStreamEndResult: "",
+  ReadStreamException: "",
   OnEndRecordStatus: "",
   OnDataReadStreamException: "",
   OnEndNoRecordsException: "",
@@ -592,7 +592,7 @@ export const s3DropBucketHandler: Handler = async (
           return streamRes
         })
         .catch((e) => {
-          const err = `Exception - Process S3 Object Stream Catch - \n${e}`
+          const err = `Exception - Process S3 Object Stream Catch - \n${e} \nStack: \n${e.stack}`
           selectiveLogging("exception", "", err)
           
           ProcessS3ObjectStreamResolution = {
@@ -902,7 +902,7 @@ async function processS3ObjectContentStream(
 
             streamResult = {
               ...streamResult,
-              StreamException: `s3ContentReadableStreamErrorMessage ${JSON.stringify(errMessage)}`
+              ReadStreamException: `s3ContentReadableStreamErrorMessage ${JSON.stringify(errMessage)}`
             }
             reject(errMessage)
             selectiveLogging("error", "999", `Error on Readable Stream for s3DropBucket Object ${key}.\nError Message: ${errMessage} `)
@@ -1091,7 +1091,7 @@ async function processS3ObjectContentStream(
 
               streamResult = {
                 ...streamResult,
-                StreamEndResult: streamEndResult,
+                ReadStreamEndResult: streamEndResult,
                 OnEndRecordStatus: `Processed ${recs} records as ${batchCount} batches.`
               }
 
@@ -1106,7 +1106,6 @@ async function processS3ObjectContentStream(
               // return streamResult
           })
             
-
           .on("close", async function () {
             streamResult = {
               ...streamResult,
@@ -1137,12 +1136,18 @@ async function processS3ObjectContentStream(
 
     .catch((e) => {
       //throw new Error( `Exception(throw) - ReadStream - For ${ key }.\nResults: ${ JSON.stringify( streamResult ) }.\n${ e } ` )
-      selectiveLogging("exception", "", `Exception(throw) - ReadStream - For ${key}.\nResults: ${JSON.stringify(streamResult)}.\n${e} `)
       
-      return {
+      streamResult = {
         ...streamResult,
         ReadStreamException: `Exception(throw) - ReadStream - For ${key}.\nResults: ${JSON.stringify(streamResult)}.\n${e} `
       }
+      selectiveLogging("exception", "", `Exception(throw) - ReadStream - For ${key}.\nResults: ${JSON.stringify(streamResult)}.\n${e} `)
+      
+      //return {
+      //  ...streamResult,
+      //  ReadStreamException: `Exception(throw) - ReadStream - For ${key}.\nResults: ${JSON.stringify(streamResult)}.\n${e} `
+      //}
+      return streamResult
     })
 
   // return processS3ObjectResults
