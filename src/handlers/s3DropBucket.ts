@@ -1774,7 +1774,6 @@ async function checkForS3DBConfigUpdates() {
   
   S3DBConfig = await getValidateS3DropBucketConfig()
   
-  if (S3DBConfig.SelectiveDebug.indexOf("_901,") > -1)
   selectiveLogging("info", "999", `Selective Debug 901 - Refreshed S3DropBucket Queue Config \n ${JSON.stringify(S3DBConfig)} `)
 }
 
