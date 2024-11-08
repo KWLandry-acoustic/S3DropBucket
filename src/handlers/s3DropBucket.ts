@@ -440,7 +440,7 @@ export const s3DropBucketHandler: Handler = async (
   {
     if (!localTesting)
     {
-      selectiveLogging("warn", "999", `S3DropBucket Quiesce is in effect, new Files from ${S3DBConfig.S3DropBucket} will be ignored and not processed. \nTo Process files that have arrived during a Quiesce of the Cache, reference the S3DropBucket Guide appendix for AWS cli commands.`)
+      selectiveLogging("warn", "923", `S3DropBucket Quiesce is in effect, new Files from ${S3DBConfig.S3DropBucket} will be ignored and not processed. \nTo Process files that have arrived during a Quiesce of the Cache, reference the S3DropBucket Guide appendix for AWS cli commands.`)
       return
     }
   }
@@ -542,7 +542,6 @@ export const s3DropBucketHandler: Handler = async (
           streamRes.Key = key
           streamRes.Processed = streamRes.OnEndRecordStatus
 
-          selectiveLogging("info", "999", `Completed Processing Content Stream - ${streamRes.Key} ${streamRes.Processed}`)
           selectiveLogging("info", "503", `Completed processing all records of the S3 Object ${key} \nVersionID: ${vid}, \neTag: ${et}. \nStatus: ${streamRes.OnEndRecordStatus}`
           )
           
@@ -647,20 +646,18 @@ export const s3DropBucketHandler: Handler = async (
     if (osrl > 10000)
     {
       //100K Characters
-      objectStreamResolution = `Excessive Length of ProcessS3ObjectStreamResolution: ${osrl} Truncated: \n ${objectStreamResolution.substring(
-        0,
-        1000
-      )} ... ${objectStreamResolution.substring(osrl - 1000, osrl)}`
+      objectStreamResolution = `Excessive Length of ProcessS3ObjectStreamResolution: ${osrl} Truncated: \n ${objectStreamResolution.substring(0, 5000
+      )} ... ${objectStreamResolution.substring(osrl - 5000, osrl)}`
 
-      selectiveLogging("warn", "920", `\n ${JSON.stringify(objectStreamResolution)}`)
+      selectiveLogging("warn", "920", `Final outcome (truncated to first and last 5,000 characters) of all processing for ${ProcessS3ObjectStreamResolution.Key}: \n ${JSON.stringify(objectStreamResolution)}`)
 
       }
   
     const k = ProcessS3ObjectStreamResolution.Key
     const p = ProcessS3ObjectStreamResolution.Processed
-
-    selectiveLogging("info", "505", `Completing S3DropBucket Processing of Request Id ${event.Records[0].responseElements["x-amz-request-id"]} for ${k} \n${p}`)
-    selectiveLogging("info", "920", `\n${JSON.stringify(objectStreamResolution)}`)
+  
+  selectiveLogging("info", "505", `Completing S3DropBucket Processing of Request Id ${event.Records[0].responseElements["x-amz-request-id"]} for ${k} \n${p}`)  
+  selectiveLogging("info", "920", `Final outcome of all processing for ${ProcessS3ObjectStreamResolution.Key}: \n${JSON.stringify(objectStreamResolution)}`)
 
     //Done with logging the results of this pass, empty the object for the next processing cycle
     ProcessS3ObjectStreamResolution = {} as ProcessS3ObjectStreamResult
@@ -1281,7 +1278,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
 
 
   if (S3DBConfig.WorkQueueQuiesce) {
-    selectiveLogging("info", "999", `WorkQueue Quiesce is in effect, no New Work will be Queued up in the SQS Process Queue.`)
+    selectiveLogging("warn", "923", `WorkQueue Quiesce is in effect, no New Work will be Queued up in the SQS Process Queue.`)
     return
   }
 
@@ -2434,7 +2431,7 @@ async function packageUpdates(
       //console.info( `Debug sqwResult ${ JSON.stringify( sqwResult ) }` )
     }
 
-    selectiveLogging("info", "918", `Selective Debug 918: PackageUpdates StoreAndQueueWork for ${key}. \nFor a total of ${recs} Updates in ${batchCount} Batches.  Result: \n${JSON.stringify(sqwResult)} `)
+    selectiveLogging("info", "918", `PackageUpdates StoreAndQueueWork for ${key}. \nFor a total of ${recs} Updates in ${batchCount} Batches.  Result: \n${JSON.stringify(sqwResult)} `)
   
   } catch (e)
   {
@@ -2906,7 +2903,7 @@ function applyJSONMap(jsonObj: object, map: { [key: string]: string }) {
 
 async function addWorkToS3WorkBucket(queueUpdates: string, key: string) {
   if (S3DBConfig.QueueBucketQuiesce) {
-    selectiveLogging("warn", "999", `Work/Process Bucket Quiesce is in effect, no New Work Files are being written to the S3 Queue Bucket. This work file is for ${key}`)
+    selectiveLogging("warn", "923", `Work/Process Bucket Quiesce is in effect, no New Work Files are being written to the S3 Queue Bucket. This work file is for ${key}`)
     
     return {
       versionId: "",
@@ -2978,7 +2975,7 @@ async function addWorkToSQSWorkQueue(
   marker: string
 ) {
   if (S3DBConfig.QueueBucketQuiesce) {
-    selectiveLogging("info", "999", `Work/Process Bucket Quiesce is in effect, no New Work Files are being written to the SQS Queue of S3 Work Bucket. This work file is for ${key}`)
+    selectiveLogging("warn", "923", `Work/Process Bucket Quiesce is in effect, no New Work Files are being written to the SQS Queue of S3 Work Bucket. This work file is for ${key}`)
 
     return {
       versionId: "",
@@ -3054,7 +3051,7 @@ async function addWorkToSQSWorkQueue(
       }), ${sqsQMsgBody.workKey}, SQS Params${JSON.stringify(sqsParams)}) - Error: ${e}`)
   }
 
-  selectiveLogging("info", "907", `Selective Debug 907 - Queued Work ${key} (${recCount} updates) to the Work Queue (${S3DBConfig.S3DropBucketWorkQueue
+  selectiveLogging("info", "907", `Queued Work ${key} (${recCount} updates) to the Work Queue (${S3DBConfig.S3DropBucketWorkQueue
     }) \nSQS Params: \n${JSON.stringify(sqsParams)} \nresults: \n${JSON.stringify({SQSWriteResult: sqsWriteResult, AddToSQSQueue: JSON.stringify(sqsSendResult),})}`)
 
   return {
