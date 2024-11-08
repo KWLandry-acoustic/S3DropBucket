@@ -382,7 +382,10 @@ export const s3DropBucketHandler: Handler = async (
     process.env["EventEmitterMaxListeners"] === null
   )
   {
-  S3DBConfig = await getValidateS3DropBucketConfig()
+    S3DBConfig = await getValidateS3DropBucketConfig()
+
+    selectiveLogging("info", "901", `Parsed S3DropBucket Config:  process.env.S3DropBucketConfigFile: \n${JSON.stringify(S3DBConfig)} `)
+
   }
 
   selectiveLogging("info", "97", `Environment Vars: ${JSON.stringify(process.env)} `)
@@ -1278,6 +1281,9 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
   )
   {
     S3DBConfig = await getValidateS3DropBucketConfig()
+
+    selectiveLogging("info", "901", `Parsed S3DropBucket Config:  process.env.S3DropBucketConfigFile: \n${JSON.stringify(S3DBConfig)} `)
+
   }
   
   selectiveLogging("info", "97", `Environment Vars: ${JSON.stringify(process.env)} `)
@@ -1525,6 +1531,9 @@ export const s3DropBucketSFTPHandler: Handler = async (
   )
   {
     S3DBConfig = await getValidateS3DropBucketConfig()
+
+    selectiveLogging("info", "901", `Parsed S3DropBucket Config:  process.env.S3DropBucketConfigFile: \n${JSON.stringify(S3DBConfig)} `)
+
   }
 
   selectiveLogging("info", "999", `S3 Dropbucket SFTP Processor Selective Debug Set is: ${S3DBConfig.SelectiveLogging!} `)
@@ -2055,9 +2064,6 @@ async function getValidateS3DropBucketConfig() {
     selectiveLogging("exception", "", `Exception - Parsing S3DropBucket Config File ${e} `)
     throw new Error(`Exception - Parsing S3DropBucket Config File ${e} `)
   }
-
-  selectiveLogging("info", "901", `Parsed S3DropBucket Config:  process.env.S3DropBucketConfigFile: \n${JSON.stringify(s3dbc)} `)
-
   return s3dbc
 }
 
