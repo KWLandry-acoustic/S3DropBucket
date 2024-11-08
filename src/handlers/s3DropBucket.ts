@@ -457,7 +457,7 @@ export const s3DropBucketHandler: Handler = async (
     if (process.env.S3DropBucketPrefixFocus !== undefined && process.env.S3DropBucketPrefixFocus != "")
     {
       //ToDo: Assign a specific debug number for this message (can bee voluminous) 
-        selectiveLogging("warn", "9999", `PrefixFocus is configured, File Name ${key} does not fall within focus restricted by the configured PrefixFocus ${process.env.S3DropBucketPrefixFocus}`)
+        selectiveLogging("warn", "933", `PrefixFocus is configured, File Name ${key} does not fall within focus restricted by the configured PrefixFocus ${process.env.S3DropBucketPrefixFocus}`)
 
       return
     }
@@ -670,13 +670,11 @@ export default s3DropBucketHandler
 
 function selectiveLogging(level:string, index: string,  msg:string) {
 
-  //const dVerb = '-Caution! Debug is Verbose:'
-
   const selDeb = process.env.S3DropBucketSelectiveLogging ?? S3DBConfig.SelectiveLogging ?? "_103,_104,_511,"
     
   const li = `_${index},`
   //Number(index) < 100 || 
-  if (selDeb.indexOf(li) > -1 || process.env.S3DropBucketLogLevel === 'ALL')
+  if ((selDeb.indexOf(li) > -1 || process.env.S3DropBucketLogLevel === 'ALL') && process.env.S3DropBucketLogLevel !== 'NONE')
   {
     if (process.env.S3DropBucketLogLevel?.toLowerCase() === 'all') index = `(LOG ALL-${index})`
 
@@ -687,8 +685,6 @@ function selectiveLogging(level:string, index: string,  msg:string) {
   }
       
   if (level.toLowerCase() === "exception") console.error(`S3DBLog-Exception ${index}: ${msg} `)
-
-    //ToDo: Need to sort out using 9999 as a Debug message, 
     
     //ToDo: Send Logging to Firehose Aggregator 
     // Send All debug messaging regardless of S3DropBucket Config??
@@ -1251,15 +1247,14 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
 
   debugger
 
-  if (process.env.s3DropBucketRegion?.length ?? 0 > 6)
+  if (process.env.AWS_REGION?.length ?? 0 > 6)
   {
-    s3 = new S3Client({region: process.env.s3DropBucketRegion})
-    selectiveLogging("info", "999", `S3DropBucket Options: ${JSON.stringify(S3DBConfig)} `)
+    //s3 = new S3Client({region: process.env.s3DropBucketRegion})
+    s3 = new S3Client({region: process.env.AWS_REGION})
   }
   else
   {
     s3 = new S3Client({region: 'us-east-1'})
-    S3DBConfig = await getValidateS3DropBucketConfig()
   }
   
   //If an obscure config does not exist in process.env then we need to get them all
@@ -1772,11 +1767,9 @@ async function sftpDeleteFile(remoteFile: string) {
 }
 
 async function checkForS3DBConfigUpdates() {
-  selectiveLogging("info", "9999", `Checking for S3DropBucket Config updates`)  //ToDo: Assign a logging number to 'Debug" messages 
-  
+    
   S3DBConfig = await getValidateS3DropBucketConfig()
-  
-  selectiveLogging("info", "901", `Refreshed S3DropBucket Queue Config \n ${JSON.stringify(S3DBConfig)} `)
+  selectiveLogging("info", "901", `Checked and Refreshed S3DropBucket Config \n ${JSON.stringify(S3DBConfig)} `)
 }
 
 async function getValidateS3DropBucketConfig() {
@@ -2045,7 +2038,7 @@ async function getValidateS3DropBucketConfig() {
 
     if (s3dbc.PrefixFocus !== undefined && s3dbc.PrefixFocus != "") {
       process.env["S3DropBucketPrefixFocus"] = s3dbc.PrefixFocus
-      selectiveLogging( "warn","999",`A Prefix Focus has been configured. Only S3DropBucket Objects with the prefix "${s3dbc.PrefixFocus}" will be processed.`)
+      selectiveLogging( "warn","933",`A Prefix Focus has been configured. Only S3DropBucket Objects with the prefix "${s3dbc.PrefixFocus}" will be processed.`)
     }
   } catch (e) {
     selectiveLogging("exception", "", `Exception - Parsing S3DropBucket Config File ${e} `)
