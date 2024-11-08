@@ -181,7 +181,7 @@ export interface s3dbConfig {
   MaxBatchesWarning: number
   SelectiveDebug: string
   WorkQueueQuiesce: boolean
-  prefixFocus: string
+  PrefixFocus: string
   // WorkQueueVisibilityTimeout: number
   // WorkQueueWaitTimeSeconds: number
   // RetryQueueVisibilityTimeout: number
@@ -454,10 +454,10 @@ export const s3DropBucketHandler: Handler = async (
     const key = r.s3.object.key ?? ""
     const bucket = r.s3.bucket.name ?? ""
   
-    if (process.env.S3DropBucketprefixFocus !== undefined && process.env.S3DropBucketprefixFocus != "")
+    if (process.env.S3DropBucketPrefixFocus !== undefined && process.env.S3DropBucketPrefixFocus != "")
     {
       //ToDo: Assign a specific debug number for this message (can bee voluminous) 
-        selectiveLogging("warn", "9999", `PrefixFocus is configured, File Name ${key} does not fall within focus restricted by the configured PrefixFocus ${process.env.S3DropBucketprefixFocus}`)
+        selectiveLogging("warn", "9999", `PrefixFocus is configured, File Name ${key} does not fall within focus restricted by the configured PrefixFocus ${process.env.S3DropBucketPrefixFocus}`)
 
       return
     }
@@ -1863,25 +1863,25 @@ async function getValidateS3DropBucketConfig() {
       throw new Error(
         `Exception - S3DropBucket Configuration is not correct: ${s3dbc.S3DropBucket}.`
       )
-    } else process.env["s3DropBucket"] = s3dbc.S3DropBucket
+    } else process.env["S3DropBucket"] = s3dbc.S3DropBucket
 
     if (!s3dbc.S3DropBucketConfigs || s3dbc.S3DropBucketConfigs === "") {
       throw new Error(
         `Exception -S3DropBucketConfigs definition is not correct: ${s3dbc.S3DropBucketConfigs}.`
       )
-    } else process.env["s3DropBucketConfigs"] = s3dbc.S3DropBucketConfigs
+    } else process.env["S3DropBucketConfigs"] = s3dbc.S3DropBucketConfigs
 
     if (!s3dbc.S3DropBucketWorkBucket || s3dbc.S3DropBucketWorkBucket === "") {
       throw new Error(
         `Exception - S3DropBucket Work Bucket Configuration is not correct: ${s3dbc.S3DropBucketWorkBucket} `
       )
-    } else process.env["s3DropBucketWorkBucket"] = s3dbc.S3DropBucketWorkBucket
+    } else process.env["S3DropBucketWorkBucket"] = s3dbc.S3DropBucketWorkBucket
 
     if (!s3dbc.S3DropBucketWorkQueue || s3dbc.S3DropBucketWorkQueue === "") {
       throw new Error(
         `Exception -S3DropBucket Work Queue Configuration is not correct: ${s3dbc.S3DropBucketWorkQueue} `
       )
-    } else process.env["s3DropBucketWorkQueue"] = s3dbc.S3DropBucketWorkQueue
+    } else process.env["S3DropBucketWorkQueue"] = s3dbc.S3DropBucketWorkQueue
 
     // if (tc.SQS_QUEUE_URL !== undefined) tcc.SQS_QUEUE_URL = tc.SQS_QUEUE_URL
     // else throw new Error(`S3DropBucket Config invalid definition: SQS_QUEUE_URL - ${ tc.SQS_QUEUE_URL } `)
@@ -1961,39 +1961,39 @@ async function getValidateS3DropBucketConfig() {
       )
 
     if (s3dbc.S3DropBucketQuiesce !== undefined) {
-      process.env["DropBucketQuiesce"] = s3dbc.S3DropBucketQuiesce.toString()
+      process.env["S3DropBucketQuiesce"] = s3dbc.S3DropBucketQuiesce.toString()
     } else
       throw new Error(
         `S3DropBucket Config invalid definition: DropBucketQuiesce - ${s3dbc.S3DropBucketQuiesce} `
       )
 
     if (s3dbc.S3DropBucketMaintHours !== undefined) {
-      process.env["DropBucketMaintHours"] =
+      process.env["S3DropBucketMaintHours"] =
         s3dbc.S3DropBucketMaintHours.toString()
     } else s3dbc.S3DropBucketMaintHours = -1
 
     if (s3dbc.S3DropBucketMaintLimit !== undefined) {
-      process.env["DropBucketMaintLimit"] =
+      process.env["S3DropBucketMaintLimit"] =
         s3dbc.S3DropBucketMaintLimit.toString()
     } else s3dbc.S3DropBucketMaintLimit = 0
 
     if (s3dbc.S3DropBucketMaintConcurrency !== undefined) {
-      process.env["DropBucketMaintConcurrency"] =
+      process.env["S3DropBucketMaintConcurrency"] =
         s3dbc.S3DropBucketMaintConcurrency.toString()
     } else s3dbc.S3DropBucketMaintLimit = 1
 
     if (s3dbc.S3DropBucketWorkQueueMaintHours !== undefined) {
-      process.env["DropBucketWorkQueueMaintHours"] =
+      process.env["S3DropBucketWorkQueueMaintHours"] =
         s3dbc.S3DropBucketWorkQueueMaintHours.toString()
     } else s3dbc.S3DropBucketWorkQueueMaintHours = -1
 
     if (s3dbc.S3DropBucketWorkQueueMaintLimit !== undefined) {
-      process.env["DropBucketWorkQueueMaintLimit"] =
+      process.env["S3DropBucketWorkQueueMaintLimit"] =
         s3dbc.S3DropBucketWorkQueueMaintLimit.toString()
     } else s3dbc.S3DropBucketWorkQueueMaintLimit = 0
 
     if (s3dbc.S3DropBucketWorkQueueMaintConcurrency !== undefined) {
-      process.env["DropBucketWorkQueueMaintConcurrency"] =
+      process.env["S3DropBucketWorkQueueMaintConcurrency"] =
         s3dbc.S3DropBucketWorkQueueMaintConcurrency.toString()
     } else s3dbc.S3DropBucketWorkQueueMaintConcurrency = 1
 
@@ -2007,19 +2007,19 @@ async function getValidateS3DropBucketConfig() {
     } else s3dbc.S3DropBucketLogBucket = ""
 
     if (s3dbc.S3DropBucketWorkQueueMaintConcurrency !== undefined) {
-      process.env["DropBucketWorkQueueMaintConcurrency"] =
+      process.env["S3DropBucketWorkQueueMaintConcurrency"] =
         s3dbc.S3DropBucketWorkQueueMaintConcurrency.toString()
     } else s3dbc.S3DropBucketWorkQueueMaintConcurrency = 1
 
     if (s3dbc.S3DropBucketPurge !== undefined)
-      process.env["DropBucketPurge"] = s3dbc.S3DropBucketPurge
+      process.env["S3DropBucketPurge"] = s3dbc.S3DropBucketPurge
     else
       throw new Error(
         `S3DropBucket Config invalid definition: DropBucketPurge - ${s3dbc.S3DropBucketPurge} `
       )
 
     if (s3dbc.S3DropBucketPurgeCount !== undefined)
-      process.env["DropBucketPurgeCount"] =
+      process.env["S3DropBucketPurgeCount"] =
         s3dbc.S3DropBucketPurgeCount.toFixed()
     else
       throw new Error(
@@ -2027,30 +2027,30 @@ async function getValidateS3DropBucketConfig() {
       )
 
     if (s3dbc.QueueBucketQuiesce !== undefined) {
-      process.env["QueueBucketQuiesce"] = s3dbc.QueueBucketQuiesce.toString()
+      process.env["S3DropBucketQueueBucketQuiesce"] = s3dbc.QueueBucketQuiesce.toString()
     } else
       throw new Error(
         `S3DropBucket Config invalid definition: QueueBucketQuiesce - ${s3dbc.QueueBucketQuiesce} `
       )
 
     if (s3dbc.WorkQueueBucketPurge !== undefined)
-      process.env["WorkQueueBucketPurge"] = s3dbc.WorkQueueBucketPurge
+      process.env["S3DropBucketWorkQueueBucketPurge"] = s3dbc.WorkQueueBucketPurge
     else
       throw new Error(
         `S3DropBucket Config invalid definition: WorkQueueBucketPurge - ${s3dbc.WorkQueueBucketPurge} `
       )
 
     if (s3dbc.WorkQueueBucketPurgeCount !== undefined)
-      process.env["WorkQueueBucketPurgeCount"] =
+      process.env["S3DropBucketWorkQueueBucketPurgeCount"] =
         s3dbc.WorkQueueBucketPurgeCount.toFixed()
     else
       throw new Error(
         `S3DropBucket Config invalid definition: WorkQueueBucketPurgeCount - ${s3dbc.WorkQueueBucketPurgeCount} `
       )
 
-    if (s3dbc.prefixFocus !== undefined && s3dbc.prefixFocus != "") {
-      process.env["S3DropBucketFocusPrefix"] = s3dbc.prefixFocus
-      selectiveLogging( "warn","999",`A Prefix Focus has been configured. Only S3DropBucket Objects with the prefix "${s3dbc.prefixFocus}" will be processed.`)
+    if (s3dbc.PrefixFocus !== undefined && s3dbc.PrefixFocus != "") {
+      process.env["S3DropBucketPrefixFocus"] = s3dbc.PrefixFocus
+      selectiveLogging( "warn","999",`A Prefix Focus has been configured. Only S3DropBucket Objects with the prefix "${s3dbc.PrefixFocus}" will be processed.`)
     }
   } catch (e) {
     selectiveLogging("exception", "", `Exception - Parsing S3DropBucket Config File ${e} `)
@@ -3361,7 +3361,7 @@ async function getAnS3ObjectforTesting(bucket: string) {
   const listReq = {
     Bucket: bucket,
     MaxKeys: 101,
-    Prefix: S3DBConfig.prefixFocus,
+    Prefix: S3DBConfig.PrefixFocus,
   } as ListObjectsCommandInput
 
   await s3
@@ -3411,7 +3411,7 @@ async function getAllCustomerConfigsList(bucket: string) {
   const listReq = {
     Bucket: bucket,        //`${bucket}.s3.amazonaws.com`,
     MaxKeys: 500
-    //Prefix: S3DBConfig.prefixFocus,
+    //Prefix: S3DBConfig.PrefixFocus,
   } as ListObjectsCommandInput
   
   const l = [] as string[]
