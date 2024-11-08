@@ -240,3 +240,4 @@ scratchTests/out/main.js
 *.todo
 S3DropBucket.todo
 OLD_node_modules/.bin/acorn
+setaside/config.json

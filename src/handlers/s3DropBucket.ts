@@ -179,7 +179,7 @@ export interface s3dbConfig {
   authapiurl: string
   jsonSeparator: string
   MaxBatchesWarning: number
-  SelectiveDebug: string
+  SelectiveLogging: string
   WorkQueueQuiesce: boolean
   PrefixFocus: string
   // WorkQueueVisibilityTimeout: number
@@ -387,8 +387,8 @@ export const s3DropBucketHandler: Handler = async (
 
 
   selectiveLogging("info", "98", `S3DropBucket Options: ${JSON.stringify(S3DBConfig)} `)
-  selectiveLogging("info", "99", `S3DropBucket Logging Options(process.env): ${process.env.S3DropBucketSelectiveDebug} `)
-  //selectiveLogging("info", "99", `S3DropBucket Logging Options(constant): ${S3DBConfig.SelectiveDebug} `)
+  selectiveLogging("info", "99", `S3DropBucket Logging Options(process.env): ${process.env.S3DropBucketSelectiveLogging} `)
+  //selectiveLogging("info", "99", `S3DropBucket Logging Options(constant): ${S3DBConfig.SelectiveLogging} `)
   selectiveLogging("info", "909", `Environment Vars: ${JSON.stringify(process.env)} `)
 
 
@@ -482,7 +482,7 @@ export const s3DropBucketHandler: Handler = async (
     try {
       if (key.indexOf("S3DropBucket-LogsS3DropBucket_Aggregator") > -1)
         console.warn(`Warning -- Found Invalid Aggregator File Name - ${key} \nVersionID: ${vid}, \neTag: ${et}`)
-      if (S3DBConfig.SelectiveDebug.indexOf("_101,") > -1)
+      if (S3DBConfig.SelectiveLogging.indexOf("_101,") > -1)
         console.info(
           `(101) Processing inbound data for ${customersConfig.Customer} - ${key}`
         )
@@ -510,7 +510,7 @@ export const s3DropBucketHandler: Handler = async (
             )
         })
 
-        if (S3DBConfig.SelectiveDebug.indexOf("_101,") > -1)
+        if (S3DBConfig.SelectiveLogging.indexOf("_101,") > -1)
           console.info(
             `(101) Processing inbound data for ${customersConfig.Customer} - ${key} \nVersionID: ${vid}, \neTag: ${et}`
           )
@@ -625,7 +625,7 @@ export const s3DropBucketHandler: Handler = async (
   //  const l = maintenance[0] as number
   //  // console.info( `- ${ l } File(s) met criteria and are marked for reprocessing ` )
 
-  //  if (S3DBConfig.SelectiveDebug.indexOf("_926,") > -1) {
+  //  if (S3DBConfig.SelectiveLogging.indexOf("_926,") > -1) {
   //    const filesProcessed = maintenance[1]
   //    if (l > 0)
   //      console.info(
@@ -675,23 +675,21 @@ function selectiveLogging(level:string, index: string,  msg:string) {
 
   //const dVerb = '-Caution! Debug is Verbose:'
 
-  const selDeb = process.env.S3DropBucketSelectiveDebug ?? S3DBConfig.SelectiveDebug ?? "_103,_104,_511,"
+  const selDeb = process.env.S3DropBucketSelectiveLogging ?? S3DBConfig.SelectiveLogging ?? "_103,_104,_511,"
     
   const li = `_${index},`
   //Number(index) < 100 || 
-  if (selDeb.indexOf(li) > -1 || process.env.S3DropBucketLogLevel === 'ALL' || level.toLowerCase() === 'exception')
+  if (selDeb.indexOf(li) > -1 || process.env.S3DropBucketLogLevel === 'ALL')
   {
-    //if (index === '999') index = index + dVerb
     if (process.env.S3DropBucketLogLevel?.toLowerCase() === 'all') index = `(LOG ALL-${index})`
-    //if (Number(index) > 998) index = `(Debug-${index})`
 
     if (level.toLowerCase() === "info")  console.info(`S3DBLog-Info ${index}: ${msg} `)
     if (level.toLowerCase() === "warn")  console.warn(`S3DBLog-Warning ${index}: ${msg} `)
     if (level.toLowerCase() === "error") console.error(`S3DBLog-Error ${index}: ${msg} `)
     if (level.toLowerCase() === "debug") console.debug(`S3DBLog-Debug ${index}: ${msg} `)
-    if (level.toLowerCase() === "exception") console.error(`S3DBLog-Exception ${index}: ${msg} `)
   }
-  
+      
+  if (level.toLowerCase() === "exception") console.error(`S3DBLog-Exception ${index}: ${msg} `)
 
     //ToDo: Need to sort out using 9999 as a Debug message, 
     
@@ -759,7 +757,7 @@ async function processS3ObjectContentStream(
       //Needed for Stream processing, although is an opportunity for Transform processing.
       const t = transform(function (data) {
         //"The \"chunk\" argument must be of type string or an instance of Buffer or Uint8Array. Received an instance of Object"
-        //Future - Opportunity for Transforms
+        //ToDo: Future - Opportunity for Transforms
         let r
         if (Buffer.isBuffer(data)) r = data.toString("utf8")
         else r = JSON.stringify(data) + "\n"
@@ -1278,7 +1276,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
   }
 
   selectiveLogging("info", "98", `S3DropBucket Options: ${JSON.stringify(S3DBConfig)} `)
-  selectiveLogging("info", "99", `S3DropBucket Logging Options: ${process.env.S3DropBucketSelectiveDebug} `)
+  selectiveLogging("info", "99", `S3DropBucket Logging Options: ${process.env.S3DropBucketSelectiveLogging} `)
   selectiveLogging("info", "909", `Environment Vars: ${JSON.stringify(process.env)} `)
 
 
@@ -1477,7 +1475,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
   //  try {
   //    maintenance = (await maintainS3DropBucketQueueBucket()) ?? [0, ""]
 
-  //    if (S3DBConfig.SelectiveDebug.indexOf("_927,") > -1) {
+  //    if (S3DBConfig.SelectiveLogging.indexOf("_927,") > -1) {
   //      const l = maintenance[0] as number
   //      if (l > 0)
   //        console.info(
@@ -1496,7 +1494,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
   selectiveLogging("info", "912", `Returned ${tqm.workKey} to Work Queue for Retry \n${JSON.stringify(sqsBatchFail)} `)
 
   //ToDo: For Queue Processing - Complete the Final Processing Outcomes Messaging for Queue Processing
-  // if (tcc.SelectiveDebug.indexOf("_921,") > -1) console.info(`Selective Debug 921 - \n${ JSON.stringify(processS3ObjectStreamResolution) } `)
+  // if (tcc.SelectiveLogging.indexOf("_921,") > -1) console.info(`Selective Debug 921 - \n${ JSON.stringify(processS3ObjectStreamResolution) } `)
 
   return sqsBatchFail
 
@@ -1525,7 +1523,7 @@ export const s3DropBucketSFTPHandler: Handler = async (
     S3DBConfig = await getValidateS3DropBucketConfig()
   }
 
-  selectiveLogging("info", "999", `S3 Dropbucket SFTP Processor Selective Debug Set is: ${S3DBConfig.SelectiveDebug!} `)
+  selectiveLogging("info", "999", `S3 Dropbucket SFTP Processor Selective Debug Set is: ${S3DBConfig.SelectiveLogging!} `)
   selectiveLogging("info", "98", `Selective Debug 98 - Process Environment Vars: ${JSON.stringify(process.env)} `)
   selectiveLogging("info", "999", `SFTP  Received Event: ${JSON.stringify(event)}.\nContext: ${context} `)
 
@@ -1660,14 +1658,14 @@ export const s3DropBucketSFTPHandler: Handler = async (
     //     if (work.length > 0)        //Retreive Contents of the Work File
     //     {
     //         postResult = await postToCampaign(work, tqm.custconfig, tqm.updateCount)
-    //         if (tcc.SelectiveDebug.indexOf("_8,") > -1) console.info(`Selective Debug 8 - POST Result for ${ tqm.workKey }: ${ postResult } `)
+    //         if (tcc.SelectiveLogging.indexOf("_8,") > -1) console.info(`Selective Debug 8 - POST Result for ${ tqm.workKey }: ${ postResult } `)
 
     //         if (postResult.indexOf('retry') > -1)
     //         {
     //             console.warn(`Retry Marked for ${ tqm.workKey }(Retry Report: ${ sqsBatchFail.batchItemFailures.length + 1 }) Returning Work Item ${ q.messageId } to Process Queue.`)
     //             //Add to BatchFail array to Retry processing the work
     //             sqsBatchFail.batchItemFailures.push({ itemIdentifier: q.messageId })
-    //             if (tcc.SelectiveDebug.indexOf("_12,") > -1) console.info(`Selective Debug 12 - Added ${ tqm.workKey } to SQS Events Retry \n${ JSON.stringify(sqsBatchFail) } `)
+    //             if (tcc.SelectiveLogging.indexOf("_12,") > -1) console.info(`Selective Debug 12 - Added ${ tqm.workKey } to SQS Events Retry \n${ JSON.stringify(sqsBatchFail) } `)
     //         }
 
     //         if (postResult.toLowerCase().indexOf('unsuccessful post') > -1)
@@ -1855,8 +1853,8 @@ async function getValidateS3DropBucketConfig() {
       process.env.S3DropBucketLogLevel = s3dbc.LOGLEVEL
     }
 
-    if (s3dbc.SelectiveDebug !== undefined)
-      process.env["S3DropBucketSelectiveDebug"] = s3dbc.SelectiveDebug
+    if (s3dbc.SelectiveLogging !== undefined)
+      process.env["S3DropBucketSelectiveLogging"] = s3dbc.SelectiveLogging
     //Perhaps validate that the string contains commas and underscores as needed,
 
     if (!s3dbc.S3DropBucket || s3dbc.S3DropBucket === "") {
@@ -1879,7 +1877,7 @@ async function getValidateS3DropBucketConfig() {
 
     if (!s3dbc.S3DropBucketWorkQueue || s3dbc.S3DropBucketWorkQueue === "") {
       throw new Error(
-        `Exception -S3DropBucket Work Queue Configuration is not correct: ${s3dbc.S3DropBucketWorkQueue} `
+        `Exception - S3DropBucket Work Queue Configuration is not correct, config is: ${s3dbc.S3DropBucketWorkQueue} `
       )
     } else process.env["S3DropBucketWorkQueue"] = s3dbc.S3DropBucketWorkQueue
 
@@ -2356,6 +2354,13 @@ async function validateCustomerConfig(config: customerConfig) {
 
   }
 
+  //Need to look for lowercase/uppercase config problem
+  //if (Object.keys(config).includes("Transforms")) throw new Error("Invalid Customer Config -  ")
+  //if (Object.keys(config).includes("Transforms.Json")) throw new Error("Invalid Customer Config -  ")
+  //if (Object.keys(config).includes("Transforms.CSV")) throw new Error("Invalid Customer Config -  ")
+  //if (Object.keys(config).includes("Transforms")) throw new Error("Invalid Customer Config -  ")
+
+
   if (!config.transforms) {
     Object.assign(config, { transforms: {} })
   }
@@ -2368,11 +2373,12 @@ async function validateCustomerConfig(config: customerConfig) {
   if (!config.transforms.ignore) {
     Object.assign(config.transforms, { ignore: [] })
   }
-  if (!config.transforms.script) {
+  if (!config.transforms.script) {          //ToDo: Future Transforms Capability
     Object.assign(config.transforms, { script: "" })
   }
 
-  // if (Object.keys(config.transform[0].jsonMap)[0].indexOf('none'))
+  selectiveLogging("info", "919", `Transforms configured: \n${JSON.stringify(config.transforms)}`)
+  
   if (!config.transforms.jsonMap)
   {
     const tmpMap: { [key: string]: string } = {}
@@ -2767,6 +2773,8 @@ function transforms(updates: object[], config: customerConfig) {
           `Error - Transform - Applying JSONMap returns fewer records (${r.length}) than initial set ${updates.length}`
         )
       } else updates = r
+
+      selectiveLogging("info", "919", `Transforms (JsonMap) applied: \n${JSON.stringify(r)}`)
     }
 
     //Apply CSVMap
@@ -2823,6 +2831,8 @@ function transforms(updates: object[], config: customerConfig) {
           `Error - Transform - Applying CSVMap returns fewer records (${c.length}) than initial set ${updates.length}`
         )
       } else updates = c
+
+      selectiveLogging("info", "919", `Transforms (CSVMap) applied: \n${JSON.stringify(c)}`)
     }
 debugger
     // Ignore must be last to take advantage of cleaning up any extraneous columns after previous transforms
@@ -2856,6 +2866,8 @@ debugger
           `Error - Transform - Applying Ignore returns fewer records ${i.length} than initial set ${updates.length}`
         )
       } else updates = i
+
+      selectiveLogging("info", "919", `Transforms (Ignore) applied: \n${JSON.stringify(i)}`)
     }
   
   return updates
