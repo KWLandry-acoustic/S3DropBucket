@@ -554,8 +554,8 @@ export const s3DropBucketHandler: Handler = async (
 
           if (
             streamRes?.PutToFireHoseAggregatorResult === "200" ||
-            (streamRes.OnEndStreamEndResult.StoreAndQueueWorkResult.AddWorkToS3WorkBucketResults?.S3ProcessBucketResult === "200" &&
-              streamRes.OnEndStreamEndResult.StoreAndQueueWorkResult.AddWorkToSQSWorkQueueResults?.SQSWriteResult === "200")
+            (streamRes.OnEndStreamEndResult.StoreAndQueueWorkResult?.AddWorkToS3WorkBucketResults?.S3ProcessBucketResult === "200" &&
+              streamRes.OnEndStreamEndResult.StoreAndQueueWorkResult?.AddWorkToSQSWorkQueueResults?.SQSWriteResult === "200")
           )
           {
             try
@@ -592,14 +592,16 @@ export const s3DropBucketHandler: Handler = async (
           return streamRes
         })
         .catch((e) => {
-          const err = `Exception - Process S3 Object Stream Catch - \n${e} \nStack: \n${e.stack}`
-          selectiveLogging("exception", "", err)
+        
+          const err = `Exception - Process S3 Object Stream Catch - \n${e} \nStack: \n${e.stack}`  
           
           ProcessS3ObjectStreamResolution = {
             ...ProcessS3ObjectStreamResolution,
             ProcessS3ObjectStreamCatch: err,
           }
 
+          selectiveLogging("exception", "", JSON.stringify(ProcessS3ObjectStreamResolution))
+          
           return ProcessS3ObjectStreamResolution
         })
     } catch (e)
@@ -1139,13 +1141,14 @@ async function processS3ObjectContentStream(
       
       streamResult = {
         ...streamResult,
-        ReadStreamException: `Exception(throw) - ReadStream - For ${key}.\nResults: ${JSON.stringify(streamResult)}.\n${e} `
+        ReadStreamException: `Exception (ProcessS3ObjectStreamResult catch) - ReadStream - For ${key}.\n ${JSON.stringify(streamResult)}.\n${e} `
       }
-      selectiveLogging("exception", "", `Exception(throw) - ReadStream - For ${key}.\nResults: ${JSON.stringify(streamResult)}.\n${e} `)
+
+      selectiveLogging("exception", "", `Exception (ProcessS3ObjectStreamResult catch) - ReadStream - For ${key}.\nResults: ${JSON.stringify(streamResult)}.\n${e} `)
       
       //return {
       //  ...streamResult,
-      //  ReadStreamException: `Exception(throw) - ReadStream - For ${key}.\nResults: ${JSON.stringify(streamResult)}.\n${e} `
+      //  ReadStreamException: `Exception (ProcessS3ObjectStreamResult catch) - ReadStream - For ${key}.\nResults: ${JSON.stringify(streamResult)}.\n${e} `
       //}
       return streamResult
     })
