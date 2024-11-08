@@ -673,13 +673,14 @@ function selectiveLogging(level:string, index: string,  msg:string) {
   const selDeb = process.env.S3DropBucketSelectiveDebug ?? S3DBConfig.SelectiveDebug ?? "_103,_104,_511,"
     
   const li = `_${index},`
-  if ( Number(index) < 100 || selDeb.indexOf(li) > -1 || process.env.S3DropBucketLogAll === 'true')
+  if (Number(index) < 100 || selDeb.indexOf(li) > -1 || process.env.S3DropBucketLogLevel === 'ALL')
   {
-    if (index === '999') index = index+dVerb
+    if (index === '999') index = index + dVerb
+    if (process.env.S3DropBucketLogAll === 'true') index = `(LOG ALL-${index})`
     if (Number(index) > 998) index = `(Debug-${index})`
 
-    if (level.toLowerCase() === "info") console.info(`S3DBLog ${index}: ${msg} `)
-    if (level.toLowerCase() === "warn") console.warn(`S3DBLog ${index}: ${msg} `)
+    if (level.toLowerCase() === "info")  console.info(`S3DBLog ${index}: ${msg} `)
+    if (level.toLowerCase() === "warn")  console.warn(`S3DBLog ${index}: ${msg} `)
     if (level.toLowerCase() === "error") console.error(`S3DBLog ${index}: ${msg} `)
     if (level.toLowerCase() === "debug") console.debug(`S3DBLog ${index}: ${msg} `)
   }
@@ -1843,20 +1844,10 @@ async function getValidateS3DropBucketConfig() {
 
   try {
     if (
-      s3dbc.LOGLEVEL !== undefined &&
-      s3dbc.LOGLEVEL.toLowerCase().indexOf("debug") > -1
-    ) {
-      //s3dbLogDebug = true
-      process.env.s3dbLogDebug = "true"
+      s3dbc.LOGLEVEL !== undefined)
+    {
+      process.env.S3DropBucketLogLevel = s3dbc.LOGLEVEL
     }
-
-    //if (
-    //  s3dbc.LOGLEVEL !== undefined &&
-    //  s3dbc.LOGLEVEL.toLowerCase().indexOf("verbose") > -1
-    //) {
-    //  s3dbLogVerbose = true
-    //  process.env["s3dbLogVerbose"] = "true"
-    //}
 
     if (s3dbc.SelectiveDebug !== undefined)
       process.env["S3DropBucketSelectiveDebug"] = s3dbc.SelectiveDebug
