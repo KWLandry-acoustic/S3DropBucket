@@ -385,11 +385,11 @@ export const s3DropBucketHandler: Handler = async (
   S3DBConfig = await getValidateS3DropBucketConfig()
   }
 
-
+  selectiveLogging("info", "97", `Environment Vars: ${JSON.stringify(process.env)} `)
   selectiveLogging("info", "98", `S3DropBucket Options: ${JSON.stringify(S3DBConfig)} `)
   selectiveLogging("info", "99", `S3DropBucket Logging Options(process.env): ${process.env.S3DropBucketSelectiveLogging} `)
   //selectiveLogging("info", "99", `S3DropBucket Logging Options(constant): ${S3DBConfig.SelectiveLogging} `)
-  selectiveLogging("info", "909", `Environment Vars: ${JSON.stringify(process.env)} `)
+
 
 
   if (event.Records[0].s3.object.key.indexOf("Aggregator") > -1)
@@ -672,7 +672,7 @@ export default s3DropBucketHandler
 
 function selectiveLogging(level:string, index: string,  msg:string) {
 
-  const selDeb = process.env.S3DropBucketSelectiveLogging ?? S3DBConfig.SelectiveLogging ?? "_103,_104,_511,"
+  const selDeb = process.env.S3DropBucketSelectiveLogging ?? S3DBConfig.SelectiveLogging ?? "_97,_98,_99_503,_504,_511,_901,_910,"
     
   const li = `_${index},`
   //Number(index) < 100 || 
@@ -850,7 +850,7 @@ async function processS3ObjectContentStream(
 
       //if ( key.indexOf( 'aggregate_' ) > -1 ) console.info( `Begin Stream Parsing aggregate file ${ key }` )
 
-      let jsonSep = S3DBConfig.jsonSeparator
+      let jsonSep = process.env.S3DropBucketJsonSeparator
       if (custConfig.separator && key.indexOf("aggregate_") < 0)
         jsonSep = custConfig.separator
 
@@ -896,8 +896,8 @@ async function processS3ObjectContentStream(
       await new Promise((resolve, reject) => {
         s3ContentReadableStream
           .on("error", async function (err: string) {
-            const errMessage = `An error has stopped Content Parsing at record ${recs++} for s3 object ${key}. Separator is ${jsonSep}.\n${err} \n${chunks}`
-            selectiveLogging("info", "999", errMessage)
+            const errMessage = `An error has stopped Content Parsing at record ${recs++} for s3 object ${key} (JSON Separator is ${jsonSep}).\n${err} \n${chunks}`
+            selectiveLogging("error", "909", errMessage)
             chunks = []
             batchCount = 0
             recs = 0
@@ -906,11 +906,16 @@ async function processS3ObjectContentStream(
               ...streamResult,
               ReadStreamException: `s3ContentReadableStreamErrorMessage ${JSON.stringify(errMessage)}`
             }
+
+            selectiveLogging("error", "909", `Error on Readable Stream for s3DropBucket Object ${key}.\nError Message: ${errMessage} `)
+
+            //??? 
+            //ToDo: need to check we're exiting as expected here 
             reject(errMessage)
-            selectiveLogging("error", "999", `Error on Readable Stream for s3DropBucket Object ${key}.\nError Message: ${errMessage} `)
             throw new Error(
               `Error on Readable Stream for s3DropBucket Object ${key}.\nError Message: ${errMessage} `
             )
+
           })
 
           .on("data",async function (s3Chunk: {
@@ -1274,11 +1279,10 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
   {
     S3DBConfig = await getValidateS3DropBucketConfig()
   }
-
+  
+  selectiveLogging("info", "97", `Environment Vars: ${JSON.stringify(process.env)} `)
   selectiveLogging("info", "98", `S3DropBucket Options: ${JSON.stringify(S3DBConfig)} `)
   selectiveLogging("info", "99", `S3DropBucket Logging Options: ${process.env.S3DropBucketSelectiveLogging} `)
-  selectiveLogging("info", "909", `Environment Vars: ${JSON.stringify(process.env)} `)
-
 
   if (S3DBConfig.WorkQueueQuiesce) {
     selectiveLogging("warn", "923", `WorkQueue Quiesce is in effect, no New Work will be Queued up in the SQS Process Queue.`)
@@ -1794,7 +1798,6 @@ async function getValidateS3DropBucketConfig() {
     Key: undefined,
   }
 
-
   if (!process.env.S3DropBucketConfigBucket)
     process.env.S3DropBucketConfigBucket = "s3dropbucket-configs"
   if (!process.env.S3DropBucketConfigFile)
@@ -1910,7 +1913,7 @@ async function getValidateS3DropBucketConfig() {
         s3dbc.jsonSeparator = `""`
       if (s3dbc.jsonSeparator.toLowerCase() === "\n") s3dbc.jsonSeparator = "\n"
     } else s3dbc.jsonSeparator = "\n"
-    process.env["jsonSeparator"] = s3dbc.jsonSeparator
+    process.env["S3DropBucketJsonSeparator"] = s3dbc.jsonSeparator
 
     if (s3dbc.WorkQueueQuiesce !== undefined) {
       process.env["WorkQueueQuiesce"] = s3dbc.WorkQueueQuiesce.toString()
@@ -2053,7 +2056,7 @@ async function getValidateS3DropBucketConfig() {
     throw new Error(`Exception - Parsing S3DropBucket Config File ${e} `)
   }
 
-  selectiveLogging("info", "901", `Selective Debug 901 - Pulled s3dropbucket_config.jsonc: \n${JSON.stringify(s3dbc)} `)
+  selectiveLogging("info", "901", `Parsed S3DropBucket Config:  process.env.S3DropBucketConfigFile: \n${JSON.stringify(s3dbc)} `)
 
   return s3dbc
 }
@@ -2151,7 +2154,7 @@ async function getCustomerConfig(filekey: string) {
           "utf8"
         )) as string
 
-        selectiveLogging("info", "910", `Selective Debug 910 - Customers (${customer}) Config: \n ${ccr} `)
+        selectiveLogging("info", "910", `Customer (${customer}) Config: \n ${ccr} `)
 
         //Parse comments out of the json before parse
         ccr = ccr.replaceAll(new RegExp(/[^:](\/\/.*(,|$|")?)/g), "")
