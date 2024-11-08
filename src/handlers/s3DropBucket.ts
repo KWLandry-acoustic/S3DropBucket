@@ -221,7 +221,7 @@ interface StoreAndQueueWorkResult {
     SQSWriteResult: string
     AddToSQSQueue: string
   }
-}[]
+}
 
 export interface ProcessS3ObjectStreamResult {
   Key: string                           // S3 File/Object that triggered this run
