@@ -66,6 +66,7 @@ import { parse } from "csv-parse"
 import jsonpath from "jsonpath"
 
 import sftpClient, {ListFilterFunction} from "ssh2-sftp-client"
+import {kMaxLength} from "buffer"
 
 //import {type sftpClientOptions} from "ssh2-sftp-client/lib/typescript/sftp-client"
 //import {type sftpClientError} from "ssh2-sftp-client/lib/typescript/sftp-client"
@@ -2697,15 +2698,40 @@ function convertJSONToXML_DBUpdates(updates: object[], config: customerConfig) {
         const lk = config.lookupkeys.split(",")
 
         xmlRows += `<SYNC_FIELDS>`
-        for (let k in lk) {
-          //lk.forEach( k => {
-          k = k.trim()
-          const sf = `<SYNC_FIELD><NAME>${k}</NAME><VALUE><![CDATA[${upd[k]}]]></VALUE></SYNC_FIELD>`
-          xmlRows += sf
-        } //)
+        try
+        {
+          for (let k in lk)
+          {
+            k = k.trim()
+            const lu = lk[k] as keyof typeof updAtts
+            if (updAtts[lu ] === undefined)
+            throw new Error(
+              `No value for LookupKey found in the update. LookupKey: \n${k}`
+            )
+            const sf = `<SYNC_FIELD><NAME>${lu}</NAME><VALUE><![CDATA[${updAtts[lu]}]]></VALUE></SYNC_FIELD>`
+            xmlRows += sf
+          }
+        } catch (e)
+        {
+          selectiveLogging("exception", "", `Building XML for DB Updates - ${e}`)
+          debugger
+        }
 
         xmlRows += `</SYNC_FIELDS>`
       }
+
+      //<SYNC_FIELDS>
+      //  <SYNC_FIELD>
+      //  <NAME>EMAIL </NAME>
+      //  < VALUE > somebody@domain.com</VALUE>
+      //    </SYNC_FIELD>
+      //    < SYNC_FIELD >
+      //    <NAME>Customer Id </NAME>
+      //      < VALUE > 123 - 45 - 6789 </VALUE>
+      //      </SYNC_FIELD>
+      //      </SYNC_FIELDS>
+
+
 
       //
       if (config.listtype.toLowerCase() === "dbkeyed") {
@@ -2965,7 +2991,6 @@ function applyJSONMap(jsonObj: object, map: { [key: string]: string }) {
   //     chunks = am
   // })
 
-  debugger
   Object.entries(map).forEach(([k, v]) => {
     try {
       const j = jsonpath.value(jsonObj, v)
@@ -2977,7 +3002,7 @@ function applyJSONMap(jsonObj: object, map: { [key: string]: string }) {
     } catch (e)
     {
       selectiveLogging("exception", "934", `Exception parsing data for JSONPath statement ${k} ${v}, ${e} \nTarget Data: \n${JSON.stringify(jsonObj)} `)}
-      debugger
+
     // const a1 = jsonpath.parse(value)
     // const a2 = jsonpath.parent(s3Chunk, value)
     // const a3 = jsonpath.paths(s3Chunk, value)
