@@ -28,11 +28,12 @@
 			"type": "shell",
 			"problemMatcher": [ ],
 			"label": "updateDependencies",
-			"detail": "install dependencies from package",
+			"detail": "Clean AWS SAM directory",
+			//"command": "echo skip this....."
 			//"command": "bash",
 			//"args": ["console.log('Running Tasks.json updateDependencies....');", "docker stop $(docker ps -a -q);", "cp -f package.json layers;", "cp -f package-lock.json layers;",  "cd layers;", "npm install --omit=dev;", "cd .. ;", "rm -rf .aws-sam; "]
 			//"command": "console.log('Running Tasks.json updateDependencies....'); mv .aws-sam trash; docker stop $(docker ps -a -q); rm -rf .aws-sam; cp -f package.json layers; cp -f package-lock.json layers; cd layers; npm install --omit=dev; cd .. ; "
-			"command": "rm -rf .aws-sam;"
+			"command": "rm -rf .aws-sam/deps;"
 			//"command": "console.log('Running Tasks.json updateDependencies....');"
 		
 		}

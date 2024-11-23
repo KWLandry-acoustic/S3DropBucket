@@ -116,21 +116,21 @@ let batchCount = 0
 let recs = 0
 
 interface customerConfig {
-  Customer: string
+  customer: string
   format: string // CSV or JSON
   separator: string
   updates: string // singular or Multiple (default) (also 'bulk' as legacy)
-  listId: string
-  listName: string
-  listType: string
-  DBKey: string
-  LookupKeys: string
+  listid: string
+  listname: string
+  listtype: string
+  dbkey: string
+  lookupkeys: string
   pod: string // 1,2,3,4,5,6,7,8,9,A,B
   region: string // US, EU, AP
-  updateMaxRows: number //Safety to avoid run away data inbound and parsing it all
-  refreshToken: string // API Access
-  clientId: string // API Access
-  clientSecret: string // API Access
+  updatemaxrows: number //Safety to avoid run away data inbound and parsing it all
+  refreshtoken: string // API Access
+  clientid: string // API Access
+  clientsecret: string // API Access
   sftp: {
     user: string
     password: string
@@ -138,14 +138,44 @@ interface customerConfig {
     schedule: string
   }
   transforms: {
-    jsonMap: { [key: string]: string }
-    csvMap: { [key: string]: string }
+    daydate: {[key: string]: string}
+    jsonmap: { [key: string]: string }
+    csvmap: { [key: string]: string }
+    script: {[key: string]: string}
     ignore: string[]
-    script: string[]
   }
 }
 
-let customersConfig = {} as customerConfig
+let customersConfig = {
+    customer: "",
+    format: "",
+    separator: "",
+    updates: "",
+    listid: "",
+    listname: "",
+    listtype: "",
+    dbkey: "",
+    lookupkeys: "",
+    pod: "",
+    region: "",
+    updatemaxrows: 0,
+    refreshtoken: "",
+    clientid: "",
+    clientsecret: "",
+    sftp: {
+      user: "",
+      password: "",
+      filepattern: "",
+      schedule: "",
+    },
+    transforms: {
+      daydate: {} as {[key: string]: string},
+      jsonmap: {} as {[key: string]: string},
+      csvmap: {} as {[key: string]: string},
+      script: {} as {[key: string]: string},
+      ignore: [] as string[],   //always last
+    },
+  }
 
 export interface accessResp {
   access_token: string
@@ -154,7 +184,7 @@ export interface accessResp {
   expires_in: number
 }
 
-export interface s3dbQueueMessage {
+export interface s3DBQueueMessage {
   workKey: string
   versionId: string
   marker: string
@@ -165,7 +195,7 @@ export interface s3dbQueueMessage {
   lastQueued: string
 }
 
-export interface s3dbConfig {
+export interface s3DBConfig {
   LOGLEVEL: string
   AWS_REGION: string
   S3DropBucket: string
@@ -201,7 +231,7 @@ export interface s3dbConfig {
   WorkQueueBucketPurge: string
 }
 
-let S3DBConfig = {} as s3dbConfig
+let S3DBConfig = {} as s3DBConfig
 
 export interface SQSBatchItemFails {
   batchItemFailures: [
@@ -344,7 +374,8 @@ testS3Bucket = "s3dropbucket-configs"
 //testS3Key = "TestData/alerusrepsignature_sampleformatted.json"
 //testS3Key = "TestData/alerusrepsignature_sample - min.json"
 //testS3Key = "TestData/alerusreassignrepsignature_advisors.json"
-testS3Key = "TestData/Funding_Circle_Limited_CampaignRelationalTable1_2024_10_08T10_16_49_700Z.json"
+testS3Key = "TestData/Funding_Circle_Limited_CampaignDatabase1_2024_11_12T11_20_56_317Z.json"
+//testS3Key = "TestData/Funding_Circle_Limited_CampaignRelationalTable1_2024_10_08T10_16_49_700Z.json"
 //testS3Key = "TestData/Funding_Circle_Limited_CampaignDatabase1_2024_10_08T09_52_13_903Z.json"
 //testS3Key = "TestData/alerusrepsignature_advisors.json"
 //testS3Key = "TestData/alerusreassignrepsignature_advisors.json"
@@ -473,7 +504,7 @@ export const s3DropBucketHandler: Handler = async (
 
     try
     {
-      customersConfig = await getCustomerConfig(key)
+      customersConfig = await getFormatCustomerConfig(key) as customerConfig
     } catch (e)
     {
       selectiveLogging("exception", "", `Exception - Pulling Customer Config \n${e} `)
@@ -928,13 +959,13 @@ async function processS3ObjectContentStream(
               value: object
             }) {
               if (
-                key.toLowerCase().indexOf("aggregat") < 0 && recs > custConfig.updateMaxRows
+                key.toLowerCase().indexOf("aggregat") < 0 && recs > custConfig.updatemaxrows
               )
               {
-                selectiveLogging("error", "999", `The number of Updates in this batch (${recs}) Exceeds Max Row Updates allowed in the Customers Config (${custConfig.updateMaxRows}).  ${key} will not be deleted from ${S3DBConfig.S3DropBucket} to allow for review and possible restaging.`)
+                selectiveLogging("error", "999", `The number of Updates in this batch (${recs}) Exceeds Max Row Updates allowed in the Customers Config (${custConfig.updatemaxrows}).  ${key} will not be deleted from ${S3DBConfig.S3DropBucket} to allow for review and possible restaging.`)
                 
                 throw new Error(
-                  `The number of Updates in this batch (${recs}) Exceeds Max Row Updates allowed in the Customers Config (${custConfig.updateMaxRows}).  ${key} will not be deleted from ${S3DBConfig.S3DropBucket} to allow for review and possible restaging.`
+                  `The number of Updates in this batch (${recs}) Exceeds Max Row Updates allowed in the Customers Config (${custConfig.updatemaxrows}).  ${key} will not be deleted from ${S3DBConfig.S3DropBucket} to allow for review and possible restaging.`
                 )
               }
             
@@ -1066,7 +1097,7 @@ async function processS3ObjectContentStream(
                     await putToFirehose(
                       chunks,
                       key,
-                      custConfig.Customer
+                      custConfig.customer
                     ).then((res) => {
                       const fRes = res as {
                         OnEnd_PutToFireHoseAggregator: string
@@ -1332,7 +1363,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
     sqsBatchFail.batchItemFailures.pop()
   })
 
-  let tqm: s3dbQueueMessage = {
+  let tqm: s3DBQueueMessage = {
     workKey: "",
     versionId: "",
     marker: "",
@@ -1341,21 +1372,21 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
     updateCount: "",
     lastQueued: "",
     custconfig: {
-      Customer: "",
+      customer: "",
       format: "",
       separator: "",
       updates: "",
-      listId: "",
-      listName: "",
-      listType: "",
-      DBKey: "",
-      LookupKeys: "",
+      listid: "",
+      listname: "",
+      listtype: "",
+      dbkey: "",
+      lookupkeys: "",
       pod: "",
       region: "",
-      updateMaxRows: 0,
-      refreshToken: "",
-      clientId: "",
-      clientSecret: "",
+      updatemaxrows: 0,
+      refreshtoken: "",
+      clientid: "",
+      clientsecret: "",
       sftp: {
         user: "",
         password: "",
@@ -1363,10 +1394,12 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
         schedule: "",
       },
       transforms: {
-        jsonMap: {},
-        csvMap: {},
+        daydate: {},
+        jsonmap: {},
+        csvmap: {},
+        script: {},
         ignore: [],
-        script: [],
+
       },
     },
   }
@@ -1397,7 +1430,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
     selectiveLogging("info", "507", `Processing Work off the Queue - ${tqm.workKey}`)
     selectiveLogging("info", "911", `Processing a Batch Item. SQS Event Message: ${JSON.stringify(q)}`)
 
-    custconfig = await getCustomerConfig(tqm.custconfig.Customer) as customerConfig
+    custconfig = await getFormatCustomerConfig(tqm.custconfig.customer) as customerConfig
 
     try {
       const work = await getS3Work(tqm.workKey, S3DBConfig.S3DropBucketWorkBucket)
@@ -1406,17 +1439,18 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
         //Retrieve Contents of the Work File
         selectiveLogging("info", "512", `S3 Retrieve results for Work file ${tqm.workKey}: ${JSON.stringify(work)}`)
 
-        if (custconfig.listType.toLowerCase() === 'referenceset')
+        if (custconfig.listtype.toLowerCase() === 'referenceset')
           postResult = await postToConnect(
             work,
             custconfig as customerConfig,
             tqm.updateCount
           )
-        if (custconfig.listType.toLowerCase() === 'relational' || custconfig.listType.toLowerCase() === 'dbkeyed' || custconfig.listType.toLowerCase() === 'dbnonkeyed')
+        if (custconfig.listtype.toLowerCase() === 'relational' || custconfig.listtype.toLowerCase() === 'dbkeyed' || custconfig.listtype.toLowerCase() === 'dbnonkeyed')
         postResult = await postToCampaign(
           work,
           custconfig as customerConfig,
-          tqm.updateCount
+          tqm.updateCount,
+          tqm.workKey
         )
 
         //  postResult can contain:
@@ -1446,14 +1480,14 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
           )
         } else if (postResult.toLowerCase().indexOf("unsuccessful post") > -1)
         {
-          selectiveLogging("error", "999", `Error - Unsuccessful POST (Hard Failure) for ${tqm.workKey}: \n${postResult}\nCustomer: ${custconfig.Customer}, ListId: ${custconfig.listId} ListName: ${custconfig.listName} `)
+          selectiveLogging("error", "999", `Error - Unsuccessful POST (Hard Failure) for ${tqm.workKey}: \n${postResult}\nCustomer: ${custconfig.customer}, ListId: ${custconfig.listid} ListName: ${custconfig.listname} `)
         } else {
           if (postResult.toLowerCase().indexOf("partially successful") > -1) {
-            selectiveLogging("info", "508", `Most Work was Successfully Posted to Campaign (work file (${tqm.workKey}, updated ${tqm.custconfig.listName} from ${tqm.workKey}, however there were some exceptions: \n${postResult} `)
+            selectiveLogging("info", "508", `Most Work was Successfully Posted to Campaign (work file (${tqm.workKey}, updated ${tqm.custconfig.listname} from ${tqm.workKey}, however there were some exceptions: \n${postResult} `)
           } else if (
             postResult.toLowerCase().indexOf("successfully posted") > -1
           ) {
-            selectiveLogging("info", "508", `(508) Work Successfully Posted to Campaign (work file (${tqm.workKey}, updated ${tqm.custconfig.listName} from ${tqm.workKey}, \n${postResult} \nThe Work will be deleted from the S3 Process Queue`)
+            selectiveLogging("info", "508", `(508) Work Successfully Posted to Campaign (work file (${tqm.workKey}, updated ${tqm.custconfig.listname} from ${tqm.workKey}, \n${postResult} \nThe Work will be deleted from the S3 Process Queue`)
           }
 
           //Delete the Work file
@@ -1653,7 +1687,7 @@ export const s3DropBucketSFTPHandler: Handler = async (
     // Check  configs to emit another round of SQS Events for the next round of FTP Work.
 
     // event.Records.forEach(async (i: SQSRecord) => {
-    const tqm: s3dbQueueMessage = JSON.parse(q.body)
+    const tqm: s3DBQueueMessage = JSON.parse(q.body)
 
     tqm.workKey = JSON.parse(q.body).workKey
 
@@ -1834,7 +1868,7 @@ async function getValidateS3DropBucketConfig() {
 
 
   let s3dbcr
-  let s3dbc = {} as s3dbConfig
+  let s3dbc = {} as s3DBConfig
 
   try {
     s3dbc = await s3
@@ -1853,7 +1887,7 @@ async function getValidateS3DropBucketConfig() {
       })
   } catch (e) {
     selectiveLogging("exception", "", `Exception - Pulling S3DropBucket Config File (bucket:${getObjectCmd.Bucket}  key:${getObjectCmd.Key}) \nResult: ${s3dbcr} \nException: \n${e} `)
-    return {} as s3dbConfig
+    return {} as s3DBConfig
   }
 
   try {
@@ -2067,7 +2101,7 @@ async function getValidateS3DropBucketConfig() {
   return s3dbc
 }
 
-async function getCustomerConfig(filekey: string) {
+async function getFormatCustomerConfig(filekey: string) {
 
 
   //Populate/Refresh Customer Config List 
@@ -2087,7 +2121,7 @@ async function getCustomerConfig(filekey: string) {
     filekey = filekey.split("/").at(-1) ?? filekey
   }
 
-  //Check for timestamp - if timestamp - remove timestamp (remove underscores) 
+  //Check for timestamp - if timestamp - normalize timestamp (remove underscores) 
   const r = new RegExp(/\d{4}_\d{2}_\d{2}T.*Z.*/, "gm")
   if (filekey.match(r)) {
     filekey = filekey.replace(r, "") //remove timestamp from name
@@ -2096,7 +2130,7 @@ async function getCustomerConfig(filekey: string) {
   if (filekey.indexOf('_') > -1)
   {
     filekey = filekey.substring(0, filekey.lastIndexOf("_") + 1)
-    }
+  }
   
   //  const customer = filekey.split('_')[0] + '_'      //initial treatment, get prefix up to first underscore
 
@@ -2124,13 +2158,10 @@ async function getCustomerConfig(filekey: string) {
   //  populate 'process.env.S3DropBucketConfigsList' and walk over it to match config to filename
   const customer = filekey  //.toLowerCase()
   
-  let configJSON = {} as customerConfig
-  // const configObjs = [new Uint8Array()]
-
   let ccKey = `${customer}config.jsonc`
   
   //Match File to Customer Config file
-
+  //ToDo: test and confirm 
     try
     {
         const cclist = JSON.parse(process.env.S3DropBucketCustomerConfigsList ?? "")
@@ -2151,22 +2182,29 @@ async function getCustomerConfig(filekey: string) {
   }
 
   let ccr
+  let configJSON = customersConfig as customerConfig
 
   try {
-    await s3
+    ccr = await s3
       .send(new GetObjectCommand(getObjectCommand))
       .then(async (getConfigS3Result: GetObjectCommandOutput) => {
-        ccr = (await getConfigS3Result.Body?.transformToString(
+        
+        let cc = (await getConfigS3Result.Body?.transformToString(
           "utf8"
         )) as string
 
-        selectiveLogging("info", "910", `Customer (${customer}) Config: \n ${ccr} `)
+        selectiveLogging("info", "910", `Customer (${customer}) Config: \n ${cc} `)
 
         //Parse comments out of the json before parse
-        ccr = ccr.replaceAll(new RegExp(/[^:](\/\/.*(,|$|")?)/g), "")
-        ccr = ccr.replaceAll("\n", "")
-
-        configJSON = JSON.parse(ccr)
+        cc = cc.replaceAll(new RegExp(/[^:](\/\/.*(,|$|")?)/g), "")
+        const cc1 = cc.replaceAll("\n", "")
+        
+        //Parse comments out of the json before parse
+        //const ccr1 = ccr.replaceAll(new RegExp(/(".*":)/g), (match) => match.toLowerCase())
+        const cc2 = cc1.replaceAll(new RegExp(/(\/\/.*(?:$|\W|\w|\S|\s|\r).*)/gm), "")
+        const cc3 = cc2.replaceAll(new RegExp(/\n/gm), "")
+        cc = cc3.replaceAll("   ", "")
+        return cc
       })
       .catch((e) => {
         const err: string = JSON.stringify(e)
@@ -2185,33 +2223,55 @@ async function getCustomerConfig(filekey: string) {
           `Exception - Retrieving Config (${customer}config.jsonc) from ${S3DBConfig.S3DropBucketConfigs} \nException ${e} `
         )
       })
+
   } catch (e) {
     debugger
     selectiveLogging("exception", "", `Exception - Pulling Customer Config \n${ccr} \n${e} `)
     throw new Error(`Exception - Pulling Customer Config \n${ccr} \n${e} `)
   }
 
-  customersConfig = await validateCustomerConfig(configJSON)
-  return customersConfig as customerConfig
+  configJSON = JSON.parse(ccr) as customerConfig
+  
+  //Potential Transform opportunity (values only)
+  //configJSON = JSON.parse(ccr, function (key, value) {
+  //  return value
+  //});
+
+  const setPropsLowCase = (object: object, container: string) => {
+    type okt = keyof typeof object
+    for (const key in object)
+    {
+      const k = key as okt 
+
+      const lk = (key as string).toLowerCase()
+
+      if (container.match(new RegExp(/jsonmap|csvmap|ignore/))) continue
+
+      //if (typeof object[k] === 'object') setPropsLowCase(object[k])
+      if (Object.prototype.toString.call(object[k]) === "[object Object]") setPropsLowCase(object[k], lk)
+
+      if(k === lk) continue
+      object[lk as okt] = object[k]  
+      delete object[k]
+    }
+    return object
+  }
+
+  configJSON = setPropsLowCase(configJSON, '') as customerConfig
+  configJSON = await validateCustomerConfig(configJSON) as customerConfig
+
+  return configJSON as customerConfig
 }
 
 async function validateCustomerConfig(config: customerConfig) {
   if (!config || config === null) {
     throw new Error("Invalid  CustomerConfig - empty or null config")
   }
-
-  if (!config.Customer) {
-    throw new Error("Invalid  CustomerConfig - Customer is not defined")
-  } else if (config.Customer.length < 4 || !config.Customer.endsWith("_")) {
-    throw new Error(
-      `Invalid  CustomerConfig - Customer string is not valid, must be at least 3 characters and a trailing underscore, '_'`
-    )
-  }
-
-  if (!config.clientId) {
+  
+  if (!config.clientid) {
     throw new Error("Invalid Customer Config - ClientId is not defined")
   }
-  if (!config.clientSecret) {
+  if (!config.clientsecret) {
     throw new Error("Invalid Customer Config - ClientSecret is not defined")
   }
   if (!config.format) {
@@ -2221,10 +2281,10 @@ async function validateCustomerConfig(config: customerConfig) {
     throw new Error("Invalid Customer Config - Updates is not defined")
   }
 
-  if (!config.listId) {
+  if (!config.listid) {
     throw new Error("Invalid Customer Config - ListId is not defined")
   }
-  if (!config.listName) {
+  if (!config.listname) {
     throw new Error("Invalid Customer Config - ListName is not defined")
   }
   if (!config.pod) {
@@ -2234,7 +2294,7 @@ async function validateCustomerConfig(config: customerConfig) {
     //Campaign POD Region
     throw new Error("Invalid Customer Config - Region is not defined")
   }
-  if (!config.refreshToken) {
+  if (!config.refreshtoken) {
     throw new Error("Invalid Customer Config - RefreshToken is not defined")
   }
 
@@ -2312,27 +2372,25 @@ async function validateCustomerConfig(config: customerConfig) {
     )
   }
 
-  if (!config.listType) {
+  if (!config.listtype) {
     throw new Error("Invalid Customer Config - ListType is not defined")
   }
 
   if (
-    !config.listType
-      .toLowerCase()
-      .match(/^(?:relational|dbkeyed|dbnonkeyed)$/gim)
+    !config.listtype.toLowerCase().match(/^(?:relational|dbkeyed|dbnonkeyed)$/gim)
   ) {
     throw new Error(
       "Invalid Customer Config - ListType must be either 'Relational', 'DBKeyed' or 'DBNonKeyed'. "
     )
   }
 
-  if (config.listType.toLowerCase() == "dbkeyed" && !config.DBKey) {
+  if (config.listtype.toLowerCase() == "dbkeyed" && !config.dbkey) {
     throw new Error(
       "Invalid Customer Config - Update set as Database Keyed but DBKey is not defined. "
     )
   }
 
-  if (config.listType.toLowerCase() == "dbnonkeyed" && !config.LookupKeys) {
+  if (config.listtype.toLowerCase() == "dbnonkeyed" && !config.lookupkeys) {
     throw new Error(
       "Invalid Customer Config - Update set as Database NonKeyed but lookupKeys is not defined. "
     )
@@ -2353,29 +2411,20 @@ async function validateCustomerConfig(config: customerConfig) {
   if (config.sftp.filepattern && config.sftp.filepattern !== "")
   {
     selectiveLogging("info", "999", `SFTP File Pattern: ${config.sftp.filepattern}`)
-
   }
   if (config.sftp.schedule && config.sftp.schedule !== "")
   {
     selectiveLogging("info", "999", `SFTP Schedule: ${config.sftp.schedule}`)
-
   }
-
-  //Need to look for lowercase/uppercase config problem
-  //if (Object.keys(config).includes("Transforms")) throw new Error("Invalid Customer Config -  ")
-  //if (Object.keys(config).includes("Transforms.Json")) throw new Error("Invalid Customer Config -  ")
-  //if (Object.keys(config).includes("Transforms.CSV")) throw new Error("Invalid Customer Config -  ")
-  //if (Object.keys(config).includes("Transforms")) throw new Error("Invalid Customer Config -  ")
-
-
+  
   if (!config.transforms) {
     Object.assign(config, { transforms: {} })
   }
-  if (!config.transforms.jsonMap) {
-    Object.assign(config.transforms, { jsonMap: {} })
+  if (!config.transforms.jsonmap) {
+    Object.assign(config.transforms, { jsonmap: {} })
   }
-  if (!config.transforms.csvMap) {
-    Object.assign(config.transforms, { csvMap: {} })
+  if (!config.transforms.csvmap) {
+    Object.assign(config.transforms, { csvmap: {} })
   }
   if (!config.transforms.ignore) {
     Object.assign(config.transforms, { ignore: [] })
@@ -2386,25 +2435,21 @@ async function validateCustomerConfig(config: customerConfig) {
 
   selectiveLogging("info", "919", `Transforms configured: \n${JSON.stringify(config.transforms)}`)
   
-  if (!config.transforms.jsonMap)
+  if (!config.transforms.jsonmap)
   {
     const tmpMap: { [key: string]: string } = {}
-    const jm = config.transforms.jsonMap as unknown as {
-      [key: string]: string
-    }
+    const jm = config.transforms.jsonmap as unknown as {[key: string]: string}
     for (const m in jm) {
       try {
         const p = jm[m]
         const v = jsonpath.parse(p)  //checking for parse exception highlighting invalid jsonpath
         tmpMap[m] = jm[m]
-        // tmpmap2.m = jm.m
         selectiveLogging("info", "930", `Validate Customer Config - transforms - JSONPath - ${JSON.stringify(v)}`)
-        
       } catch (e) {
         selectiveLogging("exception", "", `Invalid JSONPath defined in Customer config: ${m}: "${m}", \nInvalid JSONPath - ${e} `)
       }
     }
-    config.transforms.jsonMap = tmpMap
+    config.transforms.jsonmap = tmpMap
   }
 
   return config as customerConfig
@@ -2484,13 +2529,13 @@ async function storeAndQueueWork(
   }
 
   if (
-    customersConfig.listType.toLowerCase() === "dbkeyed" ||
-    customersConfig.listType.toLowerCase() === "dbnonkeyed"
+    customersConfig.listtype.toLowerCase() === "dbkeyed" ||
+    customersConfig.listtype.toLowerCase() === "dbnonkeyed"
   ) {
     xmlRows = convertJSONToXML_DBUpdates(updates, config)
   }
 
-  if (customersConfig.listType.toLowerCase() === "relational") {
+  if (customersConfig.listtype.toLowerCase() === "relational") {
     xmlRows = convertJSONToXML_RTUpdates(updates, config)
   }
 
@@ -2511,7 +2556,7 @@ async function storeAndQueueWork(
 
   //if ( Object.values( updates ).length !== recs )
   //{
-  //     selectiveLogging("error", "900", `Recs Count ${recs} does not reflect Updates Count ${Object.values(updates).length} `)
+  //     selectiveLogging("error", "9999", `Recs Count ${recs} does not reflect Updates Count ${Object.values(updates).length} `)
   //}
 
   selectiveLogging("info", "9999", `Queuing Work File ${key} for ${s3Key}. Batch ${batchCount} of ${updateCount} records)`)
@@ -2579,11 +2624,11 @@ async function storeAndQueueWork(
 function convertJSONToXML_RTUpdates(updates: object[], config: customerConfig) {
   if (updates.length < 1) {
     throw new Error(
-      `Exception - Convert JSON to XML for RT - No Updates(${updates.length}) were passed to process into XML. Customer ${config.Customer} `
+      `Exception - Convert JSON to XML for RT - No Updates(${updates.length}) were passed to process into XML. Customer ${config.customer} `
     )
   }
 
-  xmlRows = `<Envelope> <Body> <InsertUpdateRelationalTable> <TABLE_ID> ${config.listId} </TABLE_ID><ROWS>`
+  xmlRows = `<Envelope> <Body> <InsertUpdateRelationalTable> <TABLE_ID> ${config.listid} </TABLE_ID><ROWS>`
 
   let r = 0
 
@@ -2612,12 +2657,12 @@ function convertJSONToXML_RTUpdates(updates: object[], config: customerConfig) {
   xmlRows += `</ROWS></InsertUpdateRelationalTable></Body></Envelope>`
 
   selectiveLogging("info", "999", `Converting ${r} updates to XML RT Updates. Packaged ${Object.values(updates).length
-    } rows as updates to ${config.Customer}'s ${config.listName}`)
+    } rows as updates to ${config.customer}'s ${config.listname}`)
   
-  selectiveLogging("info", "906", `JSON to be converted to XML RT Updates(${config.Customer
-    } - ${config.listName}): ${JSON.stringify(updates)}`)
+  selectiveLogging("info", "906", `JSON to be converted to XML RT Updates(${config.customer
+    } - ${config.listname}): ${JSON.stringify(updates)}`)
     
-  selectiveLogging("info", "917", `XML from JSON for RT Updates (${config.Customer} - ${config.listName}): ${xmlRows}`)
+  selectiveLogging("info", "917", `XML from JSON for RT Updates (${config.customer} - ${config.listname}): ${xmlRows}`)
 
   return xmlRows
 }
@@ -2625,7 +2670,7 @@ function convertJSONToXML_RTUpdates(updates: object[], config: customerConfig) {
 function convertJSONToXML_DBUpdates(updates: object[], config: customerConfig) {
   if (updates.length < 1) {
     throw new Error(
-      `Exception - Convert JSON to XML for DB - No Updates (${updates.length}) were passed to process. Customer ${config.Customer} `
+      `Exception - Convert JSON to XML for DB - No Updates (${updates.length}) were passed to process. Customer ${config.customer} `
     )
   }
 
@@ -2639,15 +2684,17 @@ function convertJSONToXML_DBUpdates(updates: object[], config: customerConfig) {
       const updAtts = updates[upd]
       //const s = JSON.stringify(updAttr )
 
-      xmlRows += `<AddRecipient><LIST_ID>${config.listId}</LIST_ID><CREATED_FROM>0</CREATED_FROM><UPDATE_IF_FOUND>true</UPDATE_IF_FOUND>`
+      xmlRows += `<AddRecipient><LIST_ID>${config.listid}</LIST_ID><CREATED_FROM>0</CREATED_FROM><UPDATE_IF_FOUND>true</UPDATE_IF_FOUND>`
 
       // If Keyed, then Column that is the key must be present in Column Set
       // If Not Keyed must add Lookup Fields
       // Use SyncFields as 'Lookup" values, Columns hold the Updates while SyncFields hold the 'lookup' values.
-
-      //Only needed on non-keyed(In Campaign use DB -> Settings -> LookupKeys to find what fields are Lookup Keys)
-      if (config.listType.toLowerCase() === "dbnonkeyed") {
-        const lk = config.LookupKeys.split(",")
+      
+      debugger
+      
+      //Only needed on non-keyed (In Campaign use DB -> Settings -> LookupKeys to find what fields are Lookup Keys)
+      if (config.listtype.toLowerCase() === "dbnonkeyed") {
+        const lk = config.lookupkeys.split(",")
 
         xmlRows += `<SYNC_FIELDS>`
         for (let k in lk) {
@@ -2661,7 +2708,7 @@ function convertJSONToXML_DBUpdates(updates: object[], config: customerConfig) {
       }
 
       //
-      if (config.listType.toLowerCase() === "dbkeyed") {
+      if (config.listtype.toLowerCase() === "dbkeyed") {
         //Placeholder
         //Don't need to do anything with DBKey, it's superfluous but documents the keys of the keyed DB
       }
@@ -2686,7 +2733,7 @@ function convertJSONToXML_DBUpdates(updates: object[], config: customerConfig) {
   xmlRows += `</Body></Envelope>`
 
   selectiveLogging("info", "999", `Converting ${r} updates to XML DB Updates. Packaging ${
-      Object.values(updates).length} rows as updates to ${config.Customer}'s ${config.listName}` )
+      Object.values(updates).length} rows as updates to ${config.customer}'s ${config.listname}` )
   selectiveLogging("info", "916", `JSON to be converted to XML DB Updates: ${JSON.stringify(updates)}`)
   selectiveLogging("info", "917", `XML from JSON for DB Updates: ${xmlRows}`)
 
@@ -2708,55 +2755,65 @@ function transforms(updates: object[], config: customerConfig) {
   //    Day - Done
   //    Hour - tbd
   //    Minute - tbd
-  //    
   //
-  if (config.Customer.toLowerCase().indexOf("kingsfordweather_") > -1 || config.Customer.toLowerCase().indexOf("cloroxweather_") > -1)
+  //
+  try
   {
-    const t: typeof updates = []
-
-    const days = [
-      "Sunday",
-      "Monday",
-      "Tuesday",
-      "Wednesday",
-      "Thursday",
-      "Friday",
-      "Saturday",
-    ]
-
-    let d: string
-    for (const jo of updates)
+    if (config.customer.toLowerCase().indexOf("kingsfordweather_") > -1 || config.customer.toLowerCase().indexOf("cloroxweather_") > -1)
     {
-      if ("datetime" in jo)
+      const t: typeof updates = []
+
+      const days = [
+        "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday",
+      ]
+
+      let d: string
+      for (const jo of updates)
       {
-        d = jo.datetime as string
-        if (d !== "")
+        if ("datetime" in jo)
         {
-          const dt = new Date(d)
-          const day = {dateday: days[dt.getDay()]}
-          Object.assign(jo, day)
-          t.push(jo)
+          d = jo.datetime as string
+          if (d !== "")
+          {
+            const dt = new Date(d)
+            const day = {dateday: days[dt.getDay()]}
+            Object.assign(jo, day)
+            t.push(jo)
+          }
         }
       }
-   }
       if (t.length !== updates.length)
       {
-        selectiveLogging("error","933", `Error - Transform - Applying Clorox Custom Transform returns fewer records (${t.length}) than initial set ${updates.length}`)
+        selectiveLogging("error", "933", `Error - Transform - Applying Clorox Custom Transform returns fewer records (${t.length}) than initial set ${updates.length}`)
         throw new Error(
           `Error - Transform - Applying Clorox Custom Transform returns fewer records (${t.length}) than initial set ${updates.length}`
         )
       } else updates = t
  
+    }
+  } catch (e)
+  {
+    debugger
+    selectiveLogging("exception", "934", `Exception - Applying DateDay Transform \n${e}`)
   }
-    //Apply the JSONMap -
-    //  JSONPath statements
-    //      "jsonMap": {
-    //          "email": "$.uniqueRecipient",
-    //              "zipcode": "$.context.traits.address.postalCode"
-    //      },
 
-    //Need failsafe test of empty object jsonMap has no transforms. 
-    if (Object.keys(config.transforms.jsonMap).length > 0)
+  //Apply the JSONMap -
+  //  JSONPath statements
+  //      "jsonMap": {
+  //          "email": "$.uniqueRecipient",
+  //              "zipcode": "$.context.traits.address.postalCode"
+  //      },
+
+  //Need failsafe test of empty object jsonMap has no transforms. 
+  try
+  {
+    if (Object.keys(config.transforms.jsonmap).length > 0)
     {
       const r: typeof updates = []
       try
@@ -2765,17 +2822,19 @@ function transforms(updates: object[], config: customerConfig) {
         for (const jo of updates)
         {
           //const jo = JSON.parse( l )
-          jmr = applyJSONMap(jo, config.transforms.jsonMap)
+          jmr = applyJSONMap(jo, config.transforms.jsonmap)
           r.push(jmr)
         }
       } catch (e)
       {
         selectiveLogging("exception", "930", `Exception - Transform - Applying JSONMap \n${e}`)
+        debugger
       }
 
       if (r.length !== updates.length)
       {
         selectiveLogging("error", "930", `Error - Transform - Applying JSONMap returns fewer records(${r.length}) than initial set ${updates.length}`)
+        debugger
         throw new Error(
           `Error - Transform - Applying JSONMap returns fewer records (${r.length}) than initial set ${updates.length}`
         )
@@ -2783,66 +2842,79 @@ function transforms(updates: object[], config: customerConfig) {
 
       selectiveLogging("info", "919", `Transforms (JsonMap) applied: \n${JSON.stringify(r)}`)
     }
+  } catch (e)
+  {
+    debugger
+    selectiveLogging("exception", "934", `Exception - Applying JSONMap Transform \n${e}`)
+  }
+  //Apply CSVMap
+  // "csvMap": { //Mapping when processing CSV files
+  //       "Col_AA": "COL_XYZ", //Write Col_AA with data from Col_XYZ in the CSV file
+  //       "Col_BB": "COL_MNO",
+  //       "Col_CC": "COL_GHI",
 
-    //Apply CSVMap
-    // "csvMap": { //Mapping when processing CSV files
-    //       "Col_AA": "COL_XYZ", //Write Col_AA with data from Col_XYZ in the CSV file
-    //       "Col_BB": "COL_MNO",
-    //       "Col_CC": "COL_GHI",
+  //       "Col_DD": 1, //Write Col_DD with data from the 1st column of data in the CSV file.
+  //       "Col_DE": 2,
+  //       "Col_DF": 3
+  // },
 
-    //       "Col_DD": 1, //Write Col_DD with data from the 1st column of data in the CSV file.
-    //       "Col_DE": 2,
-    //       "Col_DF": 3
-    // },
-
-    if (Object.keys(config.transforms.csvMap).length > 0)
+  try {
+    if (Object.keys(config.transforms.csvmap).length > 0)
+  {
+    const c: typeof updates = []
+    try
     {
-      const c: typeof updates = []
-      try
+      for (const jo of updates)
       {
-        for (const jo of updates)
-        {
-          //const jo = JSON.parse( l )
+        //const jo = JSON.parse( l )
 
-          const map = config.transforms.csvMap as {[key: string]: string}
-          Object.entries(map).forEach(([key, val]) => {
+        const map = config.transforms.csvmap as {[key: string]: string}
+        Object.entries(map).forEach(([key, val]) => {
 
-            //type dk = keyof typeof jo
-            //const k: dk = ig as dk
-            //delete jo[k]
-            type kk = keyof typeof jo
-            type vv = keyof typeof jo
-            const k: kk = key as kk
-            const v: vv = val as vv
-            jo[k] = jo[v]
+          //type dk = keyof typeof jo
+          //const k: dk = ig as dk
+          //delete jo[k]
+          type kk = keyof typeof jo
+          const k: kk = key as kk
+          type vv = keyof typeof jo
+          const v: vv = val as vv
+          jo[k] = jo[v]
 
-            //if (typeof v !== "number") jo[k] = jo[v] ?? ""    //Number because looking to use Column Index (column 1) as reference instead of Column Name.
-            //else
-            //{
-            //  const vk = Object.keys(jo)[v]
-            //  // const vkk = vk[v]
-            //  jo[k] = jo[vk] ?? ""
-            //}
+          //if (typeof v !== "number") jo[k] = jo[v] ?? ""    //Number because looking to use Column Index (column 1) as reference instead of Column Name.
+          //else
+          //{
+          //  const vk = Object.keys(jo)[v]
+          //  // const vkk = vk[v]
+          //  jo[k] = jo[vk] ?? ""
+          //}
           
-          })
-          c.push(jo)
-        }
-      } catch (e)
-      {
-        selectiveLogging("exception", "931", `Exception - Transforms - Applying CSVMap \n${e}`)
+        })
+        c.push(jo)
       }
-      if (c.length !== updates.length)
-      {
-        selectiveLogging("error", "931", `Error - Transform - Applying CSVMap returns fewer records(${c.length}) than initial set ${updates.length}`)
-        throw new Error(
-          `Error - Transform - Applying CSVMap returns fewer records (${c.length}) than initial set ${updates.length}`
-        )
-      } else updates = c
-
-      selectiveLogging("info", "919", `Transforms (CSVMap) applied: \n${JSON.stringify(c)}`)
+    } catch (e)
+    {
+      selectiveLogging("exception", "931", `Exception - Transforms - Applying CSVMap \n${e}`)
+      debugger
     }
-debugger
-    // Ignore must be last to take advantage of cleaning up any extraneous columns after previous transforms
+    if (c.length !== updates.length)
+    {
+      selectiveLogging("error", "931", `Error - Transform - Applying CSVMap returns fewer records(${c.length}) than initial set ${updates.length}`)
+      throw new Error(
+        `Error - Transform - Applying CSVMap returns fewer records (${c.length}) than initial set ${updates.length}`
+      )
+    } else updates = c
+
+    selectiveLogging("info", "919", `Transforms (CSVMap) applied: \n${JSON.stringify(c)}`)
+  }
+}catch (e)
+  {
+  debugger
+  selectiveLogging("exception", "934", `Exception - Applying CSVMap Transform \n${e}`)
+  }
+  
+  // Ignore must be last to take advantage of cleaning up any extraneous columns after previous transforms
+  try
+  {
     if (config.transforms.ignore.length > 0)
     {
       const i: typeof updates = []  //start an ignore processed update set
@@ -2855,20 +2927,22 @@ debugger
 
           for (const ig of config.transforms.ignore)
           {
-          type dk = keyof typeof jo
-          const k: dk = ig as dk
-          delete jo[k]
+            type dk = keyof typeof jo
+            const k: dk = ig as dk
+            delete jo[k]
           }
           i.push(jo)
         }
       } catch (e)
       {
         selectiveLogging("exception", "932", `Exception - Transform - Applying Ignore - \n${e}`)
+        debugger
       }
 
       if (i.length !== updates.length)
       {
         selectiveLogging("error", "932", `Error - Transform - Applying Ignore returns fewer records ${i.length} than initial set ${updates.length}`)
+        debugger
         throw new Error(
           `Error - Transform - Applying Ignore returns fewer records ${i.length} than initial set ${updates.length}`
         )
@@ -2876,7 +2950,11 @@ debugger
 
       selectiveLogging("info", "919", `Transforms (Ignore) applied: \n${JSON.stringify(i)}`)
     }
-  
+  } catch (e)
+  {
+    debugger
+    selectiveLogging("exception", "934", `Exception - Applying Ignore Transform \n${e}`)
+  }
   return updates
 }
 
@@ -2887,6 +2965,7 @@ function applyJSONMap(jsonObj: object, map: { [key: string]: string }) {
   //     chunks = am
   // })
 
+  debugger
   Object.entries(map).forEach(([k, v]) => {
     try {
       const j = jsonpath.value(jsonObj, v)
@@ -2895,9 +2974,10 @@ function applyJSONMap(jsonObj: object, map: { [key: string]: string }) {
       } else {
         Object.assign(jsonObj, { [k]: j })
       }
-    } catch (e) {
-      selectiveLogging("exception", "", `Exception parsing data for JSONPath statement ${k} ${v}, ${e} \nTarget Data: \n${JSON.stringify(jsonObj)} `)}
-
+    } catch (e)
+    {
+      selectiveLogging("exception", "934", `Exception parsing data for JSONPath statement ${k} ${v}, ${e} \nTarget Data: \n${JSON.stringify(jsonObj)} `)}
+      debugger
     // const a1 = jsonpath.parse(value)
     // const a2 = jsonpath.parent(s3Chunk, value)
     // const a3 = jsonpath.paths(s3Chunk, value)
@@ -2994,7 +3074,7 @@ async function addWorkToSQSWorkQueue(
     }
   }
 
-  const sqsQMsgBody = {} as s3dbQueueMessage
+  const sqsQMsgBody = {} as s3DBQueueMessage
   sqsQMsgBody.workKey = key
   sqsQMsgBody.versionId = versionId
   sqsQMsgBody.marker = marker
@@ -3169,9 +3249,9 @@ export async function getAccessToken(config: customerConfig) {
       {
         method: "POST",
         body: new URLSearchParams({
-          refresh_token: config.refreshToken,
-          client_id: config.clientId,
-          client_secret: config.clientSecret,
+          refresh_token: config.refreshtoken,
+          client_id: config.clientid,
+          client_secret: config.clientsecret,
           grant_type: "refresh_token",
         }),
         headers: {
@@ -3188,7 +3268,7 @@ export async function getAccessToken(config: customerConfig) {
         error: string
         error_description: string
       }
-      selectiveLogging("error", "999", `Problem retrieving Access Token (${rat.status}) Error: ${err.error} \nDescription: ${err.error_description}`)
+      selectiveLogging("error", "900", `Problem retrieving Access Token (${rat.status}) Error: ${err.error} \nDescription: ${err.error_description}`)
 
       throw new Error(
         `Problem - Retrieving Access Token:   ${rat.status} - ${err.error}  - \n${err.error_description}`
@@ -3198,7 +3278,7 @@ export async function getAccessToken(config: customerConfig) {
     return { accessToken }.accessToken
   } catch (e)
   {
-    selectiveLogging("exception", "", `Exception - On GetAccessToken: \n ${e}`)
+    selectiveLogging("exception", "900", `Exception - On GetAccessToken: \n ${e}`)
     throw new Error(`Exception - On GetAccessToken: \n ${e}`)
   }
 }
@@ -3206,9 +3286,10 @@ export async function getAccessToken(config: customerConfig) {
 export async function postToCampaign(
   xmlCalls: string,
   config: customerConfig,
-  count: string
+  count: string,
+  workFile: string
 ) {
-  const c = config.Customer
+  const c = config.customer
 
   //Store AccessToken in process.env vars for reference across invocations, save requesting it repeatedly
   if (
@@ -3220,12 +3301,12 @@ export async function postToCampaign(
     const at = process.env[`${c}_accessToken"`] ?? ""
     const l = at.length
     const redactAT = "......." + at.substring(l - 10, l)
-    selectiveLogging("info", "9999", `Generated a new AccessToken: ${redactAT}`)  //ToDo: Add Debug Number 
+    selectiveLogging("info", "900", `Generated a new AccessToken: ${redactAT}`)  //ToDo: Add Debug Number 
   } else {
     const at = process.env["accessToken"] ?? ""
     const l = at.length
     const redactAT = "......." + at.substring(l - 8, l)
-    selectiveLogging("info", "9999", `Access Token already stored: ${redactAT}`) //ToDo: Add Debug Number 
+    selectiveLogging("info", "900", `Access Token already stored: ${redactAT}`) //ToDo: Add Debug Number 
   }
 
   const myHeaders = new Headers()
@@ -3245,7 +3326,7 @@ export async function postToCampaign(
 
   const host = `https://api-campaign-${config.region}-${config.pod}.goacoustic.com/XMLAPI`
 
-  selectiveLogging("info", "905", `Updates to POST are: ${xmlCalls}`)
+  selectiveLogging("info", "905", `Updates to be POSTed (${workFile}) are: ${xmlCalls}`)
 
   let postRes: string = ""
 
@@ -3254,7 +3335,7 @@ export async function postToCampaign(
   postRes = await fetch(host, requestOptions)
     .then((response) => response.text())
     .then(async (result) => {
-      selectiveLogging("info", "908", `POST Response: ${result}`)
+      selectiveLogging("info", "908", `POST Response (${workFile}) : ${result}`)
 
       const faults: string[] = []
 
@@ -3353,6 +3434,10 @@ export async function postToCampaign(
 }
 
 async function postToConnect(updates: string, custconfig: customerConfig, updateCount: string) {
+  //ToDo: 
+  //Transform Add Contacts to Mutation Create Contact
+  //Transform Updates to Mutation Update Contact
+  //    Need Attributes - Add Attributes to update as seen in inbound data 
   //get access token
   //post to connect
   //return result
