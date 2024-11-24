@@ -760,7 +760,7 @@ async function processS3ObjectContentStream(
   bucket: string,
   custConfig: customerConfig
 ) {
-  selectiveLogging("info", "999", `Processing S3 Content Stream for ${key}`)
+  selectiveLogging("info", "9999", `Processing S3 Content Stream for ${key}`)
 
   const s3C: GetObjectCommandInput = {
     Key: key,
@@ -2761,9 +2761,6 @@ function convertJSONToXML_DBUpdates(updates: object[], config: customerConfig) {
   selectiveLogging("info", "916", `Converted ${r} updates - JSON for DB Updates: ${JSON.stringify(updates)}\nPackaging ${Object.values(updates).length} rows as updates to ${config.customer}'s ${config.listname}`)
   selectiveLogging("info", "917", `Converted ${r} updates - XML for DB Updates: ${xmlRows}\nPackaging ${Object.values(updates).length} rows as updates to ${config.customer}'s ${config.listname}`)
 
-  //S3DBLog - Info 999: Converting 100 updates to XML RT Updates.
-  //Packaged 100 rows as updates to alerusreassignrepsignature_'s ReassignedRep_Signature_RT 
-
   return xmlRows
 }
 
@@ -3520,7 +3517,7 @@ async function getAnS3ObjectforTesting(bucket: string) {
 
         selectiveLogging("info", "9999", `S3 List: \n${ JSON.stringify(s3ListResult.Contents) } `)
 
-        selectiveLogging("info", "999", `TestRun(${i}) Retrieved ${s3Key} for this Test Run`)
+        selectiveLogging("info", "999", `This is a Test Run(${i}) Retrieved ${s3Key} for this Test Run`)
 
       } else
       {
