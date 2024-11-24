@@ -2758,10 +2758,11 @@ function convertJSONToXML_DBUpdates(updates: object[], config: customerConfig) {
 
   xmlRows += `</Body></Envelope>`
 
-  selectiveLogging("info", "999", `Converting ${r} updates to XML DB Updates. Packaging ${
-      Object.values(updates).length} rows as updates to ${config.customer}'s ${config.listname}` )
-  selectiveLogging("info", "916", `JSON to be converted to XML DB Updates: ${JSON.stringify(updates)}`)
-  selectiveLogging("info", "917", `XML from JSON for DB Updates: ${xmlRows}`)
+  selectiveLogging("info", "916", `Converted ${r} updates - JSON for DB Updates: ${JSON.stringify(updates)}\nPackaging ${Object.values(updates).length} rows as updates to ${config.customer}'s ${config.listname}`)
+  selectiveLogging("info", "917", `Converted ${r} updates - XML for DB Updates: ${xmlRows}\nPackaging ${Object.values(updates).length} rows as updates to ${config.customer}'s ${config.listname}`)
+
+  //S3DBLog - Info 999: Converting 100 updates to XML RT Updates.
+  //Packaged 100 rows as updates to alerusreassignrepsignature_'s ReassignedRep_Signature_RT 
 
   return xmlRows
 }
