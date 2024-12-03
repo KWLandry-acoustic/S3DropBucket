@@ -3,7 +3,6 @@
 
 //ToDo: refactor into three, one for each lambda function
 
-
 import {
   S3Client,
   PutObjectCommand,
@@ -12,10 +11,10 @@ import {
   ListObjectsCommandOutput,
   GetObjectCommand,
   DeleteObjectCommand,
-    PutObjectCommandOutput,
-    GetObjectCommandOutput,
-    GetObjectCommandInput,
-    DeleteObjectCommandOutput,
+  PutObjectCommandOutput,
+  GetObjectCommandOutput,
+  GetObjectCommandInput,
+  DeleteObjectCommandOutput,
   //CopyObjectCommand,
 } from "@aws-sdk/client-s3"
 
@@ -66,7 +65,6 @@ import { parse } from "csv-parse"
 import jsonpath from "jsonpath"
 
 import sftpClient, {ListFilterFunction} from "ssh2-sftp-client"
-import {kMaxLength} from "buffer"
 
 //import {type sftpClientOptions} from "ssh2-sftp-client/lib/typescript/sftp-client"
 //import {type sftpClientError} from "ssh2-sftp-client/lib/typescript/sftp-client"
@@ -576,7 +574,7 @@ export const s3DropBucketHandler: Handler = async (
           
           streamRes.Key = key
           streamRes.Processed = streamRes.OnEndRecordStatus
-
+debugger
           selectiveLogging("info", "503", `Completed processing all records of the S3 Object ${key} \nVersionID: ${vid}, \neTag: ${et}. \nStatus: ${streamRes.OnEndRecordStatus}`
           )
           
@@ -760,7 +758,7 @@ async function processS3ObjectContentStream(
   bucket: string,
   custConfig: customerConfig
 ) {
-  selectiveLogging("info", "9999", `Processing S3 Content Stream for ${key}`)
+  selectiveLogging("info", "514", `Processing S3 Content Stream for ${key}`)
 
   const s3C: GetObjectCommandInput = {
     Key: key,
@@ -842,7 +840,7 @@ async function processS3ObjectContentStream(
       //Placeholder - Everything should be JSON by the time we get here
       if (custConfig.format.toLowerCase() === "json")
       {
-      selectiveLogging("info", "9999", `Future Logging Opportunity - JSON Flag`)
+      //selectiveLogging("info", "", `Future Logging Opportunity - JSON Flag`)
       }
 
       //Notes: Options to Handling Large JSON Files
@@ -963,7 +961,7 @@ async function processS3ObjectContentStream(
                 key.toLowerCase().indexOf("aggregat") < 0 && recs > custConfig.updatemaxrows
               )
               {
-                selectiveLogging("error", "999", `The number of Updates in this batch (${recs}) Exceeds Max Row Updates allowed in the Customers Config (${custConfig.updatemaxrows}).  ${key} will not be deleted from ${S3DBConfig.S3DropBucket} to allow for review and possible restaging.`)
+                selectiveLogging("error", "515", `The number of Updates in this batch (${recs}) Exceeds Max Row Updates allowed in the Customers Config (${custConfig.updatemaxrows}).  ${key} will not be deleted from ${S3DBConfig.S3DropBucket} to allow for review and possible restaging.`)
                 
                 throw new Error(
                   `The number of Updates in this batch (${recs}) Exceeds Max Row Updates allowed in the Customers Config (${custConfig.updatemaxrows}).  ${key} will not be deleted from ${S3DBConfig.S3DropBucket} to allow for review and possible restaging.`
@@ -1056,7 +1054,7 @@ async function processS3ObjectContentStream(
                 ...streamResult,
                 OnEndNoRecordsException: `Exception - No records returned from parsing file.Check the content as well as the configured file format(${custConfig.format}) matches the content of the file.`,
               }
-              //selectiveLogging("info", "999", `Exception - No records returned from parsing file.Check the content as well as the configured file format(${custConfig.format}) matches the content of the file.`)
+              selectiveLogging("error", "", `Error - No records returned from parsing file. Check the content as well as the configured file format(${custConfig.format}) matches the content of the file.`)
               //throw new Error( `Exception - onEnd ${ JSON.stringify( streamResult ) } ` )
 
               return streamResult
@@ -1074,7 +1072,6 @@ async function processS3ObjectContentStream(
             {
               packageResult = await packageUpdates(chunks, key, custConfig) 
                 .then((res) => {
-                //selectiveLogging("info", "999", `Return Await PackageResult from PackageUpdates: ${ JSON.stringify( res ) }` )
                   return res as StoreAndQueueWorkResult
               })
             }
@@ -1460,7 +1457,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
         //partially successful
         //successfully posted
 
-        selectiveLogging("info", "999", `POST Result for ${tqm.workKey}: ${postResult} `)
+        selectiveLogging("info", "936", `POST Result for ${tqm.workKey}: ${postResult} `)
 
         if (postResult.indexOf("retry") > -1) {
           //console.warn(
@@ -1470,7 +1467,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
           //    sqsBatchFail.batchItemFailures.length + 1
           //  }). \n${postResult} `
           //)
-          selectiveLogging("warn", "999", `Retry Marked for ${tqm.workKey}. Returning Work Item ${q.messageId
+          selectiveLogging("warn", "516", `Retry Marked for ${tqm.workKey}. Returning Work Item ${q.messageId
             } to Process Queue (Total Retry Count: ${sqsBatchFail.batchItemFailures.length + 1}). \n${postResult} `
           )
 
@@ -1481,10 +1478,10 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
           )
         } else if (postResult.toLowerCase().indexOf("unsuccessful post") > -1)
         {
-          selectiveLogging("error", "999", `Error - Unsuccessful POST (Hard Failure) for ${tqm.workKey}: \n${postResult}\nCustomer: ${custconfig.customer}, ListId: ${custconfig.listid} ListName: ${custconfig.listname} `)
+          selectiveLogging("error", "935", `Error - Unsuccessful POST (Hard Failure) for ${tqm.workKey}: \n${postResult}\nCustomer: ${custconfig.customer}, ListId: ${custconfig.listid} ListName: ${custconfig.listname} `)
         } else {
           if (postResult.toLowerCase().indexOf("partially successful") > -1) {
-            selectiveLogging("info", "508", `Most Work was Successfully Posted to Campaign (work file (${tqm.workKey}, updated ${tqm.custconfig.listname} from ${tqm.workKey}, however there were some exceptions: \n${postResult} `)
+            selectiveLogging("info", "508", `Work Partially Successful Posted to Campaign (work file (${tqm.workKey}, updated ${tqm.custconfig.listname} from ${tqm.workKey}, however there were some exceptions: \n${postResult} `)
           } else if (
             postResult.toLowerCase().indexOf("successfully posted") > -1
           ) {
@@ -1571,9 +1568,9 @@ export const s3DropBucketSFTPHandler: Handler = async (
 
   }
 
-  selectiveLogging("info", "999", `S3 Dropbucket SFTP Processor Selective Debug Set is: ${S3DBConfig.SelectiveLogging!} `)
-  selectiveLogging("info", "98", `Selective Debug 98 - Process Environment Vars: ${JSON.stringify(process.env)} `)
-  selectiveLogging("info", "999", `SFTP  Received Event: ${JSON.stringify(event)}.\nContext: ${context} `)
+  selectiveLogging("info", "98", `S3 Dropbucket SFTP Processor - Process Environment Vars: ${JSON.stringify(process.env)} `)
+  selectiveLogging("info", "700", `S3 Dropbucket SFTP Processor - Received Event: ${JSON.stringify(event)}.\nContext: ${context} `)
+  selectiveLogging("info", "701", `S3 Dropbucket SFTP Processor - Selective Debug Set is: ${S3DBConfig.SelectiveLogging!} `)
 
   //Existing Event Emit at every 1 minute
 
@@ -1613,8 +1610,7 @@ export const s3DropBucketSFTPHandler: Handler = async (
 
   const response = await client.send(command)
     .then((res): string => {
-      //console.info(res)
-      selectiveLogging("info", "999", JSON.stringify(res))
+      selectiveLogging("info", "700", JSON.stringify(res))
 
       return response
     })
@@ -1647,8 +1643,8 @@ export const s3DropBucketSFTPHandler: Handler = async (
   //)
 
   //ToDo: Assign debug number for these messages
-  selectiveLogging("info", "9999", `Received SFTP SQS Events Batch of ${event.Records.length} records.`)
-  selectiveLogging("info", "9999", `Received ${event.Records.length} SFTP Queue Records.Records are: \n${JSON.stringify(event)} `)
+  selectiveLogging("info", "700", `Received SFTP SQS Events Batch of ${event.Records.length} records.`)
+  selectiveLogging("info", "700", `Received ${event.Records.length} SFTP Queue Records.Records are: \n${JSON.stringify(event)} `)
 
   //This test provides avoiding the following code until we can get the rest of the refactoring completed
   if (new Date().getTime() > 0) return
@@ -1697,8 +1693,7 @@ export const s3DropBucketSFTPHandler: Handler = async (
       tqm.workKey = (await getAnS3ObjectforTesting(S3DBConfig.S3DropBucket!)) ?? ""
     }
 
-    selectiveLogging("info", "999", `Processing Work Queue for ${tqm.workKey}`)
-    selectiveLogging("info", "513", `SQS Events - Processing Batch Item ${JSON.stringify(q)} `) 
+    selectiveLogging("info", "513", `SQS Events - Processing Batch Item ${JSON.stringify(q)} \nProcessing Work Queue for ${tqm.workKey}`) 
 
     // try
     // {
@@ -1737,7 +1732,7 @@ export const s3DropBucketSFTPHandler: Handler = async (
     // }
   }
 
-  selectiveLogging("info", "999", `Processed ${event.Records.length} SFTP Requests.Items Fail Count: ${sqsBatchFail.batchItemFailures.length}\nItems Failed List: ${JSON.stringify(sqsBatchFail)}`)
+  selectiveLogging("info", "700", `Processed ${event.Records.length} SFTP Requests.Items Fail Count: ${sqsBatchFail.batchItemFailures.length}\nItems Failed List: ${JSON.stringify(sqsBatchFail)}`)
 
   return sqsBatchFail
 
@@ -1757,7 +1752,7 @@ async function sftpConnect(options: {
   username?: string
   password?: string
 }) {
-  selectiveLogging("info", "999", `Connecting to ${options.host}: ${options.port}`)
+  selectiveLogging("info", "700", `Connecting to ${options.host}: ${options.port}`)
 
   try {
     // await SFTPClient.connect(options)
@@ -1771,7 +1766,7 @@ async function sftpDisconnect() {
 }
 
 async function sftpListFiles(remoteDir: string, fileGlob: ListFilterFunction) {
-  selectiveLogging("info", "999", `Listing ${remoteDir} ...`)
+  selectiveLogging("info", "700", `Listing ${remoteDir} ...`)
 
   let fileObjects: sftpClient.FileInfo[] = []
   try {
@@ -1784,9 +1779,9 @@ async function sftpListFiles(remoteDir: string, fileGlob: ListFilterFunction) {
 
   for (const file of fileObjects) {
     if (file.type === "d") {
-      selectiveLogging("info", "999", `${new Date(file.modifyTime).toISOString()} PRE ${file.name}`)
+      selectiveLogging("info", "700", `${new Date(file.modifyTime).toISOString()} PRE ${file.name}`)
     } else {
-      selectiveLogging("info", "999", `${new Date(file.modifyTime).toISOString()} ${file.size} ${file.name}`)
+      selectiveLogging("info", "700", `${new Date(file.modifyTime).toISOString()} ${file.size} ${file.name}`)
     }
 
     fileNames.push(file.name)
@@ -1796,7 +1791,7 @@ async function sftpListFiles(remoteDir: string, fileGlob: ListFilterFunction) {
 }
 
 async function sftpUploadFile(localFile: string, remoteFile: string) {
-  selectiveLogging("info", "999", `Uploading ${localFile} to ${remoteFile} ...`)
+  selectiveLogging("info", "700", `Uploading ${localFile} to ${remoteFile} ...`)
   try {
     // await SFTPClient.put(localFile, remoteFile)
   } catch (err) {
@@ -1805,7 +1800,7 @@ async function sftpUploadFile(localFile: string, remoteFile: string) {
 }
 
 async function sftpDownloadFile(remoteFile: string, localFile: string) {
-  selectiveLogging("info", "999", `Downloading ${remoteFile} to ${localFile} ...`)
+  selectiveLogging("info", "700", `Downloading ${remoteFile} to ${localFile} ...`)
   try {
     // await SFTPClient.get(remoteFile, localFile)
   } catch (err) {
@@ -1814,7 +1809,7 @@ async function sftpDownloadFile(remoteFile: string, localFile: string) {
 }
 
 async function sftpDeleteFile(remoteFile: string) {
-  selectiveLogging("info", "999", `Deleting ${remoteFile}`)
+  selectiveLogging("info", "700", `Deleting ${remoteFile}`)
   try {
     // await SFTPClient.delete(remoteFile)
   } catch (err) {
@@ -2403,19 +2398,19 @@ async function validateCustomerConfig(config: customerConfig) {
 
   if (config.sftp.user && config.sftp.user !== "")
   {
-    selectiveLogging("info", "999", `SFTP User: ${config.sftp.user}`)
+    selectiveLogging("info", "700", `SFTP User: ${config.sftp.user}`)
   }
   if (config.sftp.password && config.sftp.password !== "")
   {
-    selectiveLogging("info", "999", `SFTP Pswd: ${config.sftp.password}`)
+    selectiveLogging("info", "700", `SFTP Pswd: ${config.sftp.password}`)
   }
   if (config.sftp.filepattern && config.sftp.filepattern !== "")
   {
-    selectiveLogging("info", "999", `SFTP File Pattern: ${config.sftp.filepattern}`)
+    selectiveLogging("info", "700", `SFTP File Pattern: ${config.sftp.filepattern}`)
   }
   if (config.sftp.schedule && config.sftp.schedule !== "")
   {
-    selectiveLogging("info", "999", `SFTP Schedule: ${config.sftp.schedule}`)
+    selectiveLogging("info", "700", `SFTP Schedule: ${config.sftp.schedule}`)
   }
   
   if (!config.transforms) {
@@ -2511,7 +2506,7 @@ async function storeAndQueueWork(
   batchCount++
 
   if (batchCount > S3DBConfig.MaxBatchesWarning)
-  selectiveLogging("info", "999", `Warning: Updates from the S3 Object(${s3Key}) are exceeding(${batchCount}) the Warning Limit of ${S3DBConfig.MaxBatchesWarning} Batches per Object.`)
+  selectiveLogging("info", "", `Warning: Updates from the S3 Object(${s3Key}) are exceeding(${batchCount}) the Warning Limit of ${S3DBConfig.MaxBatchesWarning} Batches per Object.`)
 
   // throw new Error(`Updates from the S3 Object(${ s3Key }) Exceed(${ batch }) Safety Limit of 20 Batches of 99 Updates each.Exiting...`)
 
@@ -2557,10 +2552,10 @@ async function storeAndQueueWork(
 
   //if ( Object.values( updates ).length !== recs )
   //{
-  //     selectiveLogging("error", "9999", `Recs Count ${recs} does not reflect Updates Count ${Object.values(updates).length} `)
+  //     selectiveLogging("error", "", `Recs Count ${recs} does not reflect Updates Count ${Object.values(updates).length} `)
   //}
 
-  selectiveLogging("info", "9999", `Queuing Work File ${key} for ${s3Key}. Batch ${batchCount} of ${updateCount} records)`)
+  selectiveLogging("info", "911", `Queuing Work File ${key} for ${s3Key}. Batch ${batchCount} of ${updateCount} records)`)
 
   let addWorkToS3WorkBucketResult
   let addWorkToSQSWorkQueueResult
@@ -2647,7 +2642,6 @@ function convertJSONToXML_RTUpdates(updates: object[], config: customerConfig) {
 
     for (const uv in updAtts) {
       const uVal: ua = uv as ua
-      //selectiveLogging("info", "9999", `Record ${r} as ${key}: ${value}`)
       xmlRows += `<COLUMN name="${uVal}"> <![CDATA[${updAtts[uVal]}]]> </COLUMN>`
     }
 
@@ -2655,15 +2649,11 @@ function convertJSONToXML_RTUpdates(updates: object[], config: customerConfig) {
   }
 
   //Tidy up the XML
-  xmlRows += `</ROWS></InsertUpdateRelationalTable></Body></Envelope>`
-
-  selectiveLogging("info", "999", `Converting ${r} updates to XML RT Updates. Packaged ${Object.values(updates).length
-    } rows as updates to ${config.customer}'s ${config.listname}`)
+  xmlRows += `</ROWS></InsertUpdateRelationalTable></Body></Envelope>` 
   
-  selectiveLogging("info", "906", `JSON to be converted to XML RT Updates(${config.customer
-    } - ${config.listname}): ${JSON.stringify(updates)}`)
+  selectiveLogging("info", "906", `Converting ${r} updates to XML RT Updates. Packaged ${Object.values(updates).length} rows as updates to ${config.customer}'s ${config.listname} \nJSON to be converted to XML RT Updates: ${JSON.stringify(updates)}`)
     
-  selectiveLogging("info", "917", `XML from JSON for RT Updates (${config.customer} - ${config.listname}): ${xmlRows}`)
+  selectiveLogging("info", "917", `Converting ${r} updates to XML RT Updates. Packaged ${Object.values(updates).length} rows as updates to ${config.customer}'s ${config.listname} \nXML from JSON for RT Updates: ${xmlRows}`)
 
   return xmlRows
 }
@@ -3031,8 +3021,6 @@ async function addWorkToS3WorkBucket(queueUpdates: string, key: string) {
     Key: key,
   }
 
-  selectiveLogging("info", "9999", `Write Work to S3 Process Queue for ${key}`) //ToDo: Assign Debug number 
-
   let s3ProcessBucketResult = ""
   let addWorkToS3ProcessBucket
 
@@ -3174,7 +3162,7 @@ async function addWorkToSQSWorkQueue(
 }
 
 async function getS3Work(s3Key: string, bucket: string) {
-  selectiveLogging("info", "9999", `Debug - GetS3Work Key: ${s3Key}`)
+  selectiveLogging("info", "517", `GetS3Work for Key: ${s3Key}`)
 
   const getObjectCmd = {
     Bucket: bucket,
@@ -3189,7 +3177,7 @@ async function getS3Work(s3Key: string, bucket: string) {
       .send(new GetObjectCommand(getObjectCmd))
       .then(async (getS3Result: GetObjectCommandOutput) => {
         work = (await getS3Result.Body?.transformToString("utf8")) as string
-        selectiveLogging("info", "9999", `Work Pulled (${work.length} chars): ${s3Key}`)
+        selectiveLogging("info", "517", `Work Pulled (${work.length} chars): ${s3Key}`)
         
       })
   } catch (e) {
@@ -3464,7 +3452,7 @@ async function postToConnect(updates: string, custconfig: customerConfig, update
   //get access token
   //post to connect
   //return result
-  selectiveLogging("info", "9999", `${updates}, ${custconfig}, ${updateCount}`)
+  selectiveLogging("info", "800", `${updates}, ${custconfig}, ${updateCount}`)
 
   return "postToConnect"
 }
@@ -3514,10 +3502,10 @@ async function getAnS3ObjectforTesting(bucket: string) {
           i++
           s3Key = s3ListResult.Contents?.at(i)?.Key as string
         }
-
-        selectiveLogging("info", "9999", `S3 List: \n${ JSON.stringify(s3ListResult.Contents) } `)
-
-        selectiveLogging("info", "999", `This is a Test Run(${i}) Retrieved ${s3Key} for this Test Run`)
+        //Log all Test files found
+        selectiveLogging("info", "", `S3 List: \n${JSON.stringify(s3ListResult.Contents)} `)
+        //Log the file used for this test run 
+        selectiveLogging("info", "", `This is a Test Run(${i}) Retrieved ${s3Key} for this Test Run`)
 
       } else
       {
