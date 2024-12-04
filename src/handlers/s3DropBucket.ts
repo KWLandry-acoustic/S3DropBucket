@@ -384,7 +384,7 @@ testS3Key = "TestData/Funding_Circle_Limited_CampaignDatabase1_2024_10_08T09_52_
 //testS3Key = "TestData/KingsfordWeather_00212.csv"
 
 
-const s3db_version = `S3DB Version: 3.3.003 ( ${new Date().toUTCString()} )`
+const s3db_version = `S3DropBucket Version: 3.5.73 ( ${new Date().toUTCString()} )`
 console.info(s3db_version)
 
 /**
