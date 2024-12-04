@@ -8,7 +8,7 @@
       "name": "1.Template-S3DropBucket",
       "type": "aws-sam",
       "request": "direct-invoke",
-      "preLaunchTask": "updateDependencies",
+      //"preLaunchTask": "updateDependencies",
       //"preLaunchTask": "docker-run: debug",
       "invokeTarget": {
         "target": "template",
@@ -72,7 +72,7 @@
       "name": "2.Template-S3DropBucketQueueProcessorHandler",
       "type": "aws-sam",
       "request": "direct-invoke",
-      "preLaunchTask": "cleanUpdateDependencies",
+      //"preLaunchTask": "cleanUpdateDependencies",
       "invokeTarget": {
         "target": "template",
         "templatePath": "${workspaceFolder}/template.yml",

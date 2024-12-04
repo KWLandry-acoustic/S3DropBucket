@@ -1,10 +1,12 @@
 package/*
-TidyUpLeftOvers/*
+setaside/*
 __tests__/*
 .stackery/*
 .vscode/*
 nodejs.zip
 *.txt
 *.tgz
+*.jsonc
+*.maybe
+*old*
 .ds*
-.json*

@@ -6,7 +6,7 @@
 			"problemMatcher": [ ],
 			"label": "cleanUpdateDependencies",
 			"detail": "Clean then Update Dependencies Directory",
-			"command": " echo 'tasks.json \nDirectory:'; pwd; echo 'Clean:'; rm -r .aws-sam/deps; echo 'Update:'; cp -f package.json layers"
+			"command": " echo 'tasks.json \nDirectory:'; pwd; echo 'Clean:'; rm -rf .aws-sam/deps; " // echo 'Update:'; cp -f package.json layers"
 		}, {
 			"type": "shell",
 			"problemMatcher": [ ],

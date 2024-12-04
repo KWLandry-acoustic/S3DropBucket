@@ -4,19 +4,24 @@ phases:
     runtime-versions:
       nodejs: 20.x
     commands:
+      - rm -rf .aws-sam
+      - npm remove .aws-sam
       - pwd; ls -lha
       - SAM_CLI_TELEMETRY=0
 
   pre_build:
     commands:
-      - npm run cleanUp-AWSSAM
+      - npm remove .aws-sam
+      - npm run cleanBuild
       - npm cache clean --force
       - npm remove node_modules
-      - cp package.json layers
-      - cp package-lock.json layers
-      - cd layers
-      - npm install --omit=dev
-      - cd ..
+      #- npm remove layers
+      #- mkdir layers/nodejs
+      #- cp package.json layers/nodejs
+      #- cp package-lock.json layers/nodejs
+      #- cd layers/nodejs
+      #- npm install --omit=dev
+      #- cd ../
 
   build:
     commands:
@@ -30,7 +35,10 @@ phases:
       #- sam build --cached --parallel --debug --use-container
       #- sam build --cached --parallel --debug --use-container --template-file packaged.yaml  
       #- sam build --clean --parallel --debug 
-      - sam build --cached --parallel --debug 
+      #- sam --clean --debug
+      #- sam build --clean --debug
+      #- sam build --clean --cached --parallel
+      - sam build --clean --cached --parallel --manifest .\package.json
 
       # - sam package --s3-bucket aws-us-east-1-777957353822-tricklercache-pipe --force-upload --debug
       - sam package --s3-bucket aws-us-east-1-777957353822-tricklercache-pipe --output-template-file packaged.yaml --debug

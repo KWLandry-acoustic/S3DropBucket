@@ -5,17 +5,24 @@ version = 0.1
 [default]
 
 [default.global.parameters]
-stack_name = "s3DropBucket"
+stack_name = "S3DropBucket"
 resolve_s3 = false
 loglevel="debug"
 
 [default.build.parameters]
+save_params = true
+region = "us-east-1"
+profile = "default"
+manifest = "/Users/kwlandry/Dropbox/Documents/A. Campaign/CodeFolder/A. S3DropBucket_main/s3dropbucket/package.json"
+clean = true
 cached = true
 parallel = false
 # sourcemap = true
 inlinesourcemap = true
 cache_dir=".aws-sam/cache"
 debug = true
+template_file = "/Users/kwlandry/Dropbox/Documents/A. Campaign/CodeFolder/A. S3DropBucket_main/s3dropbucket/template.yml"
+build_dir = "/tmp/aws-toolkit-vscode/vsctk38db9d3f/output"
 
 
 [default.validate.parameters]

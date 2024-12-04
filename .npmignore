@@ -1,11 +1,14 @@
 package/*
-TidyUpLeftOvers/*
+setaside/*
 __tests__/*
 .stackery/*
 .vscode/*
-.aws-sam
+.aws-sam/*
 nodejs.zip
 *.txt
 *.tgz
+*.jsonc
+*.maybe
+*old*
 __tests__/*
 .ds*
