@@ -38,7 +38,7 @@ phases:
       #- sam --clean --debug
       #- sam build --clean --debug
       #- sam build --clean --cached --parallel
-      - sam build --clean --cached --parallel --manifest .\package.json
+      - sam build --cached --parallel --manifest .\package.json
 
       # - sam package --s3-bucket aws-us-east-1-777957353822-tricklercache-pipe --force-upload --debug
       - sam package --s3-bucket aws-us-east-1-777957353822-tricklercache-pipe --output-template-file packaged.yaml --debug
