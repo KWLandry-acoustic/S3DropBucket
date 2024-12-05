@@ -2689,11 +2689,13 @@ async function putToFirehose(chunks: object[], key: string, cust: string) {
     {
       recs++
       let jo = chunks[j]
-debugger
+
+      debugger
+      
       if (cust !== "S3DropBucket_Log_")
       jo = Object.assign(jo, { Customer: cust })
       const fd = Buffer.from(JSON.stringify(jo), "utf-8")
-
+debugger
       const fp = {
         DeliveryStreamName: fireHoseStream,
         Record: {
