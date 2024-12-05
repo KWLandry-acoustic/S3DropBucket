@@ -12,7 +12,8 @@ loglevel="debug"
 [default.build.parameters]
 save_params = true
 region = "us-east-1"
-manifest = "/Users/kwlandry/Dropbox/Documents/A. Campaign/CodeFolder/A. S3DropBucket_main/s3dropbucket/package.json"
+#manifest = "/Users/kwlandry/Dropbox/Documents/A. Campaign/CodeFolder/A. S3DropBucket_main/s3dropbucket/package.json"
+manifest = "./package.json"
 clean = true
 cached = true
 parallel = true
@@ -20,9 +21,9 @@ parallel = true
 inlinesourcemap = true
 #cache_dir=".aws-sam/cache"
 debug = true
-#template_file = "/Users/kwlandry/Dropbox/Documents/A. Campaign/CodeFolder/A. S3DropBucket_main/s3dropbucket/template.yml"
+template_file = "./template.yml"
 #build_dir = "/tmp/aws-toolkit-vscode/vsctk38db9d3f/output"
-template_file = "/Users/kwlandry/Dropbox/Documents/A. Campaign/CodeFolder/A. S3DropBucket_main/s3dropbucket/template.yml"
+#template_file = "/Users/kwlandry/Dropbox/Documents/A. Campaign/CodeFolder/A. S3DropBucket_main/s3dropbucket/template.yml"
 build_dir = "/tmp/aws-toolkit-vscode/vsctk967c7d32/output"
 
 

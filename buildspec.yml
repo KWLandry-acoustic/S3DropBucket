@@ -26,7 +26,7 @@ phases:
   build:
     commands:
       - npm install --omit=dev
-      - npm prune --production
+      - npm prune --omit-dev
       #- npm install -g serverless
       - npm i -g esbuild #--bundle --minify --keep-names --sourcemap --debug #--target=node20.x  --platform: nodejs20.x
 
