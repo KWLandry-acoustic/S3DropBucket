@@ -35,7 +35,7 @@ phases:
       #- sam build --cached --parallel --debug --use-container
       #- sam build --cached --parallel --debug --use-container --template-file packaged.yaml  
       #- sam build --parallel --debug 
-      - sam --clean --debug
+      #- sam --clean --debug
       #- sam build --debug
       #- sam build --cached --parallel
       #- sam build --cached --parallel --manifest package.json
