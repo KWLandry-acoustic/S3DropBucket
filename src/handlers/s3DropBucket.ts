@@ -1,3 +1,19 @@
+/*
+| description : S3DropBucket - Process data from files dropped onto S3 Bucket(s) into Campaign/Connect 
+| version  :  3.3.31
+| author   :  KW Landry (kip.landry@acoustic.co)
+| copyright:  (c) 2024 by ISC
+| created  :  11/24/2024 18:35:06
+| updated  :  11/24/2024 18:35:06
++---------------------------------------------------------------------------- */
+
+
+const s3db_version = `S3DropBucket Version: 3.3.31 ( ${new Date().toUTCString()} )`
+
+console.info(s3db_version)
+
+
+
 /* eslint-disable no-debugger */
 "use strict"
 
@@ -54,7 +70,6 @@ import {
 //json-node = Stream compatible package
 //import {JSONParser, Tokenizer, TokenParser} from '@streamparser/json-node'
 import {JSONParser} from '@streamparser/json-node'
-//import JSONParser from "@streamparser/json-node"
 //import {transform} from '@streamparser/json-node'
 import {transform} from "stream-transform"
 
@@ -65,6 +80,7 @@ import { parse } from "csv-parse"
 import jsonpath from "jsonpath"
 
 import sftpClient, {ListFilterFunction} from "ssh2-sftp-client"
+
 
 //import {type sftpClientOptions} from "ssh2-sftp-client/lib/typescript/sftp-client"
 //import {type sftpClientError} from "ssh2-sftp-client/lib/typescript/sftp-client"
@@ -85,7 +101,6 @@ import sftpClient, {ListFilterFunction} from "ssh2-sftp-client"
 //Useful for internal process references
 //import { type FileResultCallback } from "@babel/core"
 //import { freemem } from "os"
-//import { env } from "node:process"
 //import { keyBy } from "lodash"
 //import { setUncaughtExceptionCaptureCallback } from "process"
 //import { type LargeNumberLike } from "crypto"
@@ -383,9 +398,6 @@ testS3Key = "TestData/Funding_Circle_Limited_CampaignDatabase1_2024_10_08T09_52_
 //testS3Key = "TestData/KingsfordWeather_00211.csv"
 //testS3Key = "TestData/KingsfordWeather_00212.csv"
 
-
-const s3db_version = `S3DropBucket Version: 3.5.73 ( ${new Date().toUTCString()} )`
-console.info(s3db_version)
 
 /**
  * A Lambda function to process the Event payload received from S3.
