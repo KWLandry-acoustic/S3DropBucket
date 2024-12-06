@@ -16,7 +16,7 @@ phases:
       #- npm cache clean --force
       - npm remove node_modules
       - npm remove layers
-      - mkdir layers/nodejs
+      - mkdir layers
       - cp package.json layers/nodejs
       - cp package-lock.json layers/nodejs
       - cd layers/nodejs
