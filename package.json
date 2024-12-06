@@ -15,14 +15,8 @@
 		"url": "https://github.com/KWLandry-acoustic/S3DropBucket.git"
 	},
 	"dependencies": {
-		"@aws-sdk/client-firehose": "^3.521.0",
-		"@aws-sdk/client-scheduler": "^3.515.0",
-		"@aws-sdk/client-sqs": "^3.658.1",
-		"@aws-sdk/protocol-http": "^3.374.0",
 		"@streamparser/json": "^0.0.20",
 		"@streamparser/json-node": "^0.0.21",
-		"@types/aws-lambda": "^8.10.136",
-		"@types/node-fetch": "^2.6.4",
 		"csv-parse": "^5.5.0",
 		"csv-stringify": "^6.4.2",
 		"csv-transform": "^0.0.8",
@@ -30,6 +24,7 @@
 		"data-uri-to-buffer": "^5.0.1",
 		"jsonpath": "^1.1.1",
 		"lodash.get": "^4.4.2",
+		"@types/node-fetch": "^2.6.4",
 		"node-fetch": "^3.3.2",
 		"smithy": "^0.6.3",
 		"ssh2-sftp-client": "^8.1.0",
@@ -41,8 +36,12 @@
 		"crypto": false
 	},
 	"devDependencies": {
-		"@aws-sdk/client-s3": "^3.409.0",
 		"@types/aws-lambda": "^8.10.136",
+		"@aws-sdk/client-firehose": "^3.521.0",
+		"@aws-sdk/client-scheduler": "^3.515.0",
+		"@aws-sdk/client-sqs": "^3.658.1",
+		"@aws-sdk/protocol-http": "^3.374.0",
+		"@aws-sdk/client-s3": "^3.409.0",
 		"@types/jest": "^29.5.13",
 		"@types/jsonpath": "^0.2.4",
 		"@types/lodash.get": "^4.4.7",
