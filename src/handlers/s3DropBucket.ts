@@ -1,3 +1,6 @@
+/* eslint-disable no-debugger */
+"use strict"
+
 /*
 | description : S3DropBucket - Process data from files dropped onto S3 Bucket(s) into Campaign/Connect 
 | version  :  3.3.31
@@ -14,8 +17,6 @@ console.info(s3db_version)
 
 
 
-/* eslint-disable no-debugger */
-"use strict"
 
 //ToDo: refactor into three, one for each lambda function
 
