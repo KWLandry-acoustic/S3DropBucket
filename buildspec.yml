@@ -56,6 +56,7 @@ phases:
       - ls  -lha
       - ls .aws-sam/deps -lha --block-size=K
       - ls node_modules -lha --block-size=K
+      - rm -rf .aws-sam
       #- ls layers -lha --block-size=K
       #- ls packaged.yaml -lha --block-size=K
       #- ls template-export.yml -lha --block-size=K
