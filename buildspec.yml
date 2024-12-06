@@ -7,7 +7,7 @@ phases:
       #- rm -rf .aws-sam
       #- npm remove .aws-sam
       - pwd; 
-      - ls -lha; 
+      - ls -lha --block-size=K; 
       - SAM_CLI_TELEMETRY=0
 
   pre_build:
@@ -54,7 +54,13 @@ phases:
     commands:
       - pwd
       - ls  -lha
-      - ls .aws-sam -lha;
+      - ls .aws-sam/deps -lha --block-size=K
+      - ls node_modules -lha --block-size=K
+      #- ls layers -lha --block-size=K
+      #- ls packaged.yaml -lha --block-size=K
+      #- ls template-export.yml -lha --block-size=K
+      #- ls package.json -lha --block-size=K
+      #- ls package-lock.json -lha --block-size=K
 
 artifacts:
   files:
