@@ -17,9 +17,9 @@ phases:
       - npm remove node_modules
       - npm remove layers
       - mkdir layers
-      - cp package.json layers/nodejs
-      - cp package-lock.json layers/nodejs
-      - cd layers/nodejs
+      - cp package.json layers
+      - cp package-lock.json layers
+      - cd layers
       - npm install --omit=dev
       - npm prune --omit-dev
       - cd ../
