@@ -6,7 +6,8 @@ phases:
     commands:
       #- rm -rf .aws-sam
       #- npm remove .aws-sam
-      - pwd; ls -lha; ls .aws-sam -lha;
+      - pwd; 
+      - ls -lha; 
       - SAM_CLI_TELEMETRY=0
 
   pre_build:
@@ -53,6 +54,7 @@ phases:
     commands:
       - pwd
       - ls  -lha
+      - ls .aws-sam -lha;
 
 artifacts:
   files:
