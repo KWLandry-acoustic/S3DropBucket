@@ -83,10 +83,10 @@ Resources:
           - src/handlers/s3DropBucket.ts
         External:
           - '@aws-sdk/client-s3'
-          #- "node-fetch"
+          - node-fetch
           - nodejs
           #- "@aws-sdk/fetch-http-handlerdeps/node-fetch"
-          - '@aws-sdk/client3/package.json'
+          #- '@aws-sdk/client3/package.json'
 
   S3DropBucketQueueProcessorFunction:
     # Type: "AWS::Lambda::Function"
