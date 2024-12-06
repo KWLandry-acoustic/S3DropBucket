@@ -7,7 +7,8 @@ version = 0.1
 [default.global.parameters]
 stack_name = "S3DropBucket"
 resolve_s3 = false
-loglevel="debug"
+loglevel = "debug"
+SLS_DEBUG = true
 
 [default.build.parameters]
 save_params = true

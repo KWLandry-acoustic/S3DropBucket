@@ -5,8 +5,8 @@ Globals:
   Function:
     Runtime: nodejs20.x
     PermissionsBoundary: arn:aws:iam::777957353822:policy/tricklercache-us-east-1-PermissionsBoundary
-    Layers: 
-      - !Ref dependencyLayer
+    #Layers: 
+    #  - !Ref dependencyLayer
 Parameters:
   AppId:
     Type: String
@@ -60,8 +60,8 @@ Resources:
       Policies:
         - S3ReadPolicy:
             BucketName: !Sub ${BucketName}
-      #Layers:
-      #  - !Ref dependencyLayer
+      Layers:
+        - !Ref dependencyLayer
     # #Build Parameters
     Metadata:
       BuildMethod: esbuild
@@ -110,8 +110,8 @@ Resources:
       Policies:
         - S3ReadPolicy:
             BucketName: !Sub ${BucketName}
-      #Layers:
-      #  - !Ref dependencyLayer
+      Layers:
+        - !Ref dependencyLayer
     # #Build Parameters
     Metadata:
       BuildMethod: esbuild
@@ -176,8 +176,8 @@ Resources:
       Policies:
         - S3ReadPolicy:
             BucketName: !Sub ${BucketName}
-      #Layers:
-      #  - !Ref dependencyLayer
+      Layers:
+        - !Ref dependencyLayer
     # #Build Parameters
     Metadata:
       BuildMethod: esbuild
