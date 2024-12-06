@@ -16,8 +16,6 @@ const s3db_version = `S3DropBucket Version: 3.3.31 ( ${new Date().toUTCString()}
 console.info(s3db_version)
 
 
-
-
 //ToDo: refactor into three, one for each lambda function
 
 import {
