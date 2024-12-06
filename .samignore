@@ -1,4 +1,5 @@
 package/*
+node_modules/*
 setaside/*
 __tests__/*
 .stackery/*
