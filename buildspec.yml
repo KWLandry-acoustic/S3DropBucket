@@ -11,17 +11,18 @@ phases:
 
   pre_build:
     commands:
-      #- npm remove .aws-sam
+      - npm remove .aws-sam
       #- npm run version
       #- npm cache clean --force
       - npm remove node_modules
-      #- npm remove layers
-      #- mkdir layers/nodejs
-      #- cp package.json layers/nodejs
-      #- cp package-lock.json layers/nodejs
-      #- cd layers/nodejs
-      #- npm install --omit=dev
-      #- cd ../
+      - npm remove layers
+      - mkdir layers/nodejs
+      - cp package.json layers/nodejs
+      - cp package-lock.json layers/nodejs
+      - cd layers/nodejs
+      - npm install --omit=dev
+      - npm prune --omit-dev
+      - cd ../
 
   build:
     commands:

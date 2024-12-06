@@ -20,8 +20,8 @@ Resources:
       Description: Layer to Hold all Dependencies (reduce package size)
       #ContentUri: .aws-sam/deps      
       #ContentUri: node_modules/      
-      #ContentUri: layers
-      ContentUri: ./
+      ContentUri: layers
+      #ContentUri: ./
       CompatibleArchitectures:
         - x86_64
       #If a path to a local folder is provided, for the content to be transformed properly
