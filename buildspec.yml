@@ -12,7 +12,7 @@ phases:
   pre_build:
     commands:
       #- npm remove .aws-sam
-      - npm run version
+      #- npm run version
       - npm cache clean --force
       #- npm remove node_modules
       #- npm remove layers
