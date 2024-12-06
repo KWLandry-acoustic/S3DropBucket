@@ -13,8 +13,8 @@ phases:
     commands:
       #- npm remove .aws-sam
       #- npm run version
-      - npm cache clean --force
-      #- npm remove node_modules
+      #- npm cache clean --force
+      - npm remove node_modules
       #- npm remove layers
       #- mkdir layers/nodejs
       #- cp package.json layers/nodejs
