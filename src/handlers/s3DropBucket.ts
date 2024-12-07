@@ -3469,6 +3469,43 @@ export async function postToCampaign(
 
   return postRes
 }
+async function buildConnectMutation(updates: object) {
+
+/*
+mutation {
+    updateContacts(
+      dataSetId: "df07969b-7126-47f2-812d-b7b5876627f7"
+        updateContactInputs: [
+      {
+        contactId: "123509"
+                to: {
+          attributes: [
+            {name: "Unique ID", value: "123509"}
+                        {name: "Firstname", value: "Barney"}
+                        {name: "Lastname", value: "Rubble"}
+                        {name: "Email", value: "barney.rubble@quarry.com"}
+          ]
+                    consent: {
+            consentGroups: [
+              {
+                id: "3a7134b8-dcb5-509a-b7ff-946b48333cc9"
+                                name: "Newsletters"
+                                status: OPT_IN
+              }
+            ]
+          }
+        }
+      }
+    ]
+    ) {
+      modifiedCount
+    }
+  }
+  */
+
+
+}
+
 
 async function postToConnect(updates: string, custconfig: customerConfig, updateCount: string) {
   //ToDo: 
@@ -3479,6 +3516,8 @@ async function postToConnect(updates: string, custconfig: customerConfig, update
   //post to connect
   //return result
   S3DB_Logging("info", "800", `${updates}, ${custconfig}, ${updateCount}`)
+
+  const m = buildConnectMutation(JSON.parse(updates))
 
   return "postToConnect"
 }

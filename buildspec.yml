@@ -55,6 +55,7 @@ phases:
   post_build:
     commands:
       - pwd
+      - cat packaged.yaml
       - ls -lha --block-size=K
       - rm -rf node_modules
       - ls .aws-sam/deps -lha --block-size=K
