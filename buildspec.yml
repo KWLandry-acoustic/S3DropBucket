@@ -59,7 +59,7 @@ phases:
       - cat template-export.yml
       - ls -lha --block-size=K
       #- rm -rf node_modules
-      - rm -rf .aws-sam
+      #- rm -rf .aws-sam
       #- ls .aws-sam/deps -lha --block-size=K
       #- ls node_modules -lha --block-size=K
       - ls layers -lha --block-size=K
