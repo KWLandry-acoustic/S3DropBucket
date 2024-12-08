@@ -50,7 +50,7 @@ Resources:
           NODE_OPTIONS: '--trace-warnings --unhandled-rejections=warn'
       Role: arn:aws:iam::777957353822:role/tricklercacheExecutionRole
       #CodeUri: ./
-      CodeUri: src/handlers/          #---Gets reBuilt in SAM Package
+      #CodeUri: src/handlers/          #---Gets reBuilt in SAM Package
       Handler: s3DropBucket.s3DropBucketHandler
       Runtime: nodejs20.x
       #Architectures:
@@ -100,7 +100,7 @@ Resources:
           NODE_OPTIONS: '--trace-warnings --unhandled-rejections=warn'
       Role: arn:aws:iam::777957353822:role/tricklercacheExecutionRole
       #CodeUri: ./
-      CodeUri: src/handlers/          #---Gets reBuilt in SAM Package
+      #CodeUri: src/handlers/          #---Gets reBuilt in SAM Package
       Handler: s3DropBucket.S3DropBucketQueueProcessorHandler
       Runtime: nodejs20.x
       #Architectures:
@@ -166,7 +166,7 @@ Resources:
           NODE_OPTIONS: '--trace-warnings --unhandled-rejections=warn'
       Role: arn:aws:iam::777957353822:role/tricklercacheExecutionRole
       #CodeUri: ./
-      CodeUri: src/handlers/          #---Gets reBuilt in SAM Package
+      #CodeUri: src/handlers/          #---Gets reBuilt in SAM Package
       Handler: s3DropBucket.s3DropBucketSFTPHandler
       Runtime: nodejs20.x
       Architectures:

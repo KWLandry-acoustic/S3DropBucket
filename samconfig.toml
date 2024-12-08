@@ -33,7 +33,7 @@ lint = true
 capabilities = "CAPABILITY_IAM"
 region = "us-east-1"
 profile = "Acoustic-cis-dev-ecs-devteam-user"
-codeuri = "src/handlers/"
+#codeuri = "src/handlers/"
 basedir = './'
 # parameter_overrides = "AppId=\"s3DropBucket\""
 image_repositories = []
