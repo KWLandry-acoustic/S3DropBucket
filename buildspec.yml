@@ -76,7 +76,7 @@ artifacts:
   files:
     - node_modules/**/*
     - template-export.yml
-    #- .aws-sam/**/*
+    - .aws-sam/**/*
     #- package-lock.json
     #- package.json
 
