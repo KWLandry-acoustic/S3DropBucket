@@ -22,10 +22,9 @@ phases:
       - cp package.json layers
       #- cp package-lock.json layers
       - cd layers
-      #- npm install --omit=dev
+      - npm install --omit=dev
       - npm ci
       - npm prune --production
-
       - cd ../
 
   build:
