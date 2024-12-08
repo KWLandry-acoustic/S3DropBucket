@@ -25,7 +25,7 @@ debug = true
 #template_file = "/Users/kwlandry/Dropbox/Documents/A. Campaign/CodeFolder/A. S3DropBucket_main/s3dropbucket/template.yml"
 #build_dir = "/tmp/aws-toolkit-vscode/vsctk38db9d3f/output"
 #template_file = "/Users/kwlandry/Dropbox/Documents/A. Campaign/CodeFolder/A. S3DropBucket_main/s3dropbucket/template.yml"
-build_dir = "/tmp/aws-toolkit-vscode/vsctk8677f53a/output"
+#build_dir = "/tmp/aws-toolkit-vscode/vsctk8677f53a/output"
 
 
 [default.validate.parameters]
