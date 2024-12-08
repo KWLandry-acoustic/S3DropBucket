@@ -27,8 +27,8 @@ phases:
 
   build:
     commands:
-      - npm install --omit=dev
-      - npm prune --omit-dev
+      #- npm install --omit=dev
+      #- npm prune --omit-dev
       #- npm install -g serverless
       - npm i -g esbuild #--bundle --minify --keep-names --sourcemap --debug #--target=node20.x  --platform: nodejs20.x
 
@@ -42,6 +42,8 @@ phases:
       #- sam build --cached --parallel
       #- sam build --cached --parallel --manifest package.json
       - sam build --parallel --debug 
+      #- npm install --omit=dev
+      - npm prune --omit-dev 
       #- sam package --s3-bucket aws-us-east-1-777957353822-tricklercache-pipe --force-upload --debug
       #- sam package --s3-bucket aws-us-east-1-777957353822-tricklercache-pipe --template-file packaged.yaml --debug # --output-template-file packaged.yaml --debug
       #- sam package --s3-bucket aws-us-east-1-777957353822-tricklercache-pipe --template-file template.yaml --output-template-file packaged.yaml --debug
@@ -56,6 +58,7 @@ phases:
     commands:
       - pwd
       - cat packaged.yaml
+      - cat template-export.yml
       - ls -lha --block-size=K
       #- rm -rf node_modules
       - rm -rf .aws-sam
@@ -74,6 +77,6 @@ artifacts:
     - node_modules/**/*
     - template-export.yml
     #- .aws-sam/**/*
-    - package-lock.json
-    - package.json
+    #- package-lock.json
+    #- package.json
 
