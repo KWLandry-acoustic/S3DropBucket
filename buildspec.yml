@@ -12,18 +12,18 @@ phases:
 
   pre_build:
     commands:
-      - npm remove .aws-sam
+      #- npm remove .aws-sam
       #- npm run version
       #- npm cache clean --force
       #- npm remove node_modules
-      #- npm remove layers
-      #- mkdir layers
-      #- cp package.json layers
-      #- cp package-lock.json layers
-      #- cd layers
-      #- npm install --omit=dev
-      #- npm prune --omit-dev
-      #- cd ../
+      - npm remove layers
+      - mkdir layers
+      - cp package.json layers
+      - cp package-lock.json layers
+      - cd layers
+      - npm install --omit=dev
+      - npm prune --omit-dev
+      - cd ../
 
   build:
     commands:
@@ -42,8 +42,6 @@ phases:
       #- sam build --cached --parallel
       #- sam build --cached --parallel --manifest package.json
       - sam build --parallel --debug 
-      #- npm install --omit=dev
-      - npm prune --omit-dev 
       #- sam package --s3-bucket aws-us-east-1-777957353822-tricklercache-pipe --force-upload --debug
       #- sam package --s3-bucket aws-us-east-1-777957353822-tricklercache-pipe --template-file packaged.yaml --debug # --output-template-file packaged.yaml --debug
       #- sam package --s3-bucket aws-us-east-1-777957353822-tricklercache-pipe --template-file template.yaml --output-template-file packaged.yaml --debug
