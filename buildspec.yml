@@ -20,10 +20,12 @@ phases:
       - mkdir layers
       - cat package.json
       - cp package.json layers
-      - cp package-lock.json layers
+      #- cp package-lock.json layers
       - cd layers
-      - npm install --omit=dev
-      #- npm prune --omit-dev
+      #- npm install --omit=dev
+      - npm ci
+      - npm prune --production
+
       - cd ../
 
   build:
