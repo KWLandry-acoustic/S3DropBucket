@@ -84,7 +84,7 @@ Resources:
         External:
           - '@aws-sdk/client-s3'
           - node-fetch
-          - nodejs
+          #- nodejs
           #- "@aws-sdk/fetch-http-handlerdeps/node-fetch"
           #- '@aws-sdk/client3/package.json'
 
@@ -133,9 +133,9 @@ Resources:
         External:
           - '@aws-sdk/client-s3'
           #- "node-fetch"
-          - nodejs
+          #- nodejs
           #- "@aws-sdk/fetch-http-handlerdeps/node-fetch"
-          - '@aws-sdk/client3/package.json'
+          #- '@aws-sdk/client3/package.json'
 
   s3DropBucketSFTPFunction:
     # Type: "AWS::Lambda::Function"
@@ -199,9 +199,9 @@ Resources:
         External:
           - '@aws-sdk/client-s3'
           #- "node-fetch"
-          - nodejs
+          #- nodejs
           #- "@aws-sdk/fetch-http-handlerdeps/node-fetch"
-          - '@aws-sdk/client3/package.json'
+          #- '@aws-sdk/client3/package.json'
   # Not defined here yet
   # SQS Queues - tricklercacheQueue
   #   Remember to use when defining: "FunctionResponseTypes": ["ReportBatchItemFailures"]
