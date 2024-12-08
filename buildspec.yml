@@ -57,9 +57,10 @@ phases:
       - pwd
       - cat packaged.yaml
       - ls -lha --block-size=K
-      - rm -rf node_modules
-      - ls .aws-sam/deps -lha --block-size=K
-      #- ls node_modules -lha --block-size=K
+      #- rm -rf node_modules
+      - rm -rf .aws-sam
+      #- ls .aws-sam/deps -lha --block-size=K
+      - ls node_modules -lha --block-size=K
       - ls -lha --block-size=K
 
       #- ls layers -lha --block-size=K
@@ -70,7 +71,8 @@ phases:
 
 artifacts:
   files:
-    - .aws-sam/**/*
-    - package-lock.json
-    - package.json
-    - template-export.yml
+    node_modules/**/*
+    #- .aws-sam/**/*
+    #- package-lock.json
+    #- package.json
+    #- template-export.yml
