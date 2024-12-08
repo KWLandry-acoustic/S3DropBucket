@@ -63,7 +63,7 @@ phases:
       #- ls .aws-sam/deps -lha --block-size=K
       #- ls node_modules -lha --block-size=K
       - ls layers -lha --block-size=K
-      - ls layers/nodejs -lha --block-size=K
+      #- ls layers/nodejs -lha --block-size=K
       - ls -lha --block-size=K
 
       #- ls layers -lha --block-size=K
