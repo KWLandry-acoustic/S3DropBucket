@@ -13,5 +13,15 @@
     "types": [
       "node"
     ]
-  }
+  },
+    "include": [
+    "src/**/*.ts",
+    "src/**/*.js"
+  ],
+  "exclude": [
+    "**/*.test.ts",
+    "__tests__/**/*"
+
+  ]
+
 }
