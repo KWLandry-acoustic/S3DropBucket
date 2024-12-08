@@ -71,8 +71,9 @@ phases:
 
 artifacts:
   files:
-    node_modules/**/*
+    - node_modules/**/*
+    - template-export.yml
     #- .aws-sam/**/*
-    #- package-lock.json
-    #- package.json
-    #- template-export.yml
+    - package-lock.json
+    - package.json
+
