@@ -34,7 +34,7 @@ capabilities = "CAPABILITY_IAM"
 region = "us-east-1"
 profile = "Acoustic-cis-dev-ecs-devteam-user"
 codeuri = "src/handlers/"
-# basedir = './'
+basedir = './'
 # parameter_overrides = "AppId=\"s3DropBucket\""
 image_repositories = []
 disable_rollback = false
