@@ -16,8 +16,8 @@ phases:
       #- npm run version
       #- npm cache clean --force
       #- npm remove node_modules
-      - npm remove layers
-      - mkdir layers
+      #- npm remove layers
+      #- mkdir layers
       - cat package.json
       - cp package.json layers
       #- cp package-lock.json layers
