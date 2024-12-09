@@ -58,13 +58,15 @@ phases:
       - cat packaged.yaml
       - cat template-export.yml
       - ls -lha --block-size=K
+      - ls /tmp/ -R
+      - ls /codebuild/output/ -R
       #- rm -rf node_modules
       #- rm -rf .aws-sam
       #- ls .aws-sam/deps -lha --block-size=K
       #- ls node_modules -lha --block-size=K
-      - ls layers -lha --block-size=K
+      #- ls layers -lha --block-size=K
       #- ls layers/nodejs -lha --block-size=K
-      - ls -lha --block-size=K
+      #- ls -lha --block-size=K
 
       #- ls layers -lha --block-size=K
       #- ls packaged.yaml -lha --block-size=K
