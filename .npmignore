@@ -3,7 +3,6 @@ setaside/*
 __tests__/*
 .stackery/*
 .vscode/*
-.aws-sam/*
 nodejs.zip
 *.txt
 *.tgz

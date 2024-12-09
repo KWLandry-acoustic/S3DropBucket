@@ -4,7 +4,7 @@
     "module": "NodeNext",
     "resolveJsonModule": true,
     "inlineSourceMap": true,
-    "outDir": "../../.aws-sam/build/nodejs",
+    "outDir": ".aws-sam/build/nodejs",
     "rootDir": ".",
     "sourceRoot": "/Users/kwlandry/Dropbox/Documents/A.Campaign/CodeFolder/A. S3DropBucket_main/s3dropbucket/src/handlers",
     "typeRoots": [
