@@ -18,7 +18,9 @@
     "esModuleInterop": true,
     //"skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "outDir": ".aws-sam",
+    //"outDir": ".aws-sam",
+    "rootDir": ".",
+    "outDir": "../../.aws-sam/build/nodejs",
     "paths": {
         "esbuild": ["./node_modules/.bin/esbuild"],
         "*": [ "./node_modules" ]
