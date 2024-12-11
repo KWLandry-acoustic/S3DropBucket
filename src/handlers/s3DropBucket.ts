@@ -11,7 +11,7 @@
 +---------------------------------------------------------------------------- */
 
 
-const s3db_version = `S3DropBucket Version: 3.3.31 ( ${new Date().toUTCString()} )`
+const s3db_version = `S3DropBucket Version: 3.3.33 ( ${new Date().toUTCString()} )`
 
 console.info(s3db_version)
 

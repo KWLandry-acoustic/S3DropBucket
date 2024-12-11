@@ -1,18 +1,36 @@
-./node_modules
-node_modules
-OLD_node_modules
+.vscode/
+./node_modules/
+node_modules/
+OLD_node_modules/
 setaside/*
 *.txt
 *.csv
 *.gz
 scratch*.*
-.aws-sam
-nodejs.zip
+.aws-sam/
+*.zip
 *.txt
 *.tgz
 __tests__/*
 .ds*
+lambda_caching_example.ts
+pura_config.json_bak
+pura_config.json_bak2
+.eslintrc.cjs
+.prettierrc_js
+customer_config_json.notes
+.prettierrc.mjs
+.prettierrc.cjs
+.eslintrc.mjs
 
+exampleJson-1.json
+tricklercache_config.json.notes
+scratchTests/
+*.todo
+S3DropBucket.todo
+OLD_node_modules/
+setAside/
+dependencyLayer/
 
 
 # Created by https://www.toptal.com/developers/gitignore/api/osx,node,linux,windows,sam
@@ -222,23 +240,4 @@ $RECYCLE.BIN/
 
 # End of https://www.toptal.com/developers/gitignore/api/osx,node,linux,windows,sam
 
-lambda_caching_example.ts
-pura_config.json_bak
-.gitignore
-pura_config.json_bak2
-.eslintrc.cjs
-.prettierrc_js
-customer_config_json.notes
-.prettierrc.mjs
-.prettierrc.cjs
-.eslintrc.mjs
 
-exampleJson-1.json
-tricklercache_config.json.notes
-scratchTests/src/main.ts
-scratchTests/out/main.js.map
-scratchTests/out/main.js
-*.todo
-S3DropBucket.todo
-OLD_node_modules/.bin/acorn
-setaside/config.json
