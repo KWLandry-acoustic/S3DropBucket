@@ -1,5 +1,5 @@
 
-# TricklerCache 
+# S3DropBucket 
     (from a Lambda-S3 starter project)
 
 This project contains source code and supporting files for the serverless application TricklerCache, created via the AWS Lambda console. 
