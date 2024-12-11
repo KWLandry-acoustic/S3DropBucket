@@ -1283,8 +1283,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
 
   let postResult: string = "false"
 
-  S3DB_Logging("info", "506", `Received SQS Events Batch of ${event.Records.length} records. \nContext: ${context}`)
-  S3DB_Logging("info", "904", `Received ${event.Records.length} Work Queue Records. The set of Records are: \n${JSON.stringify(event)} `)
+  S3DB_Logging("info", "506", `Received a Batch of SQS Work Queue Events (${event.Records.length} Work Queue Records): \n${JSON.stringify(event)} \nContext: ${context}`)
   
   //Empty the BatchFail array
   sqsBatchFail.batchItemFailures.forEach(() => {
