@@ -3,7 +3,7 @@
 	"author": "KW Landry (kip.landry@acoustic.co)",
 	"license": "MIT",
 	"description": "S3DropBucket - Process JSON or CSV data from files dropped onto S3 Bucket(s) into Campaign and/or Connect",
-	"version": "3.3.32",
+	"version": "3.3.33",
 	"builddate": "2024-03-21T21:00:00.000Z",
 	"copyright": "ISC",
 	"private": true,
@@ -64,7 +64,7 @@
 	},
 	"scripts": {
 		"start": "./node_modules/.bin/aws sls offline -s dev",
-		"version": "node /Users/kwlandry/Dropbox/Documents/A. Campaign/CodeFolder/node_scripts/update-version.js && git add src/handlers/s3DropBucket.ts",
+		"pushVersion": "node /Users/kwlandry/Dropbox/Documents/A. Campaign/CodeFolder/node_scripts/update-version.js && git add src/handlers/s3DropBucket.ts",
 		"debug_Old": "export SLS_DEBUG=* && node --inspect-brk aws sls invoke local -s dev",
 		"debug": "export SLS_DEBUG=* && node --inspect aws sls invoke local -s dev",
 		"lint": "eslint src  --ext .js,.ts,.json",
