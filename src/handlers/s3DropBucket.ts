@@ -3,7 +3,7 @@
 
 /*
 | description : S3DropBucket - Process data from files dropped onto S3 Bucket(s) into Campaign/Connect 
-| version  :  3.3.31
+| version  :  3.3.32
 | author   :  KW Landry (kip.landry@acoustic.co)
 | copyright:  (c) 2024 by ISC
 | created  :  11/24/2024 18:35:06
@@ -11,12 +11,15 @@
 +---------------------------------------------------------------------------- */
 
 
-const s3db_version = `S3DropBucket Version: 3.3.33 ( ${new Date().toUTCString()} )`
+const s3dbVersion = `S3DropBucket Version: 3.3.33 ( ${new Date().toUTCString()} )`
+process.env["S3DropBucketVersion"] = s3dbVersion
+const packageVersion = process.env.npm_package_version
+process.env["S3DropBucketPackageVersion"] = packageVersion
+console.info(`S3DB Version: ${s3dbVersion} from package version:  ${packageVersion}`)
 
-console.info(s3db_version)
 
-
-//ToDo: refactor into three, one for each lambda function
+//ToDo: refactor: break out each lambda function and common functions into separate modules
+//ToDo: Create Tests 
 
 import {
   S3Client,

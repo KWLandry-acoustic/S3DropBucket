@@ -3,7 +3,8 @@
 	"author": "KW Landry (kip.landry@acoustic.co)",
 	"license": "MIT",
 	"description": "S3DropBucket - Process JSON or CSV data from files dropped onto S3 Bucket(s) into Campaign and/or Connect",
-	"version": "3.3.31",
+	"version": "3.3.32",
+	"builddate": "2024-03-21T21:00:00.000Z",
 	"copyright": "ISC",
 	"private": true,
 	"package": {
