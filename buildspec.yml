@@ -28,7 +28,7 @@ phases:
       #- cd ../
       - npm version patch
       - npm pkg get version
-      - npm pkg set description = "Build ${version} `date '+%m-%d-%Y %H:%M:%S'`"
+      - npm pkg set description="Build `npm pkg get version` - `date '+%m-%d-%Y %H:%M:%S'`"
 
   build:
     commands:
