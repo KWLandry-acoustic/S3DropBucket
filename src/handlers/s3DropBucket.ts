@@ -10,13 +10,17 @@
 | updated  :  11/24/2024 18:35:06
 +---------------------------------------------------------------------------- */
 
-const packageVersion = process.env.npm_package_version
-const packageBuild = process.env.npm_package_build
-process.env["S3DropBucketPackageVersion"] = packageVersion
-process.env["S3DropBucketPackageBuild"] = packageBuild
+import {version, builddate, description} from '../../package.json'
+//import {builddate} from '../../package.json'
+//import {description}
+
+process.env["S3DropBucketPackageVersion"] = version
+process.env["S3DropBucketPackageBuildDate"] = builddate
+process.env["S3DropBucketPackageDescription"] = description
+
 
 //const s3dbVersion = `S3DropBucket Version: 3.3.33 ( ${new Date().toUTCString()} )`
-console.info(`S3DB Version: ${packageVersion} from Build:  ${packageBuild}`)
+console.info(`S3DB Version: ${version} from Build:  ${builddate} \n ${description}`)
 
 
 //ToDo: refactor: break out each lambda function and common functions into separate modules
