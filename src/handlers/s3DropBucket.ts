@@ -445,7 +445,7 @@ export const s3DropBucketHandler: Handler = async (
 
 
 
-  if (event.Records[0].s3.object.key.indexOf("Aggregator") > -1)
+  if (event.Records[0].s3.object.key.indexOf("S3DBAggregator") > -1)
   {
     S3DB_Logging("info", "925", `Processing an Aggregated File ${event.Records[0].s3.object.key}`)
   }
@@ -2694,7 +2694,7 @@ async function putToFirehose(chunks: object[], key: string, cust: string) {
   // S3DropBucket_Aggregator
   // S3DropBucket_Log
 
-  let fireHoseStream = "S3DropBucket_Aggregator"
+  let fireHoseStream = "S3DBAggregator"
 
   //Future - Logging possibilitys
   if (cust === "S3DropBucket_Logs_") fireHoseStream = "S3DropBucket_Log"
