@@ -20,7 +20,7 @@ process.env["S3DropBucketPackageDescription"] = description
 
 
 //const s3dbVersion = `S3DropBucket Version: 3.3.33 ( ${new Date().toUTCString()} )`
-console.info(`S3DB Version: ${version} from Build:  ${builddate} \n ${description}`)
+console.info(`S3DB Version: ${version} from Build:  ${builddate} \nDescription: ${description}`)
 
 
 //ToDo: refactor: break out each lambda function and common functions into separate modules
