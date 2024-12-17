@@ -58,11 +58,8 @@ phases:
 
       #- aws cloudformation package --template-file packaged.yaml --s3-bucket $S3_BUCKET --output-template-file template-export.yml --debug
       #- aws cloudformation package --s3-bucket $S3_BUCKET --output-template-file template-export.yml --debug
-      - aws cloudformation package --s3-bucket $S3_BUCKET --debug
+      - aws cloudformation package --s3-bucket $S3_BUCKET --output-template-file template-export.yml --debug
       #- aws cloudformation deploy --template-file template.yml --s3-bucket $S3_BUCKET --debug
-
-
-
 
 
   post_build:
