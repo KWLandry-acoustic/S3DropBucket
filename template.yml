@@ -10,6 +10,8 @@ Globals:
 Parameters:
   AppId:
     Type: String
+    Default: "S3DropBucket"
+    Description: "Acoustic S3DropBucket Solution"
 Resources:
   dependencyLayer:
     Type: AWS::Serverless::LayerVersion
