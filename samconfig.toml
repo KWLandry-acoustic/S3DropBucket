@@ -12,7 +12,7 @@ SLS_DEBUG = true
 
 [default.build.parameters]
 save_params = true
-region = "us-east-1"
+#region = "us-east-1"
 #manifest = "/Users/kwlandry/Dropbox/Documents/A. Campaign/CodeFolder/A. S3DropBucket_main/s3dropbucket/package.json"
 #manifest = "./package.json"
 clean = true
@@ -30,8 +30,8 @@ lint = true
 
 [default.deploy.parameters]
 capabilities = "CAPABILITY_IAM"
-region = "us-east-1"
-profile = "Acoustic-cis-dev-ecs-devteam-user"
+#region = "us-east-1"
+#profile = "Acoustic-cis-dev-ecs-devteam-user"
 #codeuri = "src/handlers/"
 basedir = './'
 # parameter_overrides = "AppId=\"s3DropBucket\""
