@@ -4,7 +4,7 @@ Description: Lambda-S3 DropBucket Project
 Globals:
   Function:
     Runtime: nodejs20.x
-    PermissionsBoundary: arn:aws:iam::777957353822:policy/tricklercache-us-east-1-PermissionsBoundary
+    #PermissionsBoundary: arn:aws:iam::777957353822:policy/tricklercache-us-east-1-PermissionsBoundary
     #Layers: 
     #  - !Ref dependencyLayer
 Parameters:
@@ -50,7 +50,7 @@ Resources:
           Version: !Ref AppId
           # NODE_OPTIONS: --enable-source-map --trace-warnings --unhandled-rejections=warn
           NODE_OPTIONS: '--trace-warnings --unhandled-rejections=warn'
-      Role: arn:aws:iam::777957353822:role/tricklercacheExecutionRole
+      #Role: arn:aws:iam::777957353822:role/tricklercacheExecutionRole
       #CodeUri: ./
       #CodeUri: src/handlers/          #---Gets reBuilt in SAM Package
       Handler: s3DropBucket.s3DropBucketHandler
@@ -68,7 +68,6 @@ Resources:
     Metadata:
       BuildMethod: esbuild
       Architecture: x86_64
-      #VersionDescription: !GetAtt s3DropBucketFunction.AWS::Lambda::Version
       BuildProperties:
         # Target: es2020
         #Target: node20.17.0
@@ -100,7 +99,7 @@ Resources:
           Version: !Ref AppId
           # NODE_OPTIONS: --enable-source-map --trace-warnings --unhandled-rejections=warn
           NODE_OPTIONS: '--trace-warnings --unhandled-rejections=warn'
-      Role: arn:aws:iam::777957353822:role/tricklercacheExecutionRole
+      #Role: arn:aws:iam::777957353822:role/tricklercacheExecutionRole
       #CodeUri: ./
       #CodeUri: src/handlers/          #---Gets reBuilt in SAM Package
       Handler: s3DropBucket.S3DropBucketQueueProcessorHandler
@@ -166,7 +165,7 @@ Resources:
           Version: !Ref AppId
           # NODE_OPTIONS: --enable-source-map --trace-warnings --unhandled-rejections=warn
           NODE_OPTIONS: '--trace-warnings --unhandled-rejections=warn'
-      Role: arn:aws:iam::777957353822:role/tricklercacheExecutionRole
+      #Role: arn:aws:iam::777957353822:role/tricklercacheExecutionRole
       #CodeUri: ./
       #CodeUri: src/handlers/          #---Gets reBuilt in SAM Package
       Handler: s3DropBucket.s3DropBucketSFTPHandler
