@@ -59,7 +59,7 @@ phases:
       #- sam package --s3-bucket aws-eu-central-1-993487360810-s3dropbucket-pipe --output-template-file packaged.yaml --debug
 
       #- aws cloudformation package --template-file packaged.yaml --s3-bucket $S3_BUCKET --output-template-file template-export.yml --debug
-      - aws cloudformation package --template-file sampackaged.yaml --s3-bucket $S3_BUCKET --output-template-file template-export.yml --ignore_errors yes --debug
+      - aws cloudformation package --template-file sampackaged.yaml --s3-bucket $S3_BUCKET --output-template-file template-export.yml --debug
 
       #- aws cloudformation package --s3-bucket $S3_BUCKET --output-template-file template-export.yml --debug
       #- aws cloudformation package --s3-bucket $S3_BUCKET --output-template-file template-export.yml --debug
