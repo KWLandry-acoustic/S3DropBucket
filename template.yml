@@ -59,9 +59,9 @@ Resources:
       #  - x86_64
       MemorySize: 508
       Timeout: 330 # 5 mins 30 seconds
-      Policies:
-        - S3ReadPolicy:
-            BucketName: !Sub ${BucketName}
+      #Policies:
+      #  - S3ReadPolicy:
+      #      BucketName: !Sub ${BucketName}
       Layers:
         - !Ref dependencyLayer
     # #Build Parameters
@@ -108,9 +108,9 @@ Resources:
       #  - x86_64
       MemorySize: 128 #Set these in the AWS Lambda Interface
       Timeout: 330 #Set these in the AWS Lambda Interface //5 mins 30 seconds
-      Policies:
-        - S3ReadPolicy:
-            BucketName: !Sub ${BucketName}
+      #Policies:
+      #  - S3ReadPolicy:
+      #      BucketName: !Sub ${BucketName}
       Layers:
         - !Ref dependencyLayer
     # #Build Parameters
@@ -174,9 +174,9 @@ Resources:
         - x86_64
       MemorySize: 128 #Set these in the AWS Lambda Interface
       Timeout: 330 #Set these in the AWS Lambda Interface //5 mins 30 seconds
-      Policies:
-        - S3ReadPolicy:
-            BucketName: !Sub ${BucketName}
+      #Policies:
+      #  - S3ReadPolicy:
+      #      BucketName: !Sub ${BucketName}
       Layers:
         - !Ref dependencyLayer
     # #Build Parameters
