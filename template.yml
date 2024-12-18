@@ -5,10 +5,20 @@ Description: Lambda-S3 DropBucket Project
 Mappings:
   RegionRoles:
     us-east-1:
-      RoleArn: arn:aws:iam::123456789012:role/us-east-1-role
+      RoleArn: arn:aws:iam::777957353822:role/tricklercacheExecutionRole
     eu-central-1:
-      RoleArn: arn:aws:iam::123456789012:role/us-west-2-role
-      
+      RoleArn: arn:aws:iam::993487360810:role/s3DropBucketExecutionRole
+
+#Outputs:
+#  roleARN:
+#    #Value: !GetAtt s3DropBucketFunction.Arn
+#    #Value:  !Sub ${RegionRoles[!Ref "AWS::Region"].RoleArn}
+#    #Value: !Ref ${RegionRoles[!Ref "AWS::Region"].RoleArn}
+#    Value: !FindInMap [ RegionRoles, !Ref AWS::Region, RoleArn ]
+#    Description: Role ARN
+#    #Export:
+#    #  Name: roleARN
+
 Globals:
   Function:
     Runtime: nodejs20.x
@@ -16,6 +26,14 @@ Globals:
     #Layers: 
     #  - !Ref dependencyLayer
 Parameters:
+  #roleARNParam:
+  #  Type: String
+  #  Default: !FindInMap [RegionRoles, !Ref AWS::Region, RoleArn]
+  #  Description: "Acoustic S3DropBucket Role ARN"
+  #  AllowedPattern: "arn:(aws[a-zA-Z-]*)?:iam::\\d{12}:role/?[a-zA-Z_0-9+=,.@\\-_/]+"
+  #  ConstraintDescription: "Must be a valid IAM role ARN"
+  #  MinLength: "20"
+  #  MaxLength: "2048"
   AppId:
     Type: String
     Default: "S3DropBucket"
@@ -59,7 +77,10 @@ Resources:
           # NODE_OPTIONS: --enable-source-map --trace-warnings --unhandled-rejections=warn
           NODE_OPTIONS: '--trace-warnings --unhandled-rejections=warn'
       #Role: arn:aws:iam::777957353822:role/tricklercacheExecutionRole
-      Role: !Sub ${RegionRoles[!Ref "AWS::Region"].RoleArn}
+      #Role: !Ref roleARN
+      Role: !FindInMap [RegionRoles, !Ref "AWS::Region", RoleArn]
+      #Role: !Sub ${RegionRoles[!Ref "AWS::Region"].RoleArn}
+
       #CodeUri: ./
       #CodeUri: src/handlers/          #---Gets reBuilt in SAM Package
       Handler: s3DropBucket.s3DropBucketHandler
@@ -109,7 +130,10 @@ Resources:
           # NODE_OPTIONS: --enable-source-map --trace-warnings --unhandled-rejections=warn
           NODE_OPTIONS: '--trace-warnings --unhandled-rejections=warn'
       #Role: arn:aws:iam::777957353822:role/tricklercacheExecutionRole
-      Role: !Sub ${RegionRoles[!Ref "AWS::Region"].RoleArn}
+      #Role: !Sub ${RegionRoles[!Ref "AWS::Region"].RoleArn}
+      Role: !FindInMap [RegionRoles, !Ref AWS::Region, RoleArn]
+      #Role: !Sub ${roleArn}
+      #Role: !Ref roleARN
       #CodeUri: ./
       #CodeUri: src/handlers/          #---Gets reBuilt in SAM Package
       Handler: s3DropBucket.S3DropBucketQueueProcessorHandler
@@ -176,7 +200,10 @@ Resources:
           # NODE_OPTIONS: --enable-source-map --trace-warnings --unhandled-rejections=warn
           NODE_OPTIONS: '--trace-warnings --unhandled-rejections=warn'
       #Role: arn:aws:iam::777957353822:role/tricklercacheExecutionRole
-      Role: !Sub ${RegionRoles[!Ref "AWS::Region"].RoleArn}
+      #Role: !Sub ${RegionRoles[!Ref "AWS::Region"].RoleArn}
+      Role: !FindInMap [RegionRoles, !Ref AWS::Region, RoleArn]
+      #Role: !Sub ${roleArn}
+      #Role: !Ref roleARN
       #CodeUri: ./
       #CodeUri: src/handlers/          #---Gets reBuilt in SAM Package
       Handler: s3DropBucket.s3DropBucketSFTPHandler
