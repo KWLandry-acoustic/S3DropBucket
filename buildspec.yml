@@ -70,8 +70,8 @@ phases:
   post_build:
     commands:
       - pwd
-      #- cat sampackaged.yaml
-      #- cat template-export.yml
+      - cat sampackaged.yaml
+      - cat template-export.yml
       - ls -lha --block-size=K
       - ls /tmp/ -R
       - ls /codebuild/output/ -R
