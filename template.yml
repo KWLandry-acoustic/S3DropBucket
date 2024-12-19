@@ -36,8 +36,8 @@ Parameters:
   #  MaxLength: "2048"
   AppId:
     Type: String
-    Default: "S3DropBucket"
-    Description: "Acoustic S3DropBucket Solution"
+    Default: S3DropBucket
+    Description: Acoustic S3DropBucket Solution
 Resources:
   dependencyLayer:
     Type: AWS::Serverless::LayerVersion
@@ -78,6 +78,7 @@ Resources:
           NODE_OPTIONS: '--trace-warnings --unhandled-rejections=warn'
       #Role: arn:aws:iam::777957353822:role/tricklercacheExecutionRole
       #Role: !Ref roleARN
+      #Role: !FindInMap [RegionRoles, !Ref "AWS::Region", RoleArn]
       Role: !FindInMap [RegionRoles, !Ref "AWS::Region", RoleArn]
       #Role: !Sub ${RegionRoles[!Ref "AWS::Region"].RoleArn}
 
@@ -131,7 +132,8 @@ Resources:
           NODE_OPTIONS: '--trace-warnings --unhandled-rejections=warn'
       #Role: arn:aws:iam::777957353822:role/tricklercacheExecutionRole
       #Role: !Sub ${RegionRoles[!Ref "AWS::Region"].RoleArn}
-      Role: !FindInMap [RegionRoles, !Ref AWS::Region, RoleArn]
+      #Role: !FindInMap [RegionRoles, !Ref "AWS::Region", RoleArn]
+      Role: !FindInMap [RegionRoles, !Ref "AWS::Region", RoleArn]
       #Role: !Sub ${roleArn}
       #Role: !Ref roleARN
       #CodeUri: ./
@@ -201,7 +203,8 @@ Resources:
           NODE_OPTIONS: '--trace-warnings --unhandled-rejections=warn'
       #Role: arn:aws:iam::777957353822:role/tricklercacheExecutionRole
       #Role: !Sub ${RegionRoles[!Ref "AWS::Region"].RoleArn}
-      Role: !FindInMap [RegionRoles, !Ref AWS::Region, RoleArn]
+      #Role: !FindInMap [RegionRoles, !Ref "AWS::Region", RoleArn]
+      Role: !FindInMap [RegionRoles, !Ref "AWS::Region", RoleArn]
       #Role: !Sub ${roleArn}
       #Role: !Ref roleARN
       #CodeUri: ./
