@@ -3,11 +3,11 @@
 
 /*
 | description : S3DropBucket - Process data from files dropped onto S3 Bucket(s) into Campaign/Connect 
-| version  :  3.3.49
+| version  :  3.3.50
 | author   :  KW Landry (kip.landry@acoustic.co)
 | copyright:  (c) 2024 by ISC
 | created  :  11/24/2024 18:35:06
-| updated  :  11/24/2024 18:35:06
+| updated  :  12/19/2024 18:35:06
 +---------------------------------------------------------------------------- */
 
 import {version, builddate, description} from '../../package.json'
