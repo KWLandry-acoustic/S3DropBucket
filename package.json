@@ -2,9 +2,9 @@
 	"name": "s3dropbucket",
 	"author": "KW Landry (kip.landry@acoustic.co)",
 	"license": "ISC",
-	"description": "Build \"3.3.34\" - 12-13-2024 20:32:01",
-	"version": "3.3.49",
-	"builddate": "2024-03-21T21:00:00.000Z",
+	"description": "S3DropBucket Build \"3.3.50\" - \"12-28-2024 10:26:28\"",
+	"version": "3.3.50",
+	"builddate": "12-28-2024 10:26:28",
 	"copyright": "ISC",
 	"private": true,
 	"package": {
@@ -63,6 +63,9 @@
 		"typescript": "^5.4.3"
 	},
 	"scripts": {
+		"preversion": "echo \"Preversion - npm test\" ",
+		"version": "echo \"version - npm run build && git add -A dist\" ",
+		"postversion": "echo \"PostVersion - git push && git push --tags && rm -rf build/temp\" ",
 		"start": "./node_modules/.bin/aws sls offline -s dev",
 		"pushVersion": "node /Users/kwlandry/Dropbox/Documents/A. Campaign/CodeFolder/node_scripts/update-version.js && git add src/handlers/s3DropBucket.ts",
 		"debug_Old": "export SLS_DEBUG=* && node --inspect-brk aws sls invoke local -s dev",

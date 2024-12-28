@@ -10,6 +10,13 @@
 		}, {
 			"type": "shell",
 			"problemMatcher": [ ],
+			"label": "VersionUp",
+			"detail": "Automate Versioning Updates",
+			"command": "npm version patch; npm pkg set builddate=\"`date '+%m-%d-%Y %H:%M:%S'`\"; npm pkg set description=\"Build `npm pkg get version` - `npm pkg get builddate`\" "
+		},
+		{
+			"type": "shell",
+			"problemMatcher": [ ],
 			"label": "cleanDependencyDirectory",
 			"detail": "Clean Dependencies Directory",
 			"command": " rm -r .aws-sam/deps"

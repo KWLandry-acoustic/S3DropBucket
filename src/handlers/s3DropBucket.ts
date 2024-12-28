@@ -260,7 +260,7 @@ export interface SQSBatchItemFails {
   ]
 }
 
-interface StoreAndQueueWorkResult {
+export interface StoreAndQueueWorkResult {
   AddWorkToS3WorkBucketResults?: {
     versionId: string
     S3ProcessBucketResult: string
@@ -1375,11 +1375,12 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
         //Retrieve Contents of the Work File
         S3DB_Logging("info", "512", `S3 Retrieve results for Work file ${tqm.workKey}: ${JSON.stringify(work)}`)
 
-        if (custconfig.listtype.toLowerCase() === 'referenceset')
+        if ((custconfig.listtype.toLowerCase() === 'referenceset') || localTesting)
           postResult = await postToConnect(
             work,
             custconfig as customerConfig,
-            tqm.updateCount
+            tqm.updateCount,
+            tqm.workKey
           )
 
         
@@ -3322,6 +3323,74 @@ export async function getAccessToken(config: customerConfig) {
   }
 }
 
+
+async function ConnectAudienceAdd() {
+  //mutation {
+  //    updateContacts(
+  //      dataSetId: "df07969b-7126-47f2-812d-b7b5876627f7"
+  //        updateContactInputs: [
+  //      {
+  //        contactId: "123509"
+  //                to: {
+  //          attributes: [
+  //            {name: "Unique ID", value: "123509"}
+  //                        {name: "Firstname", value: "Barney"}
+  //                        {name: "Lastname", value: "Rubble"}
+  //                        {name: "Email", value: "barney.rubble@quarry.com"}
+  //          ]
+  //                    consent: {
+  //            consentGroups: [
+  //              {
+  //                id: "3a7134b8-dcb5-509a-b7ff-946b48333cc9"
+  //                                name: "Newsletters"
+  //                                status: OPT_IN
+  //              }
+  //            ]
+  //          }
+  //        }
+  //      }
+  //    ]
+  //    ) {
+  //      modifiedCount
+  //    }
+  //  }
+
+}
+
+async function ConnectAudienceUpdate() {
+
+}
+
+async function ConnectReferenceSet() {
+
+
+}
+
+async function postToConnect(updates: string, custconfig: customerConfig, updateCount: string, workFile: string) {
+  //ToDo: 
+  //Transform Add Contacts to Mutation Create Contact
+  //Transform Updates to Mutation Update Contact
+  //    Need Attributes - Add Attributes to update as seen in inbound data 
+  //get access token
+  //post to connect
+  //return result
+  S3DB_Logging("info", "800", `${updates}, ${custconfig}, ${updateCount}`)
+  
+  //[
+  //  {"key": "subscriptionId", "value": "bb6758fc16bbfffbe4248214486c06cc3a924edf","description": "", "enabled": true},
+  //  {"key": "x-api-key", "value": "b1fa7ef5024e4da3b0a40aed8331761c", "description": "", "enabled": true},
+  //  {"key": "x-acoustic-region", "value": "us-east-1", "description": "", "enabled": true}
+  //]
+
+  const m = buildConnectMutation(JSON.parse(updates))
+
+  return "postToConnect"
+}
+
+
+
+
+
 export async function postToCampaign(
   xmlCalls: string,
   config: customerConfig,
@@ -3510,25 +3579,6 @@ mutation {
 
 
 }
-
-
-async function postToConnect(updates: string, custconfig: customerConfig, updateCount: string) {
-  //ToDo: 
-  //Transform Add Contacts to Mutation Create Contact
-  //Transform Updates to Mutation Update Contact
-  //    Need Attributes - Add Attributes to update as seen in inbound data 
-  //get access token
-  //post to connect
-  //return result
-  S3DB_Logging("info", "800", `${updates}, ${custconfig}, ${updateCount}`)
-
-  const m = buildConnectMutation(JSON.parse(updates))
-
-  return "postToConnect"
-}
-
-
-
 
 
 

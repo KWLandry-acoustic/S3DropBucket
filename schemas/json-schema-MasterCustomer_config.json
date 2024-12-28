@@ -1,0 +1,161 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "description": "S3DropBucket Master Customer Config Schema",
+  "type": "object",
+  "properties": {
+    "Customer": {
+      "type": "string",
+      "minLength": 3
+    },
+    "format": {
+      "type": "string",
+      "minLength": 1,
+      "enum": [
+        "json",
+        "csv"
+      ]
+    },
+    "separator": {
+      "type": "string",
+      "minLength": 1,
+      "enum": [
+        ",",
+        "|"
+      ]
+    },
+    "updates": {
+      "type": "string",
+      "minLength": 1,
+      "enum": [
+        "Singular",
+        "Multiple"
+      ]
+    },
+    "updateMaxRows": {
+      "type": "number",
+      "minimum": 100
+    },
+    "listType": {
+      "type": "string",
+      "minLength": 1,
+      "enum": [
+        "Relational",
+        "DBKeyed",
+        "DBNonKeyed"
+      ]
+    },
+    "listId": {
+      "type": "string",
+      "minLength": 3
+    },
+    "listName": {
+      "type": "string",
+      "minLength": 3
+    },
+    "pod": {
+      "type": "string",
+      "minLength": 1
+    },
+    "region": {
+      "type": "string",
+      "minLength": 2
+    },
+    "clientId": {
+      "type": "string",
+      "minLength": 15
+    },
+    "clientSecret": {
+      "type": "string",
+      "minLength": 15
+    },
+    "refreshToken": {
+      "type": "string",
+      "minLength": 15
+    },
+    "transforms": {
+      "type": "object",
+      "properties": {
+        "Methods": {
+          "type": "object",
+          "properties": {
+            "daydate": {
+              "type": "string",
+              "minLength": 1
+            },
+            "altdata": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "daydate",
+            "altdata"
+          ]
+        },
+        "jsonMap": {
+          "type": "object",
+          "properties": {
+            "Col1": {
+              "type": "string",
+              "minLength": 1
+            },
+            "Col2": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "csvMap": {
+          "type": "object",
+          "properties": {
+            "Col1": {
+              "type": "string",
+              "minLength": 1
+            },
+            "Col2": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "ignore": {
+          "type": "array",
+          "items": {
+            "properties": {
+              "Col1": {
+                "type": "string",
+                "minLength": 1
+              },
+              "Col2": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        }
+      },
+      "required": [
+        "Methods",
+        "jsonMap",
+        "csvMap",
+        "ignore"
+      ]
+    }
+  },
+  "required": [
+    "Customer",
+    "format",
+    "separator",
+    "updates",
+    "updateMaxRows",
+    "listType",
+    "listId",
+    "listName",
+    "pod",
+    "region",
+    "clientId",
+    "clientSecret",
+    "refreshToken",
+    "transforms"
+  ]
+}

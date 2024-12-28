@@ -19,7 +19,10 @@
       },
       "[dockercompose]": {
             "editor.autoIndent": "advanced"
-      }
+      },
       "eslint.format.enable": true,
-      "html.format.contentUnformatted": ""
+      "html.format.contentUnformatted": "",
+      "[json]": {
+            "editor.defaultFormatter": "vscode.json-language-features"
+      }
 }

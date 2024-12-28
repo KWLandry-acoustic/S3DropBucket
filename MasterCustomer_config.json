@@ -1,0 +1,48 @@
+{
+      //"$schema": "http://json-schema.org/draft-04/schema#",
+      "$schema": "https: //github.com/KWLandry-acoustic/S3DropBucket/blob/main/schemas/json-schema-MasterCustomer_config.json",
+      "Customer": "KingsfordWeather_",
+
+      "format": "csv",
+      "separator": "\n",
+
+      "updates": "Multiple",
+
+      "updateMaxRows": 1000,
+
+      "listType": "Relational",
+      "listId": "44294868",
+      "listName": "Weather_Forecast_RT",
+
+      "pod": "4",
+      "region": "us",
+      "clientId": "01922b64-bac2-4b6f-bee6-3ffc8cb1aaf1",
+      "clientSecret": "3b0dd1cc-47b5-4579-a283-e9f708f9028b",
+      "refreshToken": "r8dQcorf50hNZlFPpA0qwr9wPUdQBwexr2wwv-nJKlGAS1",
+
+      "transforms": {
+
+            "Methods": {
+                  "daydate": "datetime",
+                  "altdata": "attributeAAA"
+            },
+
+            "jsonMap": {
+                  "email": "$.uniqueRecipient",
+                  "zipcode": "$.context.traits.address.postalCode"
+            },
+
+            "csvMap": {
+                  "Col_AA_SR": "description",
+                  "Col_BB_SE": "conditions" 
+                  },
+
+            "ignore": [
+                  "solarradiation",
+                  "solarenergy",
+                  "Col_BC"
+            ]
+
+      }
+
+}
