@@ -1,5 +1,4 @@
 {
-      //"$schema": "http://json-schema.org/draft-04/schema#",
       "$schema": "https: //github.com/KWLandry-acoustic/S3DropBucket/blob/main/schemas/json-schema-MasterCustomer_config.json",
       "Customer": "KingsfordWeather_",
 
