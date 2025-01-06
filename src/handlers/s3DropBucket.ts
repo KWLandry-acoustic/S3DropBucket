@@ -2160,7 +2160,7 @@ async function getFormatCustomerConfig(filekey: string) {
         return cc
       })
       .catch((e) => {
-        const err: string = JSON.stringify(e)
+        const err: string = JSON.stringify(e)    
 
         if (err.indexOf("specified key does not exist") > -1)
           throw new Error(
