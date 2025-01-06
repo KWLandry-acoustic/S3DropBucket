@@ -1,15 +1,18 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Master S3DropBucket Customer Config Schema",
   "description": "S3DropBucket Master Customer Config Schema",
   "type": "object",
   "properties": {
     "Customer": {
       "type": "string",
+      "default": "MasterCustomer_",
       "minLength": 3
     },
     "format": {
       "type": "string",
-      "minLength": 1,
+      "default": "json",
+      "minLength": 3,
       "enum": [
         "json",
         "csv"
@@ -17,15 +20,29 @@
     },
     "separator": {
       "type": "string",
+      "default": "\n",
       "minLength": 1,
       "enum": [
         ",",
-        "|"
+        "|",
+        "\n"
+      ]
+    },
+    "targetupdate": {
+      "type": "string",
+      "minLength": 7,
+      "maxLength": 8,
+      "default": "Connect",
+      "enum": [
+        "Campaign",
+        "Connect"
       ]
     },
     "updates": {
       "type": "string",
-      "minLength": 1,
+      "minLength": 8,
+      "maxLength": 8,
+      "default": "Multiple",
       "enum": [
         "Singular",
         "Multiple"
@@ -33,45 +50,111 @@
     },
     "updateMaxRows": {
       "type": "number",
-      "minimum": 100
+      "default": 1000,
+      "minimum": 10
     },
     "listType": {
       "type": "string",
-      "minLength": 1,
+      "minLength": 7,
+      "maxLength": 14,
+      "default": "Relational",
       "enum": [
         "Relational",
         "DBKeyed",
-        "DBNonKeyed"
+        "DBNonKeyed",
+        "ReferenceSet",
+        "CreateContacts",
+        "UpdateContacts",
+        "CreateAttributes"
       ]
     },
     "listId": {
       "type": "string",
-      "minLength": 3
+      "minLength": 0
     },
     "listName": {
       "type": "string",
-      "minLength": 3
+      "minLength": 0
     },
     "pod": {
       "type": "string",
-      "minLength": 1
+      "optional": true,
+      "minLength": 0,
+      "maxLength": 1,
+      "enum": [ "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B" ]
     },
     "region": {
       "type": "string",
-      "minLength": 2
+      "default": "us-east-1",
+      "minLength": 0,
+      "maxLength": 2,
+      "enum": [
+        "us",
+        "eu",
+        "ap",
+        "ca"
+      ]
     },
     "clientId": {
       "type": "string",
-      "minLength": 15
+      "minLength": 0
     },
     "clientSecret": {
       "type": "string",
-      "minLength": 15
+      "minLength": 0
     },
     "refreshToken": {
       "type": "string",
-      "minLength": 15
+      "minLength": 0
     },
+    "dataSetId": {
+      "type": "string",
+      "minLength": 0
+    },
+    "subscriptionId": {
+      "type": "string",
+      "minLength": 0
+    },
+    "x_api_key": {
+      "type": "string",
+      "minLength": 0
+    },
+    "x_acoustic_region": {
+      "type": "string",
+      "default": "us-east-1",
+      "enum": [
+        "us-east-1",
+        "us-east-2", 
+        "us-west-1",
+        "us-west-2",
+        "af-south-1",
+        "ap-east-1",
+        "ap-south-1",
+        "ap-south-2",
+        "ap-southeast-1",
+        "ap-southeast-2",
+        "ap-southeast-3",
+        "ap-southeast-4",
+        "ap-northeast-1",
+        "ap-northeast-2",
+        "ap-northeast-3",
+        "ca-central-1",
+        "eu-central-1",
+        "eu-central-2",
+        "eu-north-1",
+        "eu-south-1",
+        "eu-south-2",
+        "eu-west-1",
+        "eu-west-2",
+        "eu-west-3",
+        "il-central-1",
+        "me-central-1",
+        "me-south-1",
+        "sa-east-1"
+      ],
+      "minLength": 0
+    },
+
     "transforms": {
       "type": "object",
       "properties": {
@@ -88,8 +171,7 @@
             }
           },
           "required": [
-            "daydate",
-            "altdata"
+            "daydate"
           ]
         },
         "jsonMap": {
@@ -147,15 +229,9 @@
     "format",
     "separator",
     "updates",
+    "targetupdate",
     "updateMaxRows",
     "listType",
-    "listId",
-    "listName",
-    "pod",
-    "region",
-    "clientId",
-    "clientSecret",
-    "refreshToken",
     "transforms"
   ]
 }

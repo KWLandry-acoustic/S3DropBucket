@@ -2,9 +2,9 @@
 	"name": "s3dropbucket",
 	"author": "KW Landry (kip.landry@acoustic.co)",
 	"license": "ISC",
-	"description": "S3DropBucket Build \"3.3.51\" - \"12-28-2024 10:28:04\"",
-	"version": "3.3.51",
-	"builddate": "12-28-2024 10:28:04",
+	"description": "S3DropBucket Build \"3.3.52\" - \"01-06-2025 12:41:19\"",
+	"version": "3.3.52",
+	"builddate": "01-06-2025 12:41:19",
 	"copyright": "ISC",
 	"private": true,
 	"package": {
@@ -63,24 +63,6 @@
 		"typescript": "^5.4.3"
 	},
 	"scripts": {
-		"preversion": "echo \"Preversion - npm test\" ",
-		"version": "echo \"version - npm run build && git add -A dist\" ",
-		"postversion": "echo \"PostVersion - git push && git push --tags && rm -rf build/temp\" ",
-		"start": "./node_modules/.bin/aws sls offline -s dev",
-		"pushVersion": "node /Users/kwlandry/Dropbox/Documents/A. Campaign/CodeFolder/node_scripts/update-version.js && git add src/handlers/s3DropBucket.ts",
-		"debug_Old": "export SLS_DEBUG=* && node --inspect-brk aws sls invoke local -s dev",
-		"debug": "export SLS_DEBUG=* && node --inspect aws sls invoke local -s dev",
-		"lint": "eslint src  --ext .js,.ts,.json",
-		"format": "npm run lint -- --fix",
-		"build:cjs": "tsc --module commonjs --verbatimModuleSyntax false --outDir ./dist/cjs && node ../../build-cjs.js whatwg",
-		"build:mjs": "tsc --module esnext --verbatimModuleSyntax --outDir ./dist/mjs",
-		"build": "npm run build:mjs && npm run build:cjs",
-		"prepublishOnly": "npm run build",
-		"pretest": "npm run build",
-		"test": "node test/CommonJS.cjs && jest test",
-		"test-with-coverage": "npm test -- --coverage",
-		"cleanBuild": "rm -rf .aws-sam  && npm remove .aws-sam && npm cache clean --force && npm remove node_modules && npm remove layers && mkdir layers/nodejs && cp package.json layers/nodejs && cp package-lock.json layers/nodejs && cd layers/nodejs && npm install --omit=dev && cd ../",
-		"cleanUp-AWSSAM": "npm remove .aws-sam",
-		"usefulCommands": "'{ \n      \"compile\": \"tsc\",\n      \"test\": \"jest\",\n      \"unit\": \"jest\",\n      \"lint\": \"eslint '*.ts' --quiet --fix\",\n      \"build\": \"esbuild src/handlers/s3DropBucket.ts --bundle --minify --out-extension:.js=.mjs --external: 'aws-sdk, @aws-sdk/client-s3, node-fetch, @aws-sdk/protocol-http' --platform: nodejs20.x --target=es2020 --outdir=.aws-sam/build/\",\n      \"build2\": \"esbuild src/handlers/s3DropBucket.ts --bundle --minify --out-extension:.js=.mjs --sourcemap --platform: nodejs20.x --target=es2020 --outdir=src/handlers/\",\n      \"build3\": \"esbuild src/handlers/s3DropBucket.ts --bundle --minify --out-extension:.js=.mjs --sourcemap --platform: nodejs20.x --target=es2020 --outdir=src/handlers/\",\n      \"build4\": \"esbuild ./src/handlers/s3DropBucket.ts --out-extension:.js=.mjs --external:'node_modules/aws-sdk/clients/s3.js' --bundle --minify --platform: nodejs20.x --target=es2020 --outfile=./src/handlers/s3DropBucket.mjs\",\n      \"watch\": \"tsc -w\"\n    }'"
+		"test": "jest"
 	}
 }

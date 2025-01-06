@@ -1,0 +1,91 @@
+{
+      //Pay careful attention to the upper/lowercase aspect of each configuration option
+      //  Case is mixed, it's not consistent as to upper versus lower but config option names are 
+      //   aimed at readability and alignment with corresponding options. 
+
+      "Customer": "pura_", // Minimum 3 characters and trailing underscore
+
+      "format": "json", // CSV or JSON
+      "separator": "\n", //null, empty, or '\n'  - if Customer json uses a custom separator between objects eg.[{}\n{}\n]
+      
+
+      "updates": "singular", // Singular/Multiple - For performance reasons data files should contain more than 99 updates, 
+      // If the data being loaded to the S3Bucket has a single update per file, use Singular
+      // each file contains a single update, or Multiple, several updates contained in each file.
+      // When Singular, the individual files will be aggregated and processed as a larger set of updates
+
+      "updateMaxRows": 100, // Max fields per record/update. Safety - Don't allow runaway Updates, can set this higher if needed and then
+      // redrive files via cli (aws cp cmd) as they won't be deleted to preserve for review (see in Logs)
+
+      // Relational  - Update (Add if recipient not found), or
+      // DBKeyed     - Update (Add if recipient not found), or 
+      // DBNonKeyed  - Update (Add if recipient not found)
+      // "listType": "Relational",
+      // "listId": "12663209",
+      // "listName": "Segment Events Table",
+
+      // Relational  - Update (Add if recipient not found), or
+      // DBKeyed     - Update (Add if recipient not found), or 
+      // DBNonKeyed  - Update (Add if recipient not found)
+      // Audience - 
+      // ReferenceSet - 
+      "listType": "DBKeyed",
+      "listId": "13097633", // ListID of the DB or relational table to be written
+      "listName": "Master_Database_KWLandry_keyed", // Optional but BestPractice to Self-Documenting
+      "DBKey": "Email", // If DBKeyed need Key Field
+
+      // Relational  - Update (Add if recipient not found), or
+      // DBKeyed     - Update (Add if recipient not found), or 
+      // DBNonKeyed  - Update (Add if recipient not found)
+      // "listType": "DBNonKeyed",
+      // "listId": "13242696",
+      // "listName": "Master_Database_KWLandry_4",
+      // If DBNonKeyed need LookupKeys - comma separated list, inbound dat must provide the field(s) and data 
+      // "LookupKeys": "City, State, Zip",
+
+      //Campaign S3DropBucket Application Definition for the S3DropBucket Process
+      "pod": "2",
+      "region": "us",
+      "refreshToken": "rD-7E2r8BynGDaapr13oJV9BxQr20lsYGN9RPkbrtPtAS1",
+      "clientId": "1d99f8d8-0897-4090-983a-c517cc54032e",
+      "clientSecret": "124bd238-0987-40a2-b8fb-879ddd4d3241",
+
+
+
+      //CRM Lead Source Update 
+      //Todo: CRM Lead Source as a config option - Use Transforms to add CRMLeadSource
+            //    xmlRows += `<COLUMN><NAME>CRM Lead Source</NAME><VALUE><![CDATA[S3DropBucket ] ]></VALUE></COLUMN>`
+
+
+      "jsonMap": {
+            "email": "$.uniqueRecipient",
+            "zipcode": "$.context.traits.address.postalCode",
+            "CRM Lead Source": "$.category"
+      },
+
+       "csvMap": { //Mapping when processing CSV files
+             "Col_AA": "COL_XYZ", //Write Col_AA with data from Col_XYZ in the CSV file
+             "Col_BB": "COL_MNO",
+      //       "Col_CC": "COL_GHI",
+      //       "Col_DD": 1, //Write Col_DD with data from the 1st column of data in the CSV file.
+      //       "Col_DE": 2,
+      //       "Col_DF": 3
+      // },
+
+      "Ignore": [ //Ignore column if it exists in the data
+            "Col_BA",
+            "Col_BB",
+            "Col_BC"
+      ],
+
+      // "sftp": { //For use in Extract from Campaign 
+      //       "user": "", // SFTP User Credentials
+      //       "password": "", // SFTP Password Credentials
+      //       "filepattern": "", //The file name pattern to look for in the /download folder 
+      //       "schedule": "hourly" // Hourly/Daily - How often to check the /download folder for new files
+      // },
+
+      // Future:
+      "zip": ".zip" //Files are in zip format (.zip) as they arrive (will be unzipped before procesing) 
+       }
+}

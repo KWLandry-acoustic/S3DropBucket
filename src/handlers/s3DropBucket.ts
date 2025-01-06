@@ -131,6 +131,7 @@ let localTesting = false
 let chunks: object[]
 
 let xmlRows = ""
+let mutationRows = ""
 let batchCount = 0
 let recs = 0
 
@@ -139,6 +140,7 @@ interface customerConfig {
   format: string // CSV or JSON
   separator: string
   updates: string // singular or Multiple (default) (also 'bulk' as legacy)
+  targetupdate: string
   listid: string
   listname: string
   listtype: string
@@ -150,6 +152,10 @@ interface customerConfig {
   refreshtoken: string // API Access
   clientid: string // API Access
   clientsecret: string // API Access
+  datasetid: string
+  subscriptionid: string
+  x_api_key: string
+  x_acoustic_region: string
   sftp: {
     user: string
     password: string
@@ -170,6 +176,7 @@ let customersConfig = {
     format: "",
     separator: "",
     updates: "",
+    targetupdate: "",
     listid: "",
     listname: "",
     listtype: "",
@@ -181,6 +188,10 @@ let customersConfig = {
     refreshtoken: "",
     clientid: "",
     clientsecret: "",
+    datasetid: "",
+    subscriptionid: "",
+    x_api_key: "",
+    x_acoustic_region: "",
     sftp: {
       user: "",
       password: "",
@@ -223,6 +234,7 @@ export interface s3DBConfig {
   S3DropBucketLog: boolean //Future: Firehose Aggregator Bucket
   S3DropBucketLogBucket: string //Future: Firehose Aggregator Bucket
   S3DropBucketConfigs: string
+  connectapiurl: string
   xmlapiurl: string
   restapiurl: string
   authapiurl: string
@@ -302,8 +314,9 @@ export interface ProcessS3ObjectStreamResult {
 }
 
 
-//ERROR	S3DB - Log(Debug -) - Exception - Process S3 Object Stream Catch -
-//  TypeError: Cannot read properties of undefined(reading 'StoreAndQueueWorkResult') 
+
+
+
 
 
 let ProcessS3ObjectStreamResolution: ProcessS3ObjectStreamResult = {
@@ -388,6 +401,7 @@ testS3Bucket = "s3dropbucket-configs"
 //testS3Key = "TestData/cloroxweather_99706.csv"
 //testS3Key = "TestData/pura_S3DropBucket_Aggregator-8-2024-03-19-16-42-48-46e884aa-8c6a-3ff9-8d32-c329395cf311.json"
 //testS3Key = "TestData/pura_2024_02_26T05_53_26_084Z.json"
+testS3Key = "TestData/MasterCustomer_Sample1.json"
 //testS3Key = "TestData/alerusrepsignature_sample.json"
 //testS3Key = "TestData/alerusrepsignature_advisors.json"
 //testS3Key = "TestData/alerusrepsignature_sampleformatted.json"
@@ -396,7 +410,7 @@ testS3Bucket = "s3dropbucket-configs"
 //testS3Key = "TestData/Funding_Circle_Limited_CampaignDatabase1_2024_11_12T11_20_56_317Z.json"
 //testS3Key = "TestData/Funding_Circle_Limited_CampaignDatabase1_2024_11_28T22_16_03_400Z_json-update-1-1-0a147575-2123-44ff-a7bf-d12b0a0d839f.xml"
 //testS3Key = "TestData/Funding_Circle_Limited_CampaignRelationalTable1_2024_10_08T10_16_49_700Z.json"
-testS3Key = "TestData/Funding_Circle_Limited_CampaignDatabase1_2024_10_08T09_52_13_903Z.json"
+//testS3Key = "TestData/Funding_Circle_Limited_CampaignDatabase1_2024_10_08T09_52_13_903Z.json"
 //testS3Key = "TestData/alerusrepsignature_advisors.json"
 //testS3Key = "TestData/alerusreassignrepsignature_advisors.json"
 //testS3Key = "TestData/KingsfordWeather_00210.csv"
@@ -524,7 +538,7 @@ export const s3DropBucketHandler: Handler = async (
       customersConfig = await getFormatCustomerConfig(key) as customerConfig
     } catch (e)
     {
-      S3DB_Logging("exception", "", `Exception - Pulling Customer Config \n${e} `)
+      S3DB_Logging("exception", "", `Exception - Awaiting Customer Config \n${e} `)
       break
     }
 
@@ -721,7 +735,7 @@ export const s3DropBucketHandler: Handler = async (
 export default s3DropBucketHandler
 
 
-function S3DB_Logging(level:string, index: string,  msg:string) {
+export function S3DB_Logging(level:string, index: string,  msg:string) {
 
   const selectiveDebug = process.env.S3DropBucketSelectiveLogging ?? S3DBConfig.SelectiveLogging ?? "_97,_98,_99_503,_504,_511,_901,_910,"
     
@@ -1309,6 +1323,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
       format: "",
       separator: "",
       updates: "",
+      targetupdate: "",
       listid: "",
       listname: "",
       listtype: "",
@@ -1320,6 +1335,10 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
       refreshtoken: "",
       clientid: "",
       clientsecret: "",
+      datasetid: "",
+      subscriptionid: "",
+      x_api_key: "",
+      x_acoustic_region: "",
       sftp: {
         user: "",
         password: "",
@@ -1332,7 +1351,6 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
         csvmap: {},
         script: {},
         ignore: [],
-
       },
     },
   }
@@ -1359,8 +1377,10 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
       testS3Bucket = ""
       localTesting = false
     }
-    //
-    //
+    
+    
+    debugger
+
 
     S3DB_Logging("info", "507", `Start Processing ${tqm.workKey} off Work Queue. `)
     
@@ -1854,10 +1874,14 @@ async function getValidateS3DropBucketConfig() {
         `Exception - S3DropBucket Work Queue Configuration is not correct, config is: ${s3dbc.S3DropBucketWorkQueue} `
       )
     } else process.env["S3DropBucketWorkQueue"] = s3dbc.S3DropBucketWorkQueue
+    
 
-    // if (tc.SQS_QUEUE_URL !== undefined) tcc.SQS_QUEUE_URL = tc.SQS_QUEUE_URL
-    // else throw new Error(`S3DropBucket Config invalid definition: SQS_QUEUE_URL - ${ tc.SQS_QUEUE_URL } `)
-
+    if (s3dbc.connectapiurl != undefined) process.env["connectapiurl"] = s3dbc.connectapiurl
+    else
+      throw new Error(
+        `S3DropBucket Config invalid definition: connectapiurl - ${s3dbc.connectapiurl} `
+      )
+    
     if (s3dbc.xmlapiurl != undefined) process.env["xmlapiurl"] = s3dbc.xmlapiurl
     else
       throw new Error(
@@ -2140,7 +2164,7 @@ async function getFormatCustomerConfig(filekey: string) {
 
         if (err.indexOf("specified key does not exist") > -1)
           throw new Error(
-            `Exception - Customer Config - ${customer}config.jsonc does not exist on ${S3DBConfig.S3DropBucketConfigs} bucket \nException ${e} `
+            `Exception - Customer Config - ${customer}config.jsonc does not exist on ${S3DBConfig.S3DropBucketConfigs} bucket (while processing ${filekey}) \nException ${e} `
           )
 
         if (err.indexOf("NoSuchKey") > -1)
@@ -2155,8 +2179,8 @@ async function getFormatCustomerConfig(filekey: string) {
 
   } catch (e) {
     debugger
-    S3DB_Logging("exception", "", `Exception - Pulling Customer Config \n${ccr} \n${e} `)
-    throw new Error(`Exception - Pulling Customer Config \n${ccr} \n${e} `)
+    S3DB_Logging("exception", "", `Exception - On Try when Pulling Customer Config \n${ccr} \n${e} `)
+    throw new Error(`Exception - (Try) Pulling Customer Config \n${ccr} \n${e} `)
   }
 
   configJSON = JSON.parse(ccr) as customerConfig
@@ -2193,40 +2217,162 @@ async function getFormatCustomerConfig(filekey: string) {
 }
 
 async function validateCustomerConfig(config: customerConfig) {
-  if (!config || config === null) {
+  
+  if (!config || config === null)
+  {
     throw new Error("Invalid  CustomerConfig - empty or null config")
   }
   
-  if (!config.clientid) {
-    throw new Error("Invalid Customer Config - ClientId is not defined")
+  if (!config.targetupdate)
+  {
+    {
+      throw new Error(
+        "Invalid Customer Config - TargetUpdate is required and must be either 'Connect' or 'Campaign'  "
+      )
+    }
   }
-  if (!config.clientsecret) {
-    throw new Error("Invalid Customer Config - ClientSecret is not defined")
+    
+  if (!config.targetupdate.toLowerCase().match(/^(?:connect|campaign)$/gim))
+  {
+    throw new Error(
+      "Invalid Customer Config - TargetUpdate is required and must be either 'Connect' or 'Campaign'  "
+    )
   }
-  if (!config.format) {
-    throw new Error("Invalid Customer Config - Format is not defined")
+
+
+  if (!config.listtype)
+  {
+    throw new Error("Invalid Customer Config - ListType is not defined")
   }
-  if (!config.updates) {
+
+
+////Confirm ListType has a valid value
+//  if ( !config.listtype.toLowerCase().match(/^(?:relational|dbkeyed|dbnonkeyed|referenceset|createcontacts|updatecontacts|createattributes)$/gim)
+//    //DBKeyed, DBNonKeyed, Relational, ReferenceSet, CreateContacts, UpdateContacts, CreateAttributes
+//  )
+//  {
+//    throw new Error(
+//      "Invalid Customer Config - ListType is required and must be either 'Relational', 'DBKeyed' or 'DBNonKeyed', ReferenceSet, CreateContacts, UpdateContacts, CreateAttributes. "
+//    )
+//  }
+
+  if (config.targetupdate.toLowerCase() == "campaign")
+  {
+    //ListType has valid Campaign values and Campaign dependent values
+    if (!config.listtype.toLowerCase().match(/^(?:relational|dbkeyed|dbnonkeyed)$/gim))
+    //DBKeyed, DBNonKeyed, Relational
+    {
+      throw new Error(
+        "Invalid Customer Config - Update set to be Campaign, however ListType is not Relational, DBKeyed, or DBNonKeyed. "
+      )
+    }
+
+    if (config.listtype.toLowerCase() == "dbkeyed" && !config.dbkey)
+    {
+      throw new Error(
+        "Invalid Customer Config - Update set as Database Keyed but DBKey is not defined. "
+      )
+    }
+
+    if (config.listtype.toLowerCase() == "dbnonkeyed" && !config.lookupkeys)
+    {
+      throw new Error(
+        "Invalid Customer Config - Update set as Database NonKeyed but LookupKeys is not defined. "
+      )
+    }
+
+    if (!config.clientid)
+    {
+      throw new Error("Invalid Customer Config - Target Update is Campaign but ClientId is not defined")
+    }
+    if (!config.clientsecret)
+    {
+      throw new Error("Invalid Customer Config - Target Update is Campaign but ClientSecret is not defined")
+    }
+    if (!config.refreshtoken)
+    {
+      throw new Error("Invalid Customer Config - Target Update is Campaign but RefreshToken is not defined")
+    }
+
+
+    if (!config.listid)
+    {
+      throw new Error("Invalid Customer Config - ListId is not defined")
+    }
+    if (!config.listname)
+    {
+      throw new Error("Invalid Customer Config - Target Update is Campaign but ListName is not defined")
+    }
+    if (!config.pod)
+    {
+      throw new Error("Invalid Customer Config - Target Update is Campaign but Pod is not defined")
+    }
+    if (!config.region)
+    {
+      //Campaign POD Region
+      throw new Error("Invalid Customer Config - Target Update is Campaign but Region is not defined")
+    }
+
+    if (!config.region.toLowerCase().match(/^(?:us|eu|ap|ca)$/gim))
+    {
+      throw new Error(
+        "Invalid Customer Config - Region is not 'US', 'EU', CA' or 'AP'. "
+      )
+    }
+
+  }
+
+  if (config.targetupdate.toLowerCase() === "connect")
+  {
+    //ListType has valid Campaign values and Campaign dependent values
+    if (config.listtype.toLowerCase().match(/^(?:referenceset|createcontacts|updatecontacts|createattributes)$/gim))
+    //DBKeyed, DBNonKeyed, Relational
+    {
+      
+      if (!config.datasetid)
+      {
+        throw new Error("Invalid Customer Config - Target Update is Connect but DataSetId is not defined")
+      } if (!config.subscriptionid)
+      {
+        throw new Error("Invalid Customer Config - Target Update is Connect but SubscriptionId is not defined")
+      }
+      if (!config.x_api_key)
+      {
+        throw new Error("Invalid Customer Config - Target Update is Connect but X-Api-Key is not defined")
+      }
+      if (!config.x_acoustic_region)
+      {
+        throw new Error("Invalid Customer Config - Target Update is Connect but X-Acoustic-Region is not defined")
+      }
+
+      if (config.x_acoustic_region.toLowerCase().match(/^(?:"us-east-1"| "us-east-2"| "us-west-1"| "us-west-2"| "af-south-1"| "ap-east-1"| "ap-south-1"| "ap-south-2"| "ap-southeast-1"| "ap-southeast-2"| "ap-southeast-3"| "ap-southeast-4"| "ap-northeast-1"| "ap-northeast-2"| "ap-northeast-3"| "ca-central-1"| "eu-central-1"| "eu-central-2"| "eu-north-1"| "eu-south-1"| "eu-south-2"| "eu-west-1"| "eu-west-2"| "eu-west-3"| "il-central-1"| "me-central-1"| "me-south-1"| "sa-east-1" )$/gim))
+      {
+        throw new Error("Invalid Customer Config - Target Update is Connect but Region is incorrect or undefined")
+      }
+
+    }
+  }
+  
+  
+  if (!config.updates)
+  {
     throw new Error("Invalid Customer Config - Updates is not defined")
   }
 
-  if (!config.listid) {
-    throw new Error("Invalid Customer Config - ListId is not defined")
+  if (!config.updates.toLowerCase().match(/^(?:singular|multiple|bulk)$/gim))
+    {
+      throw new Error(
+        "Invalid Customer Config - Updates is not 'Singular' or 'Multiple' "
+      )
   }
-  if (!config.listname) {
-    throw new Error("Invalid Customer Config - ListName is not defined")
-  }
-  if (!config.pod) {
-    throw new Error("Invalid Customer Config - Pod is not defined")
-  }
-  if (!config.region) {
-    //Campaign POD Region
-    throw new Error("Invalid Customer Config - Region is not defined")
-  }
-  if (!config.refreshtoken) {
-    throw new Error("Invalid Customer Config - RefreshToken is not defined")
-  }
+  
+  //Remove legacy config value
+  if (config.updates.toLowerCase() === "bulk") config.updates = "Multiple"
 
+
+  if (!config.format) {
+    throw new Error("Invalid Customer Config - Format is not defined")
+  }
   if (!config.format.toLowerCase().match(/^(?:csv|json)$/gim)) {
     throw new Error("Invalid Customer Config - Format is not 'CSV' or 'JSON' ")
   }
@@ -2242,14 +2388,6 @@ async function validateCustomerConfig(config: customerConfig) {
   if (config.separator.toLowerCase() === "empty") config.separator = `""`
   if (config.separator.toLowerCase() === "\n") config.separator = "\n"
 
-  if (!config.updates.toLowerCase().match(/^(?:singular|multiple|bulk)$/gim))
-  {
-    throw new Error(
-      "Invalid Customer Config - Updates is not 'Singular' or 'Multiple' "
-    )
-  }
-  //Remove legacy config value
-  if (config.updates.toLowerCase() === "bulk") config.updates = "Multiple"
 
   if (!config.pod.match(/^(?:0|1|2|3|4|5|6|7|8|9|a|b)$/gim)) {
     throw new Error(
@@ -2295,35 +2433,8 @@ async function validateCustomerConfig(config: customerConfig) {
       break
   }
 
-  if (!config.region.toLowerCase().match(/^(?:us|eu|ap|ca)$/gim)) {
-    throw new Error(
-      "Invalid Customer Config - Region is not 'US', 'EU', CA' or 'AP'. "
-    )
-  }
 
-  if (!config.listtype) {
-    throw new Error("Invalid Customer Config - ListType is not defined")
-  }
 
-  if (
-    !config.listtype.toLowerCase().match(/^(?:relational|dbkeyed|dbnonkeyed)$/gim)
-  ) {
-    throw new Error(
-      "Invalid Customer Config - ListType must be either 'Relational', 'DBKeyed' or 'DBNonKeyed'. "
-    )
-  }
-
-  if (config.listtype.toLowerCase() == "dbkeyed" && !config.dbkey) {
-    throw new Error(
-      "Invalid Customer Config - Update set as Database Keyed but DBKey is not defined. "
-    )
-  }
-
-  if (config.listtype.toLowerCase() == "dbnonkeyed" && !config.lookupkeys) {
-    throw new Error(
-      "Invalid Customer Config - Update set as Database NonKeyed but lookupKeys is not defined. "
-    )
-  }
 
   if (!config.sftp) {
     config.sftp = { user: "", password: "", filepattern: "", schedule: "" }
@@ -2404,14 +2515,28 @@ async function packageUpdates(
         recs++
         updates.push(c)
       }
+      
+      
+      if (custConfig.targetupdate.toLowerCase() === "connect")
+        sqwResult = await storeAndQueueConnectWork(updates, key, custConfig).then(
+          (res) => {
+            //console.info( `Debug Await StoreAndQueueWork Result: ${ JSON.stringify( res ) }` )
 
-      sqwResult = await storeAndQueueWork(updates, key, custConfig).then(
-        (res) => {
-          //console.info( `Debug Await StoreAndQueueWork Result: ${ JSON.stringify( res ) }` )
+            return res
+          }
+        )
+      else if (custConfig.targetupdate.toLowerCase() === "campaign")
+      {
 
-          return res
-        }
-      )
+        sqwResult = await storeAndQueueCampaignWork(updates, key, custConfig).then(
+          (res) => {
+            //console.info( `Debug Await StoreAndQueueWork Result: ${ JSON.stringify( res ) }` )
+
+            return res
+          }
+        )
+      }
+      else throw new Error(`Target for Update does not match any Target: ${custConfig.targetupdate}`)
 
       //console.info( `Debug sqwResult ${ JSON.stringify( sqwResult ) }` )
     }
@@ -2432,7 +2557,340 @@ async function packageUpdates(
   return sqwResult
 }
 
-async function storeAndQueueWork(
+
+
+async function storeAndQueueConnectWork(
+  updates: object[],
+  s3Key: string,
+  custConfig: customerConfig
+) {
+  batchCount++
+
+  if (batchCount > S3DBConfig.MaxBatchesWarning)
+    S3DB_Logging("info", "", `Warning: Updates from the S3 Object(${s3Key}) are exceeding(${batchCount}) the Warning Limit of ${S3DBConfig.MaxBatchesWarning} Batches per Object.`)
+
+  
+  const updateCount = updates.length
+
+  //Customers marked as "Singular" updates files are not transformed, but sent to Firehose prior to getting here.
+  //  therefore if Aggregate file, or files config'd as "Multiple" updates, then need to perform Transforms
+  try
+  {
+    //Apply Transforms, if any, 
+    updates = transforms(updates, custConfig)
+  } catch (e)
+  {
+    S3DB_Logging("exception", "", `Exception - Transforms - ${e}`)
+    throw new Error(`Exception - Transforms - ${e}`)
+  }
+
+  
+  S3DB_Logging("info", "800", `${JSON.stringify(updates)}, ${updateCount}`)
+
+  let res
+  ////DBKeyed, DBNonKeyed, Relational, ReferenceSet, CreateContacts, UpdateContacts, CreateAttributes
+  //if (customersConfig.listtype.toLowerCase() === 'updatecontacts') res = ConnectUpdateContacts()
+  //if (customersConfig.listtype.toLowerCase() === 'createcontacts') res = ConnectCreateMultipleContacts()
+  //if (customersConfig.listtype.toLowerCase() === 'createattributes') res = ConnectCreateAttributes()
+  ////if (true) res = ConnectReferenceSet().then((m) => {return m})
+  //const mutationCall = JSON.stringify(res)
+  //const m = buildConnectMutation(JSON.parse(updates))
+
+  debugger 
+  
+
+  //ReferenceSet, CreateContacts, UpdateContacts, CreateAttributes
+  if (customersConfig.listtype.toLowerCase() === "referenceset")
+  {
+    res = await buildMutationReferenceSet(updates, custConfig)
+      .then((r) => {
+        return r
+      })
+  }
+  
+  if (customersConfig.listtype.toLowerCase() === "createcontacts")
+  {
+    res = await buildMutationCreateContacts(updates, custConfig)
+      .then((r) => {
+        return r
+      })
+  }
+
+  if (customersConfig.listtype.toLowerCase() === "updatecontacts")
+  {
+    res = await buildMutationUpdateContacts(updates, custConfig)
+      .then((r) => {
+        return r
+      })
+  }
+
+  if (customersConfig.listtype.toLowerCase() === "createattributes")
+  {
+    res = await buildMutationCreateAttributes(updates, custConfig)
+      .then((r) => {
+        return r
+      })
+  }
+
+  
+  debugger
+  
+  const b = JSON.stringify(res)
+  S3DB_Logging("info", "855", `GraphQL Call (S3DBConfig.connectapiurl) \n${b}`)
+
+  
+//  const qquery = `
+//  mutation CreateNewTodo($title: String!) {
+//    todoCreate(input: {
+//      title: $title
+//    }) {
+//      todo {
+//        id
+//      }
+//    }
+//  }
+//`
+// mutation createMultipleContacts {
+//    createContacts(
+//      contactsInput: [
+//      {
+//        attributes: [
+//          {name: "First Name", value: "Diego"}
+//          {name: "Country", value: "Argentina"}
+//          {name: "Email Address", value: "diego11736@example.com"}
+//        ]
+//      }
+//      {
+//        attributes: [
+//          {name: "First Name", value: "Taio"}
+//          {name: "Country", value: "Canada"}
+//          {name: "Email Address", value: "taio234o@example.com"}
+//        ]
+//      }
+//      {
+//        attributes: [
+//          {name: "First Name", value: "Anna"}
+//          {name: "Country", value: "Canada"}
+//          {name: "Email Address", value: "anna1989@example.com"}
+//        ]
+//      }
+//    ]
+//    dataSetId: "4fe4136f-c007-44a3-b38f-92220xxxxxxxx"
+//    ) {
+//    items {
+//        contactId
+//      }
+//    }
+//  }
+
+  const query = `mutation createMultipleContacts($dataSetId: ID!, $contacts: [ContactCreateInput!]!) {
+    createContacts(
+      dataSetId: $dataSetId
+      contactsInput: $contacts
+    ) {
+        items {
+          contactId
+        }
+    }
+}`
+
+
+  const variables = {
+    dataSetId: "df07969b-7126-47f2-812d-b7b5876627f7",
+    contacts: [{
+      contactId: "123509",
+      to: {
+        attributes: [
+          {name: "Unique ID", value: "123509"},
+          {name: "Firstname", value: "Barney"},
+          {name: "Lastname", value: "Rubble"},
+          {name: "Email", value: "barney.rubble@quarry.com"}
+        ].filter(attr => attr.value != null), // Remove any null values
+        consent: {
+          consentGroups: [{
+            id: "3a7134b8-dcb5-509a-b7ff-946b48333cc9",
+            name: "Newsletters",
+            status: "OPT_IN"
+          }]
+        }
+      }
+    }]
+  };
+
+
+
+
+  
+  const qquery = `mutation createMultipleContacts {
+    createContacts(
+        dataSetId: "df07969b-7126-47f2-812d-b7b5876627f7"
+        updateContactInputs: [
+            {
+                contactId: "123509"
+                to: {
+                    attributes: [
+                        { name: "Unique ID", value: "123509" }
+                        { name: "Firstname", value: "Barney" }
+                        { name: "Lastname", value: "Rubble" }
+                        { name: "Email", value: "barney.rubble@quarry.com" }
+                    ]
+                    consent: {
+                        consentGroups: [
+                            {
+                                id: "3a7134b8-dcb5-509a-b7ff-946b48333cc9"
+                                name: "Newsletters"
+                                status: OPT_IN
+                            }
+                        ]
+                    }
+                }
+            }
+        ]
+    ) {
+        modifiedCount
+    }
+  }`
+
+
+  //const host = S3DBConfig.connectapiurl
+  const host = 'https://connect-api-us-1.goacoustic.com/api/graph'
+
+  try
+  {
+    const response = await fetch(host, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'subscriptionId': 'bb6758fc16bbfffbe4248214486c06cc3a924edf',
+        //'x-api-key': 'b1fa7ef5024e4da3b0a40aed8331761c',
+        'x-api-key':'41d0316c76e24cd6bf31d202a12a37c2_gka',
+        'x-acoustic-region': 'us-east-1'
+      },
+      //body: JSON.stringify({
+      //  query: mutation,
+      //  variables
+      //})      
+      //body: JSON.stringify(res)      
+      body: JSON.stringify({query, variables})
+    })
+
+    const result = await response.json()
+
+    S3DB_Logging("info", "855", `GraphQL Call (${S3DBConfig.connectapiurl}): ${JSON.stringify({query, variables})}`)
+    S3DB_Logging("info", "855", `GraphQL Result: \n${JSON.stringify(result)}`)
+    
+    debugger 
+
+    //return JSON.stringify(result.data)
+
+  } catch (error)
+  {
+    console.error('Error creating contacts:', error)
+    throw error
+  }
+
+
+  debugger
+
+
+
+
+  const mutationRows = JSON.stringify(res)
+
+
+
+  if (s3Key.indexOf("TestData") > -1)
+  {
+    //strip /testdata folder from key
+    s3Key = s3Key.split("/").at(-1) ?? s3Key
+  }
+
+  let key = s3Key
+
+  while (key.indexOf("/") > -1)
+  {
+    key = key.split("/").at(-1) ?? key
+  }
+
+  key = key.replace(".", "_")
+
+  key = `${key}-update-${batchCount}-${updateCount}-${uuidv4()}.json`
+
+  //if ( Object.values( updates ).length !== recs )
+  //{
+  //     selectiveLogging("error", "", `Recs Count ${recs} does not reflect Updates Count ${Object.values(updates).length} `)
+  //}
+
+  S3DB_Logging("info", "811", `Queuing Work File ${key} for ${s3Key}. Batch ${batchCount} of ${updateCount} records)`)
+
+  let addWorkToS3WorkBucketResult
+  let addWorkToSQSWorkQueueResult
+  const v = ""
+
+  try
+  {
+    addWorkToS3WorkBucketResult = await addWorkToS3WorkBucket(mutationRows, key)
+      .then((res) => {
+        return res //{"AddWorktoS3Results": res}
+      })
+      .catch((err) => {
+        S3DB_Logging("exception", "", `Exception - AddWorkToS3WorkBucket ${err}`)
+      })
+  } catch (e)
+  {
+    const sqwError = `Exception - StoreAndQueueWork Add work to S3 Bucket exception \n${e} `
+    S3DB_Logging("exception", "", sqwError)
+
+    debugger
+
+    return {
+      StoreS3WorkException: sqwError,
+      StoreQueueWorkException: "",
+      AddWorkToS3WorkBucketResults: JSON.stringify(addWorkToS3WorkBucketResult),
+    }
+  }
+
+  const marker = "Initially Queued on " + new Date()
+
+  try
+  {
+    addWorkToSQSWorkQueueResult = await addWorkToSQSWorkQueue(
+      custConfig,
+      key,
+      v,
+      batchCount,
+      updates.length.toString(),
+      marker
+    ).then((res) => {
+      return res
+      //     {
+      //         sqsWriteResult: "200",
+      //         workQueuedSuccess: true,
+      //         SQSSendResult: "{\"$metadata\":{\"httpStatusCode\":200,\"requestId\":\"e70fba06-94f2-5608-b104-e42dc9574636\",\"attempts\":1,\"totalRetryDelay\":0},\"MD5OfMessageAttributes\":\"0bca0dfda87c206313963daab8ef354a\",\"MD5OfMessageBody\":\"940f4ed5927275bc93fc945e63943820\",\"MessageId\":\"cf025cb3-dce3-4564-89a5-23dcae86dd42\"}",
+      // }
+    })
+  } catch (e)
+  {
+    const sqwError = `Exception - StoreAndQueueWork Add work to SQS Queue exception \n${e} `
+    S3DB_Logging("exception", "", sqwError)
+
+    return {StoreQueueWorkException: sqwError, StoreS3WorkException: ""}
+  }
+
+  S3DB_Logging("info", "915", `Results of Store and Queue of Updates - Add to Process Bucket: ${JSON.stringify(
+    addWorkToS3WorkBucketResult)} \n Add to Process Queue: ${JSON.stringify(addWorkToSQSWorkQueueResult)} `)
+
+
+  return {
+    AddWorkToS3WorkBucketResults: addWorkToS3WorkBucketResult,
+    AddWorkToSQSWorkQueueResults: addWorkToSQSWorkQueueResult,
+  }
+}
+
+
+
+
+async function storeAndQueueCampaignWork(
   updates: object[],
   s3Key: string,
   config: customerConfig
@@ -3324,71 +3782,474 @@ export async function getAccessToken(config: customerConfig) {
 }
 
 
-async function ConnectAudienceAdd() {
-  //mutation {
-  //    updateContacts(
-  //      dataSetId: "df07969b-7126-47f2-812d-b7b5876627f7"
-  //        updateContactInputs: [
-  //      {
-  //        contactId: "123509"
-  //                to: {
-  //          attributes: [
-  //            {name: "Unique ID", value: "123509"}
-  //                        {name: "Firstname", value: "Barney"}
-  //                        {name: "Lastname", value: "Rubble"}
-  //                        {name: "Email", value: "barney.rubble@quarry.com"}
-  //          ]
-  //                    consent: {
-  //            consentGroups: [
-  //              {
-  //                id: "3a7134b8-dcb5-509a-b7ff-946b48333cc9"
-  //                                name: "Newsletters"
-  //                                status: OPT_IN
-  //              }
-  //            ]
-  //          }
-  //        }
-  //      }
-  //    ]
-  //    ) {
-  //      modifiedCount
+
+
+//createMultipleContacts {
+//      createContacts(
+//        contactsInput: [
+//          {
+//          attributes: []
+//        }
+//      ]
+//      )
+//    }
+
+//interface Contact {
+//  attributes: Attribute[]
+//}
+
+
+
+interface CreateContactsResponse {
+  createContacts: {
+    items: {
+      contactId: string
+    }[]
+  }
+}
+
+
+async function buildMutationCreateContacts(updates: object[], config: customerConfig) {
+
+  //mutation createMultipleContacts {
+  //  createContacts(
+  //    contactsInput: [
+  //    {
+  //      attributes: [
+  //        {name: "First Name", value: "Diego"}
+  //        {name: "Country", value: "Argentina"}
+  //        {name: "Email Address", value: "diego11736@example.com"}
+  //      ]
+  //    }
+  //    {
+  //      attributes: [
+  //        {name: "First Name", value: "Taio"}
+  //        {name: "Country", value: "Canada"}
+  //        {name: "Email Address", value: "taio234o@example.com"}
+  //      ]
+  //    }
+  //    {
+  //      attributes: [
+  //        {name: "First Name", value: "Anna"}
+  //        {name: "Country", value: "Canada"}
+  //        {name: "Email Address", value: "anna1989@example.com"}
+  //      ]
+  //    }
+  //  ]
+  //  dataSetId: "4fe4136f-c007-44a3-b38f-92220xxxxxxxx"
+  //  ) {
+  //  items {
+  //      contactId
   //    }
   //  }
+  //}
+
+  interface Attribute {
+    name: string
+    value: string
+  }
+  interface contactsInput {
+    attributes: Attribute[]
+  }
+  interface createContacts {
+    dataSetId: string
+    contacts: contactsInput[]
+  }
+
+
+
+
+  //const v = {
+  //"variables": {
+  //  "dataSetId": "4fe4136f-c007-44a3-b38f-92220xxxxxxxx",
+  //    "contacts": [
+  //      {
+  //        "attributes": [
+  //          {
+  //            "name": "First Name",
+  //            "value": "Diego"
+  //          },
+  //          {
+  //            "name": "Country",
+  //            "value": "Argentina"
+  //          },
+  //          {
+  //            "name": "Email Address",
+  //            "value": "diego11736@example.com"
+  //          }
+  //        ]
+  //      },
+  //      {
+  //        "attributes": [
+  //          {
+  //            "name": "First Name",
+  //            "value": "Taio"
+  //          },
+  //          {
+  //            "name": "Country",
+  //            "value": "Canada"
+  //          },
+  //          {
+  //            "name": "Email Address",
+  //            "value": "taio234o@example.com"
+  //          }
+  //        ]
+  //      },
+  //      {
+  //        "attributes": [
+  //          {
+  //            "name": "First Name",
+  //            "value": "Anna"
+  //          },
+  //          {
+  //            "name": "Country",
+  //            "value": "Canada"
+  //          },
+  //          {
+  //            "name": "Email Address",
+  //            "value": "anna1989@example.com"
+  //          }
+  //        ]
+  //      }
+  //    ]
+  //}
+
+
+  //const contactArray: Contact[] = [
+  //  {
+  //    attributes: [
+  //      {name: "First Name", value: "Diego"},
+  //      {name: "Country", value: "Argentina"},
+  //      {name: "Email Address", value: "diego11736@example.com"}
+  //    ]
+  //  },
+  //  {
+  //    attributes: [
+  //      {name: "First Name", value: "Taio"},
+  //      {name: "Country", value: "Canada"},
+  //      {name: "Email Address", value: "taio234o@example.com"}
+  //    ]
+  //  }
+  //]
+
+
+  const q = {
+    "query": "mutation CreateMultipleContacts($dataSetId: ID!, $contacts: [ContactCreateInput!]!) {createContacts(dataSetId: $dataSetId, contactsInput: $contacts) { items {contactId} } }",
+    "variables": {
+      "dataSetId": "4fe4136f-c007-44a3-b38f-92220xxxxxxxx",
+      "contacts": [
+        {
+          "attributes": [
+            {
+              "name": "First Name",
+              "value": "Diego"
+            },
+            {
+              "name": "Country",
+              "value": "Argentina"
+            },
+            {
+              "name": "Email Address",
+              "value": "diego11736@example.com"
+            }
+          ]
+        },
+        {
+          "attributes": [
+            {
+              "name": "First Name",
+              "value": "Taio"
+            },
+            {
+              "name": "Country",
+              "value": "Canada"
+            },
+            {
+              "name": "Email Address",
+              "value": "taio234o@example.com"
+            }
+          ]
+        },
+        {
+          "attributes": [
+            {
+              "name": "First Name",
+              "value": "Anna"
+            },
+            {
+              "name": "Country",
+              "value": "Canada"
+            },
+            {
+              "name": "Email Address",
+              "value": "anna1989@example.com"
+            }
+          ]
+        }
+      ]
+    }
+  }
+
+    const cc: createContacts = {
+      contacts: [],
+      dataSetId: config.datasetid
+    } as createContacts
+  
+  for (const upd in updates)
+  {
+      const a = []
+    for (const [key, value] of Object.entries(updates[upd]))
+    {
+
+      //{"id": "005Ho00000A10ApIAJ", "email": "shefali.bisht@sandmartin.com", "first": "Shefali", "last": "Bisht", "photo": null, "acousticPhoto": null, "brandApprovedPhoto": null, "designations": null, "jobTitle": null, "phone": null, "registeredAdvisorTitle": null, "updatedAt": "2024-01-10T02:03:20.867Z"},
+
+      let v
+      if (typeof value === 'string') v = value as string
+      else v = String(value)
+      //a = {...a, {name: key, value: v}
+
+      //c.attributes.push({...a})
+      //c.attributes.push(Object.assign({}, a))
+
+      a.push({name: key, value: v})
+      //attrArray.push({name: key, value: v})
+    }
+
+    cc.contacts.push({"attributes": a})
+
+  }
+
+  //createMultipleContacts {
+  //      createContacts(
+  //        contactsInput: [
+  //          {
+  //          attributes: []
+  //        }
+  //      ]
+  //      )
+  //    }
+
+
+  //const query = `mutation CreateMultipleContacts($dataSetId: ID!, $contacts: [ContactCreateInput!]!) {
+  //  createContacts(dataSetId: $dataSetId, contactsInput: $contacts) {
+  //      items {
+  //      contactId
+  //    }
+  //  }
+  //}`    
+
+  //const variables = {
+  //  dataSetId: config.datasetid,
+  //  contacts: [
+  //    {
+  //     attributes: c.attributes
+  //    }
+  //  ]
+  //}
+
+
+
+
+  const mutation = `
+    mutation createMultipleContacts {
+      createContacts(
+        contactsInput: ${JSON.stringify(cc.contacts)}
+        dataSetId: "${cc.dataSetId}"
+      `
+
+S3DB_Logging("info", "817", `Create Multiple Contacts Mutation: ${mutation}`)
+
+  debugger 
+
+
+  return mutation
+}
+
+
+async function buildMutationUpdateContacts(updates: object[], config: customerConfig) {
+
+  const q = {
+    "query": "mutation UpdateContacts($dataSetId: ID!, $inputs: [UpdateContactInput!]!) { updateContacts(dataSetId: $dataSetId, updateContactInputs: $inputs) { modifiedCount } }",
+    "variables": {
+      "dataSetId": "df07969b-7126-47f2-812d-b7b5876627f7",
+      "inputs": [
+        {
+          "contactId": "123509",
+          "to": {
+            "attributes": [
+              {
+                "name": "Unique ID",
+                "value": "123509"
+              },
+              {
+                "name": "Firstname",
+                "value": "Barney2"
+              },
+              {
+                "name": "Lastname",
+                "value": "Rubble"
+              },
+              {
+                "name": "Email",
+                "value": "barney.rubble@quarry.com"
+              }
+            ],
+            "consent": {
+              "consentGroups": [
+                {
+                  "id": "3a7134b8-dcb5-509a-b7ff-946b48333cc9",
+                  "name": "Newsletters",
+                  "status": "OPT_IN"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  }
+
+
+return q
+
 
 }
 
-async function ConnectAudienceUpdate() {
+async function buildMutationCreateAttributes(updates: object[], config: customerConfig) {
+
+  //mutation {
+  //  updateDataSet(
+  //    where: {dataSetId: "4fe4136f-c007-44a3-b38f-92220xxxxxxxx"}
+  //  to: {
+  //    attributes: {
+  //      create: [
+  //        {name: "Last order", type: DATE, category: "Demographic"}
+  //        {name: "Avg. order amount", type: NUMBER, category: "Demographic", decimalPrecision: 0}
+  //      ]
+  //    }
+  //  }
+  //  ) {
+  //    dataSetId
+  //  }
+  //}
+
+  const q = {
+    "query": "mutation UpdateDataSet($dataSetId: ID!, $attributes: [AttributeInput!]!) { updateDataSet(where: { dataSetId: $dataSetId }, to: { attributes: { create: $attributes } }) { dataSetId } }",
+      "variables": {
+      "dataSetId": "4fe4136f-c007-44a3-b38f-92220xxxxxxxx",
+        "attributes": [
+          {
+            "name": "Last order",
+            "type": "DATE",
+            "category": "Demographic"
+          },
+          {
+            "name": "Avg. order amount",
+            "type": "NUMBER",
+            "category": "Demographic",
+            "decimalPrecision": 0
+          }
+        ]
+    }
+  }
+
+
+
+  return q 
 
 }
 
-async function ConnectReferenceSet() {
-
-
+async function buildMutationReferenceSet(updates: object[], config: customerConfig) {
+const q = ""
+  
+return q
 }
 
 async function postToConnect(updates: string, custconfig: customerConfig, updateCount: string, workFile: string) {
   //ToDo: 
   //Transform Add Contacts to Mutation Create Contact
   //Transform Updates to Mutation Update Contact
-  //    Need Attributes - Add Attributes to update as seen in inbound data 
+  //    Need Attributes - Add Attributes to update as seen in inbound data
   //get access token
   //post to connect
   //return result
-  S3DB_Logging("info", "800", `${updates}, ${custconfig}, ${updateCount}`)
-  
+
+
   //[
   //  {"key": "subscriptionId", "value": "bb6758fc16bbfffbe4248214486c06cc3a924edf","description": "", "enabled": true},
   //  {"key": "x-api-key", "value": "b1fa7ef5024e4da3b0a40aed8331761c", "description": "", "enabled": true},
   //  {"key": "x-acoustic-region", "value": "us-east-1", "description": "", "enabled": true}
   //]
 
-  const m = buildConnectMutation(JSON.parse(updates))
+  const myHeaders = new Headers()
+  //myHeaders.append("Content-Type", "text/xml")
+  //myHeaders.append("Authorization", "Bearer " + process.env[`${c}_accessToken`])
+  myHeaders.append("subscriptionId", customersConfig.subscriptionid)
+  myHeaders.append("x-api-key", customersConfig.x_api_key)
+  myHeaders.append("x-acoustic-region", customersConfig.x_acoustic_region)
+  myHeaders.append("Content-Type", "application/json")
+  myHeaders.append("Connection", "keep-alive")
+  myHeaders.append("Accept", "*/*")
+  myHeaders.append("Accept-Encoding", "gzip, deflate, br")
 
-  return "postToConnect"
+  const requestOptions: RequestInit = {
+    method: "POST",
+    headers: myHeaders,
+    body:  updates,
+    redirect: "follow"
+  }
+
+
+  const host = S3DBConfig.connectapiurl
+
+  S3DB_Logging("info", "805", `Updates to be POSTed (${workFile}) are: ${updates}`)
+
+  let connectQueryResult: string = ""
+
+  debugger
+
+
+  // try
+  // {
+  connectQueryResult = await fetch(host, requestOptions)
+    .then((response) => response.text())
+    .then(async (result) => {
+      S3DB_Logging("info", "808", `POST Response (${workFile}) : ${result}`)
+
+      S3DB_Logging("warn", "829", `Temporary Failure - POST Updates - Marked for Retry. \n${result}`)
+
+      //S3DB_Logging("error", "827", `Unsuccessful POST of the Updates (${m.length} of ${count}) - \nFailure Msg: ${JSON.stringify(msg)}`)
+
+      //return `Error - Unsuccessful POST of the Updates (${m.length} of ${count}) - \nFailure Msg: ${JSON.stringify(msg)}`
+
+      //If we haven't returned before now then it's a successful post 
+      result = result.replace("\n", " ")
+      S3DB_Logging("info", "826", `Successful POST Result: ${result}`)
+      //return `Successfully POSTed (${count}) Updates - Result: ${result}`
+      return ""
+    })
+    .catch((e) => {
+
+      if (e.indexOf("econnreset") > -1)
+      {
+        S3DB_Logging("exception", "829", `Error - Temporary failure to POST the Updates - Marked for Retry. ${e}`)
+
+        return "retry"
+      } else
+      {
+        S3DB_Logging("exception", "827", `Error - Unsuccessful POST of the Updates: ${e}`)
+        //throw new Error( `Exception - Unsuccessful POST of the Updates \n${ e }` )
+        return "Unsuccessful POST of the Updates"
+      }
+    })
+
+  //retry
+  //unsuccessful post
+  //partially successful
+  //successfully posted
+
+  return connectQueryResult
 }
-
-
-
 
 
 export async function postToCampaign(
@@ -3543,6 +4404,8 @@ export async function postToCampaign(
 
   return postRes
 }
+
+
 async function buildConnectMutation(updates: object) {
 
 /*

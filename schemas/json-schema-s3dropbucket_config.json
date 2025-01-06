@@ -1,0 +1,240 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "description": "Primary Configuration for the S3DropBucket Solution",
+  "type": "object",
+  "properties": {
+    "AWS_REGION": {
+      "type": "string",
+      "description": "Region where this deployment of the S3DropBucket Solution is deployed",
+      "minLength": 3,
+      "enum": [
+        "us-east-1",
+        "us-east-2",
+        "us-west-1",
+        "us-west-2",
+        "ca-central-1",
+        "eu-central-1",
+        "eu-west-1",
+        "eu-west-2",
+        "eu-west-3",
+        "eu-north-1",
+        "ap-northeast-1",
+        "ap-northeast-2",
+        "ap-southeast-1",
+        "ap-southeast-2",
+        "ap-south-1",
+        "sa-east-1",
+        "cn-north-1",
+        "cn-northwest-1"
+      ]
+    },
+    "connectapiurl":{
+        "type": "string",
+        "description": "URL for Connect API calls (Do not edit)",
+        "minLength": 15,
+        "default": [
+          "https://app.goacoustic.com/api/graph"
+        ]
+      },
+      
+    "xmlapiurl": {
+      "type": "string",
+      "description": "Template for the URL of the XML API (Do not edit)",
+      "minLength": 15,
+      "default": [
+        "https://api-campaign-${config.region}-${config.pod}.goacoustic.com/XMLAPI"
+      ]
+    },
+    "restapiurl": {
+      "type": "string",
+      "description": "Template for the URL of the REST API (Do not edit)",
+      "minLength": 15,
+      "default": [
+        "https://api-campaign-${config.region}-${config.pod}.goacoustic.com"
+      ]
+    },
+    "authapiurl": {
+      "type": "string",
+      "description": "Template for the URL of the AUTH API (Do not edit)",
+      "minLength": 15,
+      "default": [
+        "https://api-campaign-${config.region}-${config.pod}.goacoustic.com/oauth/token"
+      ]
+    },
+    "S3DropBucketLogBucket": {
+      "type": "string",
+      "description": "If S3DropBucketLog is true, Send all Logging data to this S3 Bucket",
+      "minLength": 3
+    },
+    "S3DropBucketLog": {
+      "type": "boolean",
+      "description": "Send all Logging data to the S3 Bucket defined by S3DropBucketLogBucket"
+    },
+    "S3DropBucket": {
+      "type": "string",
+      "default": "s3dropbucket",
+      "description": "Default S3 Drop Bucket for this deployment of the Lambda function (Customer Buckets are defined independently)",
+      "minLength": 3
+    },
+    "S3DropBucketWorkBucket": {
+      "type": "string",
+      "default": "s3dropbucket-process",
+      "description": "S3 Work Processor Bucket for this deployment of the Lambda function",
+      "minLength": 3
+    },
+    "S3DropBucketConfigs": {
+      "type": "string",
+      "default": "s3dropbucket-configs",
+      "description": "S3 Bucket for Config Files for this deployment of the Lambda function",
+      "minLength": 3
+    },
+    "S3DropBucketWorkQueue": {
+      "type": "string",
+      "default": "https: //sqs.us-east-1.amazonaws.com/777957353822/S3DropBucketQueue",
+      "description": "SQS Queue for all Work Queued for this deployment of the Lambda function",
+      "minLength": 3
+    },
+    "S3DropBucketQuiesce": {
+      "type": "boolean",
+      "default": false,
+      "description": "Quiesce Processing of any inbound files on the S3DropBucket default bucket"
+    },
+    "WorkQueueQuiesce": {
+      "type": "boolean",
+      "default": false,
+      "description": "Quiesce Processing of the SQS Process/Work Queue, the Queue that contains all Updates to be posted"
+    },
+    "QueueBucketQuiesce": {
+      "type": "boolean",
+      "default": false,
+      "description": "Quiesce Processing of any files on the S3 Process/Work Bucket (Where all work arriving from Customer-facing Buckets is staged for updating) "
+    },
+    "S3DropBucketMaintHours": {
+      "type": "number",
+      "default": 0,
+      "description": "Run a Maintenance Cycle. Number sets Lookback hours for Orphaned incoming files. Any file with an Unmodified datetime attribute older than this period will be Re-Processed (See documentation for AWS commands to send specific files back through reprocessing). If set to 0 will not invoke a maintenance cycle",
+      "deprecated": true
+    },
+    "S3DropBucketMaintLimit": {
+      "type": "number",
+      "default": 0,
+      "description": "Limit the number of reprocessed objects processed in the Maintenance Cycle. If set to 1000 (max) this will indicate to process \"Every\" eligible object (within the MaintHours age setting) which could cause significant processing overhead and incur \"Please Slowdown\" errors. Use this setting to help avoid \"Please Slow Down\" Errors",
+      "deprecated": true
+    },
+    "S3DropBucketMaintConcurrency": {
+      "type": "number",
+      "description": "Number of Maintenance processing threads to run concurrently. CAUTION: As this is for evey single invocation, a number higher than 10 can consume significant resources",
+      "deprecated": true
+    },
+    "S3DropBucketWorkQueueMaintHours": {
+      "type": "number",
+      "description": "Lookback hours for Orphaned Work. Any work file with an unmodified datetime attribute older than this period will be sent back to the Work Queue for processing/reprocessing with the unmodified datetime attribute updated. See documentation for sending specific work back through processing/reprocessing. If set to 0 will not invoke a maintenance cycle",
+      "deprecated": true
+    },
+    "S3DropBucketWorkQueueMaintLimit": {
+      "type": "number",
+      "description": "Limit the number of reprocessed objects to avoid \"Please Slow Down\" Errors. If set to 1000 (max) this will indicate to process \"Every\" eligible object (within the Hours age criteria) which could cause significant processing overhead and incur \"Please Slowdown\" errors",
+      "deprecated": true
+    },
+    "S3DropBucketWorkQueueMaintConcurrency": {
+      "type": "number",
+      "description": "Number of Maintenance threads to run, CAUTION: As this is for evey single invocation higher than 10 can consume significant resources",
+      "deprecated": true
+    },
+    "reQueue": {
+      "type": "string",
+      "description": "ReProcess Work Queue for specific Customer work. Useful in retrying work that fails due to a misconfigured Customer configuration. Specify a Customer prefix to requeue all work found on the Process/Work bucket",
+      "minLength": 3,
+      "deprecated": true
+    },
+    "prefixFocus": {
+      "type": "string",
+      "default": "",
+      "description": "Prefix Focus - Focus on processing only inbound S3DropBucket Objects with the prefix xxx (typically a Customer prefix). Provided as an aid, See documentation for discussions on managing Customer S3 Buckets and SQS Queues of the S3DropBucket Solution."
+    },
+    "EventEmitterMaxListeners": {
+      "type": "number",
+      "description": "Check the \"S3DropBucket Operation and Maintenance\" document for notes on tuning the EventEmitterMaxListeners setting for optimal processing"
+    },
+    "jsonSeparator": {
+      "type": "string",
+      "default": "",
+      "description": " JSON Parser Default Separator - Needs to be \"\\n\", however Customer configs can define a unique separator for each dataflow",
+      "minLength": 1
+    },
+    "MaxBatchesWarning": {
+      "type": "number",
+      "description": "Set a Warning threshold of the number of Batches parsed from a single Customer update file. New work arriving is parsed out in \"Update Batches\", if the total number of batches exceeds this limit, Logging will include a warning for Alerting on a possible issue with that S3DropBucket update file. "
+    },
+    "SelectiveLogging": {
+      "type": "string",
+      "default": "_503,_504,_509,_511,_908,_918,_922,_924,_925,_927,_928,_929,_930,_931,_932,_934,",
+      "description": "CAUTION: \nSome of the following Selective Logging options create significant Logging volume and can cause significant Logging Costs in AWS \nBe Sure to remove as soon as possible after the Logging needed has been achieved.\nCAUTION: \n   \n  Useful for Troubleshooting or monitoring, each Selective Logging option turns on a specific message from various steps in the S3DropBucket Process.  \n  All Logging Options MUST have a preceding underscore and trailing comma, as in:\" _909,_910,_911,\"  \n  \n  Basic Messaging (01-100)  \n  Message 01:Log ... \n  Message 02:Log ... \n  ...  \n  \n  Message 97:Basic Logging message. Log Processing Environment Variables.  \n  Message 98:Basic Logging message. Log Current S3DropBucket Options.  \n  Message 99:Basic Logging message. Log Current S3DropBucket Logging Options.  \n   \n  S3DropBucket Incoming Data Processing Logging (300->499)  \n   \n  ToDo:move 9xx series messages to 300 series  \n  300:Log ... \n  301:Log ... \n  302:Log ... \n  303:Log ... \n  ... \n   \n  S3DropBucket ProcessBucket and Work Queue Logging (500->699)  \n  500: Basic Logging Message. WorkBucket - Log receiving a batch of S3DropBucket Events to be processed for this Lambda invocation.  \n  501: Basic Logging Message. WorkBucket - Log data being read and processed for the file being processed from S3DropBucket  \n  502: Basic Logging Message. WorkBucket - Log opening of the file stream for the file being processed from S3DropBucket  \n  503: Basic Logging Message. WorkBucket - Log completion of processing all records of the file being processed from S3DropBucket  \n  504: Basic Logging Message. WorkBucket - Log Deletions of S3DropBucket file after successfully processed. \n  505: Basic Logging Message. WorkBucket - Log Completion of processing all Events of this batch of processing for this Lambdainvocation. \n  506: Basic Logging Message. WorkQueue - Log receiving a batch of Work Queue Events to be processed for this Lambdainvocation. \n  507: Basic Logging Message. WorkQueue - Log each Work file Processing Start and Completion from the Work Queue (with SQS Batch Fail Entries on completion)  \n  508: Basic Logging Message. WorkQueue - Log Work Successfully (or Partially Successfully) Posted to Campaign from Work Queue  \n  509: Basic Logging Message. WorkQueue - Log SQSBatchFail Items \n  510: Basic Logging Message. WorkQueue - Log completion of processing with the number of Work Queue records processed and number and list of to be Retried. \n  511: Basic Logging Message. WorkQueue - Log short message of Updates POSTed \n  512: Basic Logging Message. WorkQueue - Log the retrieval of S3 files off the Work Bucket \n  513: Basic Logging Message. WorkQueue - Log the entire SQS Queue Message for each SQS Queue event.  \n  514: Basic Logging Message. WorkQueue - Log the start of processing each object \n  515: Basic Logging Message. WorkQueue - Log when an update exceeds MaxRows defined in Customers Config \n  516: Basic Logging Message. WorkQueue - Log when work is set for Retry \n  517: Basic Logging Message. WorkQueue - Log the pull of Work files from the Work ProcessBucket  \n  518: Basic Logging Message. WorkQueue - Log \n   \n  S3DropBucket SFTP (700->799)  \n  700:Log Event received  \n  701:Log Selective Logging  \n  702:Log \n  703:Log \n  704:Log \n  705:Log \n  706:Log \n  707:Log \n  708:Log \n  709:Log \n  710:Log \n   \n  S3DropBucket Connect (800->899)  \n  800:Log \n  801:Log \n  802:Log \n  803:Log \n  804:Log \n  805:Log \n   \n  ToDo:Reorg 900 messaging into 300s and 500s  \n  900: Log AccessToken activity (refresh and use)  \n  901: Log the current S3 DropBucket Config  \n  902: Log the Batch and End packaging results of Parsing and Queueing the Work from processing an S3 DropBucket file  \n  903: Log the internal trace messaging of the Processing of each S3 DropBucket Object.  \n  904: Log the entire Batch of SQS Queue Work Messages sent to the Lambda function to be processed. \n  905: Log the Updates about to be POSTed to Campaign  \n  906: Log the JSON of RT updates to be packaged into XML Updates to Campaign (also see 916 for DB)  \n  907: Log the SQS Message being written to the SQS Queue and the write of the Work File (Batch of Updates) to the S3 ProcessBucket  \n  908: Log the outcome of the Update POST to Campaign (also helpful to see events marked for Retry) Also see 510  \n  909: Log Errors in Read Stream  \n  910: Log Customer Configs  \n  911: Log each SQS Event of a Batch of Events being processed (also see 904)  \n  912: Log  \n  913: Log each OnData record (chunk) parsed in Processing an S3 DropBucket Object Content Stream  \n  914: Log the work file and outcome of Adding Work to the SQS Queue - Queueing the Work  \n  915: Log the outcome of Storing and Queing Updates to the Work Bucket and Work Queue respectively.  \n  916: Log the JSON of DB updates to be packaged into XML Updates to Campaign (also see 906 for RT)  \n  917: Log the XML created from the JSON updates  \n  918: Log the Packaging of Updates from File processing.  \n  919: Log the Transforms configured and applied  \n  920: Log the final outcome of all S3DropBucket bucket processing  \n  921: Log the final outcome of all Work Process Bucket processing  \n  922: Log the payload and result of sending file data to Firehose Aggregator  \n  923: Log any Quiesce in force  \n  924: Log each Delete of a successful processing of a queued Work file  \n  925: Log the Processing of an Aggregated file (Firehose Aggregated) from S3DropBucket  \n  926: Log POST Update Success  \n  927: Log POST Update Failures  \n  928: Log Partial POST Update Success  \n  929: Log Temporary POST Update Fails  \n  930: Log JSONPath Transform messaging  \n  931: Log CSV Transform messaging  \n  932: Log Ignore Transform messaging  \n  923: Log any Quiesce in force  \n  934: Log Transform Errors/Exceptions  \n  935: Log Hard Failures when POSTing updates  \n  936: Log the result of each POST regardless of outcome  \n  937: Log  \n  937: Log  \n  937: Log \n ",
+      "minLength": 2
+    },
+    "LogLevel": {
+      "type": "string",
+      "default": "NORMAL",
+      "enum": [
+        "ALL",
+        "NONE",
+        "NORMAL"
+      ],
+      "description": "ALL - Log every message generated regardless of Selective Logging Config \nNONE - Log Nothing (Exceptions will continue to log) \nNORMAL - Follow the logging options defined in SelectiveLogging ",
+      "minLength": 3
+    },
+    "S3DropBucketPurgeCount": {
+      "type": "number",
+      "description": "Useful for cleaning up after testing during onboarding Customers, in concert with S3DropBucketPurge pointing to the bucket to purge, S3DropBucketPurgeCount sets the number of files to purge at each invocation (Max 1000). However, this option is deprecated in favor of using AWS Commands (see S3DropBucket Operations and Maintenance Guide) ",
+      "deprecate": true
+    },
+    "S3DropBucketPurge": {
+      "type": "string",
+      "description": "Useful for cleaning up after testing during onboarding Customers, S3DropBucketPurge defines the bucket to purge inbound files at each invocation (Max 1000). However, this option is deprecated in favor of using AWS Commands (see S3DropBucket Operations and Maintenance Guide) ",
+      "minLength": 3,
+      "deprecate": true
+    },
+    "WorkQueueBucketPurgeCount": {
+      "type": "number",
+      "description": "Useful for cleaning up after testing during onboarding Customers, in concert with WorkQueueBucketPurge pointing to the work bucket to purge, S3DropBucketPurgeCount sets the number of files to purge at each invocation (Max 1000). However, this option is deprecated in favor of using AWS Commands (see S3DropBucket Operations and Maintenance Guide) ",
+      "deprecate": true
+    },
+    "WorkQueueBucketPurge": {
+      "type": "string",
+      "description": "Useful for cleaning up S3DropBucket after testing during onboarding Customers, S3DropBucketPurge defines the bucket to purge inbound files at each invocation (Max 1000). However, this option is deprecated in favor of using AWS Commands (see S3DropBucket Operations and Maintenance Guide) ",
+      "minLength": 3,
+      "deprecate": true
+    }
+  },
+  "required": [
+    "AWS_REGION",
+    "xmlapiurl",
+    "restapiurl",
+    "authapiurl",
+    "S3DropBucketLogBucket",
+    "S3DropBucketLog",
+    "S3DropBucket",
+    "S3DropBucketWorkBucket",
+    "S3DropBucketConfigs",
+    "S3DropBucketWorkQueue",
+    "S3DropBucketQuiesce",
+    "WorkQueueQuiesce",
+    "QueueBucketQuiesce",
+    "S3DropBucketMaintHours",
+    "S3DropBucketMaintLimit",
+    "S3DropBucketMaintConcurrency",
+    "S3DropBucketWorkQueueMaintHours",
+    "S3DropBucketWorkQueueMaintLimit",
+    "S3DropBucketWorkQueueMaintConcurrency",
+    "prefixFocus",
+    "EventEmitterMaxListeners",
+    "jsonSeparator",
+    "MaxBatchesWarning",
+    "SelectiveLogging",
+    "LOGLEVEL",
+    "S3DropBucketPurgeCount",
+    "S3DropBucketPurge",
+    "WorkQueueBucketPurgeCount",
+    "WorkQueueBucketPurge"
+  ]
+}

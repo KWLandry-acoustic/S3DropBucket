@@ -4,8 +4,8 @@ phases:
     runtime-versions:
       nodejs: 20.x
     commands:
-      #- rm -rf .aws-sam
-      #- npm remove .aws-sam
+      - npm remove .aws-sam
+      - rm -rf .aws-sam
       - pwd; 
       - ls -lha --block-size=K; 
       - SAM_CLI_TELEMETRY=0
@@ -13,7 +13,6 @@ phases:
   pre_build:
     commands:
       #- npm remove .aws-sam
-      #- npm run version
       #- npm cache clean --force
       #- npm remove node_modules
       #- npm remove layers

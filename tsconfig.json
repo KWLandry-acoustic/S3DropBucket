@@ -133,7 +133,7 @@
   ],
   "exclude": [
     "**/*.test.ts",
-    "__tests__/**/*"
+    "src/__tests__/**/*"
 
   ]
 }

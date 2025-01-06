@@ -8,7 +8,7 @@
       "name": "1.Template-S3DropBucket",
       "type": "aws-sam",
       "request": "direct-invoke",
-      "preLaunchTask": "npm run version",
+      //"preLaunchTask": "npm run version",
       //"preLaunchTask": "docker-run: debug",
       "invokeTarget": {
         "target": "template",
