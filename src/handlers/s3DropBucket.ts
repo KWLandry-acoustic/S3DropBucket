@@ -2101,9 +2101,8 @@ async function getValidateS3DropBucketConfig() {
 }
 
 async function getFormatCustomerConfig(filekey: string) {
-  
 
-  if (filekey.endsWith("S3DropBucket_Aggregator")) filekey.replace("S3DropBucket_Aggregator", "")
+  if (filekey.indexOf("S3DropBucket_Aggregator") > -1) filekey.replace("S3DropBucket_Aggregator-", "")
 
   //Populate/Refresh Customer Config List 
   if (process.env.S3DropBucketConfigBucket === '')  process.env.S3DropBucketConfigBucket = 's3dropbucket-configs'
