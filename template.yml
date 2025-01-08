@@ -79,7 +79,7 @@ Resources:
       #Role: arn:aws:iam::777957353822:role/tricklercacheExecutionRole
       #Role: !Ref roleARN
       #Role: !FindInMap [RegionRoles, !Ref "AWS::Region", RoleArn]
-      #Role: !FindInMap [RegionRoles, !Ref "AWS::Region", RoleArn]
+      Role: !FindInMap [RegionRoles, !Ref "AWS::Region", RoleArn]
       #Role: !Sub ${RegionRoles[!Ref "AWS::Region"].RoleArn}
 
       #CodeUri: ./
@@ -133,7 +133,7 @@ Resources:
       #Role: arn:aws:iam::777957353822:role/tricklercacheExecutionRole
       #Role: !Sub ${RegionRoles[!Ref "AWS::Region"].RoleArn}
       #Role: !FindInMap [RegionRoles, !Ref "AWS::Region", RoleArn]
-      #Role: !FindInMap [RegionRoles, !Ref "AWS::Region", RoleArn]
+      Role: !FindInMap [RegionRoles, !Ref "AWS::Region", RoleArn]
       #Role: !Sub ${roleArn}
       #Role: !Ref roleARN
       #CodeUri: ./
@@ -204,7 +204,7 @@ Resources:
       #Role: arn:aws:iam::777957353822:role/tricklercacheExecutionRole
       #Role: !Sub ${RegionRoles[!Ref "AWS::Region"].RoleArn}
       #Role: !FindInMap [RegionRoles, !Ref "AWS::Region", RoleArn]
-      #Role: !FindInMap [RegionRoles, !Ref "AWS::Region", RoleArn]
+      Role: !FindInMap [RegionRoles, !Ref "AWS::Region", RoleArn]
       #Role: !Sub ${roleArn}
       #Role: !Ref roleARN
       #CodeUri: ./
