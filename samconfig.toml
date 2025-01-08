@@ -11,7 +11,7 @@ loglevel = "debug"
 SLS_DEBUG = true
 
 [default.build.parameters]
-save_params = true
+save_params = false
 #region = "us-east-1"
 #manifest = "/Users/kwlandry/Dropbox/Documents/A. Campaign/CodeFolder/A. S3DropBucket_main/s3dropbucket/package.json"
 #manifest = "./package.json"
@@ -27,8 +27,8 @@ debug = true
 #build_dir = "/tmp/aws-toolkit-vscode/vsctk38db9d3f/output"
 #template_file = "/Users/kwlandry/Dropbox/Documents/A. Campaign/CodeFolder/A. S3DropBucket_main/s3dropbucket/template.yml"
 #build_dir = "/tmp/aws-toolkit-vscode/vsctk373c9363/output"
-template_file = "/Users/kwlandry/Dropbox/Documents/A. Campaign/CodeFolder/A. S3DropBucket_main/s3dropbucket/template.yml"
-build_dir = "/tmp/aws-toolkit-vscode/vsctk8389b15c/output"
+#template_file = "/Users/kwlandry/Dropbox/Documents/A. Campaign/CodeFolder/A. S3DropBucket_main/s3dropbucket/template.yml"
+#build_dir = "/tmp/aws-toolkit-vscode/vsctk8389b15c/output"
 
 [default.validate.parameters]
 lint = true
