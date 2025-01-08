@@ -73,7 +73,7 @@ phases:
       - cat template-export.yml
       - ls -lha --block-size=K
       - ls /tmp/ -R
-      - ls /codebuild/output/ -R
+      #- ls /codebuild/output/ -R
       #- rm -rf node_modules
       #- rm -rf .aws-sam
       #- ls .aws-sam/deps -lha --block-size=K

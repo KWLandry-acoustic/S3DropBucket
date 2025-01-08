@@ -455,8 +455,6 @@ export const s3DropBucketHandler: Handler = async (
   S3DB_Logging("info", "97", `Environment Vars: ${JSON.stringify(process.env)} `)
   S3DB_Logging("info", "98", `S3DropBucket Options: ${JSON.stringify(S3DBConfig)} `)
   S3DB_Logging("info", "99", `S3DropBucket Logging Options(process.env): ${process.env.S3DropBucketSelectiveLogging} `)
-  //selectiveLogging("info", "99", `S3DropBucket Logging Options(constant): ${S3DBConfig.SelectiveLogging} `)
-
 
 
   if (event.Records[0].s3.object.key.indexOf("S3DBAggregator") > -1)
@@ -1826,7 +1824,8 @@ async function getValidateS3DropBucketConfig() {
           "utf8"
         )) as string
 
-        
+        S3DB_Logging("info", "912", `Pulling S3DropBucket Config File (bucket:${getObjectCmd.Bucket}  key:${getObjectCmd.Key}) \nResult: ${s3dbcr}`)
+
         //Fix extra space/invlaid formatting of "https:  //  ...." errors before parsing 
         s3dbcr = s3dbcr.replaceAll(new RegExp(/(?:(?:https)|(?:HTTPS)): \/\//gm), "https://")
 
