@@ -516,12 +516,11 @@ export const s3DropBucketHandler: Handler = async (
   // Drive higher concurrency in each Lambda invocation by running batches of 10 files written at a time(SQS Batch)
   for (const r of event.Records)
   {
-    const key = r.s3.object.key ?? ""
-    const bucket = r.s3.bucket.name ?? ""
+    const key = r.s3.object.key
+    const bucket = r.s3.bucket.name
   
-    if (process.env.S3DropBucketPrefixFocus !== undefined && process.env.S3DropBucketPrefixFocus !== "" && process.env.S3DropBucketPrefixFocus.length > 3)
+    if (process.env.S3DropBucketPrefixFocus !== undefined && process.env.S3DropBucketPrefixFocus !== "" && process.env.S3DropBucketPrefixFocus.length > 3 && !key.startsWith(process.env.S3DropBucketPrefixFocus))
     {
-      //ToDo: Assign a specific debug number for this message (can bee voluminous) 
         S3DB_Logging("warn", "933", `PrefixFocus is configured, File Name ${key} does not fall within focus restricted by the configured PrefixFocus ${process.env.S3DropBucketPrefixFocus}`)
 
       return
@@ -3064,9 +3063,11 @@ async function putToFirehose(chunks: object[], key: string, cust: string) {
   // S3DropBucket_Aggregator
   // S3DropBucket_Log
 
-  let fireHoseStream = "S3DBAggregator"
+  //let fireHoseStream = "S3DBAggregator"
+  let fireHoseStream = "S3DropBucket_Aggregator"
+  //let fireHoseStream = S3DBConfig.S3DropBucketFirehoseStream
 
-  //Future - Logging possibilitys
+  //Future - Logging possibilities
   if (cust === "S3DropBucket_Logs_") fireHoseStream = "S3DropBucket_Log"
 
   let putFirehoseResp: object = {}
@@ -3083,7 +3084,9 @@ async function putToFirehose(chunks: object[], key: string, cust: string) {
       if (cust !== "S3DropBucket_Log_")
       jo = Object.assign(jo, { Customer: cust })
       const fd = Buffer.from(JSON.stringify(jo), "utf-8")
+
 debugger
+      
       const fp = {
         DeliveryStreamName: fireHoseStream,
         Record: {
