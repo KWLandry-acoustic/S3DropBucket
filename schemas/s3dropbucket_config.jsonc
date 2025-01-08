@@ -1,5 +1,6 @@
 {
-      "$schema": "../schemas/json-schema-s3dropbucket_config.json",
+      "$schema": "https://raw.githubusercontent.com/KWLandry-acoustic/S3DropBucket_Schemas/main/json-schema-s3dropbucket_config.json",
+
       
       "AWS_REGION": "us-east-1",
 

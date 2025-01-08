@@ -146,6 +146,7 @@ interface customerConfig {
   listtype: string
   dbkey: string
   lookupkeys: string
+  updateKey: string
   pod: string // 1,2,3,4,5,6,7,8,9,A,B
   region: string // US, EU, AP
   updatemaxrows: number //Safety to avoid run away data inbound and parsing it all
@@ -181,7 +182,8 @@ let customersConfig = {
     listname: "",
     listtype: "",
     dbkey: "",
-    lookupkeys: "",
+  lookupkeys: "",
+    updateKey: "",
     pod: "",
     region: "",
     updatemaxrows: 0,
@@ -538,7 +540,7 @@ export const s3DropBucketHandler: Handler = async (
       customersConfig = await getFormatCustomerConfig(key) as customerConfig
     } catch (e)
     {
-      S3DB_Logging("exception", "", `Exception - Awaiting Customer Config \n${e} `)
+      S3DB_Logging("exception", "", `Exception - Awaiting Customer Config (${key}) \n${e} `)
       break
     }
 
@@ -679,7 +681,9 @@ export const s3DropBucketHandler: Handler = async (
     //Check for important Config updates (which caches the config in Lambdas long-running cache)
     try
     {
-      checkForS3DBConfigUpdates()
+        S3DBConfig = await getValidateS3DropBucketConfig()
+        S3DB_Logging("info", "901", `Checked and Refreshed S3DropBucket Config \n ${JSON.stringify(S3DBConfig)} `)
+
     } catch (e)
     {
       S3DB_Logging("exception","",`Exception refreshing S3DropBucket Config: ${e}`)
@@ -949,8 +953,7 @@ async function processS3ObjectContentStream(
       // s3ContentReadableStream = s3ContentReadableStream.pipe(t).pipe(jsonParser)
       s3ContentReadableStream = s3ContentReadableStream.pipe(jsonParser)
       //s3ContentReadableStream = s3ContentReadableStream.pipe(tJsonParser)
-
-
+      
       s3ContentReadableStream.setMaxListeners(
         Number(S3DBConfig.EventEmitterMaxListeners)
       )
@@ -1329,6 +1332,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
       listtype: "",
       dbkey: "",
       lookupkeys: "",
+      updateKey: "",
       pod: "",
       region: "",
       updatemaxrows: 0,
@@ -1378,10 +1382,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
       localTesting = false
     }
     
-    
-    debugger
-
-
+  
     S3DB_Logging("info", "507", `Start Processing ${tqm.workKey} off Work Queue. `)
     
     S3DB_Logging("info", "911", `Start Processing Work Item: SQS Event: \n${JSON.stringify(q)}`)
@@ -1771,11 +1772,7 @@ async function sftpDeleteFile(remoteFile: string) {
   }
 }
 
-async function checkForS3DBConfigUpdates() {
-    
-  S3DBConfig = await getValidateS3DropBucketConfig()
-  S3DB_Logging("info", "901", `Checked and Refreshed S3DropBucket Config \n ${JSON.stringify(S3DBConfig)} `)
-}
+
 
 async function getValidateS3DropBucketConfig() {
   //Article notes that Lambda runs faster referencing process.env vars, lets see.
@@ -1793,6 +1790,7 @@ async function getValidateS3DropBucketConfig() {
 
   if (!process.env.S3DropBucketConfigBucket)
     process.env.S3DropBucketConfigBucket = "s3dropbucket-configs"
+
   if (!process.env.S3DropBucketConfigFile)
     process.env.S3DropBucketConfigFile = "s3dropbucket_config.jsonc"
   
@@ -1828,6 +1826,10 @@ async function getValidateS3DropBucketConfig() {
           "utf8"
         )) as string
 
+        
+        //Fix extra space/invlaid formatting of "https:  //  ...." errors before parsing 
+        s3dbcr = s3dbcr.replaceAll(new RegExp(/(?:(?:https)|(?:HTTPS)): \/\//gm), "https://")
+
         //Parse comments out of the json before returning parsed config json
         s3dbcr = s3dbcr.replaceAll(new RegExp(/[^:](\/\/.*(,|$|")?)/g), "")
         s3dbcr = s3dbcr.replaceAll(" ", "")
@@ -1837,87 +1839,230 @@ async function getValidateS3DropBucketConfig() {
       })
   } catch (e) {
     S3DB_Logging("exception", "", `Exception - Pulling S3DropBucket Config File (bucket:${getObjectCmd.Bucket}  key:${getObjectCmd.Key}) \nResult: ${s3dbcr} \nException: \n${e} `)
-    return {} as s3DBConfig
+    //return {} as s3DBConfig
+
+    throw new Error(
+      `Exception - Pulling S3DropBucket Config File(bucket: ${getObjectCmd.Bucket}  key: ${getObjectCmd.Key}) \nResult: ${s3dbcr} \nException: \n${e} `
+    )
+
+
   }
 
-  try {
-    if (
-      s3dbc.LOGLEVEL !== undefined)
-    {
-      process.env.S3DropBucketLogLevel = s3dbc.LOGLEVEL
-    }
+  try
+  {
 
-    if (s3dbc.SelectiveLogging !== undefined)
-      process.env["S3DropBucketSelectiveLogging"] = s3dbc.SelectiveLogging
-    //Perhaps validate that the string contains commas and underscores as needed,
-
-    if (!s3dbc.S3DropBucket || s3dbc.S3DropBucket === "") {
+    //  *Must* set EventEmitterMaxListeners
+    if (!isNaN(s3dbc.EventEmitterMaxListeners) && typeof s3dbc.EventEmitterMaxListeners === 'number') process.env["EventEmitterMaxListeners"] = s3dbc.EventEmitterMaxListeners.toString()
+    else {
       throw new Error(
-        `Exception - S3DropBucket Configuration is not correct: ${s3dbc.S3DropBucket}.`
+        `S3DropBucket Config invalid or missing definition: EventEmitterMaxListeners.`
+      )
+    } 
+
+
+    //ToDo: refactor to a foreach validation instead of the Long List approach. 
+    if (!s3dbc.LOGLEVEL || s3dbc.LOGLEVEL === "")
+    {
+      throw new Error(
+        `S3DropBucket Config invalid definition: missing LogLevel.`
+      )
+    } else process.env.S3DropBucketLogLevel = s3dbc.LOGLEVEL
+
+
+    if (!s3dbc.SelectiveLogging || s3dbc.SelectiveLogging === "")
+    {
+      throw new Error(
+        `S3DropBucket Config invalid definition: missing SelectiveLogging.`
+      )
+      
+    } else process.env["S3DropBucketSelectiveLogging"] = s3dbc.SelectiveLogging
+
+    if (!s3dbc.S3DropBucket || s3dbc.S3DropBucket === "")
+    {
+      throw new Error(
+        `S3DropBucket Config invalid definition: missing S3DropBucket (${s3dbc.S3DropBucket}).`
       )
     } else process.env["S3DropBucket"] = s3dbc.S3DropBucket
 
-    if (!s3dbc.S3DropBucketConfigs || s3dbc.S3DropBucketConfigs === "") {
+    if (!s3dbc.S3DropBucketConfigs || s3dbc.S3DropBucketConfigs === "")
+    {
       throw new Error(
-        `Exception -S3DropBucketConfigs definition is not correct: ${s3dbc.S3DropBucketConfigs}.`
+        `S3DropBucket Config invalid definition: missing S3DropBucketConfigs (${s3dbc.S3DropBucketConfigs}).`
       )
     } else process.env["S3DropBucketConfigs"] = s3dbc.S3DropBucketConfigs
 
-    if (!s3dbc.S3DropBucketWorkBucket || s3dbc.S3DropBucketWorkBucket === "") {
+    if (!s3dbc.S3DropBucketWorkBucket || s3dbc.S3DropBucketWorkBucket === "")
+    {
       throw new Error(
-        `Exception - S3DropBucket Work Bucket Configuration is not correct: ${s3dbc.S3DropBucketWorkBucket} `
+        `S3DropBucket Config invalid definition: missing S3DropBucketWorkBucket (${s3dbc.S3DropBucketWorkBucket}) `
       )
     } else process.env["S3DropBucketWorkBucket"] = s3dbc.S3DropBucketWorkBucket
 
-    if (!s3dbc.S3DropBucketWorkQueue || s3dbc.S3DropBucketWorkQueue === "") {
+    if (!s3dbc.S3DropBucketWorkQueue || s3dbc.S3DropBucketWorkQueue === "")
+    {
       throw new Error(
-        `Exception - S3DropBucket Work Queue Configuration is not correct, config is: ${s3dbc.S3DropBucketWorkQueue} `
+        `S3DropBucket Config invalid definition: missing S3DropBucketWorkQueue (${s3dbc.S3DropBucketWorkQueue}) `
       )
     } else process.env["S3DropBucketWorkQueue"] = s3dbc.S3DropBucketWorkQueue
     
 
-    if (s3dbc.connectapiurl != undefined) process.env["connectapiurl"] = s3dbc.connectapiurl
-    else
+    if (!s3dbc.connectapiurl || s3dbc.connectapiurl === "")
+    {
       throw new Error(
-        `S3DropBucket Config invalid definition: connectapiurl - ${s3dbc.connectapiurl} `
-      )
+        `S3DropBucket Config invalid definition: missing connectapiurl - ${s3dbc.connectapiurl} `)
+    } else process.env["connectapiurl"] = s3dbc.connectapiurl
     
-    if (s3dbc.xmlapiurl != undefined) process.env["xmlapiurl"] = s3dbc.xmlapiurl
-    else
+    if (!s3dbc.xmlapiurl || s3dbc.xmlapiurl === "")
+    {
       throw new Error(
-        `S3DropBucket Config invalid definition: xmlapiurl - ${s3dbc.xmlapiurl} `
+        `S3DropBucket Config invalid definition: missing xmlapiurl - ${s3dbc.xmlapiurl} `
       )
+    } else process.env["xmlapiurl"] = s3dbc.xmlapiurl
 
-    if (s3dbc.restapiurl !== undefined)
-      process.env["restapiurl"] = s3dbc.restapiurl
-    else
+    if (!s3dbc.restapiurl || s3dbc.restapiurl === "") 
+    {
       throw new Error(
-        `S3DropBucket Config invalid definition: restapiurl - ${s3dbc.restapiurl} `
+        `S3DropBucket Config invalid definition: missing restapiurl - ${s3dbc.restapiurl} `
       )
+    } else process.env["restapiurl"] = s3dbc.restapiurl
 
-    if (s3dbc.authapiurl !== undefined)
+
+    if (!s3dbc.authapiurl || s3dbc.authapiurl === "")
+    {
+      throw new Error(
+        `S3DropBucket Config invalid definition: missing authapiurl - ${S3DBConfig.authapiurl} `
+      )
+    } else
       process.env["authapiurl"] = s3dbc.authapiurl
-    else
-      throw new Error(
-        `S3DropBucket Config invalid definition: authapiurl - ${S3DBConfig.authapiurl} `
-      )
+
 
     //Default Separator
-    if (s3dbc.jsonSeparator !== undefined) {
-      if (s3dbc.jsonSeparator.toLowerCase() === "null")
-        s3dbc.jsonSeparator = `''`
-      if (s3dbc.jsonSeparator.toLowerCase() === "empty")
-        s3dbc.jsonSeparator = `""`
-      if (s3dbc.jsonSeparator.toLowerCase() === "\n") s3dbc.jsonSeparator = "\n"
-    } else s3dbc.jsonSeparator = "\n"
-    process.env["S3DropBucketJsonSeparator"] = s3dbc.jsonSeparator
-
-    if (s3dbc.WorkQueueQuiesce !== undefined) {
-      process.env["WorkQueueQuiesce"] = s3dbc.WorkQueueQuiesce.toString()
+    if (!s3dbc.jsonSeparator || s3dbc.jsonSeparator === "")
+    {
+      throw new Error(
+        `S3DropBucket Config invalid definition: missing jsonSeperator - ${s3dbc.WorkQueueQuiesce} `
+      )
     } else
+    {
+      if (s3dbc.jsonSeparator.toLowerCase() === "null") s3dbc.jsonSeparator = `''`
+      if (s3dbc.jsonSeparator.toLowerCase() === "empty") s3dbc.jsonSeparator = `""`
+      if (s3dbc.jsonSeparator.toLowerCase() === "\n") s3dbc.jsonSeparator = "\n"
+      process.env["S3DropBucketJsonSeparator"] = s3dbc.jsonSeparator
+    }
+    
+    if (s3dbc.WorkQueueQuiesce === true || s3dbc.WorkQueueQuiesce === false) process.env["WorkQueueQuiesce"] = s3dbc.WorkQueueQuiesce.toString()
+    else
       throw new Error(
         `S3DropBucket Config invalid definition: WorkQueueQuiesce - ${s3dbc.WorkQueueQuiesce} `
       )
+    
+    //process.env["RetryQueueInitialWaitTimeSeconds"]
+    if (!isNaN(s3dbc.MaxBatchesWarning) && typeof s3dbc.MaxBatchesWarning === 'number') process.env["MaxBatchesWarning"] = s3dbc.MaxBatchesWarning.toFixed()
+    else
+      throw new Error(
+        `S3DropBucket Config invalid definition: missing MaxBatchesWarning - ${s3dbc.MaxBatchesWarning} `
+      )
+
+    if (s3dbc.S3DropBucketQuiesce === true || s3dbc.S3DropBucketQuiesce === false) process.env["S3DropBucketQuiesce"] = s3dbc.S3DropBucketQuiesce.toString()
+    else
+      throw new Error(
+        `S3DropBucket Config invalid or missing definition: DropBucketQuiesce - ${s3dbc.S3DropBucketQuiesce} `
+      )
+
+    if (!isNaN(s3dbc.S3DropBucketMaintHours) && typeof s3dbc.S3DropBucketMaintHours === 'number') process.env["S3DropBucketMaintHours"] = s3dbc.S3DropBucketMaintHours.toString()
+    else
+    {
+      s3dbc.S3DropBucketMaintHours = -1
+      process.env["S3DropBucketMaintHours"] = s3dbc.S3DropBucketMaintHours.toString()
+    }
+
+    if (!isNaN(s3dbc.S3DropBucketMaintLimit) && typeof s3dbc.S3DropBucketMaintLimit === 'number') process.env["S3DropBucketMaintLimit"] = s3dbc.S3DropBucketMaintLimit.toString()
+    else
+    { 
+      s3dbc.S3DropBucketMaintLimit = 0
+      process.env["S3DropBucketMaintLimit"] = s3dbc.S3DropBucketMaintLimit.toString()
+    }
+
+    if (!isNaN(s3dbc.S3DropBucketMaintConcurrency) && typeof s3dbc.S3DropBucketMaintConcurrency === 'number') process.env["S3DropBucketMaintConcurrency"] = s3dbc.S3DropBucketMaintConcurrency.toString()
+    else
+    {
+      s3dbc.S3DropBucketMaintLimit = 1
+      process.env["S3DropBucketMaintConcurrency"] = s3dbc.S3DropBucketMaintConcurrency.toString()
+    }
+
+    if (!isNaN(s3dbc.S3DropBucketWorkQueueMaintHours) && typeof s3dbc.S3DropBucketWorkQueueMaintLimit === 'number') process.env["S3DropBucketWorkQueueMaintHours"] = s3dbc.S3DropBucketWorkQueueMaintHours.toString()
+    else
+    {
+      s3dbc.S3DropBucketWorkQueueMaintHours = -1
+      process.env["S3DropBucketWorkQueueMaintHours"] = s3dbc.S3DropBucketWorkQueueMaintHours.toString()
+    }
+
+    if (!isNaN(s3dbc.S3DropBucketWorkQueueMaintLimit) && typeof s3dbc.S3DropBucketWorkQueueMaintLimit === 'number') process.env["S3DropBucketWorkQueueMaintLimit"] = s3dbc.S3DropBucketWorkQueueMaintLimit.toString()
+    else
+    {
+      s3dbc.S3DropBucketWorkQueueMaintLimit = 0
+      process.env["S3DropBucketWorkQueueMaintLimit"] = s3dbc.S3DropBucketWorkQueueMaintLimit.toString()
+    }
+
+    if (!isNaN(s3dbc.S3DropBucketWorkQueueMaintConcurrency) && typeof s3dbc.S3DropBucketWorkQueueMaintConcurrency === 'number') process.env["S3DropBucketWorkQueueMaintConcurrency"] = s3dbc.S3DropBucketWorkQueueMaintConcurrency.toString()
+    else
+    {
+      s3dbc.S3DropBucketWorkQueueMaintConcurrency = 1
+      process.env["S3DropBucketWorkQueueMaintConcurrency"] = s3dbc.S3DropBucketWorkQueueMaintConcurrency.toString()
+    }
+
+    if (s3dbc.S3DropBucketLog === true || s3dbc.S3DropBucketLog === false)
+    {
+      process.env["S3DropBucketLog"] = s3dbc.S3DropBucketLog.toString()
+    } else
+    {
+      s3dbc.S3DropBucketLog = false
+      process.env["S3DropBucketLog"] = s3dbc.S3DropBucketLog.toString()
+    }
+
+    if (!s3dbc.S3DropBucketLogBucket || s3dbc.S3DropBucketLogBucket === "") s3dbc.S3DropBucketLogBucket = ""
+    process.env["S3DropBucketLogBucket"] = s3dbc.S3DropBucketLogBucket.toString()
+
+    if (!s3dbc.S3DropBucketPurge || s3dbc.S3DropBucketPurge === "") {
+      throw new Error(
+        `S3DropBucket Config invalid or missing definition: DropBucketPurge - ${s3dbc.S3DropBucketPurge} `
+      )
+    } else process.env["S3DropBucketPurge"] = s3dbc.S3DropBucketPurge
+
+    if (!isNaN(s3dbc.S3DropBucketPurgeCount) && typeof s3dbc.S3DropBucketPurgeCount === 'number') process.env["S3DropBucketPurgeCount"] = s3dbc.S3DropBucketPurgeCount.toFixed()
+    else {
+      throw new Error(
+        `S3DropBucket Config invalid or missing definition: S3DropBucketPurgeCount - ${s3dbc.S3DropBucketPurgeCount} `
+      )
+    } 
+    
+    if (s3dbc.QueueBucketQuiesce === true || s3dbc.QueueBucketQuiesce === false) {
+      process.env["S3DropBucketQueueBucketQuiesce"] = s3dbc.QueueBucketQuiesce.toString()
+    } else
+      throw new Error(
+        `S3DropBucket Config invalid or missing definition: QueueBucketQuiesce - ${s3dbc.QueueBucketQuiesce} `
+      )
+
+    if (!s3dbc.WorkQueueBucketPurge || s3dbc.WorkQueueBucketPurge === "") {
+      throw new Error(
+        `S3DropBucket Config invalid or missing definition: WorkQueueBucketPurge - ${s3dbc.WorkQueueBucketPurge} `
+      )
+    } else process.env["S3DropBucketWorkQueueBucketPurge"] = s3dbc.WorkQueueBucketPurge
+
+    if (!isNaN(s3dbc.WorkQueueBucketPurgeCount) && typeof s3dbc.WorkQueueBucketPurgeCount === 'number') process.env["S3DropBucketWorkQueueBucketPurgeCount"] = s3dbc.WorkQueueBucketPurgeCount.toFixed()
+    else
+    {
+      throw new Error(
+        `S3DropBucket Config invalid or missing definition: WorkQueueBucketPurgeCount - ${s3dbc.WorkQueueBucketPurgeCount} `
+      )
+    }
+
+    if (s3dbc.PrefixFocus && s3dbc.PrefixFocus !== "") {
+      process.env["S3DropBucketPrefixFocus"] = s3dbc.PrefixFocus
+      S3DB_Logging( "warn","933",`A Prefix Focus has been configured. Only S3DropBucket Objects with the prefix "${s3dbc.PrefixFocus}" will be processed.`)
+    } else process.env["S3DropBucketPrefixFocus"] = s3dbc.PrefixFocus
+
+
 
     //deprecated in favor of using AWS interface to set these on the queue
     // if (tc.WorkQueueVisibilityTimeout !== undefined)
@@ -1948,106 +2093,8 @@ async function getValidateS3DropBucketConfig() {
     //         `S3DropBucket Config invalid definition: RetryQueueInitialWaitTimeSeconds - ${ tc.RetryQueueInitialWaitTimeSeconds } `,
     //     )
 
-    if (s3dbc.MaxBatchesWarning !== undefined)
-      process.env["RetryQueueInitialWaitTimeSeconds"] =
-        s3dbc.MaxBatchesWarning.toFixed()
-    else
-      throw new Error(
-        `S3DropBucket Config invalid definition: MaxBatchesWarning - ${s3dbc.MaxBatchesWarning} `
-      )
 
-    if (s3dbc.S3DropBucketQuiesce !== undefined) {
-      process.env["S3DropBucketQuiesce"] = s3dbc.S3DropBucketQuiesce.toString()
-    } else
-      throw new Error(
-        `S3DropBucket Config invalid definition: DropBucketQuiesce - ${s3dbc.S3DropBucketQuiesce} `
-      )
 
-    if (s3dbc.S3DropBucketMaintHours !== undefined) {
-      process.env["S3DropBucketMaintHours"] =
-        s3dbc.S3DropBucketMaintHours.toString()
-    } else s3dbc.S3DropBucketMaintHours = -1
-
-    if (s3dbc.S3DropBucketMaintLimit !== undefined) {
-      process.env["S3DropBucketMaintLimit"] =
-        s3dbc.S3DropBucketMaintLimit.toString()
-    } else s3dbc.S3DropBucketMaintLimit = 0
-
-    if (s3dbc.S3DropBucketMaintConcurrency !== undefined) {
-      process.env["S3DropBucketMaintConcurrency"] =
-        s3dbc.S3DropBucketMaintConcurrency.toString()
-    } else s3dbc.S3DropBucketMaintLimit = 1
-
-    if (s3dbc.S3DropBucketWorkQueueMaintHours !== undefined) {
-      process.env["S3DropBucketWorkQueueMaintHours"] =
-        s3dbc.S3DropBucketWorkQueueMaintHours.toString()
-    } else s3dbc.S3DropBucketWorkQueueMaintHours = -1
-
-    if (s3dbc.S3DropBucketWorkQueueMaintLimit !== undefined) {
-      process.env["S3DropBucketWorkQueueMaintLimit"] =
-        s3dbc.S3DropBucketWorkQueueMaintLimit.toString()
-    } else s3dbc.S3DropBucketWorkQueueMaintLimit = 0
-
-    if (s3dbc.S3DropBucketWorkQueueMaintConcurrency !== undefined) {
-      process.env["S3DropBucketWorkQueueMaintConcurrency"] =
-        s3dbc.S3DropBucketWorkQueueMaintConcurrency.toString()
-    } else s3dbc.S3DropBucketWorkQueueMaintConcurrency = 1
-
-    if (s3dbc.S3DropBucketLog !== undefined) {
-      process.env["S3DropBucketLog"] = s3dbc.S3DropBucketLog.toString()
-    } else s3dbc.S3DropBucketLog = false
-
-    if (s3dbc.S3DropBucketLogBucket !== undefined) {
-      process.env["S3DropBucketLogBucket"] =
-        s3dbc.S3DropBucketLogBucket.toString()
-    } else s3dbc.S3DropBucketLogBucket = ""
-
-    if (s3dbc.S3DropBucketWorkQueueMaintConcurrency !== undefined) {
-      process.env["S3DropBucketWorkQueueMaintConcurrency"] =
-        s3dbc.S3DropBucketWorkQueueMaintConcurrency.toString()
-    } else s3dbc.S3DropBucketWorkQueueMaintConcurrency = 1
-
-    if (s3dbc.S3DropBucketPurge !== undefined)
-      process.env["S3DropBucketPurge"] = s3dbc.S3DropBucketPurge
-    else
-      throw new Error(
-        `S3DropBucket Config invalid definition: DropBucketPurge - ${s3dbc.S3DropBucketPurge} `
-      )
-
-    if (s3dbc.S3DropBucketPurgeCount !== undefined)
-      process.env["S3DropBucketPurgeCount"] =
-        s3dbc.S3DropBucketPurgeCount.toFixed()
-    else
-      throw new Error(
-        `S3DropBucket Config invalid definition: DropBucketPurgeCount - ${s3dbc.S3DropBucketPurgeCount} `
-      )
-
-    if (s3dbc.QueueBucketQuiesce !== undefined) {
-      process.env["S3DropBucketQueueBucketQuiesce"] = s3dbc.QueueBucketQuiesce.toString()
-    } else
-      throw new Error(
-        `S3DropBucket Config invalid definition: QueueBucketQuiesce - ${s3dbc.QueueBucketQuiesce} `
-      )
-
-    if (s3dbc.WorkQueueBucketPurge !== undefined)
-      process.env["S3DropBucketWorkQueueBucketPurge"] = s3dbc.WorkQueueBucketPurge
-    else
-      throw new Error(
-        `S3DropBucket Config invalid definition: WorkQueueBucketPurge - ${s3dbc.WorkQueueBucketPurge} `
-      )
-
-    if (s3dbc.WorkQueueBucketPurgeCount !== undefined)
-      process.env["S3DropBucketWorkQueueBucketPurgeCount"] =
-        s3dbc.WorkQueueBucketPurgeCount.toFixed()
-    else
-      throw new Error(
-        `S3DropBucket Config invalid definition: WorkQueueBucketPurgeCount - ${s3dbc.WorkQueueBucketPurgeCount} `
-      )
-
-    if (s3dbc.PrefixFocus !== undefined && s3dbc.PrefixFocus != "") {
-      process.env["S3DropBucketPrefixFocus"] = s3dbc.PrefixFocus
-      S3DB_Logging( "warn","933",`A Prefix Focus has been configured. Only S3DropBucket Objects with the prefix "${s3dbc.PrefixFocus}" will be processed.`)
-    }
   } catch (e) {
     S3DB_Logging("exception", "", `Exception - Parsing S3DropBucket Config File ${e} `)
     throw new Error(`Exception - Parsing S3DropBucket Config File ${e} `)
@@ -2147,8 +2194,11 @@ async function getFormatCustomerConfig(filekey: string) {
         )) as string
 
         S3DB_Logging("info", "910", `Customer (${customer}) Config: \n ${cc} `)
-
-        //Parse comments out of the json before parse
+        
+        //Remove Schema line to avoid parsing error
+        cc = cc.replaceAll(new RegExp(/^.*?"\$schema.*?$/gm), "")
+        
+        //Parse comments out of the json before parse for config
         cc = cc.replaceAll(new RegExp(/[^:](\/\/.*(,|$|")?)/g), "")
         const cc1 = cc.replaceAll("\n", "")
         
@@ -2587,22 +2637,20 @@ async function storeAndQueueConnectWork(
   
   S3DB_Logging("info", "800", `${JSON.stringify(updates)}, ${updateCount}`)
 
-  let res
+  let mutations
   ////DBKeyed, DBNonKeyed, Relational, ReferenceSet, CreateContacts, UpdateContacts, CreateAttributes
   //if (customersConfig.listtype.toLowerCase() === 'updatecontacts') res = ConnectUpdateContacts()
   //if (customersConfig.listtype.toLowerCase() === 'createcontacts') res = ConnectCreateMultipleContacts()
   //if (customersConfig.listtype.toLowerCase() === 'createattributes') res = ConnectCreateAttributes()
   ////if (true) res = ConnectReferenceSet().then((m) => {return m})
   //const mutationCall = JSON.stringify(res)
-  //const m = buildConnectMutation(JSON.parse(updates))
-
-  debugger 
+  //const m = buildConnectMutation(JSON.parse(updates)) 
   
 
   //ReferenceSet, CreateContacts, UpdateContacts, CreateAttributes
   if (customersConfig.listtype.toLowerCase() === "referenceset")
   {
-    res = await buildMutationReferenceSet(updates, custConfig)
+    mutations = await buildMutationReferenceSet(updates, custConfig)
       .then((r) => {
         return r
       })
@@ -2610,15 +2658,24 @@ async function storeAndQueueConnectWork(
   
   if (customersConfig.listtype.toLowerCase() === "createcontacts")
   {
-    res = await buildMutationCreateContacts(updates, custConfig)
+    mutations = await buildMutationCreateContacts(updates, custConfig)
       .then((r) => {
         return r
       })
   }
 
+  //Returned from buildMutationCreateContacts
+  //query.....
+  //let cv: ContactsVars = {
+  //} as ContactsVars
+  //cv.dataSetId = config.datasetid
+  //cv.contactsInput = [ca]
+
+
+
   if (customersConfig.listtype.toLowerCase() === "updatecontacts")
   {
-    res = await buildMutationUpdateContacts(updates, custConfig)
+    mutations = await buildMutationUpdateContacts(updates, custConfig)
       .then((r) => {
         return r
       })
@@ -2626,7 +2683,7 @@ async function storeAndQueueConnectWork(
 
   if (customersConfig.listtype.toLowerCase() === "createattributes")
   {
-    res = await buildMutationCreateAttributes(updates, custConfig)
+    mutations = await buildMutationCreateAttributes(updates, custConfig)
       .then((r) => {
         return r
       })
@@ -2634,169 +2691,10 @@ async function storeAndQueueConnectWork(
 
   
   debugger
-  
-  const b = JSON.stringify(res)
-  S3DB_Logging("info", "855", `GraphQL Call (S3DBConfig.connectapiurl) \n${b}`)
-
-  
-//  const qquery = `
-//  mutation CreateNewTodo($title: String!) {
-//    todoCreate(input: {
-//      title: $title
-//    }) {
-//      todo {
-//        id
-//      }
-//    }
-//  }
-//`
-// mutation createMultipleContacts {
-//    createContacts(
-//      contactsInput: [
-//      {
-//        attributes: [
-//          {name: "First Name", value: "Diego"}
-//          {name: "Country", value: "Argentina"}
-//          {name: "Email Address", value: "diego11736@example.com"}
-//        ]
-//      }
-//      {
-//        attributes: [
-//          {name: "First Name", value: "Taio"}
-//          {name: "Country", value: "Canada"}
-//          {name: "Email Address", value: "taio234o@example.com"}
-//        ]
-//      }
-//      {
-//        attributes: [
-//          {name: "First Name", value: "Anna"}
-//          {name: "Country", value: "Canada"}
-//          {name: "Email Address", value: "anna1989@example.com"}
-//        ]
-//      }
-//    ]
-//    dataSetId: "4fe4136f-c007-44a3-b38f-92220xxxxxxxx"
-//    ) {
-//    items {
-//        contactId
-//      }
-//    }
-//  }
-
-  const query = `mutation createMultipleContacts($dataSetId: ID!, $contacts: [ContactCreateInput!]!) {
-    createContacts(
-      dataSetId: $dataSetId
-      contactsInput: $contacts
-    ) {
-        items {
-          contactId
-        }
-    }
-}`
-
-
-  const variables = {
-    dataSetId: "df07969b-7126-47f2-812d-b7b5876627f7",
-    contacts: [{
-      contactId: "123509",
-      to: {
-        attributes: [
-          {name: "Unique ID", value: "123509"},
-          {name: "Firstname", value: "Barney"},
-          {name: "Lastname", value: "Rubble"},
-          {name: "Email", value: "barney.rubble@quarry.com"}
-        ].filter(attr => attr.value != null), // Remove any null values
-        consent: {
-          consentGroups: [{
-            id: "3a7134b8-dcb5-509a-b7ff-946b48333cc9",
-            name: "Newsletters",
-            status: "OPT_IN"
-          }]
-        }
-      }
-    }]
-  };
-
-
-
-
-  
-  const qquery = `mutation createMultipleContacts {
-    createContacts(
-        dataSetId: "df07969b-7126-47f2-812d-b7b5876627f7"
-        updateContactInputs: [
-            {
-                contactId: "123509"
-                to: {
-                    attributes: [
-                        { name: "Unique ID", value: "123509" }
-                        { name: "Firstname", value: "Barney" }
-                        { name: "Lastname", value: "Rubble" }
-                        { name: "Email", value: "barney.rubble@quarry.com" }
-                    ]
-                    consent: {
-                        consentGroups: [
-                            {
-                                id: "3a7134b8-dcb5-509a-b7ff-946b48333cc9"
-                                name: "Newsletters"
-                                status: OPT_IN
-                            }
-                        ]
-                    }
-                }
-            }
-        ]
-    ) {
-        modifiedCount
-    }
-  }`
-
-
-  //const host = S3DBConfig.connectapiurl
-  const host = 'https://connect-api-us-1.goacoustic.com/api/graph'
-
-  try
-  {
-    const response = await fetch(host, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'subscriptionId': 'bb6758fc16bbfffbe4248214486c06cc3a924edf',
-        //'x-api-key': 'b1fa7ef5024e4da3b0a40aed8331761c',
-        'x-api-key':'41d0316c76e24cd6bf31d202a12a37c2_gka',
-        'x-acoustic-region': 'us-east-1'
-      },
-      //body: JSON.stringify({
-      //  query: mutation,
-      //  variables
-      //})      
-      //body: JSON.stringify(res)      
-      body: JSON.stringify({query, variables})
-    })
-
-    const result = await response.json()
-
-    S3DB_Logging("info", "855", `GraphQL Call (${S3DBConfig.connectapiurl}): ${JSON.stringify({query, variables})}`)
-    S3DB_Logging("info", "855", `GraphQL Result: \n${JSON.stringify(result)}`)
     
-    debugger 
-
-    //return JSON.stringify(result.data)
-
-  } catch (error)
-  {
-    console.error('Error creating contacts:', error)
-    throw error
-  }
-
-
-  debugger
-
-
-
-
-  const mutationRows = JSON.stringify(res)
-
+  const mutationUpdates = JSON.stringify(mutations)
+  
+  S3DB_Logging("info", "855", `GraphQL Call (S3DBConfig.connectapiurl) \n${mutationUpdates}`)
 
 
   if (s3Key.indexOf("TestData") > -1)
@@ -2825,11 +2723,11 @@ async function storeAndQueueConnectWork(
 
   let addWorkToS3WorkBucketResult
   let addWorkToSQSWorkQueueResult
-  const v = ""
+  //const v = ""   //
 
   try
   {
-    addWorkToS3WorkBucketResult = await addWorkToS3WorkBucket(mutationRows, key)
+    addWorkToS3WorkBucketResult = await addWorkToS3WorkBucket(mutationUpdates, key)
       .then((res) => {
         return res //{"AddWorktoS3Results": res}
       })
@@ -2857,7 +2755,7 @@ async function storeAndQueueConnectWork(
     addWorkToSQSWorkQueueResult = await addWorkToSQSWorkQueue(
       custConfig,
       key,
-      v,
+      //v,
       batchCount,
       updates.length.toString(),
       marker
@@ -2881,13 +2779,29 @@ async function storeAndQueueConnectWork(
     addWorkToS3WorkBucketResult)} \n Add to Process Queue: ${JSON.stringify(addWorkToSQSWorkQueueResult)} `)
 
 
+  
+
+
+
+
+
+debugger
+  //Testing - Call POST to Connect immediately
+  const c = await postToConnect(mutationUpdates, customersConfig, "6", key)
+
+debugger
+
+  
+
+
+
+
+
   return {
     AddWorkToS3WorkBucketResults: addWorkToS3WorkBucketResult,
     AddWorkToSQSWorkQueueResults: addWorkToSQSWorkQueueResult,
   }
 }
-
-
 
 
 async function storeAndQueueCampaignWork(
@@ -2980,7 +2894,7 @@ async function storeAndQueueCampaignWork(
     addWorkToSQSWorkQueueResult = await addWorkToSQSWorkQueue(
       config,
       key,
-      v,
+      //v,
       batchCount,
       updates.length.toString(),
       marker
@@ -3301,7 +3215,7 @@ async function addWorkToS3WorkBucket(queueUpdates: string, key: string) {
 async function addWorkToSQSWorkQueue(
   config: customerConfig,
   key: string,
-  versionId: string,
+  //versionId: string,
   batch: number,
   recCount: string,
   marker: string
@@ -3310,7 +3224,7 @@ async function addWorkToSQSWorkQueue(
     S3DB_Logging("warn", "923", `Work/Process Bucket Quiesce is in effect, no New Work Files are being written to the SQS Queue of S3 Work Bucket. This work file is for ${key}`)
 
     return {
-      versionId: "",
+      //versionId: "",
       S3ProcessBucketResult: "",
       AddWorkToS3ProcessBucket: "In Quiesce",
     }
@@ -3318,7 +3232,7 @@ async function addWorkToSQSWorkQueue(
 
   const sqsQMsgBody = {} as s3DBQueueMessage
   sqsQMsgBody.workKey = key
-  sqsQMsgBody.versionId = versionId
+  //sqsQMsgBody.versionId = versionId
   sqsQMsgBody.marker = marker
   sqsQMsgBody.attempts = 1
   sqsQMsgBody.batchCount = batch.toString()
@@ -3783,33 +3697,99 @@ export async function getAccessToken(config: customerConfig) {
 
 
 
+async function testStoreQueueConnectPOST() {
 
-//createMultipleContacts {
-//      createContacts(
-//        contactsInput: [
-//          {
-//          attributes: []
-//        }
-//      ]
-//      )
-//    }
-
-//interface Contact {
-//  attributes: Attribute[]
-//}
-
-
-
-interface CreateContactsResponse {
-  createContacts: {
-    items: {
-      contactId: string
-    }[]
-  }
-}
+  
+  //interface Attribute {
+  //  name: string
+  //  value: string
+  //}
+  //interface contactsInput {
+  //  attributes: Attribute[]
+  //}
+  //interface createContacts {
+  //  dataSetId: string
+  //  contacts: contactsInput[]
+  //}
 
 
-async function buildMutationCreateContacts(updates: object[], config: customerConfig) {
+  /*  
+    const variables_working = {
+      dataSetId: "df07969b-7126-47f2-812d-b7b5876627f7",
+      contactsInput: [
+        {
+          attributes: [
+            {name: "Firstname", value: "Diego"},
+            {name: "Lastname", value: "Cotto"},
+            {name: "Country", value: "Argentina"},
+            {name: "Email", value: "diego11736@example.com"}
+          ]
+        },
+        {
+          attributes: [
+            {name: "Firstname", value: "Taio"},
+            {name: "Lastname", value: "Daio"},
+            {name: "Country", value: "Canada"},
+            {name: "Email", value: "taio234o@example.com"}
+          ]
+        },
+        {
+          attributes: [
+            {name: "Firstname", value: "Anna"},
+            {name: "Lastname", value: "Banana"},
+            {name: "Country", value: "Canada"},
+            {name: "Email", value: "anna1989@example.com"}
+          ]
+        }
+      ]
+    }
+    */
+
+  //createMultipleContacts {
+  //      createContacts(
+  //        contactsInput: [
+  //          {
+  //          attributes: []
+  //        }
+  //      ]
+  //      )
+  //    }
+
+
+  //const query = `mutation CreateMultipleContacts($dataSetId: ID!, $contacts: [ContactCreateInput!]!) {
+  //  createContacts(dataSetId: $dataSetId, contactsInput: $contacts) {
+  //      items {
+  //      contactId
+  //    }
+  //  }
+  //}`
+
+  //const variables = {
+  //  dataSetId: config.datasetid,
+  //  contacts: [
+  //    {
+  //     attributes: c.attributes
+  //    }
+  //  ]
+  //}
+
+
+
+
+  //const mutation = `
+  //  mutation createMultipleContacts {
+  //    createContacts(
+  //      contactsInput: ${JSON.stringify(cc.contacts)}
+  //      dataSetId: "${cc.dataSetId}"
+  //    `
+
+
+
+
+
+
+
+
 
   //mutation createMultipleContacts {
   //  createContacts(
@@ -3844,17 +3824,50 @@ async function buildMutationCreateContacts(updates: object[], config: customerCo
   //  }
   //}
 
-  interface Attribute {
-    name: string
-    value: string
-  }
-  interface contactsInput {
-    attributes: Attribute[]
-  }
-  interface createContacts {
-    dataSetId: string
-    contacts: contactsInput[]
-  }
+  //  const qquery = `
+  //  mutation CreateNewTodo($title: String!) {
+  //    todoCreate(input: {
+  //      title: $title
+  //    }) {
+  //      todo {
+  //        id
+  //      }
+  //    }
+  //  }
+  //`
+  // mutation createMultipleContacts {
+  //    createContacts(
+  //      contactsInput: [
+  //      {
+  //        attributes: [
+  //          {name: "First Name", value: "Diego"}
+  //          {name: "Country", value: "Argentina"}
+  //          {name: "Email Address", value: "diego11736@example.com"}
+  //        ]
+  //      }
+  //      {
+  //        attributes: [
+  //          {name: "First Name", value: "Taio"}
+  //          {name: "Country", value: "Canada"}
+  //          {name: "Email Address", value: "taio234o@example.com"}
+  //        ]
+  //      }
+  //      {
+  //        attributes: [
+  //          {name: "First Name", value: "Anna"}
+  //          {name: "Country", value: "Canada"}
+  //          {name: "Email Address", value: "anna1989@example.com"}
+  //        ]
+  //      }
+  //    ]
+  //    dataSetId: "4fe4136f-c007-44a3-b38f-92220xxxxxxxx"
+  //    ) {
+  //    items {
+  //        contactId
+  //      }
+  //    }
+  //  }
+
 
 
 
@@ -3990,128 +4003,288 @@ async function buildMutationCreateContacts(updates: object[], config: customerCo
     }
   }
 
-    const cc: createContacts = {
-      contacts: [],
-      dataSetId: config.datasetid
-    } as createContacts
-  
+
+
+
+
+  const query = `mutation createMultipleContacts($dataSetId: ID!, $contactsInput: [ContactCreateInput!]!) {
+    createContacts(
+      dataSetId: $dataSetId
+      contactsInput: $contactsInput
+    ) {
+        items {
+          contactId
+        }
+    }
+}`
+
+
+  //const variables = {
+  //  dataSetId: "df07969b-7126-47f2-812d-b7b5876627f7",
+  //  contacts: [{
+  //    contactId: "123509",
+  //    to: {
+  //      attributes: [
+  //        {name: "Unique ID", value: "123509"},
+  //        {name: "Firstname", value: "Barney"},
+  //        {name: "Lastname", value: "Rubble"},
+  //        {name: "Email", value: "barney.rubble@quarry.com"}
+  //      ].filter(attr => attr.value != null), // Remove any null values
+  //      consent: {
+  //        consentGroups: [{
+  //          id: "3a7134b8-dcb5-509a-b7ff-946b48333cc9",
+  //          name: "Newsletters",
+  //          status: "OPT_IN"
+  //        }]
+  //      }
+  //    }
+  //  }]
+  //};
+
+  const variables = {
+    dataSetId: "df07969b-7126-47f2-812d-b7b5876627f7",
+    contactsInput: [
+      {
+        attributes: [
+          {name: "Firstname", value: "Diego"},
+          {name: "Lastname", value: "Cotto"},
+          {name: "Country", value: "Argentina"},
+          {name: "Email", value: "diego11736@example.com"}
+        ]
+      },
+      {
+        attributes: [
+          {name: "Firstname", value: "Taio"},
+          {name: "Lastname", value: "Daio"},
+          {name: "Country", value: "Canada"},
+          {name: "Email", value: "taio234o@example.com"}
+        ]
+      },
+      {
+        attributes: [
+          {name: "Firstname", value: "Anna"},
+          {name: "Lastname", value: "Banana"},
+          {name: "Country", value: "Canada"},
+          {name: "Email", value: "anna1989@example.com"}
+        ]
+      }
+    ]
+  }
+
+
+
+  const qquery = `mutation createMultipleContacts {
+    createContacts(
+        dataSetId: "df07969b-7126-47f2-812d-b7b5876627f7"
+        updateContactInputs: [
+            {
+                contactId: "123509"
+                to: {
+                    attributes: [
+                        { name: "Unique ID", value: "123509" }
+                        { name: "Firstname", value: "Barney" }
+                        { name: "Lastname", value: "Rubble" }
+                        { name: "Email", value: "barney.rubble@quarry.com" }
+                    ]
+                    consent: {
+                        consentGroups: [
+                            {
+                                id: "3a7134b8-dcb5-509a-b7ff-946b48333cc9"
+                                name: "Newsletters"
+                                status: OPT_IN
+                            }
+                        ]
+                    }
+                }
+            }
+        ]
+    ) {
+        modifiedCount
+    }
+  }`
+
+
+  //const host = S3DBConfig.connectapiurl
+  const host = 'https://connect-api-us-1.goacoustic.com/api/graph'
+
+  try
+  {
+    const response = await fetch(host, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'subscriptionId': 'bb6758fc16bbfffbe4248214486c06cc3a924edf',
+        //'x-api-key': 'b1fa7ef5024e4da3b0a40aed8331761c',
+        'x-api-key': '41d0316c76e24cd6bf31d202a12a37c2_gka',
+        'x-acoustic-region': 'us-east-1'
+      },
+      //body: JSON.stringify({
+      //  query: mutation,
+      //  variables
+      //})      
+      //body: JSON.stringify(res)      
+      body: JSON.stringify({query, variables})
+    })
+
+    const result = await response.json()
+
+    S3DB_Logging("info", "855", `GraphQL Call (${S3DBConfig.connectapiurl}): ${JSON.stringify({query, variables})}`)
+    S3DB_Logging("info", "855", `GraphQL Result: \n${JSON.stringify(result)}`)
+
+    debugger
+
+    //return JSON.stringify(result.data)
+
+  } catch (error)
+  {
+    console.error('Error creating contacts:', error)
+    throw error
+  }
+
+
+  debugger
+
+
+
+
+}
+
+
+interface ContactAttribute {
+  name: string
+  value: string
+}
+
+interface Contact {
+  attributes: ContactAttribute[]
+}
+
+interface VariablesCreateContacts {
+  dataSetId: string
+  contactsInput: Contact[]
+}
+
+async function buildMutationCreateContacts(updates: object[], config: customerConfig) {
+
+  const query = `mutation createMultipleContacts($dataSetId: ID!, $contactsInput: [ContactCreateInput!]!) {
+    createContacts(
+      dataSetId: $dataSetId
+      contactsInput: $contactsInput
+    ) {
+        items {
+          contactId
+        }
+    }
+}`
+
+  let variables: VariablesCreateContacts = {"dataSetId": config.datasetid,"contactsInput": []}
+
   for (const upd in updates)
   {
-      const a = []
+    let co: Contact = {"attributes": []}
+    let ca: ContactAttribute = {"name": "", "value": ""}
+
     for (const [key, value] of Object.entries(updates[upd]))
     {
-
-      //{"id": "005Ho00000A10ApIAJ", "email": "shefali.bisht@sandmartin.com", "first": "Shefali", "last": "Bisht", "photo": null, "acousticPhoto": null, "brandApprovedPhoto": null, "designations": null, "jobTitle": null, "phone": null, "registeredAdvisorTitle": null, "updatedAt": "2024-01-10T02:03:20.867Z"},
 
       let v
       if (typeof value === 'string') v = value as string
       else v = String(value)
-      //a = {...a, {name: key, value: v}
+  
+      ca = {"name": key, "value": v}
+      co.attributes.push(ca)
 
-      //c.attributes.push({...a})
-      //c.attributes.push(Object.assign({}, a))
-
-      a.push({name: key, value: v})
-      //attrArray.push({name: key, value: v})
     }
-
-    cc.contacts.push({"attributes": a})
+  
+  variables.contactsInput.push(co)
 
   }
 
-  //createMultipleContacts {
-  //      createContacts(
-  //        contactsInput: [
-  //          {
-  //          attributes: []
-  //        }
-  //      ]
-  //      )
-  //    }
+S3DB_Logging("info", "817", `Create Multiple Contacts Mutation: \n${query} and Vars: \n${JSON.stringify(variables)}`)
 
+  return {query, variables}
 
-  //const query = `mutation CreateMultipleContacts($dataSetId: ID!, $contacts: [ContactCreateInput!]!) {
-  //  createContacts(dataSetId: $dataSetId, contactsInput: $contacts) {
-  //      items {
-  //      contactId
-  //    }
-  //  }
-  //}`    
+}
 
-  //const variables = {
-  //  dataSetId: config.datasetid,
-  //  contacts: [
-  //    {
-  //     attributes: c.attributes
-  //    }
-  //  ]
-  //}
+interface VariablesUpdateContacts {
+  dataSetId: string
+  updateContactInputs: Contact[]
+}
 
-
-
-
-  const mutation = `
-    mutation createMultipleContacts {
-      createContacts(
-        contactsInput: ${JSON.stringify(cc.contacts)}
-        dataSetId: "${cc.dataSetId}"
-      `
-
-S3DB_Logging("info", "817", `Create Multiple Contacts Mutation: ${mutation}`)
-
-  debugger 
-
-
-  return mutation
+interface Contact {
+  attributes: ContactAttribute[]
 }
 
 
 async function buildMutationUpdateContacts(updates: object[], config: customerConfig) {
 
-  const q = {
-    "query": "mutation UpdateContacts($dataSetId: ID!, $inputs: [UpdateContactInput!]!) { updateContacts(dataSetId: $dataSetId, updateContactInputs: $inputs) { modifiedCount } }",
-    "variables": {
-      "dataSetId": "df07969b-7126-47f2-812d-b7b5876627f7",
-      "inputs": [
-        {
-          "contactId": "123509",
-          "to": {
-            "attributes": [
-              {
-                "name": "Unique ID",
-                "value": "123509"
-              },
-              {
-                "name": "Firstname",
-                "value": "Barney2"
-              },
-              {
-                "name": "Lastname",
-                "value": "Rubble"
-              },
-              {
-                "name": "Email",
-                "value": "barney.rubble@quarry.com"
-              }
-            ],
-            "consent": {
-              "consentGroups": [
-                {
-                  "id": "3a7134b8-dcb5-509a-b7ff-946b48333cc9",
-                  "name": "Newsletters",
-                  "status": "OPT_IN"
-                }
-              ]
-            }
-          }
-        }
-      ]
+  
+const query = `mutation updateMultipleContacts($dataSetId: ID!, $updateContactInputs: [UpdateContactInput!]!) {
+    updateContacts(
+      dataSetId: $dataSetId
+      updateContactInputs: $updateContactInputs
+    ) {
+      modifiedCount
     }
+}`
+
+
+//  const query_working = `mutation createMultipleContacts($dataSetId: ID!, $contactsInput: [ContactCreateInput!]!) {
+//    createContacts(
+//      dataSetId: $dataSetId
+//      contactsInput: $contactsInput
+//    ) {
+//        items {
+//          contactId
+//        }
+//    }
+//}`
+
+  let variables: VariablesUpdateContacts = {"dataSetId": config.datasetid, "updateContactInputs": []}
+
+
+  const variables1 = {
+    dataSetId: "config.datasetId",
+    updateContactInputs: [
+      {
+        key: config.updateKey,
+        to: {
+          attributes: [
+            {name: "Country", value: "Germany"},
+            {name: "Cell Phone", value: "+4960100000001"}
+          ]
+        }
+      }
+    ]
   }
 
 
-return q
 
+
+  for (const upd in updates)
+  {
+    let co: Contact = {"attributes": []}
+    let ca: ContactAttribute = {"name": "", "value": ""}
+
+    for (const [key, value] of Object.entries(updates[upd]))
+    {
+
+      let v
+      if (typeof value === 'string') v = value as string
+      else v = String(value)
+
+      ca = {"name": key, "value": v}
+      co.attributes.push(ca)
+
+    }
+
+    variables.updateContactInputs.push(co)
+
+  }
+
+  S3DB_Logging("info", "817", `Create Multiple Contacts Mutation: \n${query} and Vars: \n${JSON.stringify(variables)}`)
+
+  return {query, variables}
 
 }
 
@@ -4165,7 +4338,7 @@ const q = ""
 return q
 }
 
-async function postToConnect(updates: string, custconfig: customerConfig, updateCount: string, workFile: string) {
+async function postToConnect(mutations: string, custconfig: customerConfig, updateCount: string, workFile: string) {
   //ToDo: 
   //Transform Add Contacts to Mutation Create Contact
   //Transform Updates to Mutation Update Contact
@@ -4195,14 +4368,14 @@ async function postToConnect(updates: string, custconfig: customerConfig, update
   const requestOptions: RequestInit = {
     method: "POST",
     headers: myHeaders,
-    body:  updates,
+    body:  mutations,
     redirect: "follow"
   }
 
 
   const host = S3DBConfig.connectapiurl
 
-  S3DB_Logging("info", "805", `Updates to be POSTed (${workFile}) are: ${updates}`)
+  S3DB_Logging("info", "805", `Updates to be POSTed (${workFile}) are: ${mutations}`)
 
   let connectQueryResult: string = ""
 

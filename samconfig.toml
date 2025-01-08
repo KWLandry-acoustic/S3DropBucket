@@ -22,10 +22,13 @@ parallel = true
 inlinesourcemap = true
 #cache_dir=".aws-sam/cache"
 debug = true
+#Troubleshooting build output --------------------------------
 #template_file = "/Users/kwlandry/Dropbox/Documents/A. Campaign/CodeFolder/A. S3DropBucket_main/s3dropbucket/template.yml"
 #build_dir = "/tmp/aws-toolkit-vscode/vsctk38db9d3f/output"
 #template_file = "/Users/kwlandry/Dropbox/Documents/A. Campaign/CodeFolder/A. S3DropBucket_main/s3dropbucket/template.yml"
 #build_dir = "/tmp/aws-toolkit-vscode/vsctk373c9363/output"
+template_file = "/Users/kwlandry/Dropbox/Documents/A. Campaign/CodeFolder/A. S3DropBucket_main/s3dropbucket/template.yml"
+build_dir = "/tmp/aws-toolkit-vscode/vsctk8389b15c/output"
 
 [default.validate.parameters]
 lint = true

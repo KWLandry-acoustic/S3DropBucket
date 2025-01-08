@@ -1,5 +1,6 @@
 {
-      "$schema": "../schemas/json-schema-MasterCustomer_config.json",
+
+      "$schema": "https://raw.githubusercontent.com/KWLandry-acoustic/S3DropBucket_Schemas/main/json-schema-MasterCustomer_config.json",
       
       "Customer": "Customer_",
 
