@@ -457,7 +457,7 @@ export const s3DropBucketHandler: Handler = async (
   S3DB_Logging("info", "99", `S3DropBucket Logging Options(process.env): ${process.env.S3DropBucketSelectiveLogging} `)
 
 
-  if (event.Records[0].s3.object.key.indexOf("S3DBAggregator") > -1)
+  if (event.Records[0].s3.object.key.indexOf("S3DropBucket-Aggregator") > -1)
   {
     S3DB_Logging("info", "925", `Processing an Aggregated File ${event.Records[0].s3.object.key}`)
   }
@@ -521,7 +521,7 @@ export const s3DropBucketHandler: Handler = async (
   
     if (process.env.S3DropBucketPrefixFocus !== undefined && process.env.S3DropBucketPrefixFocus !== "" && process.env.S3DropBucketPrefixFocus.length > 3 && !key.startsWith(process.env.S3DropBucketPrefixFocus))
     {
-        S3DB_Logging("warn", "933", `PrefixFocus is configured, File Name ${key} does not fall within focus restricted by the configured PrefixFocus ${process.env.S3DropBucketPrefixFocus}`)
+        S3DB_Logging("warn", "937", `PrefixFocus is configured, File Name ${key} does not fall within focus restricted by the configured PrefixFocus ${process.env.S3DropBucketPrefixFocus}`)
 
       return
     }
@@ -2102,6 +2102,9 @@ async function getValidateS3DropBucketConfig() {
 
 async function getFormatCustomerConfig(filekey: string) {
   
+
+  if (filekey.endsWith("S3DropBucket_Aggregator")) filekey.replace("S3DropBucket_Aggregator", "")
+
   //Populate/Refresh Customer Config List 
   if (process.env.S3DropBucketConfigBucket === '')  process.env.S3DropBucketConfigBucket = 's3dropbucket-configs'
   const ccl = await getAllCustomerConfigsList(process.env.S3DropBucketConfigBucket ?? 's3dropbucket-configs')
@@ -3105,7 +3108,8 @@ debugger
 
             //if (fireHoseStream !== "S3DropBucket_Log") {    //Future Logging choice   
 
-            S3DB_Logging("info", "922", `Update (${key}) Put to Firehose Aggregator  - \n${fd.toString()} \nResult: ${JSON.stringify(res)} `)
+            S3DB_Logging("info", "922", `Inbound Update (${key}) Put to Firehose Aggregator  - \n${fd.toString()} \nResult: ${JSON.stringify(res)} `)
+            S3DB_Logging("info", "942", `Inbound Update (${key}) Put to Firehose Aggregator \nResult: ${JSON.stringify(res)} `)
 
             if (res.$metadata.httpStatusCode === 200)
             {
