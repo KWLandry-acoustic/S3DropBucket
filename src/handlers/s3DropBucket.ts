@@ -519,7 +519,7 @@ export const s3DropBucketHandler: Handler = async (
     const key = r.s3.object.key ?? ""
     const bucket = r.s3.bucket.name ?? ""
   
-    if (process.env.S3DropBucketPrefixFocus !== undefined && process.env.S3DropBucketPrefixFocus != "")
+    if (process.env.S3DropBucketPrefixFocus !== undefined && process.env.S3DropBucketPrefixFocus !== "" && process.env.S3DropBucketPrefixFocus.length > 3)
     {
       //ToDo: Assign a specific debug number for this message (can bee voluminous) 
         S3DB_Logging("warn", "933", `PrefixFocus is configured, File Name ${key} does not fall within focus restricted by the configured PrefixFocus ${process.env.S3DropBucketPrefixFocus}`)
@@ -2056,7 +2056,7 @@ async function getValidateS3DropBucketConfig() {
       )
     }
 
-    if (s3dbc.PrefixFocus && s3dbc.PrefixFocus !== "") {
+    if (s3dbc.PrefixFocus && s3dbc.PrefixFocus !== "" && s3dbc.PrefixFocus.length > 3) {
       process.env["S3DropBucketPrefixFocus"] = s3dbc.PrefixFocus
       S3DB_Logging( "warn","933",`A Prefix Focus has been configured. Only S3DropBucket Objects with the prefix "${s3dbc.PrefixFocus}" will be processed.`)
     } else process.env["S3DropBucketPrefixFocus"] = s3dbc.PrefixFocus
