@@ -143,7 +143,7 @@ interface customerConfig {
   targetupdate: string
   listid: string
   listname: string
-  listtype: string
+  updatetype: string
   dbkey: string
   lookupkeys: string
   updateKey: string
@@ -180,7 +180,7 @@ let customersConfig = {
     targetupdate: "",
     listid: "",
     listname: "",
-    listtype: "",
+    updatetype: "",
     dbkey: "",
   lookupkeys: "",
     updateKey: "",
@@ -1295,7 +1295,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
       targetupdate: "",
       listid: "",
       listname: "",
-      listtype: "",
+      updatetype: "",
       dbkey: "",
       lookupkeys: "",
       updateKey: "",
@@ -1362,7 +1362,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
         //Retrieve Contents of the Work File
         S3DB_Logging("info", "512", `S3 Retrieve results for Work file ${tqm.workKey}: ${JSON.stringify(work)}`)
 
-        if ((custconfig.listtype.toLowerCase() === 'referenceset') || localTesting)
+        if ((custconfig.updatetype.toLowerCase() === 'referenceset') || localTesting)
           postResult = await postToConnect(
             work,
             custconfig as customerConfig,
@@ -1371,9 +1371,9 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
           )
 
         
-        if (custconfig.listtype.toLowerCase() === 'relational' ||
-          custconfig.listtype.toLowerCase() === 'dbkeyed' ||
-          custconfig.listtype.toLowerCase() === 'dbnonkeyed')
+        if (custconfig.updatetype.toLowerCase() === 'relational' ||
+          custconfig.updatetype.toLowerCase() === 'dbkeyed' ||
+          custconfig.updatetype.toLowerCase() === 'dbnonkeyed')
         postResult = await postToCampaign(
           work,
           custconfig as customerConfig,
@@ -2259,41 +2259,41 @@ async function validateCustomerConfig(config: customerConfig) {
   }
 
 
-  if (!config.listtype)
+  if (!config.updatetype)
   {
-    throw new Error("Invalid Customer Config - ListType is not defined")
+    throw new Error("Invalid Customer Config - updatetype is not defined")
   }
 
 
-////Confirm ListType has a valid value
-//  if ( !config.listtype.toLowerCase().match(/^(?:relational|dbkeyed|dbnonkeyed|referenceset|createcontacts|updatecontacts|createattributes)$/gim)
+////Confirm updatetype has a valid value
+//  if ( !config.updatetype.toLowerCase().match(/^(?:relational|dbkeyed|dbnonkeyed|referenceset|createcontacts|updatecontacts|createattributes)$/gim)
 //    //DBKeyed, DBNonKeyed, Relational, ReferenceSet, CreateContacts, UpdateContacts, CreateAttributes
 //  )
 //  {
 //    throw new Error(
-//      "Invalid Customer Config - ListType is required and must be either 'Relational', 'DBKeyed' or 'DBNonKeyed', ReferenceSet, CreateContacts, UpdateContacts, CreateAttributes. "
+//      "Invalid Customer Config - updatetype is required and must be either 'Relational', 'DBKeyed' or 'DBNonKeyed', ReferenceSet, CreateContacts, UpdateContacts, CreateAttributes. "
 //    )
 //  }
 
   if (config.targetupdate.toLowerCase() == "campaign")
   {
-    //ListType has valid Campaign values and Campaign dependent values
-    if (!config.listtype.toLowerCase().match(/^(?:relational|dbkeyed|dbnonkeyed)$/gim))
+    //updatetype has valid Campaign values and Campaign dependent values
+    if (!config.updatetype.toLowerCase().match(/^(?:relational|dbkeyed|dbnonkeyed)$/gim))
     //DBKeyed, DBNonKeyed, Relational
     {
       throw new Error(
-        "Invalid Customer Config - Update set to be Campaign, however ListType is not Relational, DBKeyed, or DBNonKeyed. "
+        "Invalid Customer Config - Update set to be Campaign, however updatetype is not Relational, DBKeyed, or DBNonKeyed. "
       )
     }
 
-    if (config.listtype.toLowerCase() == "dbkeyed" && !config.dbkey)
+    if (config.updatetype.toLowerCase() == "dbkeyed" && !config.dbkey)
     {
       throw new Error(
         "Invalid Customer Config - Update set as Database Keyed but DBKey is not defined. "
       )
     }
 
-    if (config.listtype.toLowerCase() == "dbnonkeyed" && !config.lookupkeys)
+    if (config.updatetype.toLowerCase() == "dbnonkeyed" && !config.lookupkeys)
     {
       throw new Error(
         "Invalid Customer Config - Update set as Database NonKeyed but LookupKeys is not defined. "
@@ -2343,8 +2343,8 @@ async function validateCustomerConfig(config: customerConfig) {
 
   if (config.targetupdate.toLowerCase() === "connect")
   {
-    //ListType has valid Campaign values and Campaign dependent values
-    if (config.listtype.toLowerCase().match(/^(?:referenceset|createcontacts|updatecontacts|createattributes)$/gim))
+    //updatetype has valid Campaign values and Campaign dependent values
+    if (config.updatetype.toLowerCase().match(/^(?:referenceset|createcontacts|updatecontacts|createattributes)$/gim))
     //DBKeyed, DBNonKeyed, Relational
     {
       
@@ -2525,16 +2525,10 @@ async function packageUpdates(workSet: object[], key: string, custConfig: custom
   let updates: object[] = []
   let sqwResult: object = {}
 
-
-
-  //Need to add Firehose put here, 
-
-
-  // If this is an "Aggregate" file (indicating it's been queued through from Aggregator) with multiple Updates,
-  // or, the "Multiple" option is set,
+  //Check if the updates need to be Aggregated first. 
 
   // If there are Chunks to Process and Singular Updates is set, 
-  //    send to Aggregator (unless these are updates from an aggregated file).
+  //    send to Aggregator (unless these are updates coming through from an Aggregated file).
   if (chunks.length > 0 && custConfig.updates.toLowerCase() === "singular" && key.toLowerCase().indexOf("aggregat") < 0)
   {
     try   //Interior try/catch for firehose processing
@@ -2654,16 +2648,16 @@ async function storeAndQueueConnectWork(
 
   let mutations
   ////DBKeyed, DBNonKeyed, Relational, ReferenceSet, CreateContacts, UpdateContacts, CreateAttributes
-  //if (customersConfig.listtype.toLowerCase() === 'updatecontacts') res = ConnectUpdateContacts()
-  //if (customersConfig.listtype.toLowerCase() === 'createcontacts') res = ConnectCreateMultipleContacts()
-  //if (customersConfig.listtype.toLowerCase() === 'createattributes') res = ConnectCreateAttributes()
+  //if (customersConfig.updatetype.toLowerCase() === 'updatecontacts') res = ConnectUpdateContacts()
+  //if (customersConfig.updatetype.toLowerCase() === 'createcontacts') res = ConnectCreateMultipleContacts()
+  //if (customersConfig.updatetype.toLowerCase() === 'createattributes') res = ConnectCreateAttributes()
   ////if (true) res = ConnectReferenceSet().then((m) => {return m})
   //const mutationCall = JSON.stringify(res)
   //const m = buildConnectMutation(JSON.parse(updates)) 
   
 
   //ReferenceSet, CreateContacts, UpdateContacts, CreateAttributes
-  if (customersConfig.listtype.toLowerCase() === "referenceset")
+  if (customersConfig.updatetype.toLowerCase() === "referenceset")
   {
     mutations = await buildMutationReferenceSet(updates, custConfig)
       .then((r) => {
@@ -2671,7 +2665,7 @@ async function storeAndQueueConnectWork(
       })
   }
   
-  if (customersConfig.listtype.toLowerCase() === "createcontacts")
+  if (customersConfig.updatetype.toLowerCase() === "createcontacts")
   {
     mutations = await buildMutationCreateContacts(updates, custConfig)
       .then((r) => {
@@ -2688,7 +2682,7 @@ async function storeAndQueueConnectWork(
 
 
 
-  if (customersConfig.listtype.toLowerCase() === "updatecontacts")
+  if (customersConfig.updatetype.toLowerCase() === "updatecontacts")
   {
     mutations = await buildMutationUpdateContacts(updates, custConfig)
       .then((r) => {
@@ -2696,7 +2690,7 @@ async function storeAndQueueConnectWork(
       })
   }
 
-  if (customersConfig.listtype.toLowerCase() === "createattributes")
+  if (customersConfig.updatetype.toLowerCase() === "createattributes")
   {
     mutations = await buildMutationCreateAttributes(updates, custConfig)
       .then((r) => {
@@ -2846,13 +2840,13 @@ async function storeAndQueueCampaignWork(
   }
 
   if (
-    customersConfig.listtype.toLowerCase() === "dbkeyed" ||
-    customersConfig.listtype.toLowerCase() === "dbnonkeyed"
+    customersConfig.updatetype.toLowerCase() === "dbkeyed" ||
+    customersConfig.updatetype.toLowerCase() === "dbnonkeyed"
   ) {
     xmlRows = convertJSONToXML_DBUpdates(updates, config)
   }
 
-  if (customersConfig.listtype.toLowerCase() === "relational") {
+  if (customersConfig.updatetype.toLowerCase() === "relational") {
     xmlRows = convertJSONToXML_RTUpdates(updates, config)
   }
 
@@ -3004,7 +2998,7 @@ function convertJSONToXML_DBUpdates(updates: object[], config: customerConfig) {
       // Use SyncFields as 'Lookup" values, Columns hold the Updates while SyncFields hold the 'lookup' values.
       
       //Only needed on non-keyed (In Campaign use DB -> Settings -> LookupKeys to find what fields are Lookup Keys)
-      if (config.listtype.toLowerCase() === "dbnonkeyed") {
+      if (config.updatetype.toLowerCase() === "dbnonkeyed") {
         const lk = config.lookupkeys.split(",")
 
         xmlRows += `<SYNC_FIELDS>`
@@ -3044,7 +3038,7 @@ function convertJSONToXML_DBUpdates(updates: object[], config: customerConfig) {
 
 
       //
-      if (config.listtype.toLowerCase() === "dbkeyed") {
+      if (config.updatetype.toLowerCase() === "dbkeyed") {
         //Placeholder
         //Don't need to do anything with DBKey, it's superfluous but documents the keys of the keyed DB
       }
