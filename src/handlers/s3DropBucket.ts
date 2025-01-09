@@ -1009,7 +1009,7 @@ async function processS3ObjectContentStream(
               {
                 const oa = s3Chunk.value
 
-                //What's possible
+                //What's possible to come through here 
                 //  {} a single Object - Pura
                 //  [{},{},{}] An Array of Objects - Alerus
                 //  A list of Objects - (Aggregated files) Line delimited
@@ -1049,14 +1049,15 @@ async function processS3ObjectContentStream(
                 }
               }
 
-              try
+            //At each 99 updates, package them up, if there are fewer than 99 then OnEnd will pick up the remainder. 
+              try 
               {
                 //Update files with Singular updates per file do not reach 99 updates in a single file,
                 // these will fall through to the Stream.OnEnd processing.
                 //Aggregate(d) Files with Multiple updates per file can have > 99 updates in each file so
                 //  those will need to be chunked up into 99 updates each and stored as Work files.
 
-                while (chunks.length > 98)
+                while (chunks.length > 98)  
                 {
                   packageResult = await packageUpdates(chunks, key, custConfig) as unknown as StoreAndQueueWorkResult
 
@@ -1078,7 +1079,9 @@ async function processS3ObjectContentStream(
             }
           )
 
+          //File completed streaming, any updates left will be processed - Packaged 
           .on("end", async function () {
+
             if (recs < 1 && chunks.length < 1)      //Ooops, We got here without finding/processing any data 
             {
               S3DB_Logging("exception", "", `Stream Exception - No records returned from parsing file. Check the contents of the file and that the file extension and file format matches the configured file type(${custConfig.format}).`)
@@ -1099,10 +1102,11 @@ async function processS3ObjectContentStream(
             // or, if this is a Small Singlular Update file, Send to Aggregator to create larger Update files to improve Campaign Update performance.
             try     //Overall Try/Catch for On-End processing
             {
-              // If there are Chunks to process, 
-              // And this is an "Aggregate" file (indicating it's been queued through from Aggregator) with multiple Updates,
-              // or, the "Multiple" option is set,
-              // Create a Work file and Queue entry for Processing to Campaign / Connect 
+              
+              // If there are Chunks to process (and there likely will be), send to Packaging
+              // Create a Work file and Queue entry for Processing to Campaign / Connect
+
+              
               if ( (chunks.length > 0 && custConfig.updates.toLowerCase() === "multiple") ||
                 key.toLowerCase().indexOf("aggregat") > 0 
               )
@@ -1118,41 +1122,6 @@ async function processS3ObjectContentStream(
                 })
               }
               
-                // If there are Chunks to Process, and Singular Updates is set, 
-                //  and this is not already an aggregate file, send to Aggregator.
-                if (chunks.length > 0 && custConfig.updates.toLowerCase() === "singular" &&
-                  key.toLowerCase().indexOf("aggregat") < 0
-                )
-                {
-                  try   //Interior try/catch for firehose processing
-                  {
-                    await putToFirehose(
-                      chunks,
-                      key,
-                      custConfig.customer
-                    ).then((res) => {
-                      const fRes = res as {
-                        OnEnd_PutToFireHoseAggregator: string
-                        PutToFireHoseAggregatorResult: string
-                        PutToFireHoseException: string
-                      }
-
-                      streamResult = {
-                        ...streamResult,
-                        ...fRes,
-                      }
-                      return streamResult
-                    })
-                  } catch (e)    //Interior try/catch for firehose processing
-                    {
-                      S3DB_Logging("exception", "", `Exception - PutToFirehose - \n${e} `)
-                      streamResult = {
-                        ...streamResult,
-                        PutToFireHoseException: `Exception - PutToFirehose \n${e} `,
-                      }
-                      return streamResult
-                    }
-                }
             } catch (e)    //Overall Try/Catch for On-End processing
             {
               const sErr = `Exception - ReadStream OnEnd Processing - \n${e} `
@@ -2545,14 +2514,61 @@ async function validateCustomerConfig(config: customerConfig) {
   return config as customerConfig
 }
 
-async function packageUpdates(
-  workSet: object[],
-  key: string,
-  custConfig: customerConfig
+async function packageUpdates(workSet: object[], key: string, custConfig: customerConfig
 ) {
   
+  debugger
+  // what happened to workSet use?
+  // likely because I globalized "chunks" 
+
+
   let updates: object[] = []
   let sqwResult: object = {}
+
+
+
+  //Need to add Firehose put here, 
+
+
+  // If this is an "Aggregate" file (indicating it's been queued through from Aggregator) with multiple Updates,
+  // or, the "Multiple" option is set,
+
+  // If there are Chunks to Process and Singular Updates is set, 
+  //    send to Aggregator (unless these are updates from an aggregated file).
+  if (chunks.length > 0 && custConfig.updates.toLowerCase() === "singular" && key.toLowerCase().indexOf("aggregat") < 0)
+  {
+    try   //Interior try/catch for firehose processing
+    {
+      await putToFirehose(
+        chunks,
+        key,
+        custConfig.customer
+      ).then((res) => {
+        const fRes = res as {
+          OnEnd_PutToFireHoseAggregator: string
+          PutToFireHoseAggregatorResult: string
+          PutToFireHoseException: string
+        }
+
+        sqwResult = {
+          ...sqwResult,
+          ...fRes,
+        }
+        return sqwResult
+      })
+    } catch (e)    //Interior try/catch for firehose processing
+    {
+      S3DB_Logging("exception", "", `Exception - PutToFirehose - \n${e} `)
+      sqwResult = {
+        ...sqwResult,
+        PutToFireHoseException: `Exception - PutToFirehose \n${e} `,
+      }
+      return sqwResult
+    }
+  }
+
+
+  //Ok, we've got Chunks to Package, either from a common file or from an "Aggregated" file. 
 
   try {
     //Process everything out of the Global var Chunks array
@@ -2565,7 +2581,6 @@ async function packageUpdates(
         recs++
         updates.push(c)
       }
-      
       
       if (custConfig.targetupdate.toLowerCase() === "connect")
         sqwResult = await storeAndQueueConnectWork(updates, key, custConfig).then(
