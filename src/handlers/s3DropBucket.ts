@@ -454,7 +454,7 @@ export const s3DropBucketHandler: Handler = async (
   S3DB_Logging("info", "99", `S3DropBucket Logging Options(process.env): ${process.env.S3DropBucketSelectiveLogging} `)
 
 
-  if (event.Records[0].s3.object.key.indexOf("S3DropBucket-Aggregator") > -1)
+  if (event.Records[0].s3.object.key.indexOf("S3DropBucket_Aggregator") > -1)
   {
     S3DB_Logging("info", "925", `Processing an Aggregated File ${event.Records[0].s3.object.key}`)
   }
@@ -554,7 +554,11 @@ export const s3DropBucketHandler: Handler = async (
     }
     */
 
-    //ReQueue .xml files - in lieu of requeing through config, have work files (....xml) moved 
+
+    
+
+
+    //ReQueue .xml files - in lieu of requeing through config, have work files (....xml) moved
     // to the S3DropBucket bucket and drive an object creation event to the handler
     /*
     try {
@@ -582,6 +586,9 @@ export const s3DropBucketHandler: Handler = async (
       )
     }
     */
+
+    
+
 
     batchCount = 0
     recs = 0
@@ -2101,7 +2108,7 @@ async function getFormatCustomerConfig(filekey: string) {
 
   if (filekey.indexOf("Aggregator") > -1)
   {
-    filekey.replace("S3DropBucket_Aggregator-", "")
+    filekey = filekey.replace("S3DropBucket_Aggregator-", "")
     S3DB_Logging("info", "", `Aggregator File key reformed: ${filekey}`)
   }
 
@@ -3093,7 +3100,7 @@ async function putToFirehose(chunks: object[], key: string, cust: string) {
   let fireHoseStream = "S3DropBucket_Aggregator"
   //let fireHoseStream = S3DBConfig.S3DropBucketFirehoseStream
 
-  //Future - Logging possibilities
+  //Future - Logging possibilities - aggregate log messages before writing to S3 
   if (cust === "S3DropBucket_Logs_") fireHoseStream = "S3DropBucket_Log"
 
   let putFirehoseResp: object = {}
@@ -3155,7 +3162,7 @@ debugger
             return firehosePutResult
           })
           .catch((e) => {
-            S3DB_Logging("exception", "", `Exception - Put to Firehose Aggregator(Promise -catch) for ${key} \n${e} `)
+            S3DB_Logging("exception", "", `Exception - Put to Firehose Aggregator(Promise - promise catch) for ${key} \n${e} `)
 
             firehosePutResult = {
               ...firehosePutResult,
