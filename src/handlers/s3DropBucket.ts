@@ -733,7 +733,7 @@ export const s3DropBucketHandler: Handler = async (
 export default s3DropBucketHandler
 
 
-export function S3DB_Logging(level:string, index: string,  msg:string) {
+export function S3DB_Logging(level: string, index: string,  msg:string) {
 
   const selectiveDebug = process.env.S3DropBucket_SelectiveLogging ?? S3DBConfig.s3dropbucket_selectivelogging ?? "_97,_98,_99_503,_504,_511,_901,_910,"
     
@@ -741,7 +741,11 @@ export function S3DB_Logging(level:string, index: string,  msg:string) {
 
   const li = `_${index},`
 
-  if ((selectiveDebug.indexOf(li) > -1 && process.env.S3DropBucketLogLevel !== 'NONE') ||
+  if (
+    (
+      (selectiveDebug.indexOf(li) > -1 || index === "") &&
+      process.env.S3DropBucketLogLevel !== 'NONE')
+   ||
     process.env.S3DropBucketLogLevel === 'ALL' )
   {
     if (process.env.S3DropBucketLogLevel?.toLowerCase() === 'all') index = `(LOG ALL-${index})`
@@ -2095,7 +2099,11 @@ async function getValidateS3DropBucketConfig() {
 
 async function getFormatCustomerConfig(filekey: string) {
 
-  if (filekey.indexOf("S3DropBucket_Aggregator") > -1) filekey.replace("S3DropBucket_Aggregator-", "")
+  if (filekey.indexOf("Aggregator") > -1)
+  {
+    filekey.replace("S3DropBucket_Aggregator-", "")
+    S3DB_Logging("info", "", `Aggregator File key reformed: ${filekey}`)
+  }
 
   //Populate/Refresh Customer Config List 
   if (process.env.S3DropBucketConfigBucket === '')  process.env.S3DropBucketConfigBucket = 's3dropbucket-configs'
