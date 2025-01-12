@@ -84,6 +84,8 @@ import { parse } from "csv-parse"
 
 import jsonpath from "jsonpath"
 
+import {Ajv} from "ajv"
+
 import sftpClient, {ListFilterFunction} from "ssh2-sftp-client"
 
 
@@ -135,11 +137,11 @@ let mutationRows = ""
 let batchCount = 0
 let recs = 0
 
-interface customerConfig {
+interface CustomerConfig {
   customer: string
-  format: string // CSV or JSON
+  format: string      // CSV or JSON
   separator: string
-  updates: string // singular or Multiple (default) (also 'bulk' as legacy)
+  updates: string     // singular or Multiple (default) (also 'bulk' as legacy)
   targetupdate: string
   listid: string
   listname: string
@@ -147,12 +149,12 @@ interface customerConfig {
   dbkey: string
   lookupkeys: string
   updateKey: string
-  pod: string // 1,2,3,4,5,6,7,8,9,A,B
-  region: string // US, EU, AP
-  updatemaxrows: number //Safety to avoid run away data inbound and parsing it all
-  refreshtoken: string // API Access
-  clientid: string // API Access
-  clientsecret: string // API Access
+  pod: string             // 1,2,3,4,5,6,7,8,9,A,B
+  region: string          // US, EU, AP
+  updatemaxrows: number   //Safety to avoid run away data inbound and parsing it all
+  refreshtoken: string    // API Access
+  clientid: string        // API Access
+  clientsecret: string    // API Access
   datasetid: string
   subscriptionid: string
   x_api_key: string
@@ -164,15 +166,17 @@ interface customerConfig {
     schedule: string
   }
   transforms: {
-    daydate: {[key: string]: string}
-    jsonmap: { [key: string]: string }
-    csvmap: { [key: string]: string }
-    script: {[key: string]: string}
+    methods: {
+      daydate: string
+      method2: string
+    }
+    jsonmap: {[key: string]: string}
+    csvmap: {[key: string]: string}
     ignore: string[]
   }
 }
 
-let customersConfig = {
+let customersConfig: CustomerConfig = {
     customer: "",
     format: "",
     separator: "",
@@ -182,7 +186,7 @@ let customersConfig = {
     listname: "",
     updatetype: "",
     dbkey: "",
-  lookupkeys: "",
+    lookupkeys: "",
     updateKey: "",
     pod: "",
     region: "",
@@ -198,73 +202,71 @@ let customersConfig = {
       user: "",
       password: "",
       filepattern: "",
-      schedule: "",
+      schedule: ""
     },
-    transforms: {
-      daydate: {} as {[key: string]: string},
-      jsonmap: {} as {[key: string]: string},
-      csvmap: {} as {[key: string]: string},
-      script: {} as {[key: string]: string},
-      ignore: [] as string[],   //always last
-    },
-  }
+  transforms: {
+    methods: {
+      "daydate": "",
+      "method2": ""
+    }, 
+    jsonmap: {},
+    csvmap: {},
+    ignore: []   //always last
+    }
+  } 
 
-export interface accessResp {
+export interface AccessResp {
   access_token: string
   token_type: string
   refresh_token: string
   expires_in: number
 }
 
-export interface s3DBQueueMessage {
+export interface S3DBQueueMessage {
   workKey: string
   versionId: string
   marker: string
   attempts: number
   batchCount: string
   updateCount: string
-  custconfig: customerConfig
+  custconfig: CustomerConfig
   lastQueued: string
 }
 
-export interface s3DBConfig {
-  LOGLEVEL: string
-  AWS_REGION: string
-  S3DropBucket: string
-  S3DropBucketWorkBucket: string
-  S3DropBucketWorkQueue: string
-  S3DropBucketLog: boolean //Future: Firehose Aggregator Bucket
-  S3DropBucketLogBucket: string //Future: Firehose Aggregator Bucket
-  S3DropBucketConfigs: string
+export interface S3DBConfig {
+  aws_region: string
   connectapiurl: string
   xmlapiurl: string
   restapiurl: string
   authapiurl: string
-  jsonSeparator: string
-  MaxBatchesWarning: number
-  SelectiveLogging: string
-  WorkQueueQuiesce: boolean
-  PrefixFocus: string
-  // WorkQueueVisibilityTimeout: number
-  // WorkQueueWaitTimeSeconds: number
-  // RetryQueueVisibilityTimeout: number
-  // RetryQueueInitialWaitTimeSeconds: number
-  EventEmitterMaxListeners: number
-  S3DropBucketQuiesce: boolean
-  S3DropBucketMaintHours: number
-  S3DropBucketMaintLimit: number
-  S3DropBucketMaintConcurrency: number
-  S3DropBucketWorkQueueMaintHours: number
-  S3DropBucketWorkQueueMaintLimit: number
-  S3DropBucketWorkQueueMaintConcurrency: number
-  S3DropBucketPurgeCount: number
-  S3DropBucketPurge: string
-  QueueBucketQuiesce: boolean
-  WorkQueueBucketPurgeCount: number
-  WorkQueueBucketPurge: string
+  s3dropbucket: string
+  s3dropbucket_workbucket: string
+  s3dropbucket_workqueue: string
+  s3dropbucket_loglevel: string
+  s3dropbucket_log: boolean //future: firehose aggregator bucket
+  s3dropbucket_logbucket: string //future: firehose aggregator bucket
+  s3dropbucket_configs: string
+  s3dropbucket_jsonseparator: string
+  s3dropbucket_maxbatcheswarning: number
+  s3dropbucket_selectivelogging: string
+  s3dropbucket_workqueuequiesce: boolean
+  s3dropbucket_prefixfocus: string
+  s3dropbucket_eventemittermaxlisteners: number
+  s3dropbucket_quiesce: boolean
+  s3dropbucket_mainthours: number
+  s3dropbucket_maintlimit: number
+  s3dropbucket_maintconcurrency: number
+  s3dropbucket_workqueuemainthours: number
+  s3dropbucket_workqueuemaintlimit: number
+  s3dropbucket_workqueuemaintconcurrency: number
+  s3dropbucket_purgecount: number
+  s3dropbucket_purge: string
+  s3dropbucket_queuebucketquiesce: boolean
+  s3dropbucket_workqueuebucketpurgecount: number
+  s3dropbucket_workqueuebucketpurge: string
 }
 
-let S3DBConfig = {} as s3DBConfig
+let S3DBConfig = {} as S3DBConfig
 
 export interface SQSBatchItemFails {
   batchItemFailures: [
@@ -314,11 +316,6 @@ export interface ProcessS3ObjectStreamResult {
   OnEnd_PutToFireHoseAggregator: string
   DeleteResult: string
 }
-
-
-
-
-
 
 
 let ProcessS3ObjectStreamResolution: ProcessS3ObjectStreamResult = {
@@ -501,11 +498,11 @@ export const s3DropBucketHandler: Handler = async (
   //  return d
   //}
 
-  if (S3DBConfig.S3DropBucketQuiesce)
+  if (S3DBConfig.s3dropbucket_quiesce)
   {
     if (!localTesting)
     {
-      S3DB_Logging("warn", "923", `S3DropBucket Quiesce is in effect, new Files from ${S3DBConfig.S3DropBucket} will be ignored and not processed. \nTo Process files that have arrived during a Quiesce of the Cache, reference the S3DropBucket Guide appendix for AWS cli commands.`)
+      S3DB_Logging("warn", "923", `S3DropBucket Quiesce is in effect, new Files from ${S3DBConfig.s3dropbucket} will be ignored and not processed. \nTo Process files that have arrived during a Quiesce of the Cache, reference the S3DropBucket Guide appendix for AWS cli commands.`)
       return
     }
   }
@@ -534,7 +531,7 @@ export const s3DropBucketHandler: Handler = async (
 
     try
     {
-      customersConfig = await getFormatCustomerConfig(key) as customerConfig
+      customersConfig = await getFormatCustomerConfig(key) as CustomerConfig
     } catch (e)
     {
       S3DB_Logging("exception", "", `Exception - Awaiting Customer Config (${key}) \n${e} `)
@@ -738,14 +735,14 @@ export default s3DropBucketHandler
 
 export function S3DB_Logging(level:string, index: string,  msg:string) {
 
-  const selectiveDebug = process.env.S3DropBucketSelectiveLogging ?? S3DBConfig.SelectiveLogging ?? "_97,_98,_99_503,_504,_511,_901,_910,"
+  const selectiveDebug = process.env.S3DropBucket_SelectiveLogging ?? S3DBConfig.s3dropbucket_selectivelogging ?? "_97,_98,_99_503,_504,_511,_901,_910,"
     
-  if (localTesting) process.env.S3DropBucketLogLevel = "ALL"
+  if (localTesting) process.env.S3DropBucket_LogLevel = "ALL"
 
   const li = `_${index},`
-  //Number(index) < 100 || 
-  if ((selectiveDebug.indexOf(li) > -1 ||
-    process.env.S3DropBucketLogLevel === 'ALL') && process.env.S3DropBucketLogLevel !== 'NONE')
+
+  if ((selectiveDebug.indexOf(li) > -1 && process.env.S3DropBucketLogLevel !== 'NONE') ||
+    process.env.S3DropBucketLogLevel === 'ALL' )
   {
     if (process.env.S3DropBucketLogLevel?.toLowerCase() === 'all') index = `(LOG ALL-${index})`
 
@@ -792,7 +789,7 @@ export function S3DB_Logging(level:string, index: string,  msg:string) {
 async function processS3ObjectContentStream(
   key: string,
   bucket: string,
-  custConfig: customerConfig
+  custConfig: CustomerConfig
 ) {
   S3DB_Logging("info", "514", `Processing S3 Content Stream for ${key}`)
 
@@ -952,7 +949,7 @@ async function processS3ObjectContentStream(
       //s3ContentReadableStream = s3ContentReadableStream.pipe(tJsonParser)
       
       s3ContentReadableStream.setMaxListeners(
-        Number(S3DBConfig.EventEmitterMaxListeners)
+        Number(S3DBConfig.s3dropbucket_eventemittermaxlisteners)
       )
 
       chunks = []
@@ -996,10 +993,10 @@ async function processS3ObjectContentStream(
                 key.toLowerCase().indexOf("aggregat") < 0 && recs > custConfig.updatemaxrows
               )
               {
-                S3DB_Logging("error", "515", `The number of Updates in this batch (${recs}) Exceeds Max Row Updates allowed in the Customers Config (${custConfig.updatemaxrows}).  ${key} will not be deleted from ${S3DBConfig.S3DropBucket} to allow for review and possible restaging.`)
+                S3DB_Logging("error", "515", `The number of Updates in this batch (${recs}) Exceeds Max Row Updates allowed in the Customers Config (${custConfig.updatemaxrows}).  ${key} will not be deleted from ${S3DBConfig.s3dropbucket} to allow for review and possible restaging.`)
                 
                 throw new Error(
-                  `The number of Updates in this batch (${recs}) Exceeds Max Row Updates allowed in the Customers Config (${custConfig.updatemaxrows}).  ${key} will not be deleted from ${S3DBConfig.S3DropBucket} to allow for review and possible restaging.`
+                  `The number of Updates in this batch (${recs}) Exceeds Max Row Updates allowed in the Customers Config (${custConfig.updatemaxrows}).  ${key} will not be deleted from ${S3DBConfig.s3dropbucket} to allow for review and possible restaging.`
                 )
               }
             
@@ -1238,7 +1235,8 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
   S3DB_Logging("info", "98", `S3DropBucket Options: ${JSON.stringify(S3DBConfig)} `)
   S3DB_Logging("info", "99", `S3DropBucket Logging Options: ${process.env.S3DropBucketSelectiveLogging} `)
 
-  if (S3DBConfig.WorkQueueQuiesce) {
+  if (S3DBConfig.s3dropbucket_workqueuequiesce)
+  {
     S3DB_Logging("warn", "923", `WorkQueue Quiesce is in effect, no New Work will be Queued up in the SQS Process Queue.`)
     return
   }
@@ -1268,7 +1266,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
   // concurrency allocated to your Amazon SQS event source mapping.Lambda continues to retry the message until
   // the message's timestamp exceeds your queue's visibility timeout, at which point Lambda drops the message.
 
-  let custconfig: customerConfig
+  let custconfig: CustomerConfig
 
   let postResult: string = "false"
 
@@ -1279,7 +1277,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
     sqsBatchFail.batchItemFailures.pop()
   })
 
-  let tqm: s3DBQueueMessage = {
+  let tqm: S3DBQueueMessage = {
     workKey: "",
     versionId: "",
     marker: "",
@@ -1316,13 +1314,15 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
         schedule: "",
       },
       transforms: {
-        daydate: {},
+        methods: {
+          daydate: "",
+          method2: "",
+        },
         jsonmap: {},
         csvmap: {},
-        script: {},
-        ignore: [],
-      },
-    },
+        ignore: []   //always last
+      }
+    }
   }
 
   //Process this Inbound Batch
@@ -1333,14 +1333,14 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
 
     //When Testing locally  (Launch config has pre-stored payload) - get some actual work queued
     if (tqm.workKey === "") {
-      tqm.workKey = (await getAnS3ObjectforTesting(S3DBConfig.S3DropBucketWorkBucket)) ?? ""
+      tqm.workKey = (await getAnS3ObjectforTesting(S3DBConfig.s3dropbucket_workbucket)) ?? ""
     }
 
     if (tqm.workKey === "devtest.xml") {
       //tqm.workKey = await getAnS3ObjectforTesting( tcc.s3DropBucketWorkBucket! ) ?? ""
       tqm.workKey = testS3Key
       tqm.custconfig.customer = testS3Key
-      S3DBConfig.S3DropBucketWorkBucket = testS3Bucket
+      S3DBConfig.s3dropbucket_workbucket = testS3Bucket
       localTesting = true
     } else {
       testS3Key = ""
@@ -1353,10 +1353,10 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
     
     S3DB_Logging("info", "911", `Start Processing Work Item: SQS Event: \n${JSON.stringify(q)}`)
 
-    custconfig = await getFormatCustomerConfig(tqm.custconfig.customer) as customerConfig
+    custconfig = await getFormatCustomerConfig(tqm.custconfig.customer) as CustomerConfig
 
     try {
-      const work = await getS3Work(tqm.workKey, S3DBConfig.S3DropBucketWorkBucket)
+      const work = await getS3Work(tqm.workKey, S3DBConfig.s3dropbucket_workbucket)
 
       if (work.length > 0) {
         //Retrieve Contents of the Work File
@@ -1365,7 +1365,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
         if ((custconfig.updatetype.toLowerCase() === 'referenceset') || localTesting)
           postResult = await postToConnect(
             work,
-            custconfig as customerConfig,
+            custconfig as CustomerConfig,
             tqm.updateCount,
             tqm.workKey
           )
@@ -1376,7 +1376,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
           custconfig.updatetype.toLowerCase() === 'dbnonkeyed')
         postResult = await postToCampaign(
           work,
-          custconfig as customerConfig,
+          custconfig as CustomerConfig,
           tqm.updateCount,
           tqm.workKey
         )
@@ -1414,7 +1414,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
           //Delete the Work file
           const d = await deleteS3Object(
             tqm.workKey,
-            S3DBConfig.S3DropBucketWorkBucket
+            S3DBConfig.s3dropbucket_workbucket
           )
           if (d === "204") {
 
@@ -1491,7 +1491,7 @@ export const s3DropBucketSFTPHandler: Handler = async (
 
   S3DB_Logging("info", "98", `S3 Dropbucket SFTP Processor - Process Environment Vars: ${JSON.stringify(process.env)} `)
   S3DB_Logging("info", "700", `S3 Dropbucket SFTP Processor - Received Event: ${JSON.stringify(event)}.\nContext: ${context} `)
-  S3DB_Logging("info", "701", `S3 Dropbucket SFTP Processor - Selective Debug Set is: ${S3DBConfig.SelectiveLogging!} `)
+  S3DB_Logging("info", "701", `S3 Dropbucket SFTP Processor - Selective Debug Set is: ${S3DBConfig.s3dropbucket_selectivelogging!} `)
 
   //Existing Event Emit at every 1 minute
 
@@ -1605,13 +1605,13 @@ export const s3DropBucketSFTPHandler: Handler = async (
     // Check  configs to emit another round of SQS Events for the next round of FTP Work.
 
     // event.Records.forEach(async (i: SQSRecord) => {
-    const tqm: s3DBQueueMessage = JSON.parse(q.body)
+    const tqm: S3DBQueueMessage = JSON.parse(q.body)
 
     tqm.workKey = JSON.parse(q.body).workKey
 
     //When Testing - get some actual work queued
     if (tqm.workKey === "process_2_pura_2023_10_27T15_11_40_732Z.csv") {
-      tqm.workKey = (await getAnS3ObjectforTesting(S3DBConfig.S3DropBucket!)) ?? ""
+      tqm.workKey = (await getAnS3ObjectforTesting(S3DBConfig.s3dropbucket!)) ?? ""
     }
 
     S3DB_Logging("info", "513", `SQS Events - Processing Batch Item ${JSON.stringify(q)} \nProcessing Work Queue for ${tqm.workKey}`) 
@@ -1782,7 +1782,7 @@ async function getValidateS3DropBucketConfig() {
 
 
   let s3dbcr
-  let s3dbc = {} as s3DBConfig
+  let s3dbc = {} as S3DBConfig
 
   try {
     s3dbc = await s3
@@ -1817,9 +1817,33 @@ async function getValidateS3DropBucketConfig() {
 
   try
   {
+    
+    const validateBySchema = new Ajv()
+    const su = "https://raw.githubusercontent.com/KWLandry-acoustic/s3dropbucket_Schemas/main/json-schema-s3dropbucket_config.json"
+    const fetchSchema = async () => {
+      return await fetch(su).then(async response => {
+        if (response.status >= 400)
+        {
+          //throw new Error(`Fetch of schema error: ${JSON.stringify(response)}`)
+          S3DB_Logging("error", "", `Fetch of schema error: ${JSON.stringify(response)}`)
+        }
+        const r = await response.json()
+        return JSON.stringify(r)
+      })
+    }
 
-    //  *Must* set EventEmitterMaxListeners
-    if (!isNaN(s3dbc.EventEmitterMaxListeners) && typeof s3dbc.EventEmitterMaxListeners === 'number') process.env["EventEmitterMaxListeners"] = s3dbc.EventEmitterMaxListeners.toString()
+    const sf = await fetchSchema() as string
+
+    //debugger
+
+    //const vs = validateBySchema.validate(sf, s3dbc)
+
+    //S3DB_Logging("info", "",`Schema Validation returns: ${vs}`)
+
+    //debugger
+
+    //  *Must* set EventEmitterMaxListeners in environment vars as this flags whether config is already parsed.
+    if (!isNaN(s3dbc.s3dropbucket_eventemittermaxlisteners) && typeof s3dbc.s3dropbucket_eventemittermaxlisteners === 'number') process.env["EventEmitterMaxListeners"] = s3dbc.s3dropbucket_eventemittermaxlisteners.toString()
     else {
       throw new Error(
         `S3DropBucket Config invalid or missing definition: EventEmitterMaxListeners.`
@@ -1828,49 +1852,49 @@ async function getValidateS3DropBucketConfig() {
 
 
     //ToDo: refactor to a foreach validation instead of the Long List approach. 
-    if (!s3dbc.LOGLEVEL || s3dbc.LOGLEVEL === "")
+    if (!s3dbc.s3dropbucket_loglevel || s3dbc.s3dropbucket_loglevel === "")
     {
       throw new Error(
         `S3DropBucket Config invalid definition: missing LogLevel.`
       )
-    } else process.env.S3DropBucketLogLevel = s3dbc.LOGLEVEL
+    } else process.env.s3dropbucketloglevel = s3dbc.s3dropbucket_loglevel
 
 
-    if (!s3dbc.SelectiveLogging || s3dbc.SelectiveLogging === "")
+    if (!s3dbc.s3dropbucket_selectivelogging || s3dbc.s3dropbucket_selectivelogging === "")
     {
       throw new Error(
         `S3DropBucket Config invalid definition: missing SelectiveLogging.`
       )
       
-    } else process.env["S3DropBucketSelectiveLogging"] = s3dbc.SelectiveLogging
+    } else process.env["S3DropBucketSelectiveLogging"] = s3dbc.s3dropbucket_selectivelogging
 
-    if (!s3dbc.S3DropBucket || s3dbc.S3DropBucket === "")
+    if (!s3dbc.s3dropbucket || s3dbc.s3dropbucket === "")
     {
       throw new Error(
-        `S3DropBucket Config invalid definition: missing S3DropBucket (${s3dbc.S3DropBucket}).`
+        `S3DropBucket Config invalid definition: missing S3DropBucket (${s3dbc.s3dropbucket}).`
       )
-    } else process.env["S3DropBucket"] = s3dbc.S3DropBucket
+    } else process.env["S3DropBucket"] = s3dbc.s3dropbucket
 
-    if (!s3dbc.S3DropBucketConfigs || s3dbc.S3DropBucketConfigs === "")
+    if (!s3dbc.s3dropbucket_configs || s3dbc.s3dropbucket_configs === "")
     {
       throw new Error(
-        `S3DropBucket Config invalid definition: missing S3DropBucketConfigs (${s3dbc.S3DropBucketConfigs}).`
+        `S3DropBucket Config invalid definition: missing S3DropBucketConfigs (${s3dbc.s3dropbucket_configs}).`
       )
-    } else process.env["S3DropBucketConfigs"] = s3dbc.S3DropBucketConfigs
+    } else process.env["S3DropBucketConfigs"] = s3dbc.s3dropbucket_configs
 
-    if (!s3dbc.S3DropBucketWorkBucket || s3dbc.S3DropBucketWorkBucket === "")
+    if (!s3dbc.s3dropbucket_workbucket || s3dbc.s3dropbucket_workbucket === "")
     {
       throw new Error(
-        `S3DropBucket Config invalid definition: missing S3DropBucketWorkBucket (${s3dbc.S3DropBucketWorkBucket}) `
+        `S3DropBucket Config invalid definition: missing S3DropBucketWorkBucket (${s3dbc.s3dropbucket_workbucket}) `
       )
-    } else process.env["S3DropBucketWorkBucket"] = s3dbc.S3DropBucketWorkBucket
+    } else process.env["S3DropBucketWorkBucket"] = s3dbc.s3dropbucket_workbucket
 
-    if (!s3dbc.S3DropBucketWorkQueue || s3dbc.S3DropBucketWorkQueue === "")
+    if (!s3dbc.s3dropbucket_workqueue || s3dbc.s3dropbucket_workqueue === "")
     {
       throw new Error(
-        `S3DropBucket Config invalid definition: missing S3DropBucketWorkQueue (${s3dbc.S3DropBucketWorkQueue}) `
+        `S3DropBucket Config invalid definition: missing S3DropBucketWorkQueue (${s3dbc.s3dropbucket_workqueue}) `
       )
-    } else process.env["S3DropBucketWorkQueue"] = s3dbc.S3DropBucketWorkQueue
+    } else process.env["S3DropBucketWorkQueue"] = s3dbc.s3dropbucket_workqueue
     
 
     if (!s3dbc.connectapiurl || s3dbc.connectapiurl === "")
@@ -1904,130 +1928,130 @@ async function getValidateS3DropBucketConfig() {
 
 
     //Default Separator
-    if (!s3dbc.jsonSeparator || s3dbc.jsonSeparator === "")
+    if (!s3dbc.s3dropbucket_jsonseparator || s3dbc.s3dropbucket_jsonseparator === "")
     {
       throw new Error(
-        `S3DropBucket Config invalid definition: missing jsonSeperator - ${s3dbc.WorkQueueQuiesce} `
+        `S3DropBucket Config invalid definition: missing jsonSeperator - ${s3dbc.s3dropbucket_workqueuequiesce} `
       )
     } else
     {
-      if (s3dbc.jsonSeparator.toLowerCase() === "null") s3dbc.jsonSeparator = `''`
-      if (s3dbc.jsonSeparator.toLowerCase() === "empty") s3dbc.jsonSeparator = `""`
-      if (s3dbc.jsonSeparator.toLowerCase() === "\n") s3dbc.jsonSeparator = "\n"
-      process.env["S3DropBucketJsonSeparator"] = s3dbc.jsonSeparator
+      if (s3dbc.s3dropbucket_jsonseparator.toLowerCase() === "null") s3dbc.s3dropbucket_jsonseparator = `''`
+      if (s3dbc.s3dropbucket_jsonseparator.toLowerCase() === "empty") s3dbc.s3dropbucket_jsonseparator = `""`
+      if (s3dbc.s3dropbucket_jsonseparator.toLowerCase() === "\n") s3dbc.s3dropbucket_jsonseparator = "\n"
+      process.env["S3DropBucketJsonSeparator"] = s3dbc.s3dropbucket_jsonseparator
     }
     
-    if (s3dbc.WorkQueueQuiesce === true || s3dbc.WorkQueueQuiesce === false) process.env["WorkQueueQuiesce"] = s3dbc.WorkQueueQuiesce.toString()
+    if (s3dbc.s3dropbucket_workqueuequiesce === true || s3dbc.s3dropbucket_workqueuequiesce === false) process.env["WorkQueueQuiesce"] = s3dbc.s3dropbucket_workqueuequiesce.toString()
     else
       throw new Error(
-        `S3DropBucket Config invalid definition: WorkQueueQuiesce - ${s3dbc.WorkQueueQuiesce} `
+        `S3DropBucket Config invalid definition: WorkQueueQuiesce - ${s3dbc.s3dropbucket_workqueuequiesce} `
       )
     
     //process.env["RetryQueueInitialWaitTimeSeconds"]
-    if (!isNaN(s3dbc.MaxBatchesWarning) && typeof s3dbc.MaxBatchesWarning === 'number') process.env["MaxBatchesWarning"] = s3dbc.MaxBatchesWarning.toFixed()
+    if (!isNaN(s3dbc.s3dropbucket_maxbatcheswarning) && typeof s3dbc.s3dropbucket_maxbatcheswarning === 'number') process.env["MaxBatchesWarning"] = s3dbc.s3dropbucket_maxbatcheswarning.toFixed()
     else
       throw new Error(
-        `S3DropBucket Config invalid definition: missing MaxBatchesWarning - ${s3dbc.MaxBatchesWarning} `
+        `S3DropBucket Config invalid definition: missing MaxBatchesWarning - ${s3dbc.s3dropbucket_maxbatcheswarning} `
       )
 
-    if (s3dbc.S3DropBucketQuiesce === true || s3dbc.S3DropBucketQuiesce === false) process.env["S3DropBucketQuiesce"] = s3dbc.S3DropBucketQuiesce.toString()
+    if (s3dbc.s3dropbucket_quiesce === true || s3dbc.s3dropbucket_quiesce === false) process.env["S3DropBucketQuiesce"] = s3dbc.s3dropbucket_quiesce.toString()
     else
       throw new Error(
-        `S3DropBucket Config invalid or missing definition: DropBucketQuiesce - ${s3dbc.S3DropBucketQuiesce} `
+        `S3DropBucket Config invalid or missing definition: DropBucketQuiesce - ${s3dbc.s3dropbucket_quiesce} `
       )
 
-    if (!isNaN(s3dbc.S3DropBucketMaintHours) && typeof s3dbc.S3DropBucketMaintHours === 'number') process.env["S3DropBucketMaintHours"] = s3dbc.S3DropBucketMaintHours.toString()
+    if (!isNaN(s3dbc.s3dropbucket_mainthours) && typeof s3dbc.s3dropbucket_mainthours === 'number') process.env["S3DropBucketMaintHours"] = s3dbc.s3dropbucket_mainthours.toString()
     else
     {
-      s3dbc.S3DropBucketMaintHours = -1
-      process.env["S3DropBucketMaintHours"] = s3dbc.S3DropBucketMaintHours.toString()
+      s3dbc.s3dropbucket_mainthours = -1
+      process.env["S3DropBucketMaintHours"] = s3dbc.s3dropbucket_mainthours.toString()
     }
 
-    if (!isNaN(s3dbc.S3DropBucketMaintLimit) && typeof s3dbc.S3DropBucketMaintLimit === 'number') process.env["S3DropBucketMaintLimit"] = s3dbc.S3DropBucketMaintLimit.toString()
+    if (!isNaN(s3dbc.s3dropbucket_maintlimit) && typeof s3dbc.s3dropbucket_maintlimit === 'number') process.env["S3DropBucketMaintLimit"] = s3dbc.s3dropbucket_maintlimit.toString()
     else
     { 
-      s3dbc.S3DropBucketMaintLimit = 0
-      process.env["S3DropBucketMaintLimit"] = s3dbc.S3DropBucketMaintLimit.toString()
+      s3dbc.s3dropbucket_maintlimit = 0
+      process.env["S3DropBucketMaintLimit"] = s3dbc.s3dropbucket_maintlimit.toString()
     }
 
-    if (!isNaN(s3dbc.S3DropBucketMaintConcurrency) && typeof s3dbc.S3DropBucketMaintConcurrency === 'number') process.env["S3DropBucketMaintConcurrency"] = s3dbc.S3DropBucketMaintConcurrency.toString()
+    if (!isNaN(s3dbc.s3dropbucket_maintconcurrency) && typeof s3dbc.s3dropbucket_maintconcurrency === 'number') process.env["S3DropBucketMaintConcurrency"] = s3dbc.s3dropbucket_maintconcurrency.toString()
     else
     {
-      s3dbc.S3DropBucketMaintLimit = 1
-      process.env["S3DropBucketMaintConcurrency"] = s3dbc.S3DropBucketMaintConcurrency.toString()
+      s3dbc.s3dropbucket_maintlimit = 1
+      process.env["S3DropBucketMaintConcurrency"] = s3dbc.s3dropbucket_maintconcurrency.toString()
     }
 
-    if (!isNaN(s3dbc.S3DropBucketWorkQueueMaintHours) && typeof s3dbc.S3DropBucketWorkQueueMaintLimit === 'number') process.env["S3DropBucketWorkQueueMaintHours"] = s3dbc.S3DropBucketWorkQueueMaintHours.toString()
+    if (!isNaN(s3dbc.s3dropbucket_workqueuemainthours) && typeof s3dbc.s3dropbucket_workqueuemaintlimit === 'number') process.env["S3DropBucketWorkQueueMaintHours"] = s3dbc.s3dropbucket_workqueuemainthours.toString()
     else
     {
-      s3dbc.S3DropBucketWorkQueueMaintHours = -1
-      process.env["S3DropBucketWorkQueueMaintHours"] = s3dbc.S3DropBucketWorkQueueMaintHours.toString()
+      s3dbc.s3dropbucket_workqueuemainthours = -1
+      process.env["S3DropBucketWorkQueueMaintHours"] = s3dbc.s3dropbucket_workqueuemainthours.toString()
     }
 
-    if (!isNaN(s3dbc.S3DropBucketWorkQueueMaintLimit) && typeof s3dbc.S3DropBucketWorkQueueMaintLimit === 'number') process.env["S3DropBucketWorkQueueMaintLimit"] = s3dbc.S3DropBucketWorkQueueMaintLimit.toString()
+    if (!isNaN(s3dbc.s3dropbucket_workqueuemaintlimit) && typeof s3dbc.s3dropbucket_workqueuemaintlimit === 'number') process.env["S3DropBucketWorkQueueMaintLimit"] = s3dbc.s3dropbucket_workqueuemaintlimit.toString()
     else
     {
-      s3dbc.S3DropBucketWorkQueueMaintLimit = 0
-      process.env["S3DropBucketWorkQueueMaintLimit"] = s3dbc.S3DropBucketWorkQueueMaintLimit.toString()
+      s3dbc.s3dropbucket_workqueuemaintlimit = 0
+      process.env["S3DropBucketWorkQueueMaintLimit"] = s3dbc.s3dropbucket_workqueuemaintlimit.toString()
     }
 
-    if (!isNaN(s3dbc.S3DropBucketWorkQueueMaintConcurrency) && typeof s3dbc.S3DropBucketWorkQueueMaintConcurrency === 'number') process.env["S3DropBucketWorkQueueMaintConcurrency"] = s3dbc.S3DropBucketWorkQueueMaintConcurrency.toString()
+    if (!isNaN(s3dbc.s3dropbucket_workqueuemaintconcurrency) && typeof s3dbc.s3dropbucket_workqueuemaintconcurrency === 'number') process.env["S3DropBucketWorkQueueMaintConcurrency"] = s3dbc.s3dropbucket_workqueuemaintconcurrency.toString()
     else
     {
-      s3dbc.S3DropBucketWorkQueueMaintConcurrency = 1
-      process.env["S3DropBucketWorkQueueMaintConcurrency"] = s3dbc.S3DropBucketWorkQueueMaintConcurrency.toString()
+      s3dbc.s3dropbucket_workqueuemaintconcurrency = 1
+      process.env["S3DropBucketWorkQueueMaintConcurrency"] = s3dbc.s3dropbucket_workqueuemaintconcurrency.toString()
     }
 
-    if (s3dbc.S3DropBucketLog === true || s3dbc.S3DropBucketLog === false)
+    if (s3dbc.s3dropbucket_log === true || s3dbc.s3dropbucket_log === false)
     {
-      process.env["S3DropBucketLog"] = s3dbc.S3DropBucketLog.toString()
+      process.env["S3DropBucketLog"] = s3dbc.s3dropbucket_log.toString()
     } else
     {
-      s3dbc.S3DropBucketLog = false
-      process.env["S3DropBucketLog"] = s3dbc.S3DropBucketLog.toString()
+      s3dbc.s3dropbucket_log = false
+      process.env["S3DropBucketLog"] = s3dbc.s3dropbucket_log.toString()
     }
 
-    if (!s3dbc.S3DropBucketLogBucket || s3dbc.S3DropBucketLogBucket === "") s3dbc.S3DropBucketLogBucket = ""
-    process.env["S3DropBucketLogBucket"] = s3dbc.S3DropBucketLogBucket.toString()
+    if (!s3dbc.s3dropbucket_logbucket || s3dbc.s3dropbucket_logbucket === "") s3dbc.s3dropbucket_logbucket = ""
+    process.env["S3DropBucketLogBucket"] = s3dbc.s3dropbucket_logbucket.toString()
 
-    if (!s3dbc.S3DropBucketPurge || s3dbc.S3DropBucketPurge === "") {
+    if (!s3dbc.s3dropbucket_purge || s3dbc.s3dropbucket_purge === "") {
       throw new Error(
-        `S3DropBucket Config invalid or missing definition: DropBucketPurge - ${s3dbc.S3DropBucketPurge} `
+        `S3DropBucket Config invalid or missing definition: DropBucketPurge - ${s3dbc.s3dropbucket_purge} `
       )
-    } else process.env["S3DropBucketPurge"] = s3dbc.S3DropBucketPurge
+    } else process.env["S3DropBucketPurge"] = s3dbc.s3dropbucket_purge
 
-    if (!isNaN(s3dbc.S3DropBucketPurgeCount) && typeof s3dbc.S3DropBucketPurgeCount === 'number') process.env["S3DropBucketPurgeCount"] = s3dbc.S3DropBucketPurgeCount.toFixed()
+    if (!isNaN(s3dbc.s3dropbucket_purgecount) && typeof s3dbc.s3dropbucket_purgecount === 'number') process.env["S3DropBucketPurgeCount"] = s3dbc.s3dropbucket_purgecount.toFixed()
     else {
       throw new Error(
-        `S3DropBucket Config invalid or missing definition: S3DropBucketPurgeCount - ${s3dbc.S3DropBucketPurgeCount} `
+        `S3DropBucket Config invalid or missing definition: S3DropBucketPurgeCount - ${s3dbc.s3dropbucket_purgecount} `
       )
     } 
     
-    if (s3dbc.QueueBucketQuiesce === true || s3dbc.QueueBucketQuiesce === false) {
-      process.env["S3DropBucketQueueBucketQuiesce"] = s3dbc.QueueBucketQuiesce.toString()
+    if (s3dbc.s3dropbucket_queuebucketquiesce === true || s3dbc.s3dropbucket_queuebucketquiesce === false) {
+      process.env["S3DropBucketQueueBucketQuiesce"] = s3dbc.s3dropbucket_queuebucketquiesce.toString()
     } else
       throw new Error(
-        `S3DropBucket Config invalid or missing definition: QueueBucketQuiesce - ${s3dbc.QueueBucketQuiesce} `
+        `S3DropBucket Config invalid or missing definition: QueueBucketQuiesce - ${s3dbc.s3dropbucket_queuebucketquiesce} `
       )
 
-    if (!s3dbc.WorkQueueBucketPurge || s3dbc.WorkQueueBucketPurge === "") {
+    if (!s3dbc.s3dropbucket_workqueuebucketpurge || s3dbc.s3dropbucket_workqueuebucketpurge === "") {
       throw new Error(
-        `S3DropBucket Config invalid or missing definition: WorkQueueBucketPurge - ${s3dbc.WorkQueueBucketPurge} `
+        `S3DropBucket Config invalid or missing definition: WorkQueueBucketPurge - ${s3dbc.s3dropbucket_workqueuebucketpurge} `
       )
-    } else process.env["S3DropBucketWorkQueueBucketPurge"] = s3dbc.WorkQueueBucketPurge
+    } else process.env["S3DropBucketWorkQueueBucketPurge"] = s3dbc.s3dropbucket_workqueuebucketpurge
 
-    if (!isNaN(s3dbc.WorkQueueBucketPurgeCount) && typeof s3dbc.WorkQueueBucketPurgeCount === 'number') process.env["S3DropBucketWorkQueueBucketPurgeCount"] = s3dbc.WorkQueueBucketPurgeCount.toFixed()
+    if (!isNaN(s3dbc.s3dropbucket_workqueuebucketpurgecount) && typeof s3dbc.s3dropbucket_workqueuebucketpurgecount === 'number') process.env["S3DropBucketWorkQueueBucketPurgeCount"] = s3dbc.s3dropbucket_workqueuebucketpurgecount.toFixed()
     else
     {
       throw new Error(
-        `S3DropBucket Config invalid or missing definition: WorkQueueBucketPurgeCount - ${s3dbc.WorkQueueBucketPurgeCount} `
+        `S3DropBucket Config invalid or missing definition: WorkQueueBucketPurgeCount - ${s3dbc.s3dropbucket_workqueuebucketpurgecount} `
       )
     }
 
-    if (s3dbc.PrefixFocus && s3dbc.PrefixFocus !== "" && s3dbc.PrefixFocus.length > 3) {
-      process.env["S3DropBucketPrefixFocus"] = s3dbc.PrefixFocus
-      S3DB_Logging( "warn","933",`A Prefix Focus has been configured. Only S3DropBucket Objects with the prefix "${s3dbc.PrefixFocus}" will be processed.`)
-    } else process.env["S3DropBucketPrefixFocus"] = s3dbc.PrefixFocus
+    if (s3dbc.s3dropbucket_prefixfocus && s3dbc.s3dropbucket_prefixfocus !== "" && s3dbc.s3dropbucket_prefixfocus.length > 3) {
+      process.env["S3DropBucketPrefixFocus"] = s3dbc.s3dropbucket_prefixfocus
+      S3DB_Logging("warn", "933", `A Prefix Focus has been configured. Only S3DropBucket Objects with the prefix "${s3dbc.s3dropbucket_prefixfocus}" will be processed.`)
+    } else process.env["S3DropBucketPrefixFocus"] = s3dbc.s3dropbucket_prefixfocus
 
 
 
@@ -2151,7 +2175,7 @@ async function getFormatCustomerConfig(filekey: string) {
   }
 
   let ccr
-  let configJSON = customersConfig as customerConfig
+  let configJSON = customersConfig as CustomerConfig
 
   try {
     ccr = await s3
@@ -2183,16 +2207,16 @@ async function getFormatCustomerConfig(filekey: string) {
 
         if (err.indexOf("specified key does not exist") > -1)
           throw new Error(
-            `Exception - Customer Config - ${customer}config.jsonc does not exist on ${S3DBConfig.S3DropBucketConfigs} bucket (while processing ${filekey}) \nException ${e} `
+            `Exception - Customer Config - ${customer}config.jsonc does not exist on ${S3DBConfig.s3dropbucket_configs} bucket (while processing ${filekey}) \nException ${e} `
           )
 
         if (err.indexOf("NoSuchKey") > -1)
           throw new Error(
-            `Exception - Customer Config Not Found(${customer}config.jsonc) on ${S3DBConfig.S3DropBucketConfigs}. \nException ${e} `
+            `Exception - Customer Config Not Found(${customer}config.jsonc) on ${S3DBConfig.s3dropbucket_configs}. \nException ${e} `
           )
 
         throw new Error(
-          `Exception - Retrieving Config (${customer}config.jsonc) from ${S3DBConfig.S3DropBucketConfigs} \nException ${e} `
+          `Exception - Retrieving Config (${customer}config.jsonc) from ${S3DBConfig.s3dropbucket_configs} \nException ${e} `
         )
       })
 
@@ -2202,7 +2226,7 @@ async function getFormatCustomerConfig(filekey: string) {
     throw new Error(`Exception - (Try) Pulling Customer Config \n${ccr} \n${e} `)
   }
 
-  configJSON = JSON.parse(ccr) as customerConfig
+  configJSON = JSON.parse(ccr) as CustomerConfig
   
   //Potential Transform opportunity (values only)
   //configJSON = JSON.parse(ccr, function (key, value) {
@@ -2229,13 +2253,13 @@ async function getFormatCustomerConfig(filekey: string) {
     return object
   }
 
-  configJSON = setPropsLowCase(configJSON, '') as customerConfig
-  configJSON = await validateCustomerConfig(configJSON) as customerConfig
+  configJSON = setPropsLowCase(configJSON, '') as CustomerConfig
+  configJSON = await validateCustomerConfig(configJSON) as CustomerConfig
 
-  return configJSON as customerConfig
+  return configJSON as CustomerConfig
 }
 
-async function validateCustomerConfig(config: customerConfig) {
+async function validateCustomerConfig(config: CustomerConfig) {
   
   if (!config || config === null)
   {
@@ -2488,9 +2512,6 @@ async function validateCustomerConfig(config: customerConfig) {
   if (!config.transforms.ignore) {
     Object.assign(config.transforms, { ignore: [] })
   }
-  if (!config.transforms.script) {          //ToDo: Future Transforms Capability
-    Object.assign(config.transforms, { script: "" })
-  }
 
   S3DB_Logging("info", "919", `Transforms configured: \n${JSON.stringify(config.transforms)}`)
   
@@ -2511,16 +2532,15 @@ async function validateCustomerConfig(config: customerConfig) {
     config.transforms.jsonmap = tmpMap
   }
 
-  return config as customerConfig
+  return config as CustomerConfig
 }
 
-async function packageUpdates(workSet: object[], key: string, custConfig: customerConfig
+async function packageUpdates(workSet: object[], key: string, custConfig: CustomerConfig
 ) {
   
-  debugger
-  // what happened to workSet use?
-  // likely because I globalized "chunks" 
 
+//ToDo: what happened to workSet use?
+// likely because I globalized "chunks" 
 
   let updates: object[] = []
   let sqwResult: object = {}
@@ -2621,12 +2641,12 @@ async function packageUpdates(workSet: object[], key: string, custConfig: custom
 async function storeAndQueueConnectWork(
   updates: object[],
   s3Key: string,
-  custConfig: customerConfig
+  custConfig: CustomerConfig
 ) {
   batchCount++
 
-  if (batchCount > S3DBConfig.MaxBatchesWarning)
-    S3DB_Logging("info", "", `Warning: Updates from the S3 Object(${s3Key}) are exceeding(${batchCount}) the Warning Limit of ${S3DBConfig.MaxBatchesWarning} Batches per Object.`)
+  if (batchCount > S3DBConfig.s3dropbucket_maxbatcheswarning)
+    S3DB_Logging("info", "", `Warning: Updates from the S3 Object(${s3Key}) are exceeding(${batchCount}) the Warning Limit of ${S3DBConfig.s3dropbucket_maxbatcheswarning} Batches per Object.`)
 
   
   const updateCount = updates.length
@@ -2788,23 +2808,10 @@ async function storeAndQueueConnectWork(
     addWorkToS3WorkBucketResult)} \n Add to Process Queue: ${JSON.stringify(addWorkToSQSWorkQueueResult)} `)
 
 
-  
-
-
-
-
-
-debugger
-  //Testing - Call POST to Connect immediately
-  const c = await postToConnect(mutationUpdates, customersConfig, "6", key)
-
-debugger
-
-  
-
-
-
-
+//debugger
+//  //Testing - Call POST to Connect immediately
+//  const c = await postToConnect(mutationUpdates, customersConfig, "6", key)
+//debugger
 
   return {
     AddWorkToS3WorkBucketResults: addWorkToS3WorkBucketResult,
@@ -2816,12 +2823,12 @@ debugger
 async function storeAndQueueCampaignWork(
   updates: object[],
   s3Key: string,
-  config: customerConfig
+  config: CustomerConfig
 ) {
   batchCount++
 
-  if (batchCount > S3DBConfig.MaxBatchesWarning)
-  S3DB_Logging("info", "", `Warning: Updates from the S3 Object(${s3Key}) are exceeding(${batchCount}) the Warning Limit of ${S3DBConfig.MaxBatchesWarning} Batches per Object.`)
+  if (batchCount > S3DBConfig.s3dropbucket_maxbatcheswarning)
+    S3DB_Logging("info", "", `Warning: Updates from the S3 Object(${s3Key}) are exceeding(${batchCount}) the Warning Limit of ${S3DBConfig.s3dropbucket_maxbatcheswarning} Batches per Object.`)
 
   // throw new Error(`Updates from the S3 Object(${ s3Key }) Exceed(${ batch }) Safety Limit of 20 Batches of 99 Updates each.Exiting...`)
 
@@ -2932,7 +2939,7 @@ async function storeAndQueueCampaignWork(
   }
 }
 
-function convertJSONToXML_RTUpdates(updates: object[], config: customerConfig) {
+function convertJSONToXML_RTUpdates(updates: object[], config: CustomerConfig) {
   if (updates.length < 1) {
     throw new Error(
       `Exception - Convert JSON to XML for RT - No Updates(${updates.length}) were passed to process into XML. Customer ${config.customer} `
@@ -2973,7 +2980,7 @@ function convertJSONToXML_RTUpdates(updates: object[], config: customerConfig) {
   return xmlRows
 }
 
-function convertJSONToXML_DBUpdates(updates: object[], config: customerConfig) {
+function convertJSONToXML_DBUpdates(updates: object[], config: CustomerConfig) {
   if (updates.length < 1) {
     throw new Error(
       `Exception - Convert JSON to XML for DB - No Updates (${updates.length}) were passed to process. Customer ${config.customer} `
@@ -3164,7 +3171,7 @@ debugger
 
 
 async function addWorkToS3WorkBucket(queueUpdates: string, key: string) {
-  if (S3DBConfig.QueueBucketQuiesce) {
+  if (S3DBConfig.s3dropbucket_queuebucketquiesce) {
     S3DB_Logging("warn", "923", `Work/Process Bucket Quiesce is in effect, no New Work Files are being written to the S3 Queue Bucket. This work file is for ${key}`)
     
     return {
@@ -3176,7 +3183,7 @@ async function addWorkToS3WorkBucket(queueUpdates: string, key: string) {
 
   const s3WorkPutInput = {
     Body: queueUpdates,
-    Bucket: S3DBConfig.S3DropBucketWorkBucket,
+    Bucket: S3DBConfig.s3dropbucket_workbucket,
     Key: key,
   }
 
@@ -3195,17 +3202,17 @@ async function addWorkToS3WorkBucket(queueUpdates: string, key: string) {
         return s3PutResult
       })
       .catch((err) => {
-        S3DB_Logging("exception", "", `Exception - Put Object Command for writing work(${key} to S3 Processing bucket(${S3DBConfig.S3DropBucketWorkBucket}): \n${err}`)
+        S3DB_Logging("exception", "", `Exception - Put Object Command for writing work(${key} to S3 Processing bucket(${S3DBConfig.s3dropbucket_workbucket}): \n${err}`)
         throw new Error(
-          `PutObjectCommand Results Failed for (${key} of ${queueUpdates.length} characters) to S3 Processing bucket (${S3DBConfig.S3DropBucketWorkBucket}): \n${err}`
+          `PutObjectCommand Results Failed for (${key} of ${queueUpdates.length} characters) to S3 Processing bucket (${S3DBConfig.s3dropbucket_workbucket}): \n${err}`
         )
         //return {StoreS3WorkException: err}
       })
   } catch (e)
   {
-    S3DB_Logging("exception", "", `Exception - Put Object Command for writing work(${key} to S3 Processing bucket(${S3DBConfig.S3DropBucketWorkBucket}): \n${e}`)
+    S3DB_Logging("exception", "", `Exception - Put Object Command for writing work(${key} to S3 Processing bucket(${S3DBConfig.s3dropbucket_workbucket}): \n${e}`)
     throw new Error(
-      `Exception - Put Object Command for writing work(${key} to S3 Processing bucket(${S3DBConfig.S3DropBucketWorkBucket}): \n${e}`
+      `Exception - Put Object Command for writing work(${key} to S3 Processing bucket(${S3DBConfig.s3dropbucket_workbucket}): \n${e}`
     )
     // return { StoreS3WorkException: e }
   }
@@ -3214,7 +3221,7 @@ async function addWorkToS3WorkBucket(queueUpdates: string, key: string) {
 
   const vidString = addWorkToS3ProcessBucket.VersionId ?? ""
 
-  S3DB_Logging("info", "907", `Added Work File ${key} to Work Bucket (${S3DBConfig.S3DropBucketWorkBucket
+  S3DB_Logging("info", "907", `Added Work File ${key} to Work Bucket (${S3DBConfig.s3dropbucket_workbucket
     }) \n${JSON.stringify(addWorkToS3ProcessBucket)}`)
 
   const aw3pbr = {
@@ -3227,14 +3234,14 @@ async function addWorkToS3WorkBucket(queueUpdates: string, key: string) {
 }
 
 async function addWorkToSQSWorkQueue(
-  config: customerConfig,
+  config: CustomerConfig,
   key: string,
   //versionId: string,
   batch: number,
   recCount: string,
   marker: string
 ) {
-  if (S3DBConfig.QueueBucketQuiesce) {
+  if (S3DBConfig.s3dropbucket_queuebucketquiesce) {
     S3DB_Logging("warn", "923", `Work/Process Bucket Quiesce is in effect, no New Work Files are being written to the SQS Queue of S3 Work Bucket. This work file is for ${key}`)
 
     return {
@@ -3244,7 +3251,7 @@ async function addWorkToSQSWorkQueue(
     }
   }
 
-  const sqsQMsgBody = {} as s3DBQueueMessage
+  const sqsQMsgBody = {} as S3DBQueueMessage
   sqsQMsgBody.workKey = key
   //sqsQMsgBody.versionId = versionId
   sqsQMsgBody.marker = marker
@@ -3256,7 +3263,7 @@ async function addWorkToSQSWorkQueue(
 
   const sqsParams = {
     MaxNumberOfMessages: 1,
-    QueueUrl: S3DBConfig.S3DropBucketWorkQueue,
+    QueueUrl: S3DBConfig.s3dropbucket_workqueue,
     //Defer to setting these on the Queue in AWS SQS Interface
     // VisibilityTimeout: parseInt(tcc.WorkQueueVisibilityTimeout),
     // WaitTimeSeconds: parseInt(tcc.WorkQueueWaitTimeSeconds),
@@ -3311,7 +3318,7 @@ async function addWorkToSQSWorkQueue(
       }), ${sqsQMsgBody.workKey}, SQS Params${JSON.stringify(sqsParams)}) - Error: ${e}`)
   }
 
-  S3DB_Logging("info", "907", `Queued Work ${key} (${recCount} updates) to the Work Queue (${S3DBConfig.S3DropBucketWorkQueue
+  S3DB_Logging("info", "907", `Queued Work ${key} (${recCount} updates) to the Work Queue (${S3DBConfig.s3dropbucket_workqueue
     }) \nSQS Params: \n${JSON.stringify(sqsParams)} \nresults: \n${JSON.stringify({SQSWriteResult: sqsWriteResult, AddToSQSQueue: JSON.stringify(sqsSendResult),})}`)
 
   return {
@@ -3320,7 +3327,7 @@ async function addWorkToSQSWorkQueue(
   }
 }
 
-function transforms(updates: object[], config: customerConfig) {
+function transforms(updates: object[], config: CustomerConfig) {
   //Apply Transforms
 
   //Clorox/Kingsford Weather Data
@@ -3339,10 +3346,13 @@ function transforms(updates: object[], config: customerConfig) {
   //
   try
   {
-    if (config.customer.toLowerCase().indexOf("kingsfordweather_") > -1 || config.customer.toLowerCase().indexOf("cloroxweather_") > -1)
-    {
+    //ToDo: Fix: refactor this out of Kingsford specific, config based 
+    //if (config.customer.toLowerCase().indexOf("kingsfordweather_") > -1 || config.customer.toLowerCase().indexOf("cloroxweather_") > -1)
+    if (config.transforms.methods.daydate && config.transforms.methods.daydate !== "")
+      {
+      const ddColumn: string = config.transforms.methods.daydate ?? 'datetime' 
+    
       const t: typeof updates = []
-
       const days = [
         "Sunday",
         "Monday",
@@ -3353,12 +3363,20 @@ function transforms(updates: object[], config: customerConfig) {
         "Saturday",
       ]
 
-      let d: string
+    debugger 
+
+      let d: string = ''
       for (const jo of updates)
       {
-        if ("datetime" in jo)
+        //if ("datetime" in jo)
+
+        if (ddColumn in jo)
         {
-          d = jo.datetime as string
+  //Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{} '.
+          //No index signature with a parameter of type 'string' was found on type '{}'.ts(7053)
+          const jot: {[key: string]: string} = jo as {[key: string]: string}
+
+          d = jot[ddColumn] as string
           if (d !== "")
           {
             const dt = new Date(d)
@@ -3549,17 +3567,23 @@ function applyJSONMap(jsonObj: object, map: {[key: string]: string}) {
   Object.entries(map).forEach(([k, v]) => {
     try
     {
+      
       const j = jsonpath.value(jsonObj, v)
-      if (!j)
-      {
-        S3DB_Logging("warn", "930", `Warning: Data not Found for JSONPath statement ${k}: ${v},  \nTarget Data: \n${JSON.stringify(jsonObj)} `)
-      } else
-      {
+      //if (!j)
+      //{
+      //  S3DB_Logging("warn", "930", `Warning: Data not Found for JSONPath statement ${k}: ${v},  \nTarget Data: \n${JSON.stringify(jsonObj)} `)
+      //} else
+      //{
         Object.assign(jsonObj, {[k]: j})
-      }
+      //}
     } catch (e)
     {
-      S3DB_Logging("exception", "934", `Exception parsing data for JSONPath statement ${k} ${v}, ${e} \nTarget Data: \n${JSON.stringify(jsonObj)} `)
+      //if (e instanceof jsonpath.JsonPathError)
+      //{
+      //  S3DB_Logging("error","",`JSONPath error: e.message`)
+      //}
+
+      S3DB_Logging("warning", "930", `Error parsing data for JSONPath statement ${k} ${v}, ${e} \nTarget Data: \n${JSON.stringify(jsonObj)} `)
     }
 
     // const a1 = jsonpath.parse(value)
@@ -3668,7 +3692,7 @@ async function deleteS3Object(s3ObjKey: string, bucket: string) {
   return delRes
 }
 
-export async function getAccessToken(config: customerConfig) {
+export async function getAccessToken(config: CustomerConfig) {
   try {
     const rat = await fetch(
       `https://api-campaign-${config.region}-${config.pod}.goacoustic.com/oauth/token`,
@@ -3687,7 +3711,7 @@ export async function getAccessToken(config: customerConfig) {
       }
     )
 
-    const ratResp = (await rat.json()) as accessResp
+    const ratResp = (await rat.json()) as AccessResp
 
     if (rat.status != 200) {
       const err = ratResp as unknown as {
@@ -4178,7 +4202,7 @@ interface VariablesCreateContacts {
   contactsInput: Contact[]
 }
 
-async function buildMutationCreateContacts(updates: object[], config: customerConfig) {
+async function buildMutationCreateContacts(updates: object[], config: CustomerConfig) {
 
   const query = `mutation createMultipleContacts($dataSetId: ID!, $contactsInput: [ContactCreateInput!]!) {
     createContacts(
@@ -4230,7 +4254,7 @@ interface Contact {
 }
 
 
-async function buildMutationUpdateContacts(updates: object[], config: customerConfig) {
+async function buildMutationUpdateContacts(updates: object[], config: CustomerConfig) {
 
   
 const query = `mutation updateMultipleContacts($dataSetId: ID!, $updateContactInputs: [UpdateContactInput!]!) {
@@ -4302,7 +4326,7 @@ const query = `mutation updateMultipleContacts($dataSetId: ID!, $updateContactIn
 
 }
 
-async function buildMutationCreateAttributes(updates: object[], config: customerConfig) {
+async function buildMutationCreateAttributes(updates: object[], config: CustomerConfig) {
 
   //mutation {
   //  updateDataSet(
@@ -4346,13 +4370,13 @@ async function buildMutationCreateAttributes(updates: object[], config: customer
 
 }
 
-async function buildMutationReferenceSet(updates: object[], config: customerConfig) {
+async function buildMutationReferenceSet(updates: object[], config: CustomerConfig) {
 const q = ""
   
 return q
 }
 
-async function postToConnect(mutations: string, custconfig: customerConfig, updateCount: string, workFile: string) {
+async function postToConnect(mutations: string, custconfig: CustomerConfig, updateCount: string, workFile: string) {
   //ToDo: 
   //Transform Add Contacts to Mutation Create Contact
   //Transform Updates to Mutation Update Contact
@@ -4441,7 +4465,7 @@ async function postToConnect(mutations: string, custconfig: customerConfig, upda
 
 export async function postToCampaign(
   xmlCalls: string,
-  config: customerConfig,
+  config: CustomerConfig,
   count: string,
   workFile: string
 ) {
@@ -4646,7 +4670,7 @@ async function getAnS3ObjectforTesting(bucket: string) {
   const listReq = {
     Bucket: bucket,
     MaxKeys: 101,
-    Prefix: S3DBConfig.PrefixFocus,
+    Prefix: S3DBConfig.s3dropbucket_prefixfocus,
   } as ListObjectsCommandInput
 
   await s3

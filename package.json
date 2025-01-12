@@ -2,9 +2,9 @@
 	"name": "s3dropbucket",
 	"author": "KW Landry (kip.landry@acoustic.co)",
 	"license": "ISC",
-	"description": "S3DropBucket Build \"3.3.69\" - \"01-09-2025 19:36:55\"",
-	"version": "3.3.69",
-	"builddate": "01-09-2025 19:36:55",
+	"description": "S3DropBucket Build \"3.3.70\" - \"01-11-2025 19:39:16\"",
+	"version": "3.3.70",
+	"builddate": "01-11-2025 19:39:16",
 	"copyright": "ISC",
 	"private": true,
 	"package": {
@@ -18,6 +18,7 @@
 	"dependencies": {
 		"@streamparser/json": "^0.0.20",
 		"@streamparser/json-node": "^0.0.21",
+		"ajv": "^8.17.1",
 		"csv-parse": "^5.5.0",
 		"csv-stringify": "^6.4.2",
 		"csv-transform": "^0.0.8",
