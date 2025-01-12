@@ -2108,7 +2108,7 @@ async function getFormatCustomerConfig(filekey: string) {
 
   if (filekey.indexOf("Aggregator") > -1)
   {
-    filekey = filekey.replace("S3DropBucket_Aggregator-", "")
+    filekey = filekey.replace("S3DropBucket_Aggregator-", "S3DropBucketAggregator-")
     S3DB_Logging("info", "", `Aggregator File key reformed: ${filekey}`)
   }
 
