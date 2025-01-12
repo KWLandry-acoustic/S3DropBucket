@@ -837,7 +837,7 @@ async function processS3ObjectContentStream(
       })
 
       if (
-        key.indexOf("aggregate_") < 0 &&
+        key.indexOf("S3DropBucketAggregator") < 0 &&
         custConfig.format.toLowerCase() === "csv"
       )
       {
