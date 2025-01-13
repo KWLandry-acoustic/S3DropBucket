@@ -115,6 +115,8 @@ import sftpClient, {ListFilterFunction} from "ssh2-sftp-client"
 
 let s3 = {} as S3Client
 
+const client = new FirehoseClient()
+
 const SFTPClient = new sftpClient()
 
 
@@ -127,6 +129,8 @@ export type sqsObject = {
   bucketName: string
   objectKey: string
 }
+
+
 
 let localTesting = false
 
@@ -242,6 +246,7 @@ export interface S3DBConfig {
   s3dropbucket: string
   s3dropbucket_workbucket: string
   s3dropbucket_workqueue: string
+  s3dropbucket_firehosestream: string
   s3dropbucket_loglevel: string
   s3dropbucket_log: boolean //future: firehose aggregator bucket
   s3dropbucket_logbucket: string //future: firehose aggregator bucket
@@ -400,7 +405,6 @@ testS3Bucket = "s3dropbucket-configs"
 //testS3Key = "TestData/cloroxweather_99706.csv"
 //testS3Key = "TestData/pura_S3DropBucket_Aggregator-8-2024-03-19-16-42-48-46e884aa-8c6a-3ff9-8d32-c329395cf311.json"
 //testS3Key = "TestData/pura_2024_02_26T05_53_26_084Z.json"
-testS3Key = "TestData/MasterCustomer_Sample1.json"
 //testS3Key = "TestData/alerusrepsignature_sample.json"
 //testS3Key = "TestData/alerusrepsignature_advisors.json"
 //testS3Key = "TestData/alerusrepsignature_sampleformatted.json"
@@ -415,7 +419,11 @@ testS3Key = "TestData/MasterCustomer_Sample1.json"
 //testS3Key = "TestData/KingsfordWeather_00210.csv"
 //testS3Key = "TestData/KingsfordWeather_00211.csv"
 //testS3Key = "TestData/KingsfordWeather_00212.csv"
+//testS3Key = "TestData/MasterCustomer_Sample1.json"
+testS3Key = "TestData/KingsfordWeather_S3DropBucket_Aggregator-10-2025-01-09-19-29-39-da334f11-53a4-31cc-8c9f-8b417725560b.json"
 
+
+let fhi: number = 0
 
 /**
  * A Lambda function to process the Event payload received from S3.
@@ -458,6 +466,9 @@ export const s3DropBucketHandler: Handler = async (
   {
     S3DB_Logging("info", "925", `Processing an Aggregated File ${event.Records[0].s3.object.key}`)
   }
+
+
+  
 
   //When Local Testing - pull an S3 Object and so avoid the not-found error
   if (
@@ -513,7 +524,7 @@ export const s3DropBucketHandler: Handler = async (
   // Drive higher concurrency in each Lambda invocation by running batches of 10 files written at a time(SQS Batch)
   for (const r of event.Records)
   {
-    const key = r.s3.object.key
+    let key = r.s3.object.key
     const bucket = r.s3.bucket.name
   
     if (process.env.S3DropBucketPrefixFocus !== undefined && process.env.S3DropBucketPrefixFocus !== "" && process.env.S3DropBucketPrefixFocus.length > 3 && !key.startsWith(process.env.S3DropBucketPrefixFocus))
@@ -531,7 +542,14 @@ export const s3DropBucketHandler: Handler = async (
 
     try
     {
+      //if (key.indexOf("S3DropBucket_Aggregator") > -1)
+      //{
+      //  key = key.replace("S3DropBucket_Aggregator-", "S3DropBucketAggregator-")
+      //  S3DB_Logging("info", "", `Aggregator File key reformed: ${key}`)
+      //}
+
       customersConfig = await getFormatCustomerConfig(key) as CustomerConfig
+
     } catch (e)
     {
       S3DB_Logging("exception", "", `Exception - Awaiting Customer Config (${key}) \n${e} `)
@@ -586,7 +604,6 @@ export const s3DropBucketHandler: Handler = async (
       )
     }
     */
-
     
 
 
@@ -749,11 +766,9 @@ export function S3DB_Logging(level: string, index: string,  msg:string) {
   const li = `_${index},`
 
   if (
-    (
-      (selectiveDebug.indexOf(li) > -1 || index === "") &&
-      process.env.S3DropBucketLogLevel !== 'NONE')
-   ||
-    process.env.S3DropBucketLogLevel === 'ALL' )
+    (selectiveDebug.indexOf(li) > -1 || index === "" || process.env.S3DropBucketLogLevel?.toLowerCase() === 'all') &&
+    process.env.S3DropBucketLogLevel?.toLowerCase() !== 'none'
+  )
   {
     if (process.env.S3DropBucketLogLevel?.toLowerCase() === 'all') index = `(LOG ALL-${index})`
 
@@ -837,8 +852,8 @@ async function processS3ObjectContentStream(
       })
 
       if (
-        key.indexOf("S3DropBucketAggregator") < 0 &&
-        custConfig.format.toLowerCase() === "csv"
+        custConfig.format.toLowerCase() === "csv" &&
+          key.indexOf("S3DropBucket_Aggregator") < 0
       )
       {
         const csvParser = parse({
@@ -1186,6 +1201,7 @@ async function processS3ObjectContentStream(
     })
 
     .catch((e) => {
+      debugger
       //throw new Error( `Exception(throw) - ReadStream - For ${ key }.\nResults: ${ JSON.stringify( streamResult ) }.\n${ e } ` )
       
       streamResult = {
@@ -1288,7 +1304,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
     sqsBatchFail.batchItemFailures.pop()
   })
 
-  let tqm: S3DBQueueMessage = {
+  let s3dbQM: S3DBQueueMessage = {
     workKey: "",
     versionId: "",
     marker: "",
@@ -1340,17 +1356,17 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
   for (const q of event.Records)
   {
     
-    tqm = JSON.parse(q.body)
+    s3dbQM = JSON.parse(q.body)
 
     //When Testing locally  (Launch config has pre-stored payload) - get some actual work queued
-    if (tqm.workKey === "") {
-      tqm.workKey = (await getAnS3ObjectforTesting(S3DBConfig.s3dropbucket_workbucket)) ?? ""
+    if (s3dbQM.workKey === "") {
+      s3dbQM.workKey = (await getAnS3ObjectforTesting(S3DBConfig.s3dropbucket_workbucket)) ?? ""
     }
 
-    if (tqm.workKey === "devtest.xml") {
+    if (s3dbQM.workKey === "devtest.xml") {
       //tqm.workKey = await getAnS3ObjectforTesting( tcc.s3DropBucketWorkBucket! ) ?? ""
-      tqm.workKey = testS3Key
-      tqm.custconfig.customer = testS3Key
+      s3dbQM.workKey = testS3Key
+      s3dbQM.custconfig.customer = testS3Key
       S3DBConfig.s3dropbucket_workbucket = testS3Bucket
       localTesting = true
     } else {
@@ -1360,25 +1376,25 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
     }
     
   
-    S3DB_Logging("info", "507", `Start Processing ${tqm.workKey} off Work Queue. `)
+    S3DB_Logging("info", "507", `Start Processing ${s3dbQM.workKey} off Work Queue. `)
     
     S3DB_Logging("info", "911", `Start Processing Work Item: SQS Event: \n${JSON.stringify(q)}`)
 
-    custconfig = await getFormatCustomerConfig(tqm.custconfig.customer) as CustomerConfig
+    custconfig = await getFormatCustomerConfig(s3dbQM.custconfig.customer) as CustomerConfig
 
     try {
-      const work = await getS3Work(tqm.workKey, S3DBConfig.s3dropbucket_workbucket)
+      const work = await getS3Work(s3dbQM.workKey, S3DBConfig.s3dropbucket_workbucket)
 
       if (work.length > 0) {
         //Retrieve Contents of the Work File
-        S3DB_Logging("info", "512", `S3 Retrieve results for Work file ${tqm.workKey}: ${JSON.stringify(work)}`)
+        S3DB_Logging("info", "512", `S3 Retrieve results for Work file ${s3dbQM.workKey}: ${JSON.stringify(work)}`)
 
         if ((custconfig.updatetype.toLowerCase() === 'referenceset') || localTesting)
           postResult = await postToConnect(
             work,
             custconfig as CustomerConfig,
-            tqm.updateCount,
-            tqm.workKey
+            s3dbQM.updateCount,
+            s3dbQM.workKey
           )
 
         
@@ -1388,8 +1404,8 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
         postResult = await postToCampaign(
           work,
           custconfig as CustomerConfig,
-          tqm.updateCount,
-          tqm.workKey
+          s3dbQM.updateCount,
+          s3dbQM.workKey
         )
 
         //  postResult can contain:
@@ -1398,51 +1414,51 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
         //partially successful
         //successfully posted
 
-        S3DB_Logging("info", "936", `POST Result for ${tqm.workKey}: ${postResult} `)
+        S3DB_Logging("info", "936", `POST Result for ${s3dbQM.workKey}: ${postResult} `)
 
         if (postResult.indexOf("retry") > -1) {
-          S3DB_Logging("warn", "516", `Retry Marked for ${tqm.workKey}. Returning Work Item ${q.messageId
+          S3DB_Logging("warn", "516", `Retry Marked for ${s3dbQM.workKey}. Returning Work Item ${q.messageId
             } to Process Queue (Total Retry Count: ${sqsBatchFail.batchItemFailures.length + 1}). \n${postResult} `
           )
 
           //Add to BatchFail array to Retry processing the work
           sqsBatchFail.batchItemFailures.push({ itemIdentifier: q.messageId })
 
-          S3DB_Logging("info", "509", `${tqm.workKey} added back to Queue for Retry \nRetry Queue:\n ${JSON.stringify(sqsBatchFail)} `
+          S3DB_Logging("info", "509", `${s3dbQM.workKey} added back to Queue for Retry \nRetry Queue:\n ${JSON.stringify(sqsBatchFail)} `
           )
         } else if (postResult.toLowerCase().indexOf("unsuccessful post") > -1)
         {
-          S3DB_Logging("error", "935", `Error - Unsuccessful POST (Hard Failure) for ${tqm.workKey}: \n${postResult}\nCustomer: ${custconfig.customer}, ListId: ${custconfig.listid} ListName: ${custconfig.listname} `)
+          S3DB_Logging("error", "935", `Error - Unsuccessful POST (Hard Failure) for ${s3dbQM.workKey}: \n${postResult}\nCustomer: ${custconfig.customer}, ListId: ${custconfig.listid} ListName: ${custconfig.listname} `)
         } else {
           if (postResult.toLowerCase().indexOf("partially successful") > -1) {
-            S3DB_Logging("info", "508", `Work Partially Successful Posted to Campaign (work file (${tqm.workKey}, updated ${tqm.custconfig.listname} from ${tqm.workKey}, however there were some exceptions: \n${postResult} `)
+            S3DB_Logging("info", "508", `Work Partially Successful Posted to Campaign (work file (${s3dbQM.workKey}, updated ${s3dbQM.custconfig.listname} from ${s3dbQM.workKey}, however there were some exceptions: \n${postResult} `)
           } else if (
             postResult.toLowerCase().indexOf("successfully posted") > -1
           ) {
-            S3DB_Logging("info", "508", `(508) Work Successfully Posted to Campaign (work file (${tqm.workKey}, updated ${tqm.custconfig.listname} from ${tqm.workKey}, \n${postResult} \nThe Work will be deleted from the S3 Process Queue`)
+            S3DB_Logging("info", "508", `(508) Work Successfully Posted to Campaign (work file (${s3dbQM.workKey}, updated ${s3dbQM.custconfig.listname} from ${s3dbQM.workKey}, \n${postResult} \nThe Work will be deleted from the S3 Process Queue`)
           }
 
           //Delete the Work file
           const d = await deleteS3Object(
-            tqm.workKey,
+            s3dbQM.workKey,
             S3DBConfig.s3dropbucket_workbucket
           )
           if (d === "204") {
 
-            S3DB_Logging("info", "924", `Successful Deletion of Queued Work file: ${tqm.workKey}`)
+            S3DB_Logging("info", "924", `Successful Deletion of Queued Work file: ${s3dbQM.workKey}`)
 
-          } else S3DB_Logging("error", "924", `Failed to Delete ${tqm.workKey}.Expected '204' but received ${d} `)
+          } else S3DB_Logging("error", "924", `Failed to Delete ${s3dbQM.workKey}.Expected '204' but received ${d} `)
 
-          S3DB_Logging("info", "511", `Processed ${tqm.updateCount} Updates from ${tqm.workKey}`)
+          S3DB_Logging("info", "511", `Processed ${s3dbQM.updateCount} Updates from ${s3dbQM.workKey}`)
 
           S3DB_Logging("info", "510", `Processed ${event.Records.length
             } Work Queue Events. Posted: ${postResult}. \nItems Retry Count: ${sqsBatchFail.batchItemFailures.length
             } \nItems Retry List: ${JSON.stringify(sqsBatchFail)} `
           )
         }
-      } else throw new Error(`Failed to retrieve work file(${tqm.workKey}) `)
+      } else throw new Error(`Failed to retrieve work file(${s3dbQM.workKey}) `)
     } catch (e) {
-      S3DB_Logging("exception", "", `Exception - Processing Work File (${tqm.workKey} off the Work Queue - \n${e}} `)
+      S3DB_Logging("exception", "", `Exception - Processing Work File (${s3dbQM.workKey} off the Work Queue - \n${e}} `)
     }
   }
 
@@ -1468,7 +1484,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
   //}
 
 
-  S3DB_Logging("info", "507", `Completed Processing ${tqm.workKey}. Return to Retry Queue List:\n${JSON.stringify(sqsBatchFail)} `)
+  S3DB_Logging("info", "507", `Completed Processing ${s3dbQM.workKey}. Return to Retry Queue List:\n${JSON.stringify(sqsBatchFail)} `)
 
   return sqsBatchFail
 
@@ -2106,12 +2122,6 @@ async function getValidateS3DropBucketConfig() {
 
 async function getFormatCustomerConfig(filekey: string) {
 
-  if (filekey.indexOf("Aggregator") > -1)
-  {
-    filekey = filekey.replace("S3DropBucket_Aggregator-", "S3DropBucketAggregator-")
-    S3DB_Logging("info", "", `Aggregator File key reformed: ${filekey}`)
-  }
-
   //Populate/Refresh Customer Config List 
   if (process.env.S3DropBucketConfigBucket === '')  process.env.S3DropBucketConfigBucket = 's3dropbucket-configs'
   const ccl = await getAllCustomerConfigsList(process.env.S3DropBucketConfigBucket ?? 's3dropbucket-configs')
@@ -2124,27 +2134,24 @@ async function getFormatCustomerConfig(filekey: string) {
         `Exception - Cannot resolve Customer Config without a valid Customer Prefix in filename (filename is ${filekey})`
     )
 
-  while (filekey.indexOf("/") > -1) {
+  let customer = filekey
+
+  while (customer.indexOf("/") > -1) {
     //remove any folders from name
-    filekey = filekey.split("/").at(-1) ?? filekey
+    customer = customer.split("/").at(-1) ?? customer
   }
 
   //Check for timestamp - if timestamp - normalize timestamp (remove underscores) 
   const r = new RegExp(/\d{4}_\d{2}_\d{2}T.*Z.*/, "gm")
-  if (filekey.match(r)) {
-    filekey = filekey.replace(r, "") //remove timestamp from name
-  }
-
-  if (filekey.indexOf('_') > -1)
-  {
-    filekey = filekey.substring(0, filekey.lastIndexOf("_") + 1)
+  //remove timestamps from name as can confuse customer name parsing
+  if (customer.match(r)) {
+    customer = customer.replace(r, "") //remove timestamp from name
   }
   
-  //  const customer = filekey.split('_')[0] + '_'      //initial treatment, get prefix up to first underscore
+  customer = customer.split('_')[0] + '_'      //initial treatment, get prefix up to first underscore
 
-    
   //Should be left with customername, data flow and trailing underscore
-  if (!filekey.endsWith('_'))
+  if (!customer.endsWith('_'))
   {
     throw new Error(
       `Exception - Cannot resolve Customer Config without a valid Customer Prefix (filename is ${filekey})`
@@ -2152,19 +2159,10 @@ async function getFormatCustomerConfig(filekey: string) {
     
   }
 
-  if (filekey === "_" || filekey.length < 4) {
-    throw new Error(
-      `Exception - Cannot resolve Customer Config without a valid Customer Prefix in filename (filename is ${filekey})`
-   )
-  }
-
-  //const customer = filekey.split('_')[0] + '_'      //initial treatment, get prefix up to first underscore
-
-
+  
   //ToDo: Need to change this up to getting a listing of all configs and matching up against filename,
   //  allowing Configs to match on filename regardless of case
   //  populate 'process.env.S3DropBucketConfigsList' and walk over it to match config to filename
-  const customer = filekey  //.toLowerCase()
   
   let ccKey = `${customer}config.jsonc`
   
@@ -2564,11 +2562,24 @@ async function packageUpdates(workSet: object[], key: string, custConfig: Custom
 
   // If there are Chunks to Process and Singular Updates is set, 
   //    send to Aggregator (unless these are updates coming through from an Aggregated file).
-  if (chunks.length > 0 && custConfig.updates.toLowerCase() === "singular" && key.toLowerCase().indexOf("aggregat") < 0)
+  if (key.toLowerCase().indexOf("s3dropbucket_aggregator") < 0 &&
+    custConfig.updates.toLowerCase() === "singular" &&
+    chunks.length > 0 )
   {
+
+    let firehoseResults = {}
+
     try   //Interior try/catch for firehose processing
     {
-      await putToFirehose(
+      //A Check for when long processing flow does not provide periodic updates
+      //fhi++      
+      //if (fhi % 100 === 0)
+      //{
+      //  S3DB_Logging("info", "918", `Processing update ${fhi} of ${chunks.length} updates for ${custConfig.customer}`)
+      //  //debugger
+      //}
+
+      firehoseResults = await putToFirehose(
         chunks,
         key,
         custConfig.customer
@@ -2588,12 +2599,25 @@ async function packageUpdates(workSet: object[], key: string, custConfig: Custom
     } catch (e)    //Interior try/catch for firehose processing
     {
       S3DB_Logging("exception", "", `Exception - PutToFirehose - \n${e} `)
+      debugger
       sqwResult = {
         ...sqwResult,
         PutToFireHoseException: `Exception - PutToFirehose \n${e} `,
       }
       return sqwResult
     }
+    //If the above try/catch does not throw an exception, then the firehose processing was successful.
+    //  We can now clear out the Chunks array.
+    chunks = []
+    
+    S3DB_Logging("info" , "943", `Completed processing ${key} \n${sqwResult}`)
+
+    return sqwResult = {
+      ...sqwResult,
+      PutToFireHoseResults: `PutToFirehose Results: \n${firehoseResults} `,
+    }
+
+
   }
 
 
@@ -2660,7 +2684,7 @@ async function storeAndQueueConnectWork(
 ) {
   batchCount++
 
-  if (batchCount > S3DBConfig.s3dropbucket_maxbatcheswarning)
+  if (batchCount > S3DBConfig.s3dropbucket_maxbatcheswarning && batchCount % 100 === 0 )
     S3DB_Logging("info", "", `Warning: Updates from the S3 Object(${s3Key}) are exceeding(${batchCount}) the Warning Limit of ${S3DBConfig.s3dropbucket_maxbatcheswarning} Batches per Object.`)
 
   
@@ -3091,17 +3115,6 @@ function convertJSONToXML_DBUpdates(updates: object[], config: CustomerConfig) {
 }
 
 async function putToFirehose(chunks: object[], key: string, cust: string) {
-  const client = new FirehoseClient()
-
-  // S3DropBucket_Aggregator
-  // S3DropBucket_Log
-
-  //let fireHoseStream = "S3DBAggregator"
-  let fireHoseStream = "S3DropBucket_Aggregator"
-  //let fireHoseStream = S3DBConfig.S3DropBucketFirehoseStream
-
-  //Future - Logging possibilities - aggregate log messages before writing to S3 
-  if (cust === "S3DropBucket_Logs_") fireHoseStream = "S3DropBucket_Log"
 
   let putFirehoseResp: object = {}
 
@@ -3112,22 +3125,18 @@ async function putToFirehose(chunks: object[], key: string, cust: string) {
       recs++
       let jo = chunks[j]
 
-      debugger
-      
-      if (cust !== "S3DropBucket_Log_")
       jo = Object.assign(jo, { Customer: cust })
       const fd = Buffer.from(JSON.stringify(jo), "utf-8")
-
-debugger
       
       const fp = {
-        DeliveryStreamName: fireHoseStream,
+        DeliveryStreamName: S3DBConfig.s3dropbucket_firehosestream,
         Record: {
           Data: fd,
         },
       } as PutRecordCommandInput
 
       const fireCommand = new PutRecordCommand(fp)
+
       let firehosePutResult: object
 
       try
@@ -3136,13 +3145,12 @@ debugger
           .send(fireCommand)
           .then((res: PutRecordCommandOutput) => {
 
-            //if (fireHoseStream !== "S3DropBucket_Log") {    //Future Logging choice   
-
-            S3DB_Logging("info", "922", `Inbound Update (${key}) Put to Firehose Aggregator  - \n${fd.toString()} \nResult: ${JSON.stringify(res)} `)
-            S3DB_Logging("info", "942", `Inbound Update (${key}) Put to Firehose Aggregator \nResult: ${JSON.stringify(res)} `)
-
+            S3DB_Logging("info", "922", `Inbound Update (${key}) Put to Firehose Aggregator - \n${fd.toString()} Full Result: ${JSON.stringify(res)} `)
+            S3DB_Logging("info", "942", `Inbound Update (${key}) Put to Firehose Aggregator \nResult: ${JSON.stringify(res.$metadata.httpStatusCode)} `)
+            
             if (res.$metadata.httpStatusCode === 200)
             {
+
               firehosePutResult = {
                 ...firehosePutResult,
                 PutToFireHoseAggregatorResult: `${res.$metadata.httpStatusCode}`,
@@ -3158,11 +3166,12 @@ debugger
                 PutToFireHoseAggregatorResult: `UnSuccessful Put to Firehose Aggregator for ${key} \n ${JSON.stringify(res)} `,
               }
             }
-            //}
+            
             return firehosePutResult
+
           })
           .catch((e) => {
-            S3DB_Logging("exception", "", `Exception - Put to Firehose Aggregator(Promise - promise catch) for ${key} \n${e} `)
+            S3DB_Logging("exception", "", `Exception - Put to Firehose Aggregator (promise catch) for ${key} \n${e} `)
 
             firehosePutResult = {
               ...firehosePutResult,
@@ -3173,15 +3182,18 @@ debugger
           })
       } catch (e)
       {
-        S3DB_Logging("exception", "", `Exception - PutToFirehose \n${e} `)
+        S3DB_Logging("exception", "", `Exception - PutToFirehose (catch) \n${e} `)
       }
     }
 
     return putFirehoseResp
   } catch (e)
   {
-    S3DB_Logging("exception", "", `Exception - Put to Firehose Aggregator(try-catch) for ${key} \n${e} `)
+    S3DB_Logging("exception", "", `Exception - Put to Firehose Aggregator (try-catch) for ${key} \n${e} `)
   }
+
+
+
 }
 
 
@@ -3345,7 +3357,6 @@ async function addWorkToSQSWorkQueue(
 function transforms(updates: object[], config: CustomerConfig) {
   //Apply Transforms
 
-  //Clorox/Kingsford Weather Data
   //Add dateday column
 
   // Prep to add transform in Config file:
@@ -3362,7 +3373,6 @@ function transforms(updates: object[], config: CustomerConfig) {
   try
   {
     //ToDo: Fix: refactor this out of Kingsford specific, config based 
-    //if (config.customer.toLowerCase().indexOf("kingsfordweather_") > -1 || config.customer.toLowerCase().indexOf("cloroxweather_") > -1)
     if (config.transforms.methods.daydate && config.transforms.methods.daydate !== "")
       {
       const ddColumn: string = config.transforms.methods.daydate ?? 'datetime' 
@@ -3377,8 +3387,6 @@ function transforms(updates: object[], config: CustomerConfig) {
         "Friday",
         "Saturday",
       ]
-
-    debugger 
 
       let d: string = ''
       for (const jo of updates)
@@ -3403,9 +3411,9 @@ function transforms(updates: object[], config: CustomerConfig) {
       }
       if (t.length !== updates.length)
       {
-        S3DB_Logging("error", "933", `Error - Transform - Applying Clorox Custom Transform returns fewer records (${t.length}) than initial set ${updates.length}`)
+        S3DB_Logging("error", "933", `Error - Transform - Applying DateDay Transform returns fewer records (${t.length}) than initial set ${updates.length}`)
         throw new Error(
-          `Error - Transform - Applying Clorox Custom Transform returns fewer records (${t.length}) than initial set ${updates.length}`
+          `Error - Transform - Applying DateDay Transform returns fewer records (${t.length}) than initial set ${updates.length}`
         )
       } else updates = t
 
