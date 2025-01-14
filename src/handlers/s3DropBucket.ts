@@ -417,10 +417,9 @@ testS3Bucket = "s3dropbucket-configs"
 //testS3Key = "TestData/alerusrepsignature_advisors.json"
 //testS3Key = "TestData/alerusreassignrepsignature_advisors.json"
 //testS3Key = "TestData/KingsfordWeather_00210.csv"
-//testS3Key = "TestData/KingsfordWeather_00211.csv"
-//testS3Key = "TestData/KingsfordWeather_00212.csv"
+testS3Key = "TestData/KingsfordWeather_00211.csv"
 //testS3Key = "TestData/MasterCustomer_Sample1.json"
-testS3Key = "TestData/KingsfordWeather_S3DropBucket_Aggregator-10-2025-01-09-19-29-39-da334f11-53a4-31cc-8c9f-8b417725560b.json"
+//testS3Key = "TestData/KingsfordWeather_S3DropBucket_Aggregator-10-2025-01-09-19-29-39-da334f11-53a4-31cc-8c9f-8b417725560b.json"
 
 
 let fhi: number = 0
@@ -630,6 +629,8 @@ export const s3DropBucketHandler: Handler = async (
           S3DB_Logging("info", "503", `Completed processing all records of the S3 Object ${key} \neTag: ${et}. \nStatus: ${streamRes.OnEndRecordStatus}`
           )
           
+          debugger
+
           //Don't delete the test data
           if (localTesting)
           {
@@ -637,6 +638,8 @@ export const s3DropBucketHandler: Handler = async (
             return streamRes
           }
 
+
+          
           if (
             streamRes?.PutToFireHoseAggregatorResult === "200" ||
             (streamRes.OnEndStreamEndResult.StoreAndQueueWorkResult?.AddWorkToS3WorkBucketResults?.S3ProcessBucketResult === "200" &&
@@ -661,12 +664,11 @@ export const s3DropBucketHandler: Handler = async (
                 )
               } else
               {
-                S3DB_Logging("info", "504", `Processing Successful, Delete of ${key} Successful (Result ${delResultCode}).`
-                )
                 streamRes = {
                   ...streamRes,
                   DeleteResult: `Successful Delete of ${key}  (Result ${JSON.stringify(delResultCode)})`
                 }
+                S3DB_Logging("info", "504", `Processing Successful, Delete of ${key} Successful (Result ${delResultCode}).`)
               }
             } catch (e)
             {
@@ -1293,7 +1295,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
   // concurrency allocated to your Amazon SQS event source mapping.Lambda continues to retry the message until
   // the message's timestamp exceeds your queue's visibility timeout, at which point Lambda drops the message.
 
-  let custconfig: CustomerConfig
+  let custconfig: CustomerConfig = customersConfig
 
   let postResult: string = "false"
 
@@ -1379,10 +1381,20 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
     S3DB_Logging("info", "507", `Start Processing ${s3dbQM.workKey} off Work Queue. `)
     
     S3DB_Logging("info", "911", `Start Processing Work Item: SQS Event: \n${JSON.stringify(q)}`)
+ 
+    //try
+    //{
 
-    custconfig = await getFormatCustomerConfig(s3dbQM.custconfig.customer) as CustomerConfig
+    //} catch (e)
+    //{
+    //  S3DB_Logging("exception", "", `Exception - Retrieving Customer Config for Work Queue Processing (work file: ${s3dbQM.workKey} \n${e}} \n${JSON.stringify(s3dbQM)}`)
+    //}
 
-    try {
+   try
+    {
+     custconfig = await getFormatCustomerConfig(s3dbQM.custconfig.customer) as CustomerConfig
+     
+
       const work = await getS3Work(s3dbQM.workKey, S3DBConfig.s3dropbucket_workbucket)
 
       if (work.length > 0) {
