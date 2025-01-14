@@ -608,6 +608,7 @@ export const s3DropBucketHandler: Handler = async (
 
     batchCount = 0
     recs = 0
+    let streamRes = ProcessS3ObjectStreamResolution 
 
     try
     {
@@ -617,6 +618,8 @@ export const s3DropBucketHandler: Handler = async (
         customersConfig
       )
         .then(async (streamRes) => {
+
+          
           let delResultCode
           //let streamResults = ProcessS3ObjectStreamResolution
 
@@ -638,12 +641,20 @@ export const s3DropBucketHandler: Handler = async (
             return streamRes
           }
 
+          //check object to assure no reference errors as the results either came through PutFirehose or Stream so 
+          // all of the object may not be filled in,
+          //ToDo: refactor ProcessS3ObjectStreamResolution to dynamically add status sections rather than presets
 
+         if (typeof streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult === undefined)
+            streamRes.OnEndStreamEndResult = ProcessS3ObjectStreamResolution.OnEndStreamEndResult
+
+          if (typeof streamRes?.PutToFireHoseAggregatorResult === "undefined") 
+            streamRes.PutToFireHoseAggregatorResult = ProcessS3ObjectStreamResolution.PutToFireHoseAggregatorResult
           
           if (
             streamRes?.PutToFireHoseAggregatorResult === "200" ||
-            (streamRes.OnEndStreamEndResult.StoreAndQueueWorkResult?.AddWorkToS3WorkBucketResults?.S3ProcessBucketResult === "200" &&
-              streamRes.OnEndStreamEndResult.StoreAndQueueWorkResult?.AddWorkToSQSWorkQueueResults?.SQSWriteResult === "200")
+            (streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToS3WorkBucketResults?.S3ProcessBucketResult === "200" &&
+              streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToSQSWorkQueueResults?.SQSWriteResult === "200")
           )
           {
             try
