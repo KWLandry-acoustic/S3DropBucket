@@ -2631,7 +2631,7 @@ async function packageUpdates(workSet: object[], key: string, custConfig: Custom
       }
     }
     
-    S3DB_Logging("info", "943", `Completed processing ${key} (iter: ${iter}) \n${sqwResult}`)
+    S3DB_Logging("info", "943", `Completed processing ${key} (iter: ${iter}) \n${JSON.stringify(sqwResult)}`)
 
     return sqwResult = {
       ...sqwResult,
@@ -3771,19 +3771,18 @@ export async function getAccessToken(config: CustomerConfig) {
         },
       }
     ).then(async (r) => {
+
+      if (r.status != 200)
+      {
+        S3DB_Logging("error", "900", `Problem retrieving Access Token (${r.status} - ${r.statusText}) Error: ${JSON.stringify(r)}`)
+        throw new Error(
+          `Problem retrieving Access Token(${r.status} - ${r.statusText}) Error: ${JSON.stringify(r)}`
+        )
+      }
+
       return await r.json() as RatResp
   })
 
-    //const ratResp = (await rat.json()) as Response
-
-    if (rat.status != 200) {
-
-      S3DB_Logging("error", "900", `Problem retrieving Access Token (${rat.status}) Error: ${rat.error} \nDescription: ${rat.error_description}`)
-
-      throw new Error(
-        `Problem - Retrieving Access Token:   ${rat.status} - ${rat.error}  - \n${rat.error_description}`
-      )
-    }
     const accessToken = rat.access_token
     return { accessToken }.accessToken
   } catch (e)
