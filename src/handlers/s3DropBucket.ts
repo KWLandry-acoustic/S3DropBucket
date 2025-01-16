@@ -89,6 +89,7 @@ import {Ajv} from "ajv"
 import sftpClient, {ListFilterFunction} from "ssh2-sftp-client"
 
 
+
 //import {type sftpClientOptions} from "ssh2-sftp-client/lib/typescript/sftp-client"
 //import {type sftpClientError} from "ssh2-sftp-client/lib/typescript/sftp-client"
 //import {type sftpClientEvent} from "ssh2-sftp-client/lib/typescript/sftp-client"
@@ -219,7 +220,7 @@ let customersConfig: CustomerConfig = {
     }
   } 
 
-export interface AccessResp {
+export interface AccessRequest {
   access_token: string
   token_type: string
   refresh_token: string
@@ -370,7 +371,7 @@ let ProcessS3ObjectStreamResolution: ProcessS3ObjectStreamResult = {
   PutToFireHoseException: "",
   OnEnd_PutToFireHoseAggregator: "",
   DeleteResult: ""
-} as unknown as ProcessS3ObjectStreamResult
+} as ProcessS3ObjectStreamResult
 
 
 const sqsBatchFail: SQSBatchItemFails = {
@@ -399,8 +400,6 @@ testS3Bucket = "s3dropbucket-configs"
 // testS3Key = "TestData/pura_2024_02_25T00_00_00_090Z.json"
 
 //testS3Key = "TestData/pura_S3DropBucket_Aggregator-8-2024-03-23-09-23-55-123cb0f9-9552-3303-a451-a65dca81d3c4_json_update_53_99.xml"
-//testS3Key = "TestData/alerusrepsignature_sampleformatted_json_update_1_1.xml"
-//testS3Key = "TestData/alerusrepsignature_advisors_2_json_update-3c74bfb2-1997-4653-bd8e-73bf030b4f2d_26_14.xml"
 //  Core - Key Set of Test Datasets
 //testS3Key = "TestData/cloroxweather_99706.csv"
 //testS3Key = "TestData/pura_S3DropBucket_Aggregator-8-2024-03-19-16-42-48-46e884aa-8c6a-3ff9-8d32-c329395cf311.json"
@@ -414,15 +413,14 @@ testS3Bucket = "s3dropbucket-configs"
 //testS3Key = "TestData/Funding_Circle_Limited_CampaignDatabase1_2024_11_28T22_16_03_400Z_json-update-1-1-0a147575-2123-44ff-a7bf-d12b0a0d839f.xml"
 //testS3Key = "TestData/Funding_Circle_Limited_CampaignRelationalTable1_2024_10_08T10_16_49_700Z.json"
 //testS3Key = "TestData/Funding_Circle_Limited_CampaignDatabase1_2024_10_08T09_52_13_903Z.json"
+
 //testS3Key = "TestData/alerusrepsignature_advisors.json"
 //testS3Key = "TestData/alerusreassignrepsignature_advisors.json"
 //testS3Key = "TestData/KingsfordWeather_00210.csv"
-testS3Key = "TestData/KingsfordWeather_00211.csv"
+//testS3Key = "TestData/KingsfordWeather_00211.csv"
 //testS3Key = "TestData/MasterCustomer_Sample1.json"
-//testS3Key = "TestData/KingsfordWeather_S3DropBucket_Aggregator-10-2025-01-09-19-29-39-da334f11-53a4-31cc-8c9f-8b417725560b.json"
+testS3Key = "TestData/KingsfordWeather_S3DropBucket_Aggregator-10-2025-01-09-19-29-39-da334f11-53a4-31cc-8c9f-8b417725560b.json"
 
-
-let fhi: number = 0
 
 /**
  * A Lambda function to process the Event payload received from S3.
@@ -436,6 +434,35 @@ export const s3DropBucketHandler: Handler = async (
   //Ignore Aggregation Error Files created by FireHose process
   if (event.Records[0].s3.object.key.indexOf("AggregationError") > -1) return ""
 
+  //If Local Testing - set up to pull an S3 Object and so avoid the not-found error
+  if (
+    typeof event.Records[0].s3.object.key !== "undefined" &&
+    event.Records[0].s3.object.key === "devtest.csv"
+  )
+  {
+    if (
+      testS3Key !== undefined &&
+      testS3Key !== null &&
+      testS3Bucket !== undefined &&
+      testS3Bucket !== null
+    )
+    {
+      event.Records[0].s3.object.key = testS3Key
+      event.Records[0].s3.bucket.name = testS3Bucket
+    } else
+    {
+      event.Records[0].s3.object.key =
+        (await getAnS3ObjectforTesting(event.Records[0].s3.bucket.name)) ?? ""
+    }
+    localTesting = true
+  } else
+  {
+    testS3Key = ""
+    testS3Bucket = ""
+    localTesting = false
+  }
+
+  
 
   if (process.env.s3DropBucketRegion?.length ?? 0 > 6)
     s3 = new S3Client({region: process.env.s3DropBucketRegion})
@@ -468,35 +495,6 @@ export const s3DropBucketHandler: Handler = async (
 
 
   
-
-  //When Local Testing - pull an S3 Object and so avoid the not-found error
-  if (
-    !event.Records[0].s3.object.key ||
-    event.Records[0].s3.object.key === "devtest.csv"
-  )
-  {
-    if (
-      testS3Key !== undefined &&
-      testS3Key !== null &&
-      testS3Bucket !== undefined &&
-      testS3Bucket !== null
-    )
-    {
-      event.Records[0].s3.object.key = testS3Key
-      event.Records[0].s3.bucket.name = testS3Bucket
-    } else
-    {
-      event.Records[0].s3.object.key =
-        (await getAnS3ObjectforTesting(event.Records[0].s3.bucket.name)) ?? ""
-    }
-    localTesting = true
-  } else
-  {
-    testS3Key = ""
-    testS3Bucket = ""
-    localTesting = false
-  }
-
   //if (S3DBConfig.S3DropBucketPurgeCount > 0) {
   //  console.warn(
   //    `Purge Requested, Only action will be to Purge ${S3DBConfig.S3DropBucketPurge} of ${S3DBConfig.S3DropBucketPurgeCount} Records. `
@@ -619,12 +617,7 @@ export const s3DropBucketHandler: Handler = async (
       )
         .then(async (streamRes) => {
 
-          
           let delResultCode
-          //let streamResults = ProcessS3ObjectStreamResolution
-
-          //streamResults.Key = key
-          //streamResults.Processed = res.OnEndRecordStatus
           
           streamRes.Key = key
           streamRes.Processed = streamRes.OnEndRecordStatus
@@ -632,7 +625,6 @@ export const s3DropBucketHandler: Handler = async (
           S3DB_Logging("info", "503", `Completed processing all records of the S3 Object ${key} \neTag: ${et}. \nStatus: ${streamRes.OnEndRecordStatus}`
           )
           
-          debugger
 
           //Don't delete the test data
           if (localTesting)
@@ -779,11 +771,11 @@ export function S3DB_Logging(level: string, index: string,  msg:string) {
   const li = `_${index},`
 
   if (
-    (selectiveDebug.indexOf(li) > -1 || index === "" || process.env.S3DropBucketLogLevel?.toLowerCase() === 'all') &&
-    process.env.S3DropBucketLogLevel?.toLowerCase() !== 'none'
+    (selectiveDebug.indexOf(li) > -1 || index === "" || process.env.S3DropBucket_LogLevel?.toLowerCase() === 'all') &&
+    process.env.S3DropBucket_LogLevel?.toLowerCase() !== 'none'
   )
   {
-    if (process.env.S3DropBucketLogLevel?.toLowerCase() === 'all') index = `(LOG ALL-${index})`
+    if (process.env.S3DropBucket_LogLevel?.toLowerCase() === 'all') index = `(LOG ALL-${index})`
 
     if (level.toLowerCase() === "info")  console.info(`S3DBLog-Info ${index}: ${msg} `)
     if (level.toLowerCase() === "warn")  console.warn(`S3DBLog-Warning ${index}: ${msg} `)
@@ -994,17 +986,18 @@ async function processS3ObjectContentStream(
       chunks = []
       batchCount = 0
       recs = 0
+      let iter = 0 
       
       let packageResult = {} as StoreAndQueueWorkResult
       
       await new Promise((resolve, reject) => {
         s3ContentReadableStream
           .on("error", async function (err: string) {
-            const errMessage = `An error has stopped Content Parsing at record ${recs++} for s3 object ${key}.\n${err} \n${chunks}`
+            const errMessage = `An error has stopped Content Parsing at record ${recs} for s3 object ${key}.\n${err} \n${chunks}`
             S3DB_Logging("error", "909", errMessage)
-            chunks = []
-            batchCount = 0
-            recs = 0
+            //chunks = []
+            //batchCount = 0
+            //recs = 0
 
             streamResult = {
               ...streamResult,
@@ -1032,31 +1025,33 @@ async function processS3ObjectContentStream(
                 key.toLowerCase().indexOf("aggregat") < 0 && recs > custConfig.updatemaxrows
               )
               {
-                S3DB_Logging("error", "515", `The number of Updates in this batch (${recs}) Exceeds Max Row Updates allowed in the Customers Config (${custConfig.updatemaxrows}).  ${key} will not be deleted from ${S3DBConfig.s3dropbucket} to allow for review and possible restaging.`)
+                S3DB_Logging("warn", "515", `The number of Updates in this batch (${recs}) from ${key} Exceeds Max Row Updates allowed in the Customers Config (${custConfig.updatemaxrows}). Review data file for unexpected data or update Customer Config. `)
                 
-                throw new Error(
-                  `The number of Updates in this batch (${recs}) Exceeds Max Row Updates allowed in the Customers Config (${custConfig.updatemaxrows}).  ${key} will not be deleted from ${S3DBConfig.s3dropbucket} to allow for review and possible restaging.`
-                )
+                //throw new Error(
+                //  `The number of Updates in this batch (${recs}) Exceeds Max Row Updates allowed in the Customers Config (${custConfig.updatemaxrows}).  ${key} will not be deleted from ${S3DBConfig.s3dropbucket} to allow for review and possible restaging.`
+                //)
               }
             
-              S3DB_Logging("info", "913", `S3ContentStream OnData - A Batch of Updates (${batchCount} of ${Object.values(s3Chunk).length}) has been read from ${key}`)
+
+            iter++
+            S3DB_Logging("info", "913", `S3ContentStream OnData (iter: ${iter}) - A Chunk or Line from ${key} has been read. Records previously processed: ${recs}`)
 
               try
               {
                 const oa = s3Chunk.value
 
-                //What's possible to come through here 
+                //What JSON is possible to come through here:
                 //  {} a single Object - Pura
                 //  [{},{},{}] An Array of Objects - Alerus
-                //  A list of Objects - (Aggregated files) Line delimited
+                //  An Array of Line Delimited Objects - (Firehose Aggregated files)
                 //      [{}
                 //      {}
                 //       ...
                 //      {}]
-                // An array of Strings (CSV Parsed)
+                // An array of Strings (when CSV Parsing creates the JSON)
                 //  [{"key1":"value1","key2":"value2"},{"key1":"value1","key2":"value2"},...]
                 //
-                //Build a consistent Object of an Array of Objects
+                //Next, Build a consistent Object of an Array of Objects
                 // [{},{},{},...]
 
                 if (Array.isArray(oa))
@@ -1085,17 +1080,22 @@ async function processS3ObjectContentStream(
                 }
               }
 
-            //At each 99 updates, package them up, if there are fewer than 99 then OnEnd will pick up the remainder. 
+            //At each 99 updates, package them up, if there are fewer than 99 then "OnEnd" will pick up the remainder. 
               try 
               {
-                //Update files with Singular updates per file do not reach 99 updates in a single file,
-                // these will fall through to the Stream.OnEnd processing.
-                //Aggregate(d) Files with Multiple updates per file can have > 99 updates in each file so
-                //  those will need to be chunked up into 99 updates each and stored as Work files.
-
-                while (chunks.length > 98)  
+                
+                if (chunks.length > 98)
                 {
-                  packageResult = await packageUpdates(chunks, key, custConfig) as unknown as StoreAndQueueWorkResult
+                  
+                  recs += chunks.length
+                  batchCount++
+
+                  S3DB_Logging("info", "938", `S3ContentStream OnData - A Batch (${batchCount}) of Updates from ${key} is now being sent to Packaging. Previously processed ${recs}`)
+                  
+                  const updates = chunks
+                  chunks = []
+
+                  packageResult = await packageUpdates(updates, key, custConfig, iter) as StoreAndQueueWorkResult
 
                   streamResult = {
                     ...streamResult,
@@ -1118,6 +1118,7 @@ async function processS3ObjectContentStream(
           //File completed streaming, any updates left will be processed - Packaged 
           .on("end", async function () {
 
+            
             if (recs < 1 && chunks.length < 1)      //Ooops, We got here without finding/processing any data 
             {
               S3DB_Logging("exception", "", `Stream Exception - No records returned from parsing file. Check the contents of the file and that the file extension and file format matches the configured file type(${custConfig.format}).`)
@@ -1131,40 +1132,45 @@ async function processS3ObjectContentStream(
 
               return streamResult
             }
-
-            batchCount += chunks.length
             
-            //Ok, so there's work, so Next Process is to iterate through each update in the payload and Queue the Work up,
-            // or, if this is a Small Singlular Update file, Send to Aggregator to create larger Update files to improve Campaign Update performance.
             try     //Overall Try/Catch for On-End processing
             {
-              
+              recs += chunks.length
+              batchCount++
+              iter++
               // If there are Chunks to process (and there likely will be), send to Packaging
               // Create a Work file and Queue entry for Processing to Campaign / Connect
 
-              
-              if ( (chunks.length > 0 && custConfig.updates.toLowerCase() === "multiple") ||
-                key.toLowerCase().indexOf("aggregat") > 0 
-              )
+              //Chunks has been populated in OnData, so when OnEnd hits it contains all the data leftover 
+              if (chunks.length > 0 )  //Should be the case but may not be
               {
-                packageResult = await packageUpdates(chunks, key, custConfig) 
+
+                const updates = chunks
+                chunks = []
+
+                packageResult = await packageUpdates(updates, key, custConfig, iter) 
                   .then((res) => {
                     
-                  streamResult = {      
+                    streamResult = {      
                   ...streamResult,
                   OnEndStreamEndResult: {StoreAndQueueWorkResult: packageResult}
-                }
-                  return res as StoreAndQueueWorkResult
+                  }
+
+                    return res as StoreAndQueueWorkResult
+                    
                 })
               }
-              
             } catch (e)    //Overall Try/Catch for On-End processing
             {
+              debugger 
               const sErr = `Exception - ReadStream OnEnd Processing - \n${e} `
               S3DB_Logging("exception", "", sErr)
               return {...streamResult, OnEndStreamResult: sErr}
             }
             
+            //
+            //wrap up all OnEnd processing 
+            //
             const streamEndResult = `S3 Content Stream Ended for ${key}.Processed ${recs} records as ${batchCount} batches.`
 
             streamResult = {
@@ -1173,12 +1179,7 @@ async function processS3ObjectContentStream(
               OnEndRecordStatus: `Processed ${recs} records as ${batchCount} batches.`
             }
           
-            
               S3DB_Logging("info", "902", `Content Stream OnEnd for (${key}) - Store and Queue Work of ${batchCount} Batches of ${recs} records - Stream Result: \n${JSON.stringify(streamResult)} `)
-            
-              //chunks = []
-              //batchCount = 0
-              //recs = 0
 
               resolve({...streamResult})
 
@@ -1907,7 +1908,7 @@ async function getValidateS3DropBucketConfig() {
       throw new Error(
         `S3DropBucket Config invalid definition: missing LogLevel.`
       )
-    } else process.env.s3dropbucketloglevel = s3dbc.s3dropbucket_loglevel
+    } else process.env.s3dropbucket_loglevel = s3dbc.s3dropbucket_loglevel
 
 
     if (!s3dbc.s3dropbucket_selectivelogging || s3dbc.s3dropbucket_selectivelogging === "")
@@ -2554,7 +2555,7 @@ async function validateCustomerConfig(config: CustomerConfig) {
   if (!config.transforms.jsonmap)
   {
     const tmpMap: { [key: string]: string } = {}
-    const jm = config.transforms.jsonmap as unknown as {[key: string]: string}
+    const jm = config.transforms.jsonmap as {[key: string]: string}
     for (const m in jm) {
       try {
         const p = jm[m]
@@ -2571,23 +2572,21 @@ async function validateCustomerConfig(config: CustomerConfig) {
   return config as CustomerConfig
 }
 
-async function packageUpdates(workSet: object[], key: string, custConfig: CustomerConfig
+async function packageUpdates(workSet: object[], key: string, custConfig: CustomerConfig, iter: number 
 ) {
-  
 
-//ToDo: what happened to workSet use?
-// likely because I globalized "chunks" 
-
-  let updates: object[] = []
   let sqwResult: object = {}
 
-  //Check if the updates need to be Aggregated first. 
+  S3DB_Logging("info", "918", `Processing ${workSet.length} updates from ${key} on Iteration: ${iter}. \nBatch count so far ${batchCount}`)
+
+  //Check if these updates are to be Aggregated or this is an Aggregated file coming through. 
 
   // If there are Chunks to Process and Singular Updates is set, 
-  //    send to Aggregator (unless these are updates coming through from an Aggregated file).
-  if (key.toLowerCase().indexOf("s3dropbucket_aggregator") < 0 &&
-    custConfig.updates.toLowerCase() === "singular" &&
-    chunks.length > 0 )
+  //    send to Aggregator (unless these are updates coming through FROM an Aggregated file).
+  if (
+    key.toLowerCase().indexOf("s3dropbucket_aggregator") < 0 &&     //This is Not an Aggregator file
+    custConfig.updates.toLowerCase() === "singular" &&              //Cust Config notes these updates are to be Aggregated when coming through
+    workSet.length > 0)                                             //There are Updates to be processed 
   {
 
     let firehoseResults = {}
@@ -2603,9 +2602,10 @@ async function packageUpdates(workSet: object[], key: string, custConfig: Custom
       //}
 
       firehoseResults = await putToFirehose(
-        chunks,
+        workSet,
         key,
-        custConfig.customer
+        custConfig.customer,
+        iter
       ).then((res) => {
         const fRes = res as {
           OnEnd_PutToFireHoseAggregator: string
@@ -2617,81 +2617,81 @@ async function packageUpdates(workSet: object[], key: string, custConfig: Custom
           ...sqwResult,
           ...fRes,
         }
+         
         return sqwResult
+      
       })
     } catch (e)    //Interior try/catch for firehose processing
     {
-      S3DB_Logging("exception", "", `Exception - PutToFirehose - \n${e} `)
+      S3DB_Logging("exception", "", `Exception - PutToFirehose (iter: ${iter}) - \n${e} `)
       debugger
       sqwResult = {
         ...sqwResult,
         PutToFireHoseException: `Exception - PutToFirehose \n${e} `,
       }
-      return sqwResult
     }
-    //If the above try/catch does not throw an exception, then the firehose processing was successful.
-    //  We can now clear out the Chunks array.
-    chunks = []
     
-    S3DB_Logging("info" , "943", `Completed processing ${key} \n${sqwResult}`)
+    S3DB_Logging("info", "943", `Completed processing ${key} (iter: ${iter}) \n${sqwResult}`)
 
     return sqwResult = {
       ...sqwResult,
       PutToFireHoseResults: `PutToFirehose Results: \n${firehoseResults} `,
     }
 
-
-  }
-
-
-  //Ok, we've got Chunks to Package, either from a common file or from an "Aggregated" file. 
-
-  try {
-    //Process everything out of the Global var Chunks array
-    //Need to pull that scope down to something a little more local
-    while (chunks.length > 0) {
-      updates = [] as object[]
-      //Stand out 100 updates at a time, 
-      while (chunks.length > 0 && updates.length < 100) {
-        const c = chunks.pop() ?? {}
-        recs++
-        updates.push(c)
-      }
-      
-      if (custConfig.targetupdate.toLowerCase() === "connect")
-        sqwResult = await storeAndQueueConnectWork(updates, key, custConfig).then(
-          (res) => {
-            //console.info( `Debug Await StoreAndQueueWork Result: ${ JSON.stringify( res ) }` )
-
-            return res
-          }
-        )
-      else if (custConfig.targetupdate.toLowerCase() === "campaign")
-      {
-
-        sqwResult = await storeAndQueueCampaignWork(updates, key, custConfig).then(
-          (res) => {
-            //console.info( `Debug Await StoreAndQueueWork Result: ${ JSON.stringify( res ) }` )
-
-            return res
-          }
-        )
-      }
-      else throw new Error(`Target for Update does not match any Target: ${custConfig.targetupdate}`)
-
-      //console.info( `Debug sqwResult ${ JSON.stringify( sqwResult ) }` )
-    }
-
-    S3DB_Logging("info", "918", `PackageUpdates StoreAndQueueWork for ${key}. \nFor a total of ${recs} Updates in ${batchCount} Batches.  Result: \n${JSON.stringify(sqwResult)} `)
-  
-  } catch (e)
+  } else        //Based on outcome of If - Not Firehose Aggregator work so need to package to Connect or Campaign
   {
-    debugger
-    S3DB_Logging("exception", "", `Exception - packageUpdates for ${key} \n${e} `)
+    //Ok, work to Package is either from a "Multiple" updates Customer file or from an "Aggregated" file. 
+    let updates: object[] = []
 
-    sqwResult = {
-      ...sqwResult,
-      StoreQueueWorkException: `Exception - PackageUpdates StoreAndQueueWork for ${key} \nBatch ${batchCount} of ${recs} Updates. \n${e} `,
+    try
+    {
+      //Process everything passed, especially if there are more than 100 passed at one time, or fewer than 100. 
+      while (workSet.length > 0)
+      {
+        updates = [] as object[]
+        while (workSet.length > 0 && updates.length < 100)
+        {
+          const c = workSet.pop() ?? {}
+          //recs++
+          updates.push(c)
+        }
+      
+        //Ok, now send to appropriate staging for actually updating endpoint (Campaign or Connect)
+        if (custConfig.targetupdate.toLowerCase() === "connect")
+          sqwResult = await storeAndQueueConnectWork(updates, key, custConfig, iter).then(
+            (res) => {
+              //console.info( `Debug Await StoreAndQueueWork Result: ${ JSON.stringify( res ) }` )
+
+              return res
+            }
+          )
+        else if (custConfig.targetupdate.toLowerCase() === "campaign")
+        {
+
+          sqwResult = await storeAndQueueCampaignWork(updates, key, custConfig, iter).then(
+            (res) => {
+              //console.info( `Debug Await StoreAndQueueWork Result: ${ JSON.stringify( res ) }` )
+
+              return res
+            }
+          )
+        }
+        else throw new Error(`Target for Update does not match any Target: ${custConfig.targetupdate}`)
+
+        //console.info( `Debug sqwResult ${ JSON.stringify( sqwResult ) }` )
+      }
+
+      S3DB_Logging("info", "918", `PackageUpdates StoreAndQueueWork for ${key} (iter: ${iter}). \nFor a total of ${recs} Updates in ${batchCount} Batches.  Result: \n${JSON.stringify(sqwResult)} `)
+  
+    } catch (e)
+    {
+      debugger
+      S3DB_Logging("exception", "", `Exception - packageUpdates for ${key} (iter: ${iter}) \n${e} `)
+
+      sqwResult = {
+        ...sqwResult,
+        StoreQueueWorkException: `Exception - PackageUpdates StoreAndQueueWork for ${key} (iter: ${iter}) \nBatch ${batchCount} of ${recs} Updates. \n${e} `,
+      }
     }
   }
 
@@ -2703,12 +2703,13 @@ async function packageUpdates(workSet: object[], key: string, custConfig: Custom
 async function storeAndQueueConnectWork(
   updates: object[],
   s3Key: string,
-  custConfig: CustomerConfig
+  custConfig: CustomerConfig,
+  iter: number 
 ) {
   batchCount++
 
   if (batchCount > S3DBConfig.s3dropbucket_maxbatcheswarning && batchCount % 100 === 0 )
-    S3DB_Logging("info", "", `Warning: Updates from the S3 Object(${s3Key}) are exceeding(${batchCount}) the Warning Limit of ${S3DBConfig.s3dropbucket_maxbatcheswarning} Batches per Object.`)
+    S3DB_Logging("info", "", `Warning: Updates from the S3 Object(${s3Key}) (iter: ${iter}) are exceeding (${batchCount}) the Warning Limit of ${S3DBConfig.s3dropbucket_maxbatcheswarning} Batches per Object.`)
 
   
   const updateCount = updates.length
@@ -2726,7 +2727,7 @@ async function storeAndQueueConnectWork(
   }
 
   
-  S3DB_Logging("info", "800", `${JSON.stringify(updates)}, ${updateCount}`)
+  S3DB_Logging("info", "800", `${JSON.stringify(updates)}, ${updateCount} (iter: ${iter})`)
 
   let mutations
   ////DBKeyed, DBNonKeyed, Relational, ReferenceSet, CreateContacts, UpdateContacts, CreateAttributes
@@ -2885,12 +2886,13 @@ async function storeAndQueueConnectWork(
 async function storeAndQueueCampaignWork(
   updates: object[],
   s3Key: string,
-  config: CustomerConfig
+  config: CustomerConfig,
+  iter: number 
 ) {
   batchCount++
 
   if (batchCount > S3DBConfig.s3dropbucket_maxbatcheswarning)
-    S3DB_Logging("info", "", `Warning: Updates from the S3 Object(${s3Key}) are exceeding(${batchCount}) the Warning Limit of ${S3DBConfig.s3dropbucket_maxbatcheswarning} Batches per Object.`)
+    S3DB_Logging("info", "", `Warning: Updates from the S3 Object(${s3Key}) (iter: ${iter}) are exceeding(${batchCount}) the Warning Limit of ${S3DBConfig.s3dropbucket_maxbatcheswarning} Batches per Object.`)
 
   // throw new Error(`Updates from the S3 Object(${ s3Key }) Exceed(${ batch }) Safety Limit of 20 Batches of 99 Updates each.Exiting...`)
 
@@ -2919,6 +2921,7 @@ async function storeAndQueueCampaignWork(
     xmlRows = convertJSONToXML_RTUpdates(updates, config)
   }
 
+  //ToDo: refactor this above this function
   if (s3Key.indexOf("TestData") > -1) {
     //strip /testdata folder from key
     s3Key = s3Key.split("/").at(-1) ?? s3Key
@@ -2939,11 +2942,10 @@ async function storeAndQueueCampaignWork(
   //     selectiveLogging("error", "", `Recs Count ${recs} does not reflect Updates Count ${Object.values(updates).length} `)
   //}
 
-  S3DB_Logging("info", "911", `Queuing Work File ${key} for ${s3Key}. Batch ${batchCount} of ${updateCount} records)`)
+  S3DB_Logging("info", "911", `Queuing Work File ${key} for ${s3Key}. Batch ${batchCount} of ${updateCount} records (iter: ${iter})`)
 
   let addWorkToS3WorkBucketResult
   let addWorkToSQSWorkQueueResult
-  const v = ""
 
   try {
     addWorkToS3WorkBucketResult = await addWorkToS3WorkBucket(xmlRows, key)
@@ -2951,10 +2953,10 @@ async function storeAndQueueCampaignWork(
         return res //{"AddWorktoS3Results": res}
       })
       .catch((err) => {
-        S3DB_Logging("exception", "", `Exception - AddWorkToS3WorkBucket ${err}`)
+        S3DB_Logging("exception", "", `Exception - AddWorkToS3WorkBucket ${err} (iter: ${iter})`)
       })
   } catch (e) {
-    const sqwError = `Exception - StoreAndQueueWork Add work to S3 Bucket exception \n${e} `
+    const sqwError = `Exception - StoreAndQueueWork Add work (iter: ${iter}) to S3 Bucket exception \n${e} `
     S3DB_Logging("exception", "", sqwError)
     
     debugger
@@ -2972,7 +2974,6 @@ async function storeAndQueueCampaignWork(
     addWorkToSQSWorkQueueResult = await addWorkToSQSWorkQueue(
       config,
       key,
-      //v,
       batchCount,
       updates.length.toString(),
       marker
@@ -3013,7 +3014,7 @@ function convertJSONToXML_RTUpdates(updates: object[], config: CustomerConfig) {
   let r = 0
 
   for (const upd in updates) {
-    recs++
+    //recs++
 
     //const updAtts = JSON.parse( updates[ upd ] )
     const updAtts = updates[upd]
@@ -3054,7 +3055,7 @@ function convertJSONToXML_DBUpdates(updates: object[], config: CustomerConfig) {
 
   try {
     for ( const upd in updates) {
-      recs++
+      //recs++
       r++
 
       const updAtts = updates[upd]
@@ -3137,15 +3138,19 @@ function convertJSONToXML_DBUpdates(updates: object[], config: CustomerConfig) {
   return xmlRows
 }
 
-async function putToFirehose(chunks: object[], key: string, cust: string) {
+async function putToFirehose(chunks: object[], key: string, cust: string, iter: number ) {
 
   let putFirehoseResp: object = {}
 
+  const tu = chunks.length
+  let ut = 0
+
   try
   {
+
     for (const j in chunks)
     {
-      recs++
+      //recs++
       let jo = chunks[j]
 
       jo = Object.assign(jo, { Customer: cust })
@@ -3162,17 +3167,17 @@ async function putToFirehose(chunks: object[], key: string, cust: string) {
 
       let firehosePutResult: object
 
+      
       try
       {
         putFirehoseResp = await client
           .send(fireCommand)
           .then((res: PutRecordCommandOutput) => {
 
-            S3DB_Logging("info", "922", `Inbound Update (${key}) Put to Firehose Aggregator - \n${fd.toString()} Full Result: ${JSON.stringify(res)} `)
-            S3DB_Logging("info", "942", `Inbound Update (${key}) Put to Firehose Aggregator \nResult: ${JSON.stringify(res.$metadata.httpStatusCode)} `)
-            
+            S3DB_Logging("info", "922", `Inbound Update from ${key} - Put to Firehose Aggregator (iter: ${iter}) Detailed Result: \n${fd.toString()} \n\nFirehose Result: ${JSON.stringify(res)} `)
             if (res.$metadata.httpStatusCode === 200)
             {
+              ut++
 
               firehosePutResult = {
                 ...firehosePutResult,
@@ -3180,13 +3185,13 @@ async function putToFirehose(chunks: object[], key: string, cust: string) {
               }
               firehosePutResult = {
                 ...firehosePutResult,
-                OnEnd_PutToFireHoseAggregator: `Successful Put to Firehose Aggregator for ${key}.\n${JSON.stringify(res)} \n${res.RecordId} `,
+                OnEnd_PutToFireHoseAggregator: `Successful Put to Firehose Aggregator for ${key} (iter: ${iter}).\n${JSON.stringify(res)} \n${res.RecordId} `,
               }
             } else
             {
               firehosePutResult = {
                 ...firehosePutResult,
-                PutToFireHoseAggregatorResult: `UnSuccessful Put to Firehose Aggregator for ${key} \n ${JSON.stringify(res)} `,
+                PutToFireHoseAggregatorResult: `UnSuccessful Put to Firehose Aggregator for ${key} (iter: ${iter}) \n ${JSON.stringify(res)} `,
               }
             }
             
@@ -3194,29 +3199,31 @@ async function putToFirehose(chunks: object[], key: string, cust: string) {
 
           })
           .catch((e) => {
-            S3DB_Logging("exception", "", `Exception - Put to Firehose Aggregator (promise catch) for ${key} \n${e} `)
+            S3DB_Logging("exception", "", `Exception - Put to Firehose Aggregator (promise catch) (iter: ${iter}) for ${key} \n${e} `)
 
             firehosePutResult = {
               ...firehosePutResult,
-              PutToFireHoseException: `Exception - Put to Firehose Aggregator for ${key} \n${e} `,
+              PutToFireHoseException: `Exception - Put to Firehose Aggregator for ${key} (iter: ${iter}) \n${e} `,
             }
 
             return firehosePutResult
           })
       } catch (e)
       {
-        S3DB_Logging("exception", "", `Exception - PutToFirehose (catch) \n${e} `)
+        S3DB_Logging("exception", "", `Exception - PutToFirehose (catch) (iter: ${iter}) \n${e} `)
       }
     }
 
+if (tu === ut )S3DB_Logging("info", "942", `Put to Firehose Aggregator results for inbound Updates (iter: ${iter}) from ${key}. Successfully sent ${ut} of ${tu} updates to Aggregator.`)
+else S3DB_Logging("info", "942", `Put to Firehose Aggregator results for inbound Updates (iter: ${iter}) from ${key}.  Partially successful sending ${ut} of ${tu} updates to Aggregator.`)
+    
     return putFirehoseResp
   } catch (e)
   {
-    S3DB_Logging("exception", "", `Exception - Put to Firehose Aggregator (try-catch) for ${key} \n${e} `)
+    S3DB_Logging("exception", "", `Exception - Put to Firehose Aggregator (try-catch) for ${key} (iter: ${iter}) \n${e} `)
   }
 
-
-
+  //end of function
 }
 
 
@@ -3739,7 +3746,15 @@ async function deleteS3Object(s3ObjKey: string, bucket: string) {
 }
 
 export async function getAccessToken(config: CustomerConfig) {
-  try {
+  try
+  {
+    interface RatResp {
+      access_token: string,
+      status: number,
+      error: string,
+      error_description: string
+    }
+
     const rat = await fetch(
       `https://api-campaign-${config.region}-${config.pod}.goacoustic.com/oauth/token`,
       {
@@ -3755,22 +3770,21 @@ export async function getAccessToken(config: CustomerConfig) {
           "User-Agent": "S3DropBucket GetAccessToken",
         },
       }
-    )
+    ).then(async (r) => {
+      return await r.json() as RatResp
+  })
 
-    const ratResp = (await rat.json()) as AccessResp
+    //const ratResp = (await rat.json()) as Response
 
     if (rat.status != 200) {
-      const err = ratResp as unknown as {
-        error: string
-        error_description: string
-      }
-      S3DB_Logging("error", "900", `Problem retrieving Access Token (${rat.status}) Error: ${err.error} \nDescription: ${err.error_description}`)
+
+      S3DB_Logging("error", "900", `Problem retrieving Access Token (${rat.status}) Error: ${rat.error} \nDescription: ${rat.error_description}`)
 
       throw new Error(
-        `Problem - Retrieving Access Token:   ${rat.status} - ${err.error}  - \n${err.error_description}`
+        `Problem - Retrieving Access Token:   ${rat.status} - ${rat.error}  - \n${rat.error_description}`
       )
     }
-    const accessToken = ratResp.access_token
+    const accessToken = rat.access_token
     return { accessToken }.accessToken
   } catch (e)
   {
