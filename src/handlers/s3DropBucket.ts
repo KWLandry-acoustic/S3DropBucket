@@ -1098,7 +1098,7 @@ async function processS3ObjectContentStream(
             //At each 99 updates, package them up, if there are fewer than 99 then "OnEnd" will pick up the remainder. 
               try 
               {
-                S3DB_Logging("info", "", `Debug (OnData): ${chunksGlobal.length} ${batchCount}`) 
+                //S3DB_Logging("info", "", `Debug (OnData): ${chunksGlobal.length} ${batchCount}`) 
 
                 if (chunksGlobal.length > 99)
                 {
@@ -1159,7 +1159,7 @@ async function processS3ObjectContentStream(
               // Create a Work file and Queue entry for Processing to Campaign / Connect
 
               //ChunksGlobal has been populated in OnData, so when OnEnd hits it contains all the data leftover after OnData processing
-              S3DB_Logging("info", "", `Debug (OnEnd): ${chunksGlobal.length} ${batchCount}`) 
+              //S3DB_Logging("info", "", `Debug (OnEnd): ${chunksGlobal.length} ${batchCount}`) 
               
               //Need to keep an eye on arriving here with an array with more than 100 entries, more than 100 should be processed in OnData above.
               if (chunksGlobal.length > 0 )  //Should be the case but may not be
@@ -1178,7 +1178,7 @@ async function processS3ObjectContentStream(
                   batchCount++
                   
 
-                  S3DB_Logging("info", "", `Debug (OnEnd): While Loop: ${chunksGlobal.length} ${batchCount}`) 
+                  //S3DB_Logging("info", "", `Debug (OnEnd): While Loop: ${chunksGlobal.length} ${batchCount}`) 
 
 
                   debugger 
