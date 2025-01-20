@@ -415,8 +415,8 @@ testS3Bucket = "s3dropbucket-configs"
 //testS3Key = "TestData/Funding_Circle_Limited_CampaignDatabase1_2024_10_08T09_52_13_903Z.json"
 
 //testS3Key = "TestData/alerusrepsignature_advisors.json"
-testS3Key = "TestData/alerusreassignrepsignature_advisors.json"
-//testS3Key = "TestData/KingsfordWeather_00210.csv"
+//testS3Key = "TestData/alerusreassignrepsignature_advisors.json"
+testS3Key = "TestData/KingsfordWeather_00210.csv"
 //testS3Key = "TestData/KingsfordWeather_00211.csv"
 //testS3Key = "TestData/MasterCustomer_Sample1.json"
 //testS3Key = "TestData/KingsfordWeather_S3DropBucket_Aggregator-10-2025-01-09-19-29-39-da334f11-53a4-31cc-8c9f-8b417725560b.json"
@@ -1047,7 +1047,7 @@ async function processS3ObjectContentStream(
             
 
             iter++
-            S3DB_Logging("info", "913", `S3ContentStream OnData (iter: ${iter}) - A Chunk or Line from ${key} has been read. Records previously processed: ${recs}`)
+            S3DB_Logging("info", "913", `S3ContentStream OnData (File Stream Iter: ${iter}) - A Chunk or Line from ${key} has been read. Records previously processed: ${recs}`)
 
               try
               {
@@ -1094,7 +1094,7 @@ async function processS3ObjectContentStream(
                   OnDataReadStreamException: `Exception - First Catch - ReadStream-OnData Processing for ${key} \nBatch ${batchCount} of ${recs} Updates. \n${e} `
                 }
               }
-
+            //OnEnd gets the bulk of the data when files are moderate in size, for Large files OnData processes through multiple Read Chunks 
             //At each 99 updates, package them up, if there are fewer than 99 then "OnEnd" will pick up the remainder. 
               try 
               {
@@ -1109,8 +1109,11 @@ async function processS3ObjectContentStream(
                     const chunk = chunksGlobal.splice(0, 100)
                     updates.push(...chunk)
                     S3DB_Logging("info", "938", `S3ContentStream OnData - A Batch (${batchCount}) of Updates from ${key} is now being sent to Packaging. \nPreviously processed ${recs} records of the size of the data read of ${preserveArraySize} records.`)
-                    recs += updates.length
+                    recs += chunk.length
                     batchCount++
+                    
+                    debugger
+
                     packageResult = await packageUpdates(updates, key, custConfig, iter) as StoreAndQueueWorkResult
         
                     //ToDo: Refactor this status approach, need a way to preserve every Update status without storing volumes
@@ -1119,9 +1122,6 @@ async function processS3ObjectContentStream(
                       OnDataStoreAndQueueWorkResult: {StoreAndQueueWorkResult: packageResult}
                     }
                   }
-       
-                  chunksGlobal = []
-
                 }
               } catch (e)
               {
@@ -1158,13 +1158,15 @@ async function processS3ObjectContentStream(
               // If there are ChunksGlobal to process (and there likely will be), send to Packaging
               // Create a Work file and Queue entry for Processing to Campaign / Connect
 
-              //ChunksGlobal has been populated in OnData, so when OnEnd hits it contains all the data leftover 
+              //ChunksGlobal has been populated in OnData, so when OnEnd hits it contains all the data leftover after OnData processing
               S3DB_Logging("info", "", `Debug (OnEnd): ${chunksGlobal.length} ${batchCount}`) 
               
               //Need to keep an eye on arriving here with an array with more than 100 entries, more than 100 should be processed in OnData above.
               if (chunksGlobal.length > 0 )  //Should be the case but may not be
               {
-                const updates = chunksGlobal
+
+                //const updates = chunksGlobal
+                const updates = []
 
                 while (chunksGlobal.length > 0)
                 {
@@ -1172,8 +1174,14 @@ async function processS3ObjectContentStream(
                   updates.push(...chunk)
                   S3DB_Logging("info", "938", `S3ContentStream OnEnd - A Batch (${batchCount}) of Updates from ${key} is now being sent to Packaging. \nPreviously processed ${recs} records of the size of the data read of ${preserveArraySize} records.`)
 
-                  recs += updates.length
+                  recs += chunk.length
                   batchCount++
+                  
+
+                  S3DB_Logging("info", "", `Debug (OnEnd): While Loop: ${chunksGlobal.length} ${batchCount}`) 
+
+
+                  debugger 
 
                   //ToDo: Refactor this status approach, only getting the last, need a way to preserve every Update status without storing volumes
                   packageResult = await packageUpdates(updates, key, custConfig, iter)
@@ -1181,14 +1189,12 @@ async function processS3ObjectContentStream(
                       return res as StoreAndQueueWorkResult
                     })
                 }
-
-                chunksGlobal = []
-
               }
-                streamResult = {
-                  ...streamResult,
-                  OnEndStreamEndResult: {StoreAndQueueWorkResult: packageResult}
-                }
+                
+            streamResult = {
+              ...streamResult,
+              OnEndStreamEndResult: {StoreAndQueueWorkResult: packageResult}
+            }
 
             } catch (e)    //Overall Try/Catch for On-End processing
             {
@@ -2608,7 +2614,7 @@ async function packageUpdates(workSet: object[], key: string, custConfig: Custom
 
   let sqwResult: object = {}
 
-  S3DB_Logging("info", "918", `Processing ${workSet.length} updates from ${key} on Iteration: ${iter}. \nBatch count so far ${batchCount}`)
+  S3DB_Logging("info", "918", `Processing ${workSet.length} updates from ${key} (File Stream Iter: ${iter}). \nBatch count so far ${batchCount}`)
 
   //Check if these updates are to be Aggregated or this is an Aggregated file coming through. 
 
@@ -2654,7 +2660,7 @@ async function packageUpdates(workSet: object[], key: string, custConfig: Custom
       })
     } catch (e)    //Interior try/catch for firehose processing
     {
-      S3DB_Logging("exception", "", `Exception - PutToFirehose (iter: ${iter}) - \n${e} `)
+      S3DB_Logging("exception", "", `Exception - PutToFirehose (File Stream Iter: ${iter}) - \n${e} `)
       debugger
       sqwResult = {
         ...sqwResult,
@@ -2662,7 +2668,7 @@ async function packageUpdates(workSet: object[], key: string, custConfig: Custom
       }
     }
     
-    S3DB_Logging("info", "943", `Completed processing ${key} (iter: ${iter}) \n${JSON.stringify(sqwResult)}`)
+    S3DB_Logging("info", "943", `Completed processing ${key} (File Stream Iter: ${iter}) \n${JSON.stringify(sqwResult)}`)
 
     return sqwResult = {
       ...sqwResult,
@@ -2671,7 +2677,7 @@ async function packageUpdates(workSet: object[], key: string, custConfig: Custom
 
   } else        //Based on outcome of If - Not Firehose Aggregator work so need to package to Connect or Campaign
   {
-    //Ok, work to Package is either from a "Multiple" updates Customer file or from an "Aggregated" file. 
+    //Ok, the work to be Packaged is either from a "Multiple" updates Customer file or from an "Aggregated" file. 
     let updates: object[] = []
 
     try
@@ -2683,7 +2689,7 @@ async function packageUpdates(workSet: object[], key: string, custConfig: Custom
         while (workSet.length > 0 && updates.length < 100)
         {
           const c = workSet.pop() ?? {}
-          //recs++
+
           updates.push(c)
         }
       
@@ -2712,16 +2718,16 @@ async function packageUpdates(workSet: object[], key: string, custConfig: Custom
         //console.info( `Debug sqwResult ${ JSON.stringify( sqwResult ) }` )
       }
 
-      S3DB_Logging("info", "918", `PackageUpdates StoreAndQueueWork for ${key} (iter: ${iter}). \nFor a total of ${recs} Updates in ${batchCount} Batches.  Result: \n${JSON.stringify(sqwResult)} `)
+      S3DB_Logging("info", "918", `PackageUpdates StoreAndQueueWork for ${key} (File Stream Iter: ${iter}). \nFor a total of ${recs} Updates in ${batchCount} Batches.  Result: \n${JSON.stringify(sqwResult)} `)
   
     } catch (e)
     {
       debugger
-      S3DB_Logging("exception", "", `Exception - packageUpdates for ${key} (iter: ${iter}) \n${e} `)
+      S3DB_Logging("exception", "", `Exception - packageUpdates for ${key} (File Stream Iter: ${iter}) \n${e} `)
 
       sqwResult = {
         ...sqwResult,
-        StoreQueueWorkException: `Exception - PackageUpdates StoreAndQueueWork for ${key} (iter: ${iter}) \nBatch ${batchCount} of ${recs} Updates. \n${e} `,
+        StoreQueueWorkException: `Exception - PackageUpdates StoreAndQueueWork for ${key} (File Stream Iter: ${iter}) \nBatch ${batchCount} of ${recs} Updates. \n${e} `,
       }
     }
   }
@@ -2739,7 +2745,7 @@ async function storeAndQueueConnectWork(
 ) {
 
   if (batchCount > S3DBConfig.s3dropbucket_maxbatcheswarning && batchCount % 100 === 0 )
-    S3DB_Logging("info", "", `Warning: Updates from the S3 Object(${s3Key}) (iter: ${iter}) are exceeding (${batchCount}) the Warning Limit of ${S3DBConfig.s3dropbucket_maxbatcheswarning} Batches per Object.`)
+    S3DB_Logging("info", "", `Warning: Updates from the S3 Object(${s3Key}) (File Stream Iter: ${iter}) are exceeding (${batchCount}) the Warning Limit of ${S3DBConfig.s3dropbucket_maxbatcheswarning} Batches per Object.`)
 
   const updateCount = updates.length
 
@@ -2756,7 +2762,7 @@ async function storeAndQueueConnectWork(
   }
 
   
-  S3DB_Logging("info", "800", `${JSON.stringify(updates)}, ${updateCount} (iter: ${iter})`)
+  S3DB_Logging("info", "800", `${JSON.stringify(updates)}, ${updateCount} (File Stream Iter: ${iter})`)
 
   let mutations
   ////DBKeyed, DBNonKeyed, Relational, ReferenceSet, CreateContacts, UpdateContacts, CreateAttributes
@@ -2896,7 +2902,7 @@ async function storeAndQueueConnectWork(
     return {StoreQueueWorkException: sqwError, StoreS3WorkException: ""}
   }
 
-  S3DB_Logging("info", "915", `Results of Store and Queue of Updates (Connect): ${JSON.stringify(
+  S3DB_Logging("info", "915", `Results of Store to S3 Work Bucket and SQS Queue of Updates (Connect): ${JSON.stringify(
     addWorkToS3WorkBucketResult)} \n Add to Process Queue: ${JSON.stringify(addWorkToSQSWorkQueueResult)} `)
 
 
@@ -2920,7 +2926,7 @@ async function storeAndQueueCampaignWork(
 ) {  
 
   if (batchCount > S3DBConfig.s3dropbucket_maxbatcheswarning)
-    S3DB_Logging("info", "", `Warning: Updates from the S3 Object(${s3Key}) (iter: ${iter}) are exceeding(${batchCount}) the Warning Limit of ${S3DBConfig.s3dropbucket_maxbatcheswarning} Batches per Object.`)
+    S3DB_Logging("info", "", `Warning: Updates from the S3 Object(${s3Key}) (File Stream Iter: ${iter}) are exceeding(${batchCount}) the Warning Limit of ${S3DBConfig.s3dropbucket_maxbatcheswarning} Batches per Object.`)
 
   // throw new Error(`Updates from the S3 Object(${ s3Key }) Exceed(${ batch }) Safety Limit of 20 Batches of 99 Updates each.Exiting...`)
 
@@ -2970,7 +2976,7 @@ async function storeAndQueueCampaignWork(
   //     selectiveLogging("error", "", `Recs Count ${recs} does not reflect Updates Count ${Object.values(updates).length} `)
   //}
 
-  S3DB_Logging("info", "914", `Queuing Work File ${key} for ${s3Key}. Batch ${batchCount} of ${updateCount} records (iter: ${iter})`)
+  S3DB_Logging("info", "914", `Queuing Work File ${key} for ${s3Key}. Batch ${batchCount} of ${updateCount} records (File Stream Iter: ${iter})`)
 
   let addWorkToS3WorkBucketResult
   let addWorkToSQSWorkQueueResult
@@ -2981,10 +2987,10 @@ async function storeAndQueueCampaignWork(
         return res //{"AddWorktoS3Results": res}
       })
       .catch((err) => {
-        S3DB_Logging("exception", "", `Exception - AddWorkToS3WorkBucket ${err} (iter: ${iter})`)
+        S3DB_Logging("exception", "", `Exception - AddWorkToS3WorkBucket ${err} (File Stream Iter: ${iter})`)
       })
   } catch (e) {
-    const sqwError = `Exception - StoreAndQueueWork Add work (iter: ${iter}) to S3 Bucket exception \n${e} `
+    const sqwError = `Exception - StoreAndQueueWork Add work (File Stream Iter: ${iter}) to S3 Bucket exception \n${e} `
     S3DB_Logging("exception", "", sqwError)
     
     debugger
@@ -3020,8 +3026,8 @@ async function storeAndQueueCampaignWork(
     return { StoreQueueWorkException: sqwError, StoreS3WorkException: "" }
   }
 
-  S3DB_Logging("info", "915", `Results of Store and Queue of Updates (Campaign): ${JSON.stringify(
-    addWorkToS3WorkBucketResult)} \n Add to Process Queue: ${JSON.stringify(addWorkToSQSWorkQueueResult)} `)
+  S3DB_Logging("info", "915", `Results after Store to S3 Work Bucket and SQS Queue (Campaign): ${JSON.stringify(
+    addWorkToS3WorkBucketResult)} \n Added to Work Queue: ${JSON.stringify(addWorkToSQSWorkQueueResult)} `)
   
   return {
     AddWorkToS3WorkBucketResults: addWorkToS3WorkBucketResult,
@@ -3041,7 +3047,6 @@ function convertJSONToXML_RTUpdates(updates: object[], config: CustomerConfig) {
   let r = 0
 
   for (const upd in updates) {
-    //recs++
 
     //const updAtts = JSON.parse( updates[ upd ] )
     const updAtts = updates[upd]
@@ -3081,8 +3086,9 @@ function convertJSONToXML_DBUpdates(updates: object[], config: CustomerConfig) {
   let r = 0
 
   try {
-    for ( const upd in updates) {
-      //recs++
+    for (const upd in updates)
+    {
+      
       r++
 
       const updAtts = updates[upd]
@@ -3177,7 +3183,7 @@ async function putToFirehose(chunks: object[], key: string, cust: string, iter: 
 
     for (const j in chunks)
     {
-      //recs++
+
       let jo = chunks[j]
 
       jo = Object.assign(jo, { Customer: cust })
@@ -3201,7 +3207,7 @@ async function putToFirehose(chunks: object[], key: string, cust: string, iter: 
           .send(fireCommand)
           .then((res: PutRecordCommandOutput) => {
 
-            S3DB_Logging("info", "922", `Inbound Update from ${key} - Put to Firehose Aggregator (iter: ${iter}) Detailed Result: \n${fd.toString()} \n\nFirehose Result: ${JSON.stringify(res)} `)
+            S3DB_Logging("info", "922", `Inbound Update from ${key} - Put to Firehose Aggregator (File Stream Iter: ${iter}) Detailed Result: \n${fd.toString()} \n\nFirehose Result: ${JSON.stringify(res)} `)
             if (res.$metadata.httpStatusCode === 200)
             {
               ut++
@@ -3212,13 +3218,13 @@ async function putToFirehose(chunks: object[], key: string, cust: string, iter: 
               }
               firehosePutResult = {
                 ...firehosePutResult,
-                OnEnd_PutToFireHoseAggregator: `Successful Put to Firehose Aggregator for ${key} (iter: ${iter}).\n${JSON.stringify(res)} \n${res.RecordId} `,
+                OnEnd_PutToFireHoseAggregator: `Successful Put to Firehose Aggregator for ${key} (File Stream Iter: ${iter}).\n${JSON.stringify(res)} \n${res.RecordId} `,
               }
             } else
             {
               firehosePutResult = {
                 ...firehosePutResult,
-                PutToFireHoseAggregatorResult: `UnSuccessful Put to Firehose Aggregator for ${key} (iter: ${iter}) \n ${JSON.stringify(res)} `,
+                PutToFireHoseAggregatorResult: `UnSuccessful Put to Firehose Aggregator for ${key} (File Stream Iter: ${iter}) \n ${JSON.stringify(res)} `,
               }
             }
             
@@ -3226,28 +3232,28 @@ async function putToFirehose(chunks: object[], key: string, cust: string, iter: 
 
           })
           .catch((e) => {
-            S3DB_Logging("exception", "", `Exception - Put to Firehose Aggregator (promise catch) (iter: ${iter}) for ${key} \n${e} `)
+            S3DB_Logging("exception", "", `Exception - Put to Firehose Aggregator (promise catch) (File Stream Iter: ${iter}) for ${key} \n${e} `)
 
             firehosePutResult = {
               ...firehosePutResult,
-              PutToFireHoseException: `Exception - Put to Firehose Aggregator for ${key} (iter: ${iter}) \n${e} `,
+              PutToFireHoseException: `Exception - Put to Firehose Aggregator for ${key} (File Stream Iter: ${iter}) \n${e} `,
             }
 
             return firehosePutResult
           })
       } catch (e)
       {
-        S3DB_Logging("exception", "", `Exception - PutToFirehose (catch) (iter: ${iter}) \n${e} `)
+        S3DB_Logging("exception", "", `Exception - PutToFirehose (catch) (File Stream Iter: ${iter}) \n${e} `)
       }
     }
 
-if (tu === ut )S3DB_Logging("info", "942", `Put to Firehose Aggregator results for inbound Updates (iter: ${iter}) from ${key}. Successfully sent ${ut} of ${tu} updates to Aggregator.`)
-else S3DB_Logging("info", "942", `Put to Firehose Aggregator results for inbound Updates (iter: ${iter}) from ${key}.  Partially successful sending ${ut} of ${tu} updates to Aggregator.`)
+    if (tu === ut) S3DB_Logging("info", "942", `Put to Firehose Aggregator results for inbound Updates (File Stream Iter: ${iter}) from ${key}. Successfully sent ${ut} of ${tu} updates to Aggregator.`)
+    else S3DB_Logging("info", "942", `Put to Firehose Aggregator results for inbound Updates (File Stream Iter: ${iter}) from ${key}.  Partially successful sending ${ut} of ${tu} updates to Aggregator.`)
     
     return putFirehoseResp
   } catch (e)
   {
-    S3DB_Logging("exception", "", `Exception - Put to Firehose Aggregator (try-catch) for ${key} (iter: ${iter}) \n${e} `)
+    S3DB_Logging("exception", "", `Exception - Put to Firehose Aggregator (try-catch) for ${key} (File Stream Iter: ${iter}) \n${e} `)
   }
 
   //end of function
@@ -3401,7 +3407,7 @@ async function addWorkToSQSWorkQueue(
       }), ${sqsQMsgBody.workKey}, SQS Params${JSON.stringify(sqsParams)}) - Error: ${e}`)
   }
 
-  S3DB_Logging("info", "915", `Queued Work ${key} (${recCount} updates) to the Work Queue (${S3DBConfig.s3dropbucket_workqueue
+  S3DB_Logging("info", "915", `Work Queued (${key} for ${recCount} updates) to the Work Queue (${S3DBConfig.s3dropbucket_workqueue
     }) \nSQS Params: \n${JSON.stringify(sqsParams)} \nresults: \n${JSON.stringify({SQSWriteResult: sqsWriteResult, AddToSQSQueue: JSON.stringify(sqsSendResult)})}`)
 
   return {
