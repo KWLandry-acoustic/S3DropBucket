@@ -431,318 +431,321 @@ export const s3DropBucketHandler: Handler = async (
   context: Context
 ) => {
 
-  //Ignore Aggregation Error Files created by FireHose process
-  if (event.Records[0].s3.object.key.indexOf("AggregationError") > -1) return ""
-
-  //If Local Testing - set up to pull an S3 Object and so avoid the not-found error
-  if (
-    typeof event.Records[0].s3.object.key !== "undefined" &&
-    event.Records[0].s3.object.key === "devtest.csv"
-  )
+  try
   {
+
+    //Ignore Aggregation Error Files created by FireHose process
+    if (event.Records[0].s3.object.key.indexOf("AggregationError") > -1) return ""
+
+    //If Local Testing - set up to pull an S3 Object and so avoid the not-found error
     if (
-      testS3Key !== undefined &&
-      testS3Key !== null &&
-      testS3Bucket !== undefined &&
-      testS3Bucket !== null
+      typeof event.Records[0].s3.object.key !== "undefined" &&
+      event.Records[0].s3.object.key === "devtest.csv"
     )
     {
-      event.Records[0].s3.object.key = testS3Key
-      event.Records[0].s3.bucket.name = testS3Bucket
+      if (
+        testS3Key !== undefined &&
+        testS3Key !== null &&
+        testS3Bucket !== undefined &&
+        testS3Bucket !== null
+      )
+      {
+        event.Records[0].s3.object.key = testS3Key
+        event.Records[0].s3.bucket.name = testS3Bucket
+      } else
+      {
+        event.Records[0].s3.object.key =
+          (await getAnS3ObjectforTesting(event.Records[0].s3.bucket.name)) ?? ""
+      }
+      localTesting = true
     } else
     {
-      event.Records[0].s3.object.key =
-        (await getAnS3ObjectforTesting(event.Records[0].s3.bucket.name)) ?? ""
+      testS3Key = ""
+      testS3Bucket = ""
+      localTesting = false
     }
-    localTesting = true
-  } else
-  {
-    testS3Key = ""
-    testS3Bucket = ""
-    localTesting = false
-  }
 
   
 
-  if (process.env.s3DropBucketRegion?.length ?? 0 > 6)
-    s3 = new S3Client({region: process.env.s3DropBucketRegion})
-  else
-  {
-    s3 = new S3Client({region: 'us-east-1'})
-  }
-
-  if (
-    process.env["EventEmitterMaxListeners"] === undefined ||
-    process.env["EventEmitterMaxListeners"] === "" ||
-    process.env["EventEmitterMaxListeners"] === null
-  )
-  {
-    S3DBConfig = await getValidateS3DropBucketConfig()
-
-    S3DB_Logging("info", "901", `Parsed S3DropBucket Config:  process.env.S3DropBucketConfigFile: \n${JSON.stringify(S3DBConfig)} `)
-
-  }
-
-  S3DB_Logging("info", "97", `Environment Vars: ${JSON.stringify(process.env)} `)
-  S3DB_Logging("info", "98", `S3DropBucket Options: ${JSON.stringify(S3DBConfig)} `)
-  S3DB_Logging("info", "99", `S3DropBucket Logging Options(process.env): ${process.env.S3DropBucketSelectiveLogging} `)
-
-
-  if (event.Records[0].s3.object.key.indexOf("S3DropBucket_Aggregator") > -1)
-  {
-    S3DB_Logging("info", "925", `Processing an Aggregated File ${event.Records[0].s3.object.key}`)
-  }
-
-
-  
-  //if (S3DBConfig.S3DropBucketPurgeCount > 0) {
-  //  console.warn(
-  //    `Purge Requested, Only action will be to Purge ${S3DBConfig.S3DropBucketPurge} of ${S3DBConfig.S3DropBucketPurgeCount} Records. `
-  //  )
-  //  const d = await purgeBucket(
-  //    Number(S3DBConfig.S3DropBucketPurgeCount!),
-  //    S3DBConfig.S3DropBucketPurge!
-  //  )
-  //  return d
-  //}
-
-  if (S3DBConfig.s3dropbucket_quiesce)
-  {
-    if (!localTesting)
+    if (process.env.s3DropBucketRegion?.length ?? 0 > 6)
+      s3 = new S3Client({region: process.env.s3DropBucketRegion})
+    else
     {
-      S3DB_Logging("warn", "923", `S3DropBucket Quiesce is in effect, new Files from ${S3DBConfig.s3dropbucket} will be ignored and not processed. \nTo Process files that have arrived during a Quiesce of the Cache, reference the S3DropBucket Guide appendix for AWS cli commands.`)
-      return
+      s3 = new S3Client({region: 'us-east-1'})
     }
-  }
-  S3DB_Logging("info", "500", `Received S3DropBucket Event Batch. There are ${event.Records.length} S3DropBucket Event Records in this batch. (Event Id: ${event.Records[0].responseElements["x-amz-request-id"]}, \nContext: ${JSON.stringify(context)}).`
-  )
 
-  //Future: Left this for possible switch of the Trigger from S3 being an SQS Trigger of an S3 Write,
-  // Drive higher concurrency in each Lambda invocation by running batches of 10 files written at a time(SQS Batch)
-  for (const r of event.Records)
-  {
-    let key = r.s3.object.key
-    const bucket = r.s3.bucket.name
-  
-    if (process.env.S3DropBucketPrefixFocus !== undefined && process.env.S3DropBucketPrefixFocus !== "" && process.env.S3DropBucketPrefixFocus.length > 3 && !key.startsWith(process.env.S3DropBucketPrefixFocus))
+    if (
+      process.env["EventEmitterMaxListeners"] === undefined ||
+      process.env["EventEmitterMaxListeners"] === "" ||
+      process.env["EventEmitterMaxListeners"] === null
+    )
     {
+      S3DBConfig = await getValidateS3DropBucketConfig()
+
+      S3DB_Logging("info", "901", `Parsed S3DropBucket Config:  process.env.S3DropBucketConfigFile: \n${JSON.stringify(S3DBConfig)} `)
+
+    }
+
+    S3DB_Logging("info", "97", `Environment Vars: ${JSON.stringify(process.env)} `)
+    S3DB_Logging("info", "98", `S3DropBucket Options: ${JSON.stringify(S3DBConfig)} `)
+    S3DB_Logging("info", "99", `S3DropBucket Logging Options(process.env): ${process.env.S3DropBucketSelectiveLogging} `)
+
+
+    if (event.Records[0].s3.object.key.indexOf("S3DropBucket_Aggregator") > -1)
+    {
+      S3DB_Logging("info", "925", `Processing an Aggregated File ${event.Records[0].s3.object.key}`)
+    }
+
+
+  
+    //if (S3DBConfig.S3DropBucketPurgeCount > 0) {
+    //  console.warn(
+    //    `Purge Requested, Only action will be to Purge ${S3DBConfig.S3DropBucketPurge} of ${S3DBConfig.S3DropBucketPurgeCount} Records. `
+    //  )
+    //  const d = await purgeBucket(
+    //    Number(S3DBConfig.S3DropBucketPurgeCount!),
+    //    S3DBConfig.S3DropBucketPurge!
+    //  )
+    //  return d
+    //}
+
+    if (S3DBConfig.s3dropbucket_quiesce)
+    {
+      if (!localTesting)
+      {
+        S3DB_Logging("warn", "923", `S3DropBucket Quiesce is in effect, new Files from ${S3DBConfig.s3dropbucket} will be ignored and not processed. \nTo Process files that have arrived during a Quiesce of the Cache, reference the S3DropBucket Guide appendix for AWS cli commands.`)
+        return
+      }
+    }
+    S3DB_Logging("info", "500", `Received S3DropBucket Event Batch. There are ${event.Records.length} S3DropBucket Event Records in this batch. (Event Id: ${event.Records[0].responseElements["x-amz-request-id"]}, \nContext: ${JSON.stringify(context)}).`
+    )
+
+    //Future: Left this for possible switch of the Trigger from S3 being an SQS Trigger of an S3 Write,
+    // Drive higher concurrency in each Lambda invocation by running batches of 10 files written at a time(SQS Batch)
+    for (const r of event.Records)
+    {
+      let key = r.s3.object.key
+      const bucket = r.s3.bucket.name
+  
+      if (process.env.S3DropBucketPrefixFocus !== undefined && process.env.S3DropBucketPrefixFocus !== "" && process.env.S3DropBucketPrefixFocus.length > 3 && !key.startsWith(process.env.S3DropBucketPrefixFocus))
+      {
         S3DB_Logging("warn", "937", `PrefixFocus is configured, File Name ${key} does not fall within focus restricted by the configured PrefixFocus ${process.env.S3DropBucketPrefixFocus}`)
 
-      return
-    }
+        return
+      }
 
-    //ToDo: Resolve Duplicates Issue - S3 allows Duplicate Object Names but Delete marks all Objects of same Name Deleted.
-    //   Which causes an issue with Key Not Found after an Object of Name A is processed and deleted, then another Object of Name A comes up in a Trigger.
+      //ToDo: Resolve Duplicates Issue - S3 allows Duplicate Object Names but Delete marks all Objects of same Name Deleted.
+      //   Which causes an issue with Key Not Found after an Object of Name A is processed and deleted, then another Object of Name A comes up in a Trigger.
 
-    vid = r.s3.object.versionId ?? ""
-    et = r.s3.object.eTag ?? ""
+      vid = r.s3.object.versionId ?? ""
+      et = r.s3.object.eTag ?? ""
 
-    try
-    {
-      //if (key.indexOf("S3DropBucket_Aggregator") > -1)
-      //{
-      //  key = key.replace("S3DropBucket_Aggregator-", "S3DropBucketAggregator-")
-      //  S3DB_Logging("info", "", `Aggregator File key reformed: ${key}`)
-      //}
+      try
+      {
+        //if (key.indexOf("S3DropBucket_Aggregator") > -1)
+        //{
+        //  key = key.replace("S3DropBucket_Aggregator-", "S3DropBucketAggregator-")
+        //  S3DB_Logging("info", "", `Aggregator File key reformed: ${key}`)
+        //}
 
-      customersConfig = await getFormatCustomerConfig(key) as CustomerConfig
+        customersConfig = await getFormatCustomerConfig(key) as CustomerConfig
 
-    } catch (e)
-    {
-      S3DB_Logging("exception", "", `Exception - Awaiting Customer Config (${key}) \n${e} `)
-      break
-    }
+      } catch (e)
+      {
+        S3DB_Logging("exception", "", `Exception - Awaiting Customer Config (${key}) \n${e} `)
+        break
+      }
 
-    //Initial work out for writing logs to S3 Bucket
-    /*
-    try {
-      if (key.indexOf("S3DropBucket-LogsS3DropBucket_Aggregator") > -1)
-        console.warn(`Warning -- Found Invalid Aggregator File Name - ${key} \nVersionID: ${vid}, \neTag: ${et}`)
-      if (S3DBConfig.SelectiveLogging.indexOf("_101,") > -1)
-        console.info(
-          `(101) Processing inbound data for ${customersConfig.Customer} - ${key}`
-        )
-    } catch (e) {
-      throw new Error(
-        `Exception - Retrieving Customer Config for ${key} \n${e}`
-      )
-    }
-    */
-
-
-    
-
-
-    //ReQueue .xml files - in lieu of requeing through config, have work files (....xml) moved
-    // to the S3DropBucket bucket and drive an object creation event to the handler
-    /*
-    try {
-      if (key.indexOf(".xml") > -1) {
-        console.warn(`Warning -- Found Invalid Aggregator File Name - ${key} \nVersionID: ${vid}, \neTag: ${et}`)
-
-        await getS3Work(key, bucket)
-          .then(async (work) => {
-            const workSet = work.split("</Envelope>")
-            await packageUpdates(
-              workSet,
-              key,
-              customersConfig
-            )
-        })
-
+      //Initial work out for writing logs to S3 Bucket
+      /*
+      try {
+        if (key.indexOf("S3DropBucket-LogsS3DropBucket_Aggregator") > -1)
+          console.warn(`Warning -- Found Invalid Aggregator File Name - ${key} \nVersionID: ${vid}, \neTag: ${et}`)
         if (S3DBConfig.SelectiveLogging.indexOf("_101,") > -1)
           console.info(
-            `(101) Processing inbound data for ${customersConfig.Customer} - ${key} \nVersionID: ${vid}, \neTag: ${et}`
+            `(101) Processing inbound data for ${customersConfig.Customer} - ${key}`
           )
+      } catch (e) {
+        throw new Error(
+          `Exception - Retrieving Customer Config for ${key} \n${e}`
+        )
       }
-    } catch (e) {
-      throw new Error(
-        `Exception - ReQueing Work from ${bucket} for ${key} \nVersionID: ${vid}, \neTag: ${et} \n${e}`
-      )
-    }
-    */
+      */
+
+
     
 
 
-    batchCount = 0
-    recs = 0
-    let streamRes = ProcessS3ObjectStreamResolution 
-
-    try
-    {
-      ProcessS3ObjectStreamResolution = await processS3ObjectContentStream(
-        key,
-        bucket,
-        customersConfig
-      )
-        .then(async (streamRes) => {
-
-          let delResultCode
-          
-          streamRes.Key = key
-          streamRes.Processed = streamRes.OnEndRecordStatus
-
-          S3DB_Logging("info", "503", `Completed processing all records of the S3 Object ${key} \neTag: ${et}. \nStatus: ${streamRes.OnEndRecordStatus}`
-          )
-          
-
-          //Don't delete the test data
-          if (localTesting)
-          {
-            S3DB_Logging("info", "504", `Processing Complete for ${key} (Test Data - Not Deleting)`)
-            streamRes = {...streamRes, DeleteResult: `Processing Complete for ${key} (Test Data - Not Deleting)`}
-            return streamRes
-          }
-
-          //check object to assure no reference errors as the results either came through PutFirehose or Stream so 
-          // all of the object may not be filled in,
-          //ToDo: refactor ProcessS3ObjectStreamResolution to dynamically add status sections rather than presets
-
-         if (typeof streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult === "undefined")
-            streamRes.OnEndStreamEndResult = ProcessS3ObjectStreamResolution.OnEndStreamEndResult
-
-          if (typeof streamRes?.PutToFireHoseAggregatorResult === "undefined") 
-            streamRes.PutToFireHoseAggregatorResult = ProcessS3ObjectStreamResolution.PutToFireHoseAggregatorResult
-          
-          debugger
-
-          if (
-            streamRes?.PutToFireHoseAggregatorResult === "200" ||
-            (streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToS3WorkBucketResults?.S3ProcessBucketResult === "200" &&
-              streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToSQSWorkQueueResults?.SQSWriteResult === "200")
-          )
-          {
-            try
-            {
-              //Once File successfully processed delete the original S3 Object
-              delResultCode = await deleteS3Object(key, bucket)
-                .catch((e) => {
-                  S3DB_Logging("exception", "", `Exception - DeleteS3Object - ${e}`)
-              })
-
-              if (delResultCode !== "204")
-              {
-                streamRes = {
-                  ...streamRes,
-                  DeleteResult: JSON.stringify(delResultCode)
-                }
-                S3DB_Logging("error", "504", `Processing Successful, but Unsuccessful Delete of ${key}, Expected 204 result code, received ${delResultCode}`
-                )
-              } else
-              {
-                streamRes = {
-                  ...streamRes,
-                  DeleteResult: `Successful Delete of ${key}  (Result ${JSON.stringify(delResultCode)})`
-                }
-                S3DB_Logging("info", "504", `Processing Successful, Delete of ${key} Successful (Result ${delResultCode}).`)
-              }
-            } catch (e)
-            {
-              S3DB_Logging("exception", "", `Exception - Deleting S3 Object after successful processing of the Content Stream for ${key} \n${e}`)
-            }
-          }
-          else
-          {
-            S3DB_Logging("error", "504", `Processing Complete for ${key} however Status indicates to not Delete the file. \n(Result ${JSON.stringify(streamRes)})`)
-            streamRes = {
-              ...streamRes,
-              DeleteResult: `Processing Complete for ${key} however Status indicates to not Delete the file.  (Result ${JSON.stringify(streamRes)})`
-            }
-          }
-
-          return streamRes
-        })
-        .catch((e) => {
-        
-          const err = `Exception - Process S3 Object Stream Catch - \n${e} \nStack: \n${e.stack}`  
-          
-          ProcessS3ObjectStreamResolution = {
-            ...ProcessS3ObjectStreamResolution,
-            ProcessS3ObjectStreamCatch: err,
-          }
-
-          S3DB_Logging("exception", "", JSON.stringify(ProcessS3ObjectStreamResolution))
-          
-          return ProcessS3ObjectStreamResolution
-        })
-    } catch (e)
-    {
-      S3DB_Logging("exception", "", `Exception - Processing S3 Object Content Stream for ${key} \n${e}`)
-    }
+      //ReQueue .xml files - in lieu of requeing through config, have work files (....xml) moved
+      // to the S3DropBucket bucket and drive an object creation event to the handler
+      /*
+      try {
+        if (key.indexOf(".xml") > -1) {
+          console.warn(`Warning -- Found Invalid Aggregator File Name - ${key} \nVersionID: ${vid}, \neTag: ${et}`)
   
-  S3DB_Logging("info", "903", `Returned from Processing S3 Object Content Stream for ${key}. Result: ${JSON.stringify(ProcessS3ObjectStreamResolution)}`)
+          await getS3Work(key, bucket)
+            .then(async (work) => {
+              const workSet = work.split("</Envelope>")
+              await packageUpdates(
+                workSet,
+                key,
+                customersConfig
+              )
+          })
+  
+          if (S3DBConfig.SelectiveLogging.indexOf("_101,") > -1)
+            console.info(
+              `(101) Processing inbound data for ${customersConfig.Customer} - ${key} \nVersionID: ${vid}, \neTag: ${et}`
+            )
+        }
+      } catch (e) {
+        throw new Error(
+          `Exception - ReQueing Work from ${bucket} for ${key} \nVersionID: ${vid}, \neTag: ${et} \n${e}`
+        )
+      }
+      */
+    
 
-    //Check for important Config updates (which caches the config in Lambdas long-running cache)
-    try
-    {
+
+      batchCount = 0
+      recs = 0
+      let streamRes = ProcessS3ObjectStreamResolution
+
+      try
+      {
+        ProcessS3ObjectStreamResolution = await processS3ObjectContentStream(
+          key,
+          bucket,
+          customersConfig
+        )
+          .then(async (streamRes) => {
+
+            let delResultCode
+          
+            streamRes.Key = key
+            streamRes.Processed = streamRes.OnEndRecordStatus
+
+            S3DB_Logging("info", "503", `Completed processing all records of the S3 Object ${key} \neTag: ${et}. \nStatus: ${streamRes.OnEndRecordStatus}`
+            )
+          
+
+            //Don't delete the test data
+            if (localTesting)
+            {
+              S3DB_Logging("info", "504", `Processing Complete for ${key} (Test Data - Not Deleting)`)
+              streamRes = {...streamRes, DeleteResult: `Processing Complete for ${key} (Test Data - Not Deleting)`}
+              return streamRes
+            }
+
+            //check object to assure no reference errors as the results either came through PutFirehose or Stream so 
+            // all of the object may not be filled in,
+            //ToDo: refactor ProcessS3ObjectStreamResolution to dynamically add status sections rather than presets
+
+            if (typeof streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult === "undefined")
+              streamRes.OnEndStreamEndResult = ProcessS3ObjectStreamResolution.OnEndStreamEndResult
+
+            if (typeof streamRes?.PutToFireHoseAggregatorResult === "undefined")
+              streamRes.PutToFireHoseAggregatorResult = ProcessS3ObjectStreamResolution.PutToFireHoseAggregatorResult
+          
+            debugger
+
+            if (
+              streamRes?.PutToFireHoseAggregatorResult === "200" ||
+              (streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToS3WorkBucketResults?.S3ProcessBucketResult === "200" &&
+                streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToSQSWorkQueueResults?.SQSWriteResult === "200")
+            )
+            {
+              try
+              {
+                //Once File successfully processed delete the original S3 Object
+                delResultCode = await deleteS3Object(key, bucket)
+                  .catch((e) => {
+                    S3DB_Logging("exception", "", `Exception - DeleteS3Object - ${e}`)
+                  })
+
+                if (delResultCode !== "204")
+                {
+                  streamRes = {
+                    ...streamRes,
+                    DeleteResult: JSON.stringify(delResultCode)
+                  }
+                  S3DB_Logging("error", "504", `Processing Successful, but Unsuccessful Delete of ${key}, Expected 204 result code, received ${delResultCode}`
+                  )
+                } else
+                {
+                  streamRes = {
+                    ...streamRes,
+                    DeleteResult: `Successful Delete of ${key}  (Result ${JSON.stringify(delResultCode)})`
+                  }
+                  S3DB_Logging("info", "504", `Processing Successful, Delete of ${key} Successful (Result ${delResultCode}).`)
+                }
+              } catch (e)
+              {
+                S3DB_Logging("exception", "", `Exception - Deleting S3 Object after successful processing of the Content Stream for ${key} \n${e}`)
+              }
+            }
+            else
+            {
+              S3DB_Logging("error", "504", `Processing Complete for ${key} however Status indicates to not Delete the file. \n(Result ${JSON.stringify(streamRes)})`)
+              streamRes = {
+                ...streamRes,
+                DeleteResult: `Processing Complete for ${key} however Status indicates to not Delete the file.  (Result ${JSON.stringify(streamRes)})`
+              }
+            }
+
+            return streamRes
+          })
+          .catch((e) => {
+        
+            const err = `Exception - Process S3 Object Stream Catch - \n${e} \nStack: \n${e.stack}`
+          
+            ProcessS3ObjectStreamResolution = {
+              ...ProcessS3ObjectStreamResolution,
+              ProcessS3ObjectStreamCatch: err,
+            }
+
+            S3DB_Logging("exception", "", JSON.stringify(ProcessS3ObjectStreamResolution))
+          
+            return ProcessS3ObjectStreamResolution
+          })
+      } catch (e)
+      {
+        S3DB_Logging("exception", "", `Exception - Processing S3 Object Content Stream for ${key} \n${e}`)
+      }
+  
+      S3DB_Logging("info", "903", `Returned from Processing S3 Object Content Stream for ${key}. Result: ${JSON.stringify(ProcessS3ObjectStreamResolution)}`)
+
+      //Check for important Config updates (which caches the config in Lambdas long-running cache)
+      try
+      {
         S3DBConfig = await getValidateS3DropBucketConfig()
         S3DB_Logging("info", "901", `Checked and Refreshed S3DropBucket Config \n ${JSON.stringify(S3DBConfig)} `)
 
-    } catch (e)
-    {
-      S3DB_Logging("exception","",`Exception refreshing S3DropBucket Config: ${e}`)
+      } catch (e)
+      {
+        S3DB_Logging("exception", "", `Exception refreshing S3DropBucket Config: ${e}`)
+      }
+
+      //if (event.Records[0].s3.bucket.name && S3DBConfig.S3DropBucketMaintHours > 0) {
+      //  const maintenance = await maintainS3DropBucket(customersConfig)
+
+      //  const l = maintenance[0] as number
+      //  // console.info( `- ${ l } File(s) met criteria and are marked for reprocessing ` )
+
+      //  if (S3DBConfig.SelectiveLogging.indexOf("_926,") > -1) {
+      //    const filesProcessed = maintenance[1]
+      //    if (l > 0)
+      //      console.info(
+      //        `Selective Debug 926 - ${l} Files met criteria and are returned for Processing: \n${filesProcessed}`
+      //      )
+      //    else
+      //      console.info(
+      //        `Selective Debug 926 - No files met the criteria to return for Reprocessing`
+      //      )
+      //  }
     }
 
-  //if (event.Records[0].s3.bucket.name && S3DBConfig.S3DropBucketMaintHours > 0) {
-  //  const maintenance = await maintainS3DropBucket(customersConfig)
-
-  //  const l = maintenance[0] as number
-  //  // console.info( `- ${ l } File(s) met criteria and are marked for reprocessing ` )
-
-  //  if (S3DBConfig.SelectiveLogging.indexOf("_926,") > -1) {
-  //    const filesProcessed = maintenance[1]
-  //    if (l > 0)
-  //      console.info(
-  //        `Selective Debug 926 - ${l} Files met criteria and are returned for Processing: \n${filesProcessed}`
-  //      )
-  //    else
-  //      console.info(
-  //        `Selective Debug 926 - No files met the criteria to return for Reprocessing`
-  //      )
-  //  }
-  }
-
-  //Need to protect against the Result String becoming excessively long
+    //Need to protect against the Result String becoming excessively long
 
     const n = new Date().toISOString()
     let objectStreamResolution = n + "  -  " + JSON.stringify(ProcessS3ObjectStreamResolution) + "\n\n"
@@ -756,19 +759,30 @@ export const s3DropBucketHandler: Handler = async (
 
       S3DB_Logging("warn", "920", `Final outcome (truncated to first and last 5,000 characters) of all processing for ${ProcessS3ObjectStreamResolution.Key}: \n ${JSON.stringify(objectStreamResolution)}`)
 
-      }
+    }
   
     const k = ProcessS3ObjectStreamResolution.Key
     const p = ProcessS3ObjectStreamResolution.Processed
   
-  S3DB_Logging("info", "505", `Completing S3DropBucket Processing of Request Id ${event.Records[0].responseElements["x-amz-request-id"]} for ${k} \n${p}`)  
-  S3DB_Logging("info", "920", `Final outcome of all processing for ${ProcessS3ObjectStreamResolution.Key}: \n${JSON.stringify(objectStreamResolution)}`)
+    S3DB_Logging("info", "505", `Completing S3DropBucket Processing of Request Id ${event.Records[0].responseElements["x-amz-request-id"]} for ${k} \n${p}`)
+    S3DB_Logging("info", "920", `Final outcome of all processing for ${ProcessS3ObjectStreamResolution.Key}: \n${JSON.stringify(objectStreamResolution)}`)
 
     //Done with logging the results of this pass, empty the object for the next processing cycle
     ProcessS3ObjectStreamResolution = {} as ProcessS3ObjectStreamResult
 
     return objectStreamResolution   //Return the results logging object
-}
+  } catch (e)
+  {
+    console.error(`Exception thrown in Handler: ${e}`)
+  }
+  
+  
+  
+  
+  }
+
+//
+//
 
 export default s3DropBucketHandler
 
