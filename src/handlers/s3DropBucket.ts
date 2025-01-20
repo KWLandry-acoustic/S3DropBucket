@@ -802,13 +802,13 @@ export function S3DB_Logging(level: string, index: string,  msg:string) {
   {
     if (process.env.S3DropBucket_LogLevel?.toLowerCase() === 'all') index = `(LOG ALL-${index})`
 
-    if (level.toLowerCase() === "info")  console.info(`S3DBLog-Info (${version}) ${index}: ${msg} `)
-    if (level.toLowerCase() === "warn") console.warn(`S3DBLog-Warning (${version}) ${index}: ${msg} `)
-    if (level.toLowerCase() === "error") console.error(`S3DBLog-Error (${version}) ${index}: ${msg} `)
-    if (level.toLowerCase() === "debug") console.debug(`S3DBLog-Debug (${version}) ${index}: ${msg} `)
+    if (level.toLowerCase() === "info") console.info(`S3DBLog-Info ${index}: ${msg} \nversion: ${version}`)
+    if (level.toLowerCase() === "warn") console.warn(`S3DBLog-Warning ${index}: ${msg} \nversion: ${version}`)
+    if (level.toLowerCase() === "error") console.error(`S3DBLog-Error ${index}: ${msg} \nversion: ${version}`)
+    if (level.toLowerCase() === "debug") console.debug(`S3DBLog-Debug ${index}: ${msg} \nversion: ${version}`)
   }
       
-  if (level.toLowerCase() === "exception") console.error(`S3DBLog-Exception ${index}: ${msg} `)
+  if (level.toLowerCase() === "exception") console.error(`S3DBLog-Exception ${index}: ${msg}  \nversion: ${version}`)
     
     //ToDo: Send Logging to Firehose Aggregator 
     // Send All debug messaging regardless of S3DropBucket Config??
@@ -1117,7 +1117,7 @@ async function processS3ObjectContentStream(
                   const updates = []
                   
                   while (chunksGlobal.length > 0)
-                  {
+                  { 
                     const chunk = chunksGlobal.splice(0, 100)
                     updates.push(...chunk)
                     S3DB_Logging("info", "938", `S3ContentStream OnData - A Batch (${batchCount}) of Updates from ${key} is now being sent to Packaging. \nPreviously processed ${recs} records of the size of the data read of ${preserveArraySize} records.`)
