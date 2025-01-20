@@ -802,10 +802,10 @@ export function S3DB_Logging(level: string, index: string,  msg:string) {
   {
     if (process.env.S3DropBucket_LogLevel?.toLowerCase() === 'all') index = `(LOG ALL-${index})`
 
-    if (level.toLowerCase() === "info")  console.info(`S3DBLog-Info ${index}: ${msg} `)
-    if (level.toLowerCase() === "warn")  console.warn(`S3DBLog-Warning ${index}: ${msg} `)
-    if (level.toLowerCase() === "error") console.error(`S3DBLog-Error ${index}: ${msg} `)
-    if (level.toLowerCase() === "debug") console.debug(`S3DBLog-Debug ${index}: ${msg} `)
+    if (level.toLowerCase() === "info")  console.info(`S3DBLog-Info (${version}) ${index}: ${msg} `)
+    if (level.toLowerCase() === "warn") console.warn(`S3DBLog-Warning (${version}) ${index}: ${msg} `)
+    if (level.toLowerCase() === "error") console.error(`S3DBLog-Error (${version}) ${index}: ${msg} `)
+    if (level.toLowerCase() === "debug") console.debug(`S3DBLog-Debug (${version}) ${index}: ${msg} `)
   }
       
   if (level.toLowerCase() === "exception") console.error(`S3DBLog-Exception ${index}: ${msg} `)
@@ -1112,8 +1112,6 @@ async function processS3ObjectContentStream(
             //At each 99 updates, package them up, if there are fewer than 99 then "OnEnd" will pick up the remainder. 
               try 
               {
-                //S3DB_Logging("info", "", `Debug (OnData): ${chunksGlobal.length} ${batchCount}`) 
-
                 if (chunksGlobal.length > 99)
                 {
                   const updates = []
@@ -1125,8 +1123,6 @@ async function processS3ObjectContentStream(
                     S3DB_Logging("info", "938", `S3ContentStream OnData - A Batch (${batchCount}) of Updates from ${key} is now being sent to Packaging. \nPreviously processed ${recs} records of the size of the data read of ${preserveArraySize} records.`)
                     recs += chunk.length
                     batchCount++
-                    
-                    debugger
 
                     packageResult = await packageUpdates(updates, key, custConfig, iter) as StoreAndQueueWorkResult
         
@@ -1191,12 +1187,6 @@ async function processS3ObjectContentStream(
                   recs += chunk.length
                   batchCount++
                   
-
-                  //S3DB_Logging("info", "", `Debug (OnEnd): While Loop: ${chunksGlobal.length} ${batchCount}`) 
-
-
-                  debugger 
-
                   //ToDo: Refactor this status approach, only getting the last, need a way to preserve every Update status without storing volumes
                   packageResult = await packageUpdates(updates, key, custConfig, iter)
                     .then((res) => {
