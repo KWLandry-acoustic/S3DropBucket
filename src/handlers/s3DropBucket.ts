@@ -297,19 +297,7 @@ export interface StoreAndQueueWorkResult {
 export interface ProcessS3ObjectStreamResult {
   Key: string                           // S3 File/Object that triggered this run
   Processed: string                     // Total of all records processed this run
-  OnDataBatchingResult: string          // Additional Message during Data Batching 
-  OnDataStoreAndQueueWorkResult: {    // During Streaming, If Data received exceeds limit, we'll write work and Queue it
-    StoreAndQueueWorkResult: StoreAndQueueWorkResult
-    StoreQueueWorkException?: string
-    StoreS3WorkException?: string
-    },
-  OnEndStreamEndResult: {             //At the end of Streaming all Data, write work and Queue it
-    StoreAndQueueWorkResult: StoreAndQueueWorkResult,
-    StoreQueueWorkException?: string
-    StoreS3WorkException?: string
-    },
-  //Additional Messaging on each process step
-  ReadStreamEndResult: string                 
+  ReadStreamEndResult: string
   ReadStreamException: string
   OnEndRecordStatus: string
   OnDataReadStreamException: string
@@ -317,17 +305,35 @@ export interface ProcessS3ObjectStreamResult {
   ProcessS3ObjectStreamCatch: string
   OnClose_Result: string
   StreamReturnLocation: string
+  OnDataStoreAndQueueWorkResult: {      // During Streaming, If Data received exceeds limit, we'll write work and Queue it
+    StoreAndQueueWorkResult: StoreAndQueueWorkResult
+    StoreQueueWorkException?: string
+    StoreS3WorkException?: string
+    },
+  OnEndStreamEndResult: {               //At the End of Streaming Data, write work and Queue it
+    StoreAndQueueWorkResult: StoreAndQueueWorkResult,
+    StoreQueueWorkException?: string
+    StoreS3WorkException?: string
+    },
+  //Additional Messaging of alternate process steps
   PutToFireHoseAggregatorResult: string
+  PutToFireHoseAggregatorResultDetails: string
   PutToFireHoseException: string
-  OnEnd_PutToFireHoseAggregator: string
   DeleteResult: string
 }
 
 
-let ProcessS3ObjectStreamResolution: ProcessS3ObjectStreamResult = {
+let ProcessS3ObjectStreamResolutionInitializer: ProcessS3ObjectStreamResult = {
   Key: "",                           // S3 File/Object that triggered this run
   Processed: "",                     // Total of all records processed this run
-  OnDataBatchingResult: "",          // Additional Message during Data Batching 
+  ReadStreamEndResult: "",
+  ReadStreamException: "",
+  OnEndRecordStatus: "",
+  OnDataReadStreamException: "",
+  OnEndNoRecordsException: "",
+  ProcessS3ObjectStreamCatch: "",
+  OnClose_Result: "",
+  StreamReturnLocation: "",
   OnDataStoreAndQueueWorkResult: {
     StoreAndQueueWorkResult: [{
       AddWorkToS3WorkBucketResults: {
@@ -339,9 +345,7 @@ let ProcessS3ObjectStreamResolution: ProcessS3ObjectStreamResult = {
         SQSWriteResult: "",
         AddToSQSQueue: ""
       },
-    }],
-    StoreQueueWorkException: "",
-    StoreS3WorkException: ""
+    }]
   }, 
   OnEndStreamEndResult: {             //At the end of Streaming all Data, write work and Queue it
     StoreAndQueueWorkResult: {
@@ -354,22 +358,12 @@ let ProcessS3ObjectStreamResolution: ProcessS3ObjectStreamResult = {
         SQSWriteResult: "",
         AddToSQSQueue: ""
       }
-    },
-    StoreQueueWorkException: "",
-    StoreS3WorkException: ""
+    }
   },
-  //Additional Messaging on each process step
-  ReadStreamEndResult: "",
-  ReadStreamException: "",
-  OnEndRecordStatus: "",
-  OnDataReadStreamException: "",
-  OnEndNoRecordsException: "",
-  ProcessS3ObjectStreamCatch: "",
-  OnClose_Result: "",
-  StreamReturnLocation: "",
+  //Additional Messaging of alternate process steps
   PutToFireHoseAggregatorResult: "",
+  PutToFireHoseAggregatorResultDetails: "",
   PutToFireHoseException: "",
-  OnEnd_PutToFireHoseAggregator: "",
   DeleteResult: ""
 } as ProcessS3ObjectStreamResult
 
@@ -419,8 +413,8 @@ const testdata = ""
 //testS3Key = "TestData/alerusrepsignature_advisors.json"
 //testS3Key = "TestData/alerusreassignrepsignature_advisors.json"
 //testS3Key = "TestData/KingsfordWeather_00210.csv"
-//testS3Key = "TestData/KingsfordWeather_00211.csv"
-testS3Key = "TestData/MasterCustomer_Sample1.json"
+testS3Key = "TestData/KingsfordWeather_00211.csv"
+//testS3Key = "TestData/MasterCustomer_Sample1.json"
 //testS3Key = "TestData/KingsfordWeather_S3DropBucket_Aggregator-10-2025-01-09-19-29-39-da334f11-53a4-31cc-8c9f-8b417725560b.json"
 
 
@@ -611,11 +605,11 @@ export const s3DropBucketHandler: Handler = async (
 
       batchCount = 0
       recs = 0
-      let streamRes = ProcessS3ObjectStreamResolution
+      let streamRes = ProcessS3ObjectStreamResolutionInitializer
 
       try
       {
-        ProcessS3ObjectStreamResolution = await processS3ObjectContentStream(
+        ProcessS3ObjectStreamResolutionInitializer = await processS3ObjectContentStream(
           key,
           bucket,
           customersConfig
@@ -644,15 +638,17 @@ export const s3DropBucketHandler: Handler = async (
             //ToDo: refactor ProcessS3ObjectStreamResolution to dynamically add status sections rather than presets
 
             if (typeof streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult === "undefined")
-              streamRes.OnEndStreamEndResult = ProcessS3ObjectStreamResolution.OnEndStreamEndResult
+              streamRes.OnEndStreamEndResult = ProcessS3ObjectStreamResolutionInitializer.OnEndStreamEndResult
 
-            if (typeof streamRes?.PutToFireHoseAggregatorResult === "undefined")
-              streamRes.PutToFireHoseAggregatorResult = ProcessS3ObjectStreamResolution.PutToFireHoseAggregatorResult
-          
+            if (typeof streamRes.PutToFireHoseAggregatorResult === "undefined")
+              streamRes.PutToFireHoseAggregatorResult = ProcessS3ObjectStreamResolutionInitializer.PutToFireHoseAggregatorResult
+
+
+            
             debugger
 
             if (
-              streamRes?.PutToFireHoseAggregatorResult === "200" ||
+                (streamRes.PutToFireHoseAggregatorResult === "200" ) ||
               (streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToS3WorkBucketResults?.S3ProcessBucketResult === "200" &&
                 streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToSQSWorkQueueResults?.SQSWriteResult === "200")
             )
@@ -701,21 +697,21 @@ export const s3DropBucketHandler: Handler = async (
         
             const err = `Exception - Process S3 Object Stream Catch - \n${e} \nStack: \n${e.stack}`
           
-            ProcessS3ObjectStreamResolution = {
-              ...ProcessS3ObjectStreamResolution,
+            ProcessS3ObjectStreamResolutionInitializer = {
+              ...ProcessS3ObjectStreamResolutionInitializer,
               ProcessS3ObjectStreamCatch: err,
             }
 
-            S3DB_Logging("exception", "", JSON.stringify(ProcessS3ObjectStreamResolution))
+            S3DB_Logging("exception", "", JSON.stringify(ProcessS3ObjectStreamResolutionInitializer))
           
-            return ProcessS3ObjectStreamResolution
+            return ProcessS3ObjectStreamResolutionInitializer
           })
       } catch (e)
       {
         S3DB_Logging("exception", "", `Exception - Processing S3 Object Content Stream for ${key} \n${e}`)
       }
   
-      S3DB_Logging("info", "903", `Returned from Processing S3 Object Content Stream for ${key}. Result: ${JSON.stringify(ProcessS3ObjectStreamResolution)}`)
+      S3DB_Logging("info", "903", `Returned from Processing S3 Object Content Stream for ${key}. Result: ${JSON.stringify(ProcessS3ObjectStreamResolutionInitializer)}`)
 
       //Check for important Config updates (which caches the config in Lambdas long-running cache)
       try
@@ -750,7 +746,7 @@ export const s3DropBucketHandler: Handler = async (
     //Need to protect against the Result String becoming excessively long
 
     const n = new Date().toISOString()
-    let objectStreamResolution = n + "  -  " + JSON.stringify(ProcessS3ObjectStreamResolution) + "\n\n"
+    let objectStreamResolution = n + "  -  " + JSON.stringify(ProcessS3ObjectStreamResolutionInitializer) + "\n\n"
     const osrl = objectStreamResolution.length
 
     if (osrl > 10000)
@@ -759,18 +755,18 @@ export const s3DropBucketHandler: Handler = async (
       objectStreamResolution = `Excessive Length of ProcessS3ObjectStreamResolution: ${osrl} Truncated: \n ${objectStreamResolution.substring(0, 5000
       )} ... ${objectStreamResolution.substring(osrl - 5000, osrl)}`
 
-      S3DB_Logging("warn", "920", `Final outcome (truncated to first and last 5,000 characters) of all processing for ${ProcessS3ObjectStreamResolution.Key}: \n ${JSON.stringify(objectStreamResolution)}`)
+      S3DB_Logging("warn", "920", `Final outcome (truncated to first and last 5,000 characters) of all processing for ${ProcessS3ObjectStreamResolutionInitializer.Key}: \n ${JSON.stringify(objectStreamResolution)}`)
 
     }
   
-    const k = ProcessS3ObjectStreamResolution.Key
-    const p = ProcessS3ObjectStreamResolution.Processed
+    const k = ProcessS3ObjectStreamResolutionInitializer.Key
+    const p = ProcessS3ObjectStreamResolutionInitializer.Processed
   
     S3DB_Logging("info", "505", `Completing S3DropBucket Processing of Request Id ${event.Records[0].responseElements["x-amz-request-id"]} for ${k} \n${p}`)
-    S3DB_Logging("info", "920", `Final outcome of all processing for ${ProcessS3ObjectStreamResolution.Key}: \n${JSON.stringify(objectStreamResolution)}`)
+    S3DB_Logging("info", "920", `Final outcome of all processing for ${ProcessS3ObjectStreamResolutionInitializer.Key}: \n${JSON.stringify(objectStreamResolution)}`)
 
     //Done with logging the results of this pass, empty the object for the next processing cycle
-    ProcessS3ObjectStreamResolution = {} as ProcessS3ObjectStreamResult
+    ProcessS3ObjectStreamResolutionInitializer = {} as ProcessS3ObjectStreamResult
 
     return objectStreamResolution   //Return the results logging object
   } catch (e)
@@ -860,7 +856,7 @@ async function processS3ObjectContentStream(
 
   let streamResult: ProcessS3ObjectStreamResult  // = ProcessS3ObjectStreamResolution
 
-  ProcessS3ObjectStreamResolution = await s3
+  ProcessS3ObjectStreamResolutionInitializer = await s3
     .send(new GetObjectCommand(s3C))
     .then(async (getS3StreamResult: GetObjectCommandOutput) => {
       if (getS3StreamResult.$metadata.httpStatusCode != 200)
@@ -1281,7 +1277,7 @@ async function processS3ObjectContentStream(
     })
 
   // return processS3ObjectResults
-  return ProcessS3ObjectStreamResolution
+  return ProcessS3ObjectStreamResolutionInitializer
   //return streamResult
 }
 
@@ -2657,7 +2653,7 @@ async function packageUpdates(workSet: object[], key: string, custConfig: Custom
         iter
       ).then((res) => {
         const fRes = res as {
-          OnEnd_PutToFireHoseAggregator: string
+          //OnEnd_PutToFireHoseAggregator: string
           PutToFireHoseAggregatorResult: string
           PutToFireHoseException: string
         }
@@ -3217,9 +3213,13 @@ async function putToFirehose(chunks: object[], key: string, cust: string, iter: 
 
       const fireCommand = new PutRecordCommand(fp)
 
-      let firehosePutResult: object
+      let firehosePutResult: object = 
+        {
+          PutToFireHoseAggregatorResult: "",
+          PutToFireHoseAggregatorResultDetails: "",
+          PutToFireHoseException: "",
+        }
 
-      
       try
       {
         putFirehoseResp = await client
@@ -3227,23 +3227,24 @@ async function putToFirehose(chunks: object[], key: string, cust: string, iter: 
           .then((res: PutRecordCommandOutput) => {
 
             S3DB_Logging("info", "922", `Inbound Update from ${key} - Put to Firehose Aggregator (File Stream Iter: ${iter}) Detailed Result: \n${fd.toString()} \n\nFirehose Result: ${JSON.stringify(res)} `)
+            
             if (res.$metadata.httpStatusCode === 200)
             {
               ut++
 
-              firehosePutResult = {
-                ...firehosePutResult,
+              firehosePutResult =
+              {
                 PutToFireHoseAggregatorResult: `${res.$metadata.httpStatusCode}`,
-              }
-              firehosePutResult = {
-                ...firehosePutResult,
-                OnEnd_PutToFireHoseAggregator: `Successful Put to Firehose Aggregator for ${key} (File Stream Iter: ${iter}).\n${JSON.stringify(res)} \n${res.RecordId} `,
+                PutToFireHoseAggregatorResultDetails: `Successful Put to Firehose Aggregator for ${key} (File Stream Iter: ${iter}).\n${JSON.stringify(res)} \n${res.RecordId} `,
+                PutToFireHoseException: "",
               }
             } else
             {
-              firehosePutResult = {
-                ...firehosePutResult,
-                PutToFireHoseAggregatorResult: `UnSuccessful Put to Firehose Aggregator for ${key} (File Stream Iter: ${iter}) \n ${JSON.stringify(res)} `,
+              firehosePutResult =
+              {
+                PutToFireHoseAggregatorResult: `${res.$metadata.httpStatusCode}`,
+                PutToFireHoseAggregatorResultDetails: `UnSuccessful Put to Firehose Aggregator for ${key} (File Stream Iter: ${iter}) \n ${JSON.stringify(res)} `,
+                PutToFireHoseException: "",
               }
             }
             
@@ -3253,9 +3254,10 @@ async function putToFirehose(chunks: object[], key: string, cust: string, iter: 
           .catch((e) => {
             S3DB_Logging("exception", "", `Exception - Put to Firehose Aggregator (promise catch) (File Stream Iter: ${iter}) for ${key} \n${e} `)
 
-            firehosePutResult = {
-              ...firehosePutResult,
-              PutToFireHoseException: `Exception - Put to Firehose Aggregator for ${key} (File Stream Iter: ${iter}) \n${e} `,
+            firehosePutResult =
+            {
+              PutToFireHoseAggregatorResultDetails: `UnSuccessful Put to Firehose Aggregator for ${key} (File Stream Iter: ${iter}) \n ${JSON.stringify(e)} `,
+              PutToFireHoseException: `Exception - Put to Firehose Aggregator for ${key} (File Stream Iter: ${iter}) \n${e} `
             }
 
             return firehosePutResult
