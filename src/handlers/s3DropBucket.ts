@@ -396,6 +396,8 @@ let testS3Key: string
 let testS3Bucket: string
 testS3Bucket = "s3dropbucket-configs"
 
+const testdata = ""
+
 // testS3Key = "TestData/visualcrossing_00213.csv"
 // testS3Key = "TestData/pura_2024_02_25T00_00_00_090Z.json"
 
@@ -416,9 +418,9 @@ testS3Bucket = "s3dropbucket-configs"
 
 //testS3Key = "TestData/alerusrepsignature_advisors.json"
 //testS3Key = "TestData/alerusreassignrepsignature_advisors.json"
-testS3Key = "TestData/KingsfordWeather_00210.csv"
+//testS3Key = "TestData/KingsfordWeather_00210.csv"
 //testS3Key = "TestData/KingsfordWeather_00211.csv"
-//testS3Key = "TestData/MasterCustomer_Sample1.json"
+testS3Key = "TestData/MasterCustomer_Sample1.json"
 //testS3Key = "TestData/KingsfordWeather_S3DropBucket_Aggregator-10-2025-01-09-19-29-39-da334f11-53a4-31cc-8c9f-8b417725560b.json"
 
 
@@ -1047,28 +1049,31 @@ async function processS3ObjectContentStream(
               parent: object
               stack: object
               value: object
-            }) {
-              if (
-                key.toLowerCase().indexOf("aggregat") < 0 && recs > custConfig.updatemaxrows
-              )
-              {
-                S3DB_Logging("warn", "515", `The number of Updates in this batch (${recs}) from ${key} Exceeds Max Row Updates allowed in the Customers Config (${custConfig.updatemaxrows}). Review data file for unexpected data or update Customer Config. `)
-                
-                //throw new Error(
-                //  `The number of Updates in this batch (${recs}) Exceeds Max Row Updates allowed in the Customers Config (${custConfig.updatemaxrows}).  ${key} will not be deleted from ${S3DBConfig.s3dropbucket} to allow for review and possible restaging.`
-                //)
-              }
+          }) {
             
+            if (typeof s3Chunk.value === "undefined") throw new Error(`S3ContentStream OnData (File Stream Iter: ${iter}) - s3Chunk.value is undefined for ${key}`)
 
+            if (
+              key.toLowerCase().indexOf("aggregat") < 0 && recs > custConfig.updatemaxrows
+            )
+            {
+              S3DB_Logging("warn", "515", `The number of Updates in this batch (${recs}) from ${key} Exceeds Max Row Updates allowed in the Customers Config (${custConfig.updatemaxrows}). Review data file for unexpected data or update Customer Config. `)
+              
+              //throw new Error(
+              //  `The number of Updates in this batch (${recs}) Exceeds Max Row Updates allowed in the Customers Config (${custConfig.updatemaxrows}).  ${key} will not be deleted from ${S3DBConfig.s3dropbucket} to allow for review and possible restaging.`
+              //)
+            }
+          
             iter++
+
             S3DB_Logging("info", "913", `S3ContentStream OnData (File Stream Iter: ${iter}) - A Chunk or Line from ${key} has been read. Records previously processed: ${recs}`)
 
               try
               {
                 const oa = s3Chunk.value
 
-                //What JSON is possible to come through here:
-                //  {} a single Object - Pura  
+                //What is possible to come through here (Always JSON)
+                //  {} a single Object - Pura
                 //  [{},{},{}] An Array of Objects - Alerus
                 //  An Array of Line Delimited Objects - (Firehose Aggregated files)
                 //      [{}
@@ -1077,6 +1082,8 @@ async function processS3ObjectContentStream(
                 //      {}]
                 // An array of Strings (when CSV Parsing creates the JSON)
                 //  [{"key1":"value1","key2":"value2"},{"key1":"value1","key2":"value2"},...]
+                //
+                
                 //
                 //Next, Build a consistent Object of an Array of Objects
                 // [{},{},{},...]       
@@ -1103,6 +1110,7 @@ async function processS3ObjectContentStream(
               {
                 S3DB_Logging("exception", "", `Exception - ReadStream-OnData - Chunk aggregation for ${key} \nBatch ${batchCount} of ${recs} Updates. \n${e}`)
 
+                throw new Error(`Exception - ReadStream (OnData) Chunk aggregation for ${key} \nBatch ${batchCount} of ${recs} Updates.\n${e}`)
                 streamResult = {
                   ...streamResult,
                   OnDataReadStreamException: `Exception - First Catch - ReadStream-OnData Processing for ${key} \nBatch ${batchCount} of ${recs} Updates. \n${e} `
@@ -1145,7 +1153,7 @@ async function processS3ObjectContentStream(
             }
           )
 
-          //File completed streaming, any updates left will be processed - Packaged 
+          //File completed streaming, chunkcGlobal holds any updates left to be processed -> Packaged 
           .on("end", async function () {
             
             if (recs < 1 && chunksGlobal.length < 1)      //Ooops, We got here without finding/processing any data 
@@ -2754,7 +2762,7 @@ async function storeAndQueueConnectWork(
   const updateCount = updates.length
 
   //Customers marked as "Singular" updates files are not transformed, but sent to Firehose prior to getting here.
-  //  therefore if Aggregate file, or files config'd as "Multiple" updates, then need to perform Transforms
+  //  therefore if Aggregate file, or files config'd as "Multiple" updates, then need to perform Transforms before queuing up the work
   try
   {
     //Apply Transforms, if any, 
@@ -2775,10 +2783,17 @@ async function storeAndQueueConnectWork(
   //if (customersConfig.updatetype.toLowerCase() === 'createattributes') res = ConnectCreateAttributes()
   ////if (true) res = ConnectReferenceSet().then((m) => {return m})
   //const mutationCall = JSON.stringify(res)
-  //const m = buildConnectMutation(JSON.parse(updates)) 
+  //const m = buildConnectMutation(JSON.parse(updates))
   
 
   //ReferenceSet, CreateContacts, UpdateContacts, CreateAttributes
+  //UpdateContacts
+  //      -- If Contact not exist push to CreateContact, 
+  //      -- If Attribute not exist push to CreateAttribute
+  
+
+
+
   if (customersConfig.updatetype.toLowerCase() === "referenceset")
   {
     mutations = await buildMutationReferenceSet(updates, custConfig)
@@ -4392,8 +4407,6 @@ const query = `mutation updateMultipleContacts($dataSetId: ID!, $updateContactIn
   }
 
 
-
-
   for (const upd in updates)
   {
     let co: Contact = {"attributes": []}
@@ -4460,16 +4473,57 @@ async function buildMutationCreateAttributes(updates: object[], config: Customer
   }
 
 
-
   return q 
 
 }
+
 
 async function buildMutationReferenceSet(updates: object[], config: CustomerConfig) {
 const q = ""
   
 return q
 }
+
+
+
+async function buildConnectMutation(updates: object) {
+
+  /*
+  mutation {
+      updateContacts(
+        dataSetId: "df07969b-7126-47f2-812d-b7b5876627f7"
+          updateContactInputs: [
+        {
+          contactId: "123509"
+                  to: {
+            attributes: [
+              {name: "Unique ID", value: "123509"}
+                          {name: "Firstname", value: "Barney"}
+                          {name: "Lastname", value: "Rubble"}
+                          {name: "Email", value: "barney.rubble@quarry.com"}
+            ]
+                      consent: {
+              consentGroups: [
+                {
+                  id: "3a7134b8-dcb5-509a-b7ff-946b48333cc9"
+                                  name: "Newsletters"
+                                  status: OPT_IN
+                }
+              ]
+            }
+          }
+        }
+      ]
+      ) {
+        modifiedCount
+      }
+    }
+    */
+
+
+}
+
+
 
 async function postToConnect(mutations: string, custconfig: CustomerConfig, updateCount: string, workFile: string) {
   //ToDo: 
@@ -4710,45 +4764,6 @@ export async function postToCampaign(
 
   return postRes
 }
-
-
-async function buildConnectMutation(updates: object) {
-
-/*
-mutation {
-    updateContacts(
-      dataSetId: "df07969b-7126-47f2-812d-b7b5876627f7"
-        updateContactInputs: [
-      {
-        contactId: "123509"
-                to: {
-          attributes: [
-            {name: "Unique ID", value: "123509"}
-                        {name: "Firstname", value: "Barney"}
-                        {name: "Lastname", value: "Rubble"}
-                        {name: "Email", value: "barney.rubble@quarry.com"}
-          ]
-                    consent: {
-            consentGroups: [
-              {
-                id: "3a7134b8-dcb5-509a-b7ff-946b48333cc9"
-                                name: "Newsletters"
-                                status: OPT_IN
-              }
-            ]
-          }
-        }
-      }
-    ]
-    ) {
-      modifiedCount
-    }
-  }
-  */
-
-
-}
-
 
 
 //function checkMetadata() {
