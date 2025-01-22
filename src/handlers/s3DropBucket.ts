@@ -1294,78 +1294,6 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
   event: SQSEvent,
   context: Context
 ) => {
-  //ToDo: Build aggregate results and outcomes block for config processing
-
-  //Populate Config Options in process.env as a means of Caching the config across invocations occurring within 15 secs of each other.
-
-  if (process.env.AWS_REGION?.length ?? 0 > 6)
-  {
-    //s3 = new S3Client({region: process.env.s3DropBucketRegion})
-    s3 = new S3Client({region: process.env.AWS_REGION})
-  }
-  else
-  {
-    s3 = new S3Client({region: 'us-east-1'})
-  }
-  
-  //If an obscure config does not exist in process.env then we need to get them all
-  if (
-    process.env["EventEmitterMaxListeners"] === undefined ||
-    process.env["EventEmitterMaxListeners"] === "" ||
-    process.env["EventEmitterMaxListeners"] === null
-  )
-  {
-    S3DBConfig = await getValidateS3DropBucketConfig()
-
-    S3DB_Logging("info", "901", `Parsed S3DropBucket Config:  process.env.S3DropBucketConfigFile: \n${JSON.stringify(S3DBConfig)} `)
-
-  }
-  
-  S3DB_Logging("info", "97", `Environment Vars: ${JSON.stringify(process.env)} `)
-  S3DB_Logging("info", "98", `S3DropBucket Options: ${JSON.stringify(S3DBConfig)} `)
-  S3DB_Logging("info", "99", `S3DropBucket Logging Options: ${process.env.S3DropBucketSelectiveLogging} `)
-
-  if (S3DBConfig.s3dropbucket_workqueuequiesce)
-  {
-    S3DB_Logging("warn", "923", `WorkQueue Quiesce is in effect, no New Work will be Queued up in the SQS Process Queue.`)
-    return
-  }
-
-  //if (S3DBConfig.WorkQueueBucketPurgeCount > 0) {
-  //  console.info(
-  //    `Purge Requested, Only action will be to Purge ${S3DBConfig.WorkQueueBucketPurge} of ${S3DBConfig.WorkQueueBucketPurgeCount} Records. `
-  //  )
-  //  const d = await purgeBucket(
-  //    Number(process.env["WorkQueueBucketPurgeCount"]!),
-  //    process.env["WorkQueueBucketPurge"]!
-  //  )
-  //  return d
-  //}
-
-  // Backoff strategy for failed invocations
-
-  //When an invocation fails, Lambda attempts to retry the invocation while implementing a backoff strategy.
-  // The backoff strategy differs slightly depending on whether Lambda encountered the failure due to an error in
-  //  your function code, or due to throttling.
-
-  //If your function code caused the error, Lambda gradually backs off retries by reducing the amount of
-  // concurrency allocated to your Amazon SQS event source mapping.If invocations continue to fail, Lambda eventually
-  //  drops the message without retrying.
-
-  //If the invocation fails due to throttling, Lambda gradually backs off retries by reducing the amount of
-  // concurrency allocated to your Amazon SQS event source mapping.Lambda continues to retry the message until
-  // the message's timestamp exceeds your queue's visibility timeout, at which point Lambda drops the message.
-
-  let custconfig: CustomerConfig = customersConfig
-
-  let postResult: string = "false"
-
-  S3DB_Logging("info", "506", `Received a Batch of SQS Work Queue Events (${event.Records.length} Work Queue Records): \n${JSON.stringify(event)} \nContext: ${context}`)
-  
-  //Empty the BatchFail array
-  sqsBatchFail.batchItemFailures.forEach(() => {
-    sqsBatchFail.batchItemFailures.pop()
-  })
 
   let s3dbQM: S3DBQueueMessage = {
     workKey: "",
@@ -1415,168 +1343,256 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
     }
   }
 
-  //Process this Inbound Batch
-  for (const q of event.Records)
+
+  try
   {
-    
-    s3dbQM = JSON.parse(q.body)
-
-    //When Testing locally  (Launch config has pre-stored payload) - get some actual work queued
-    if (s3dbQM.workKey === "") {
-      s3dbQM.workKey = (await getAnS3ObjectforTesting(S3DBConfig.s3dropbucket_workbucket)) ?? ""
-    }
-
-    if (s3dbQM.workKey === "devtest.xml") {
-      //tqm.workKey = await getAnS3ObjectforTesting( tcc.s3DropBucketWorkBucket! ) ?? ""
-      s3dbQM.workKey = testS3Key
-      s3dbQM.custconfig.customer = testS3Key
-      S3DBConfig.s3dropbucket_workbucket = testS3Bucket
-      localTesting = true
-    } else {
-      testS3Key = ""
-      testS3Bucket = ""
-      localTesting = false
-    }
-    
-
-
-    if (typeof s3dbQM.custconfig.customer === "undefined")
+    if (process.env.AWS_REGION?.length ?? 0 > 6)
     {
-      S3DB_Logging("exception", "", `Exception Parsing Incoming Queue Message:  \n${JSON.stringify(s3dbQM)}`)
+      //s3 = new S3Client({region: process.env.s3DropBucketRegion})
+      s3 = new S3Client({region: process.env.AWS_REGION})
     }
+    else
+    {
+      s3 = new S3Client({region: 'us-east-1'})
+    }
+  
+    //If an obscure config does not exist in process.env then we need to get them all
+    if (
+      process.env["EventEmitterMaxListeners"] === undefined ||
+      process.env["EventEmitterMaxListeners"] === "" ||
+      process.env["EventEmitterMaxListeners"] === null
+    )
+    {
+      S3DBConfig = await getValidateS3DropBucketConfig()
+
+      S3DB_Logging("info", "901", `Parsed S3DropBucket Config:  process.env.S3DropBucketConfigFile: \n${JSON.stringify(S3DBConfig)} `)
+
+    }
+  
+    S3DB_Logging("info", "97", `Environment Vars: ${JSON.stringify(process.env)} `)
+    S3DB_Logging("info", "98", `S3DropBucket Options: ${JSON.stringify(S3DBConfig)} `)
+    S3DB_Logging("info", "99", `S3DropBucket Logging Options: ${process.env.S3DropBucketSelectiveLogging} `)
+
+    if (S3DBConfig.s3dropbucket_workqueuequiesce)
+    {
+      S3DB_Logging("warn", "923", `WorkQueue Quiesce is in effect, no New Work will be Queued up in the SQS Process Queue.`)
+      return
+    }
+
+    //if (S3DBConfig.WorkQueueBucketPurgeCount > 0) {
+    //  console.info(
+    //    `Purge Requested, Only action will be to Purge ${S3DBConfig.WorkQueueBucketPurge} of ${S3DBConfig.WorkQueueBucketPurgeCount} Records. `
+    //  )
+    //  const d = await purgeBucket(
+    //    Number(process.env["WorkQueueBucketPurgeCount"]!),
+    //    process.env["WorkQueueBucketPurge"]!
+    //  )
+    //  return d
+    //}
+
+    // Backoff strategy for failed invocations
+
+    //When an invocation fails, Lambda attempts to retry the invocation while implementing a backoff strategy.
+    // The backoff strategy differs slightly depending on whether Lambda encountered the failure due to an error in
+    //  your function code, or due to throttling.
+
+    //If your function code caused the error, Lambda gradually backs off retries by reducing the amount of
+    // concurrency allocated to your Amazon SQS event source mapping.If invocations continue to fail, Lambda eventually
+    //  drops the message without retrying.
+
+    //If the invocation fails due to throttling, Lambda gradually backs off retries by reducing the amount of
+    // concurrency allocated to your Amazon SQS event source mapping.Lambda continues to retry the message until
+    // the message's timestamp exceeds your queue's visibility timeout, at which point Lambda drops the message.
+
+    let custconfig: CustomerConfig = customersConfig
+
+    let postResult: string = "false"
+
+    S3DB_Logging("info", "506", `Received a Batch of SQS Work Queue Events (${event.Records.length} Work Queue Records): \n${JSON.stringify(event)} \nContext: ${context}`)
+  
+    //Empty the BatchFail array
+    sqsBatchFail.batchItemFailures.forEach(() => {
+      sqsBatchFail.batchItemFailures.pop()
+    })
+
+    //Process this Inbound Batch
+    for (const q of event.Records)
+    {
+    
+      s3dbQM = JSON.parse(q.body)
+
+      //When Testing locally  (Launch config has pre-stored payload) - get some actual work queued
+      if (s3dbQM.workKey === "")
+      {
+        s3dbQM.workKey = (await getAnS3ObjectforTesting(S3DBConfig.s3dropbucket_workbucket)) ?? ""
+      }
+
+      if (s3dbQM.workKey === "devtest.xml")
+      {
+        //tqm.workKey = await getAnS3ObjectforTesting( tcc.s3DropBucketWorkBucket! ) ?? ""
+        s3dbQM.workKey = testS3Key
+        s3dbQM.custconfig.customer = testS3Key
+        S3DBConfig.s3dropbucket_workbucket = testS3Bucket
+        localTesting = true
+      } else
+      {
+        testS3Key = ""
+        testS3Bucket = ""
+        localTesting = false
+      }
+    
+
+
+      if (typeof s3dbQM.custconfig.customer === "undefined")
+      {
+        S3DB_Logging("exception", "", `Exception Parsing Incoming Queue Message:  \n${JSON.stringify(s3dbQM)}`)
+      }
 
   
-    S3DB_Logging("info", "507", `Start Processing ${s3dbQM.workKey} off Work Queue. `)
+      S3DB_Logging("info", "507", `Start Processing ${s3dbQM.workKey} off Work Queue. `)
     
-    S3DB_Logging("info", "911", `Start Processing Work Item: SQS Event: \n${JSON.stringify(q)}`)
+      S3DB_Logging("info", "911", `Start Processing Work Item: SQS Event: \n${JSON.stringify(q)}`)
  
-    //try
-    //{
+      //try
+      //{
 
-    //} catch (e)
-    //{
-    //  S3DB_Logging("exception", "", `Exception - Retrieving Customer Config for Work Queue Processing (work file: ${s3dbQM.workKey} \n${e}} \n${JSON.stringify(s3dbQM)}`)
+      //} catch (e)
+      //{
+      //  S3DB_Logging("exception", "", `Exception - Retrieving Customer Config for Work Queue Processing (work file: ${s3dbQM.workKey} \n${e}} \n${JSON.stringify(s3dbQM)}`)
+      //}
+
+
+      try
+      {
+        custconfig = await getFormatCustomerConfig(s3dbQM.custconfig.customer) as CustomerConfig
+     
+
+        const work = await getS3Work(s3dbQM.workKey, S3DBConfig.s3dropbucket_workbucket)
+
+        if (work.length > 0)
+        {
+          //Retrieve Contents of the Work File
+          S3DB_Logging("info", "512", `S3 Retrieve results for Work file ${s3dbQM.workKey}: ${JSON.stringify(work)}`)
+
+          if ((custconfig.updatetype.toLowerCase() === 'referenceset') || localTesting)
+            postResult = await postToConnect(
+              work,
+              custconfig as CustomerConfig,
+              s3dbQM.updateCount,
+              s3dbQM.workKey
+            )
+
+        
+          if (custconfig.updatetype.toLowerCase() === 'relational' ||
+            custconfig.updatetype.toLowerCase() === 'dbkeyed' ||
+            custconfig.updatetype.toLowerCase() === 'dbnonkeyed')
+            postResult = await postToCampaign(
+              work,
+              custconfig as CustomerConfig,
+              s3dbQM.updateCount,
+              s3dbQM.workKey
+            )
+
+          //  postResult can contain:
+          //retry
+          //unsuccessful post
+          //partially successful
+          //successfully posted
+
+          S3DB_Logging("info", "936", `POST Result for ${s3dbQM.workKey}: ${postResult} `)
+
+          if (postResult.indexOf("retry") > -1)
+          {
+            S3DB_Logging("warn", "516", `Retry Marked for ${s3dbQM.workKey}. Returning Work Item ${q.messageId
+              } to Process Queue (Total Retry Count: ${sqsBatchFail.batchItemFailures.length + 1}). \n${postResult} `
+            )
+
+            //Add to BatchFail array to Retry processing the work
+            sqsBatchFail.batchItemFailures.push({itemIdentifier: q.messageId})
+
+            S3DB_Logging("info", "509", `${s3dbQM.workKey} added back to Queue for Retry \nRetry Queue:\n ${JSON.stringify(sqsBatchFail)} `
+            )
+          } else if (postResult.toLowerCase().indexOf("unsuccessful post") > -1)
+          {
+            S3DB_Logging("error", "935", `Error - Unsuccessful POST (Hard Failure) for ${s3dbQM.workKey}: \n${postResult}\nCustomer: ${custconfig.customer}, ListId: ${custconfig.listid} ListName: ${custconfig.listname} `)
+          } else
+          {
+            if (postResult.toLowerCase().indexOf("partially successful") > -1)
+            {
+              S3DB_Logging("info", "508", `Work Partially Successful Posted to Campaign (work file (${s3dbQM.workKey}, updated ${s3dbQM.custconfig.listname} from ${s3dbQM.workKey}, however there were some exceptions: \n${postResult} `)
+            } else if (
+              postResult.toLowerCase().indexOf("successfully posted") > -1
+            )
+            {
+              S3DB_Logging("info", "508", `(508) Work Successfully Posted to Campaign (work file (${s3dbQM.workKey}, updated ${s3dbQM.custconfig.listname} from ${s3dbQM.workKey}, \n${postResult} \nThe Work will be deleted from the S3 Process Queue`)
+            }
+
+            //Delete the Work file
+            const d = await deleteS3Object(
+              s3dbQM.workKey,
+              S3DBConfig.s3dropbucket_workbucket
+            )
+            if (d === "204")
+            {
+
+              S3DB_Logging("info", "924", `Successful Deletion of Queued Work file: ${s3dbQM.workKey}`)
+
+            } else S3DB_Logging("error", "924", `Failed to Delete ${s3dbQM.workKey}.Expected '204' but received ${d} `)
+
+            S3DB_Logging("info", "511", `Processed ${s3dbQM.updateCount} Updates from ${s3dbQM.workKey}`)
+
+            S3DB_Logging("info", "510", `Processed ${event.Records.length
+              } Work Queue Events. Posted: ${postResult}. \nItems Retry Count: ${sqsBatchFail.batchItemFailures.length
+              } \nItems Retry List: ${JSON.stringify(sqsBatchFail)} `
+            )
+          }
+        } else throw new Error(`Failed to retrieve work file(${s3dbQM.workKey}) `)
+      } catch (e)
+      {
+        S3DB_Logging("exception", "", `Exception - Processing Work File (${s3dbQM.workKey} off the Work Queue - \n${e}} `)
+      }
+    }
+
+    //let maintenance: (number | string[])[] = []
+    //if (S3DBConfig.S3DropBucketWorkQueueMaintHours > 0) {
+    //  try {
+    //    maintenance = (await maintainS3DropBucketQueueBucket()) ?? [0, ""]
+
+    //    if (S3DBConfig.SelectiveLogging.indexOf("_927,") > -1) {
+    //      const l = maintenance[0] as number
+    //      if (l > 0)
+    //        console.info(
+    //          `Selective Debug 927 - ReQueued Work Files: \n${maintenance} `
+    //        )
+    //      else
+    //        console.info(
+    //          `Selective Debug 927 - No Work files met criteria to ReQueue`
+    //        )
+    //    }
+    //  } catch (e) {
+    //    debugger
+    //  }
     //}
 
 
-   try
-    {
-     custconfig = await getFormatCustomerConfig(s3dbQM.custconfig.customer) as CustomerConfig
-     
+    S3DB_Logging("info", "507", `Completed Processing ${s3dbQM.workKey}. Return to Retry Queue List:\n${JSON.stringify(sqsBatchFail)} `)
 
-      const work = await getS3Work(s3dbQM.workKey, S3DBConfig.s3dropbucket_workbucket)
+    return sqsBatchFail
 
-      if (work.length > 0) {
-        //Retrieve Contents of the Work File
-        S3DB_Logging("info", "512", `S3 Retrieve results for Work file ${s3dbQM.workKey}: ${JSON.stringify(work)}`)
+    //For debugging - report no fails
+    // return {
+    //     batchItemFailures: [
+    //         {
+    //             itemIdentifier: ''
+    //         }
+    //     ]
+    // }
 
-        if ((custconfig.updatetype.toLowerCase() === 'referenceset') || localTesting)
-          postResult = await postToConnect(
-            work,
-            custconfig as CustomerConfig,
-            s3dbQM.updateCount,
-            s3dbQM.workKey
-          )
-
-        
-        if (custconfig.updatetype.toLowerCase() === 'relational' ||
-          custconfig.updatetype.toLowerCase() === 'dbkeyed' ||
-          custconfig.updatetype.toLowerCase() === 'dbnonkeyed')
-        postResult = await postToCampaign(
-          work,
-          custconfig as CustomerConfig,
-          s3dbQM.updateCount,
-          s3dbQM.workKey
-        )
-
-        //  postResult can contain:
-        //retry
-        //unsuccessful post
-        //partially successful
-        //successfully posted
-
-        S3DB_Logging("info", "936", `POST Result for ${s3dbQM.workKey}: ${postResult} `)
-
-        if (postResult.indexOf("retry") > -1) {
-          S3DB_Logging("warn", "516", `Retry Marked for ${s3dbQM.workKey}. Returning Work Item ${q.messageId
-            } to Process Queue (Total Retry Count: ${sqsBatchFail.batchItemFailures.length + 1}). \n${postResult} `
-          )
-
-          //Add to BatchFail array to Retry processing the work
-          sqsBatchFail.batchItemFailures.push({ itemIdentifier: q.messageId })
-
-          S3DB_Logging("info", "509", `${s3dbQM.workKey} added back to Queue for Retry \nRetry Queue:\n ${JSON.stringify(sqsBatchFail)} `
-          )
-        } else if (postResult.toLowerCase().indexOf("unsuccessful post") > -1)
-        {
-          S3DB_Logging("error", "935", `Error - Unsuccessful POST (Hard Failure) for ${s3dbQM.workKey}: \n${postResult}\nCustomer: ${custconfig.customer}, ListId: ${custconfig.listid} ListName: ${custconfig.listname} `)
-        } else {
-          if (postResult.toLowerCase().indexOf("partially successful") > -1) {
-            S3DB_Logging("info", "508", `Work Partially Successful Posted to Campaign (work file (${s3dbQM.workKey}, updated ${s3dbQM.custconfig.listname} from ${s3dbQM.workKey}, however there were some exceptions: \n${postResult} `)
-          } else if (
-            postResult.toLowerCase().indexOf("successfully posted") > -1
-          ) {
-            S3DB_Logging("info", "508", `(508) Work Successfully Posted to Campaign (work file (${s3dbQM.workKey}, updated ${s3dbQM.custconfig.listname} from ${s3dbQM.workKey}, \n${postResult} \nThe Work will be deleted from the S3 Process Queue`)
-          }
-
-          //Delete the Work file
-          const d = await deleteS3Object(
-            s3dbQM.workKey,
-            S3DBConfig.s3dropbucket_workbucket
-          )
-          if (d === "204") {
-
-            S3DB_Logging("info", "924", `Successful Deletion of Queued Work file: ${s3dbQM.workKey}`)
-
-          } else S3DB_Logging("error", "924", `Failed to Delete ${s3dbQM.workKey}.Expected '204' but received ${d} `)
-
-          S3DB_Logging("info", "511", `Processed ${s3dbQM.updateCount} Updates from ${s3dbQM.workKey}`)
-
-          S3DB_Logging("info", "510", `Processed ${event.Records.length
-            } Work Queue Events. Posted: ${postResult}. \nItems Retry Count: ${sqsBatchFail.batchItemFailures.length
-            } \nItems Retry List: ${JSON.stringify(sqsBatchFail)} `
-          )
-        }
-      } else throw new Error(`Failed to retrieve work file(${s3dbQM.workKey}) `)
-    } catch (e) {
-      S3DB_Logging("exception", "", `Exception - Processing Work File (${s3dbQM.workKey} off the Work Queue - \n${e}} `)
-    }
+  } catch (e)
+  {
+    S3DB_Logging("exception","",`QueueProcessorHandler Exception processing Work Queue items ${JSON.stringify(s3dbQM)} \n${e}`)
   }
 
-  //let maintenance: (number | string[])[] = []
-  //if (S3DBConfig.S3DropBucketWorkQueueMaintHours > 0) {
-  //  try {
-  //    maintenance = (await maintainS3DropBucketQueueBucket()) ?? [0, ""]
-
-  //    if (S3DBConfig.SelectiveLogging.indexOf("_927,") > -1) {
-  //      const l = maintenance[0] as number
-  //      if (l > 0)
-  //        console.info(
-  //          `Selective Debug 927 - ReQueued Work Files: \n${maintenance} `
-  //        )
-  //      else
-  //        console.info(
-  //          `Selective Debug 927 - No Work files met criteria to ReQueue`
-  //        )
-  //    }
-  //  } catch (e) {
-  //    debugger
-  //  }
-  //}
-
-
-  S3DB_Logging("info", "507", `Completed Processing ${s3dbQM.workKey}. Return to Retry Queue List:\n${JSON.stringify(sqsBatchFail)} `)
-
-  return sqsBatchFail
-
-  //For debugging - report no fails
-  // return {
-  //     batchItemFailures: [
-  //         {
-  //             itemIdentifier: ''
-  //         }
-  //     ]
-  // }
 }
 
 export const s3DropBucketSFTPHandler: Handler = async (
