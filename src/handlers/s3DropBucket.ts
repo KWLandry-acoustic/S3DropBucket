@@ -1364,9 +1364,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
     )
     {
       S3DBConfig = await getValidateS3DropBucketConfig()
-
       S3DB_Logging("info", "901", `Parsed S3DropBucket Config:  process.env.S3DropBucketConfigFile: \n${JSON.stringify(S3DBConfig)} `)
-
     }
   
     S3DB_Logging("info", "97", `Environment Vars: ${JSON.stringify(process.env)} `)
@@ -1408,7 +1406,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
 
     let postResult: string = "false"
 
-    S3DB_Logging("info", "506", `Received a Batch of SQS Work Queue Events (${event.Records.length} Work Queue Records): \n${JSON.stringify(event)} \nContext: ${context}`)
+    S3DB_Logging("info", "506", `Received a Batch of SQS Work Queue Events (${event.Records.length} Work Queue Records): \n${JSON.stringify(event)} \nContext: ${JSON.stringify(context)}`)
   
     //Empty the BatchFail array
     sqsBatchFail.batchItemFailures.forEach(() => {
@@ -1418,6 +1416,9 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
     //Process this Inbound Batch
     for (const q of event.Records)
     {
+
+      S3DB_Logging("info", "506", `Debug 2 -- (${event.Records.length} Work Queue Records): \n${JSON.stringify(event)} \nContext: ${JSON.stringify(context)}`)
+
 
       s3dbQM = JSON.parse(q.body)
 
@@ -1430,26 +1431,28 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
         S3DB_Logging("exception", "", `Exception Parsing Incoming Queue Message for Customer:  \n${JSON.stringify(s3dbQM)}`)
       }
 
+      S3DB_Logging("info", "506", `Debug 3 -- (${event.Records.length} Work Queue Records): \n${JSON.stringify(event)} \nContext: ${JSON.stringify(context)}`)
 
-      //When Testing locally  (Launch config has pre-stored payload) - get some actual work queued
-      if (s3dbQM.workKey === "")
-      {
-        s3dbQM.workKey = (await getAnS3ObjectforTesting(S3DBConfig.s3dropbucket_workbucket)) ?? ""
-      }
 
-      if (s3dbQM.workKey === "devtest.xml")
-      {
-        //tqm.workKey = await getAnS3ObjectforTesting( tcc.s3DropBucketWorkBucket! ) ?? ""
-        s3dbQM.workKey = testS3Key
-        s3dbQM.custconfig.customer = testS3Key
-        S3DBConfig.s3dropbucket_workbucket = testS3Bucket
-        localTesting = true
-      } else
-      {
-        testS3Key = ""
-        testS3Bucket = ""
-        localTesting = false
-      }
+      ////When Testing locally  (Launch config has pre-stored queue message payload) - get some actual work queued
+      //if (s3dbQM.workKey === "")
+      //{
+      //  s3dbQM.workKey = (await getAnS3ObjectforTesting(S3DBConfig.s3dropbucket_workbucket)) ?? ""
+      //}
+
+      //if (s3dbQM.workKey === "devtest.xml")
+      //{
+      //  //tqm.workKey = await getAnS3ObjectforTesting( tcc.s3DropBucketWorkBucket! ) ?? ""
+      //  s3dbQM.workKey = testS3Key
+      //  s3dbQM.custconfig.customer = testS3Key
+      //  S3DBConfig.s3dropbucket_workbucket = testS3Bucket
+      //  localTesting = true
+      //} else
+      //{
+      //  testS3Key = ""
+      //  testS3Bucket = ""
+      //  localTesting = false
+      //}
   
       S3DB_Logging("info", "507", `Start Processing ${s3dbQM.workKey} off Work Queue. `)
     
@@ -1465,11 +1468,21 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
 
       try
       {
+
+        S3DB_Logging("info", "506", `Debug 4 -- (${event.Records.length} Work Queue Records): \n${JSON.stringify(event)} \nContext: ${JSON.stringify(context)}`)
+
+        
         custconfig = await getFormatCustomerConfig(s3dbQM.custconfig.customer) as CustomerConfig
      
 
+        S3DB_Logging("info", "506", `Debug 5 -- (${event.Records.length} Work Queue Records): \n${JSON.stringify(event)} \nContext: ${JSON.stringify(context)}`)
+
+
         const work = await getS3Work(s3dbQM.workKey, S3DBConfig.s3dropbucket_workbucket)
 
+        S3DB_Logging("info", "506", `Debug 6 -- (${event.Records.length} Work Queue Records): \n${JSON.stringify(event)} \nContext: ${JSON.stringify(context)}`)
+
+        
         if (work.length > 0)
         {
           //Retrieve Contents of the Work File
