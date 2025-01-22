@@ -1426,6 +1426,10 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
       {
         S3DB_Logging("exception", "", `Exception Parsing Incoming Queue Message for WorkKey:  \n${JSON.stringify(s3dbQM)}`)
       }
+      if (typeof s3dbQM.custconfig === "undefined")
+      {
+        S3DB_Logging("exception", "", `Exception Parsing Incoming Queue Message for CustConfig:  \n${JSON.stringify(s3dbQM)}`)
+      }
       if (typeof s3dbQM.custconfig.customer === "undefined")
       {
         S3DB_Logging("exception", "", `Exception Parsing Incoming Queue Message for Customer:  \n${JSON.stringify(s3dbQM)}`)
