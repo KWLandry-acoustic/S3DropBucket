@@ -789,8 +789,8 @@ export default s3DropBucketHandler
 
 export function S3DB_Logging(level: string, index: string,  msg:string) {
 
-  const selectiveDebug = process.env.S3DropBucket_SelectiveLogging ?? S3DBConfig.s3dropbucket_selectivelogging ?? "_97,_98,_99_503,_504,_511,_901,_910,"
-    
+  const selectiveDebug = process.env.S3DropBucketSelectiveLogging ?? S3DBConfig.s3dropbucket_selectivelogging ?? "_97,_98,_99,_503,_504,_511,_901,_910,"
+  
   if (localTesting) process.env.S3DropBucket_LogLevel = "ALL"
 
   const li = `_${index},`
@@ -802,8 +802,8 @@ export function S3DB_Logging(level: string, index: string,  msg:string) {
   {
     if (process.env.S3DropBucket_LogLevel?.toLowerCase() === 'all') index = `(LOG ALL-${index})`
 
-    if (level.toLowerCase() === "info") console.info(`S3DBLog-Info ${index}: ${msg} \nversion: ${version}`)
-    if (level.toLowerCase() === "warn") console.warn(`S3DBLog-Warning ${index}: ${msg} \nversion: ${version}`)
+    if (level.toLowerCase() === "info")  console.info(`S3DBLog-Info ${index}: ${msg} \nversion: ${version}`)
+    if (level.toLowerCase() === "warn")  console.warn(`S3DBLog-Warning ${index}: ${msg} \nversion: ${version}`)
     if (level.toLowerCase() === "error") console.error(`S3DBLog-Error ${index}: ${msg} \nversion: ${version}`)
     if (level.toLowerCase() === "debug") console.debug(`S3DBLog-Debug ${index}: ${msg} \nversion: ${version}`)
   }
