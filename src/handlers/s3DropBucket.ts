@@ -1416,27 +1416,21 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
     //Process this Inbound Batch
     for (const q of event.Records)
     {
-
-      S3DB_Logging("info", "506", `Debug 2 -- (${event.Records.length} Work Queue Records): \n${JSON.stringify(event)} \nContext: ${JSON.stringify(context)}`)
-
-
+ 
       s3dbQM = JSON.parse(q.body)
 
       if (typeof s3dbQM.workKey === "undefined")
       {
-        S3DB_Logging("exception", "", `Exception Parsing Incoming Queue Message for WorkKey:  \n${JSON.stringify(s3dbQM)}`)
+        S3DB_Logging("error", "941", `Error Parsing Incoming Queue Message for WorkKey:  \n${JSON.stringify(s3dbQM)}`)
       }
       if (typeof s3dbQM.custconfig === "undefined")
       {
-        S3DB_Logging("exception", "", `Exception Parsing Incoming Queue Message for CustConfig:  \n${JSON.stringify(s3dbQM)}`)
+        S3DB_Logging("error", "941", `Error Parsing Incoming Queue Message for CustConfig:  \n${JSON.stringify(s3dbQM)}`)
       }
       if (typeof s3dbQM.custconfig.customer === "undefined")
       {
-        S3DB_Logging("exception", "", `Exception Parsing Incoming Queue Message for Customer:  \n${JSON.stringify(s3dbQM)}`)
+        S3DB_Logging("error", "941", `Error Parsing Incoming Queue Message for Customer:  \n${JSON.stringify(s3dbQM)}`)
       }
-
-      S3DB_Logging("info", "506", `Debug 3 -- (${event.Records.length} Work Queue Records): \n${JSON.stringify(event)} \nContext: ${JSON.stringify(context)}`)
-
 
       ////When Testing locally  (Launch config has pre-stored queue message payload) - get some actual work queued
       //if (s3dbQM.workKey === "")
@@ -1473,20 +1467,10 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
       try
       {
 
-        S3DB_Logging("info", "506", `Debug 4 -- (${event.Records.length} Work Queue Records): \n${JSON.stringify(event)} \nContext: ${JSON.stringify(context)}`)
-
-        
         custconfig = await getFormatCustomerConfig(s3dbQM.custconfig.customer) as CustomerConfig
-     
-
-        S3DB_Logging("info", "506", `Debug 5 -- (${event.Records.length} Work Queue Records): \n${JSON.stringify(event)} \nContext: ${JSON.stringify(context)}`)
-
 
         const work = await getS3Work(s3dbQM.workKey, S3DBConfig.s3dropbucket_workbucket)
 
-        S3DB_Logging("info", "506", `Debug 6 -- (${event.Records.length} Work Queue Records): \n${JSON.stringify(event)} \nContext: ${JSON.stringify(context)}`)
-
-        
         if (work.length > 0)
         {
           //Retrieve Contents of the Work File
