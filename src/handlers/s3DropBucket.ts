@@ -1431,6 +1431,13 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
       {
         S3DB_Logging("error", "941", `Error Parsing Incoming Queue Message for Customer:  \n${JSON.stringify(s3dbQM)}`)
       }
+      if (typeof s3dbQM.updateCount === "undefined")
+      {
+        S3DB_Logging("error", "941", `Error Parsing Incoming Queue Message for UpdateCount:  \n${JSON.stringify(s3dbQM)}`)
+        s3dbQM.updateCount = "Not Provided"
+      }
+
+
 
       ////When Testing locally  (Launch config has pre-stored queue message payload) - get some actual work queued
       //if (s3dbQM.workKey === "")
