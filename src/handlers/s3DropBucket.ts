@@ -2888,6 +2888,8 @@ async function storeAndQueueConnectWork(
 
     debugger
 
+    S3DB_Logging("info", "939", `Add Work File ${key} (from ${s3Key}) to S3 Work Bucket Result (\nBatch ${batchCount} of ${updateCount} records, File Stream Iter: ${iter}) \n\n${addWorkToS3WorkBucketResult}`)
+
     return {
       StoreS3WorkException: sqwError,
       StoreQueueWorkException: "",
@@ -2922,7 +2924,7 @@ async function storeAndQueueConnectWork(
     return {StoreQueueWorkException: sqwError, StoreS3WorkException: ""}
   }
 
-  S3DB_Logging("info", "915", `Results of Store to S3 Work Bucket and SQS Queue of Updates (Connect): ${JSON.stringify(
+  S3DB_Logging("info", "915", `Results of Storing and Queuing Work (Connect): ${JSON.stringify(
     addWorkToS3WorkBucketResult)} \n Add to Process Queue: ${JSON.stringify(addWorkToSQSWorkQueueResult)} `)
 
 
@@ -2996,7 +2998,6 @@ async function storeAndQueueCampaignWork(
   //     selectiveLogging("error", "", `Recs Count ${recs} does not reflect Updates Count ${Object.values(updates).length} `)
   //}
 
-  S3DB_Logging("info", "914", `Queuing Work File ${key} for ${s3Key}. Batch ${batchCount} of ${updateCount} records (File Stream Iter: ${iter})`)
 
   let addWorkToS3WorkBucketResult
   let addWorkToSQSWorkQueueResult
@@ -3004,7 +3005,7 @@ async function storeAndQueueCampaignWork(
   try {
     addWorkToS3WorkBucketResult = await addWorkToS3WorkBucket(xmlRows, key)
       .then((res) => {
-        return res //{"AddWorktoS3Results": res}
+        return res 
       })
       .catch((err) => {
         S3DB_Logging("exception", "", `Exception - AddWorkToS3WorkBucket ${err} (File Stream Iter: ${iter})`)
@@ -3014,6 +3015,8 @@ async function storeAndQueueCampaignWork(
     S3DB_Logging("exception", "", sqwError)
     
     debugger
+
+    S3DB_Logging("info", "939", `Add Work File ${key} (from ${s3Key}) to S3 Work Bucket Result (\nBatch ${batchCount} of ${updateCount} records, File Stream Iter: ${iter}) \n\n${addWorkToS3WorkBucketResult}`)
 
     return {
       StoreS3WorkException: sqwError,
@@ -3046,7 +3049,7 @@ async function storeAndQueueCampaignWork(
     return { StoreQueueWorkException: sqwError, StoreS3WorkException: "" }
   }
 
-  S3DB_Logging("info", "915", `Results after Store to S3 Work Bucket and SQS Queue (Campaign): ${JSON.stringify(
+  S3DB_Logging("info", "915", `Results of Storing and Queuing Work (Campaign): ${JSON.stringify(
     addWorkToS3WorkBucketResult)} \n Added to Work Queue: ${JSON.stringify(addWorkToSQSWorkQueueResult)} `)
   
   return {
@@ -3402,22 +3405,16 @@ async function addWorkToSQSWorkQueue(
     await sqsClient
       .send(new SendMessageCommand(sqsParams))
       .then((sqsSendMessageResult: SendMessageCommandOutput) => {
-        sqsWriteResult = JSON.stringify(
-          sqsSendMessageResult.$metadata.httpStatusCode,
-          null,
-          2
-        )
+        sqsWriteResult = JSON.stringify(sqsSendMessageResult.$metadata.httpStatusCode, null, 2)
         if (sqsWriteResult !== "200") {
-          const storeQueueWorkException = `Failed writing to SQS Process Queue (queue URL: ${
-            sqsParams.QueueUrl
-          }), ${sqsQMsgBody.workKey}, SQS Params${JSON.stringify(sqsParams)})`
-
+          const storeQueueWorkException = `Failed writing to SQS Process Queue (queue URL: ${sqsParams.QueueUrl }), ${sqsQMsgBody.workKey}, SQS Params${JSON.stringify(sqsParams)})`
           return { StoreQueueWorkException: storeQueueWorkException }
         }
-        sqsSendResult = sqsSendMessageResult
-        S3DB_Logging("info", "914", `Queued Work to SQS Process Queue (${sqsQMsgBody.workKey}) - Result: ${sqsWriteResult} `)
+        //sqsSendResult = sqsSendMessageResult
+        //S3DB_Logging("info", "940", `Queued Work to SQS Process Queue (${sqsQMsgBody.workKey}) - Result: ${sqsWriteResult} `)
+        //return sqsSendMessageResult
 
-        return sqsSendMessageResult
+        return sqsSendResult
       })
       .catch((err) => {
         debugger
@@ -3433,8 +3430,7 @@ async function addWorkToSQSWorkQueue(
       }), ${sqsQMsgBody.workKey}, SQS Params${JSON.stringify(sqsParams)}) - Error: ${e}`)
   }
 
-  S3DB_Logging("info", "915", `Work Queued (${key} for ${recCount} updates) to the Work Queue (${S3DBConfig.s3dropbucket_workqueue
-    }) \nSQS Params: \n${JSON.stringify(sqsParams)} \nresults: \n${JSON.stringify({SQSWriteResult: sqsWriteResult, AddToSQSQueue: JSON.stringify(sqsSendResult)})}`)
+  S3DB_Logging("info", "940", `Work Queued (${key} for ${recCount} updates) to the SQS Work Queue (${S3DBConfig.s3dropbucket_workqueue}) \nSQS Params: \n${JSON.stringify(sqsParams)} \nresults: \n${JSON.stringify({SQSWriteResult: sqsWriteResult, AddToSQSQueue: JSON.stringify(sqsSendResult)})}`)
 
   return {
     SQSWriteResult: sqsWriteResult,
