@@ -323,7 +323,7 @@ export interface ProcessS3ObjectStreamResult {
 }
 
 
-let ProcessS3ObjectStreamResolutionInitializer: ProcessS3ObjectStreamResult = {
+let ProcessS3ObjectStreamResolutionInit: ProcessS3ObjectStreamResult = {
   Key: "",                           // S3 File/Object that triggered this run
   Processed: "",                     // Total of all records processed this run
   ReadStreamEndResult: "",
@@ -605,11 +605,11 @@ export const s3DropBucketHandler: Handler = async (
 
       batchCount = 0
       recs = 0
-      let streamRes = ProcessS3ObjectStreamResolutionInitializer
+      let streamRes = ProcessS3ObjectStreamResolutionInit
 
       try
       {
-        ProcessS3ObjectStreamResolutionInitializer = await processS3ObjectContentStream(
+        ProcessS3ObjectStreamResolutionInit = await processS3ObjectContentStream(
           key,
           bucket,
           customersConfig
@@ -638,10 +638,10 @@ export const s3DropBucketHandler: Handler = async (
             //ToDo: refactor ProcessS3ObjectStreamResolution to dynamically add status sections rather than presets
 
             if (typeof streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult === "undefined")
-              streamRes.OnEndStreamEndResult = ProcessS3ObjectStreamResolutionInitializer.OnEndStreamEndResult
+              streamRes.OnEndStreamEndResult = ProcessS3ObjectStreamResolutionInit.OnEndStreamEndResult
 
             if (typeof streamRes.PutToFireHoseAggregatorResult === "undefined")
-              streamRes.PutToFireHoseAggregatorResult = ProcessS3ObjectStreamResolutionInitializer.PutToFireHoseAggregatorResult
+              streamRes.PutToFireHoseAggregatorResult = ProcessS3ObjectStreamResolutionInit.PutToFireHoseAggregatorResult
 
 
             
@@ -697,21 +697,23 @@ export const s3DropBucketHandler: Handler = async (
         
             const err = `Exception - Process S3 Object Stream Catch - \n${e} \nStack: \n${e.stack}`
           
-            ProcessS3ObjectStreamResolutionInitializer = {
-              ...ProcessS3ObjectStreamResolutionInitializer,
+            ProcessS3ObjectStreamResolutionInit = {
+              ...ProcessS3ObjectStreamResolutionInit,
               ProcessS3ObjectStreamCatch: err,
             }
 
-            S3DB_Logging("exception", "", JSON.stringify(ProcessS3ObjectStreamResolutionInitializer))
+            S3DB_Logging("exception", "", JSON.stringify(ProcessS3ObjectStreamResolutionInit))
           
-            return ProcessS3ObjectStreamResolutionInitializer
+            return ProcessS3ObjectStreamResolutionInit
           })
       } catch (e)
       {
         S3DB_Logging("exception", "", `Exception - Processing S3 Object Content Stream for ${key} \n${e}`)
       }
+
+
   
-      S3DB_Logging("info", "903", `Returned from Processing S3 Object Content Stream for ${key}. Result: ${JSON.stringify(ProcessS3ObjectStreamResolutionInitializer)}`)
+      S3DB_Logging("info", "903", `Returned from Processing S3 Object Content Stream for ${key}. Result: ${JSON.stringify(ProcessS3ObjectStreamResolutionInit)}`)
 
       //Check for important Config updates (which caches the config in Lambdas long-running cache)
       try
@@ -724,6 +726,7 @@ export const s3DropBucketHandler: Handler = async (
         S3DB_Logging("exception", "", `Exception refreshing S3DropBucket Config: ${e}`)
       }
 
+      //deprecated - left for future revisit
       //if (event.Records[0].s3.bucket.name && S3DBConfig.S3DropBucketMaintHours > 0) {
       //  const maintenance = await maintainS3DropBucket(customersConfig)
 
@@ -746,7 +749,7 @@ export const s3DropBucketHandler: Handler = async (
     //Need to protect against the Result String becoming excessively long
 
     const n = new Date().toISOString()
-    let objectStreamResolution = n + "  -  " + JSON.stringify(ProcessS3ObjectStreamResolutionInitializer) + "\n\n"
+    let objectStreamResolution = n + "  -  " + JSON.stringify(ProcessS3ObjectStreamResolutionInit) + "\n\n"
     const osrl = objectStreamResolution.length
 
     if (osrl > 10000)
@@ -755,28 +758,27 @@ export const s3DropBucketHandler: Handler = async (
       objectStreamResolution = `Excessive Length of ProcessS3ObjectStreamResolution: ${osrl} Truncated: \n ${objectStreamResolution.substring(0, 5000
       )} ... ${objectStreamResolution.substring(osrl - 5000, osrl)}`
 
-      S3DB_Logging("warn", "920", `Final outcome (truncated to first and last 5,000 characters) of all processing for ${ProcessS3ObjectStreamResolutionInitializer.Key}: \n ${JSON.stringify(objectStreamResolution)}`)
-
+      S3DB_Logging("warn", "920", `Final outcome (truncated to first and last 5,000 characters) of all processing for ${ProcessS3ObjectStreamResolutionInit.Key}: \n ${JSON.stringify(objectStreamResolution)}`)
     }
+
   
-    const k = ProcessS3ObjectStreamResolutionInitializer.Key
-    const p = ProcessS3ObjectStreamResolutionInitializer.Processed
+    const k = ProcessS3ObjectStreamResolutionInit.Key
+    const p = ProcessS3ObjectStreamResolutionInit.Processed
   
     S3DB_Logging("info", "505", `Completing S3DropBucket Processing of Request Id ${event.Records[0].responseElements["x-amz-request-id"]} for ${k} \n${p}`)
-    S3DB_Logging("info", "920", `Final outcome of all processing for ${ProcessS3ObjectStreamResolutionInitializer.Key}: \n${JSON.stringify(objectStreamResolution)}`)
+    S3DB_Logging("info", "920", `Final outcome of all processing for ${ProcessS3ObjectStreamResolutionInit.Key}: \n${JSON.stringify(objectStreamResolution)}`)
 
     //Done with logging the results of this pass, empty the object for the next processing cycle
-    ProcessS3ObjectStreamResolutionInitializer = {} as ProcessS3ObjectStreamResult
+    ProcessS3ObjectStreamResolutionInit = {} as ProcessS3ObjectStreamResult
 
     return objectStreamResolution   //Return the results logging object
   } catch (e)
-  {
-    console.error(`Exception thrown in Handler: ${e}`)
+  { 
+    S3DB_Logging("exception","",`Exception thrown in Handler: ${e}`)
   }
   
   
-  
-  
+  //end of handler
   }
 
 //
@@ -856,7 +858,7 @@ async function processS3ObjectContentStream(
 
   let streamResult: ProcessS3ObjectStreamResult  // = ProcessS3ObjectStreamResolution
 
-  ProcessS3ObjectStreamResolutionInitializer = await s3
+  ProcessS3ObjectStreamResolutionInit = await s3
     .send(new GetObjectCommand(s3C))
     .then(async (getS3StreamResult: GetObjectCommandOutput) => {
       if (getS3StreamResult.$metadata.httpStatusCode != 200)
@@ -1082,7 +1084,10 @@ async function processS3ObjectContentStream(
                 
                 //
                 //Next, Build a consistent Object of an Array of Objects
-                // [{},{},{},...]       
+                // [{},{},{},...]
+
+                //Debug buried undefined exception in Handler
+                if(typeof oa === "undefined") S3DB_Logging("exception","",`OnData Array is Undefined`)
 
                 if (Array.isArray(oa))
                 {
@@ -1277,7 +1282,7 @@ async function processS3ObjectContentStream(
     })
 
   // return processS3ObjectResults
-  return ProcessS3ObjectStreamResolutionInitializer
+  return ProcessS3ObjectStreamResolutionInit
   //return streamResult
 }
 
@@ -2622,7 +2627,7 @@ async function packageUpdates(workSet: object[], key: string, custConfig: Custom
 
   let sqwResult: object = {}
 
-  S3DB_Logging("info", "918", `Processing ${workSet.length} updates from ${key} (File Stream Iter: ${iter}). \nBatch count so far ${batchCount}`)
+  S3DB_Logging("info", "918", `Processing ${workSet.length} updates from ${key} (File Stream Iter: ${iter}). \nBatch count so far ${batchCount}. `)
 
   //Check if these updates are to be Aggregated or this is an Aggregated file coming through. 
 
@@ -2726,7 +2731,7 @@ async function packageUpdates(workSet: object[], key: string, custConfig: Custom
         //console.info( `Debug sqwResult ${ JSON.stringify( sqwResult ) }` )
       }
 
-      S3DB_Logging("info", "918", `PackageUpdates StoreAndQueueWork for ${key} (File Stream Iter: ${iter}). \nFor a total of ${recs} Updates in ${batchCount} Batches.  Result: \n${JSON.stringify(sqwResult)} `)
+      S3DB_Logging("info", "921", `PackageUpdates StoreAndQueueWork for ${key} (File Stream Iter: ${iter}). \nFor a total of ${recs} Updates in ${batchCount} Batches.  Result: \n${JSON.stringify(sqwResult)} `)
   
     } catch (e)
     {
@@ -4392,21 +4397,20 @@ const query = `mutation updateMultipleContacts($dataSetId: ID!, $updateContactIn
 
   let variables: VariablesUpdateContacts = {"dataSetId": config.datasetid, "updateContactInputs": []}
 
-
-  const variables1 = {
-    dataSetId: "config.datasetId",
-    updateContactInputs: [
-      {
-        key: config.updateKey,
-        to: {
-          attributes: [
-            {name: "Country", value: "Germany"},
-            {name: "Cell Phone", value: "+4960100000001"}
-          ]
-        }
-      }
-    ]
-  }
+  //const variables1 = {
+  //  dataSetId: "config.datasetId",
+  //  updateContactInputs: [
+  //    {
+  //      key: config.updateKey,
+  //      to: {
+  //        attributes: [
+  //          {name: "Country", value: "Germany"},
+  //          {name: "Cell Phone", value: "+4960100000001"}
+  //        ]
+  //      }
+  //    }
+  //  ]
+  //}
 
 
   for (const upd in updates)
