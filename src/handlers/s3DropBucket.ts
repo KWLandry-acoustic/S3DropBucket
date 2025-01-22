@@ -1418,8 +1418,18 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
     //Process this Inbound Batch
     for (const q of event.Records)
     {
-    
+
       s3dbQM = JSON.parse(q.body)
+
+      if (typeof s3dbQM.workKey === "undefined")
+      {
+        S3DB_Logging("exception", "", `Exception Parsing Incoming Queue Message for WorkKey:  \n${JSON.stringify(s3dbQM)}`)
+      }
+      if (typeof s3dbQM.custconfig.customer === "undefined")
+      {
+        S3DB_Logging("exception", "", `Exception Parsing Incoming Queue Message for Customer:  \n${JSON.stringify(s3dbQM)}`)
+      }
+
 
       //When Testing locally  (Launch config has pre-stored payload) - get some actual work queued
       if (s3dbQM.workKey === "")
@@ -1440,14 +1450,6 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
         testS3Bucket = ""
         localTesting = false
       }
-    
-
-
-      if (typeof s3dbQM.custconfig.customer === "undefined")
-      {
-        S3DB_Logging("exception", "", `Exception Parsing Incoming Queue Message:  \n${JSON.stringify(s3dbQM)}`)
-      }
-
   
       S3DB_Logging("info", "507", `Start Processing ${s3dbQM.workKey} off Work Queue. `)
     
@@ -1460,7 +1462,6 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
       //{
       //  S3DB_Logging("exception", "", `Exception - Retrieving Customer Config for Work Queue Processing (work file: ${s3dbQM.workKey} \n${e}} \n${JSON.stringify(s3dbQM)}`)
       //}
-
 
       try
       {
