@@ -628,7 +628,7 @@ export const s3DropBucketHandler: Handler = async (
             //Don't delete the test data
             if (localTesting)
             {
-              S3DB_Logging("info", "504", `Processing Complete for ${key} (Test Data - Not Deleting)`)
+              S3DB_Logging("info", "504", `Processing Complete for ${key} (Test Data - Not Deleting). \n${JSON.stringify(streamRes)}`)
               streamRes = {...streamRes, DeleteResult: `Processing Complete for ${key} (Test Data - Not Deleting)`}
               return streamRes
             }
@@ -667,7 +667,7 @@ export const s3DropBucketHandler: Handler = async (
                     ...streamRes,
                     DeleteResult: JSON.stringify(delResultCode)
                   }
-                  S3DB_Logging("error", "504", `Processing Successful, but Unsuccessful Delete of ${key}, Expected 204 result code, received ${delResultCode}`
+                  S3DB_Logging("error", "504", `Processing Successful, but Unsuccessful Delete of ${key}, Expected 204 result code, received ${delResultCode} \n\n${JSON.stringify(streamRes)}`
                   )
                 } else
                 {
@@ -675,11 +675,11 @@ export const s3DropBucketHandler: Handler = async (
                     ...streamRes,
                     DeleteResult: `Successful Delete of ${key}  (Result ${JSON.stringify(delResultCode)})`
                   }
-                  S3DB_Logging("info", "504", `Processing Successful, Delete of ${key} Successful (Result ${delResultCode}).`)
+                  S3DB_Logging("info", "504", `Processing Successful, Successful Delete of ${key} (Result ${delResultCode}). \n${JSON.stringify(streamRes)}`)
                 }
               } catch (e)
               {
-                S3DB_Logging("exception", "", `Exception - Deleting S3 Object after successful processing of the Content Stream for ${key} \n${e}`)
+                S3DB_Logging("exception", "", `Exception - Deleting S3 Object after successful processing of the Content Stream for ${key} \n${e} \n\n${JSON.stringify(streamRes)}`)
               }
             }
             else
