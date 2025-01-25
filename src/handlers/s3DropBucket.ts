@@ -3307,7 +3307,8 @@ async function putToFirehose(chunks: object[], key: string, cust: string, iter: 
             })
             .catch((e) => {
               S3DB_Logging("exception", "", `Exception - Put to Firehose Aggregator (promise catch) (File Stream Iter: ${iter}) for ${key} \n${e} `)
-
+              
+              firehosePutResult.PutToFireHoseAggregatorResult = "Exception"
               firehosePutResult.PutToFireHoseAggregatorResultDetails = `UnSuccessful Put to Firehose Aggregator for ${key} (File Stream Iter: ${iter}) \n ${JSON.stringify(e)} `
               firehosePutResult.PutToFireHoseException = `Exception - Put to Firehose Aggregator for ${key} (File Stream Iter: ${iter}) \n${e} `
               
