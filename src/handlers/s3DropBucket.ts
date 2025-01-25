@@ -116,7 +116,7 @@ import sftpClient, {ListFilterFunction} from "ssh2-sftp-client"
 
 let s3 = {} as S3Client
 
-const client = new FirehoseClient()
+const fh_Client = new FirehoseClient({region: process.env.s3DropBucketRegion})
 
 const SFTPClient = new sftpClient()
 
@@ -124,7 +124,7 @@ const SFTPClient = new sftpClient()
 //For when needed to reference Lambda execution environment /tmp folder
 // import { ReadStream, close } from 'fs'
 
-const sqsClient = new SQSClient({})
+const sqsClient = new SQSClient({region: process.env.s3DropBucketRegion})
 
 export type sqsObject = {
   bucketName: string
@@ -789,7 +789,7 @@ export default s3DropBucketHandler
 
 export function S3DB_Logging(level: string, index: string,  msg:string) {
 
-  const selectiveDebug = process.env.S3DropBucketSelectiveLogging ?? S3DBConfig.s3dropbucket_selectivelogging ?? "_97,_98,_99,_503,_504,_511,_901,_910,"
+  const selectiveDebug = process.env.S3DropBucketSelectiveLogging ?? S3DBConfig.s3dropbucket_selectivelogging ?? "_97,_98,_99,_503,_504,_511,_901,_910,_924,"
   
   if (localTesting) process.env.S3DropBucket_LogLevel = "ALL"
 
@@ -1434,7 +1434,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
       if (typeof s3dbQM.updateCount === "undefined")
       {
         S3DB_Logging("error", "941", `Error Parsing Incoming Queue Message for UpdateCount:  \n${JSON.stringify(s3dbQM)}`)
-        s3dbQM.updateCount = "Not Provided"
+        s3dbQM.updateCount = "'Not Provided'"
       }
 
 
@@ -1503,39 +1503,44 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
             )
 
           //  postResult can contain:
-          //retry
-          //unsuccessful post
-          //partially successful
-          //successfully posted
+          //      retry
+          //      unsuccessful post
+          //      partially successful
+          //      successfully posted
 
           S3DB_Logging("info", "936", `POST Result for ${s3dbQM.workKey}: ${postResult} `)
 
+          let deleteWork = false
+
           if (postResult.indexOf("retry") > -1)
           {
-            S3DB_Logging("warn", "516", `Retry Marked for ${s3dbQM.workKey}. Returning Work Item ${q.messageId
-              } to Process Queue (Total Retry Count: ${sqsBatchFail.batchItemFailures.length + 1}). \n${postResult} `
-            )
+            S3DB_Logging("warn", "516", `Retry Marked for ${s3dbQM.workKey}. Returning Work Item ${q.messageId} to Process Queue (Total Retry Count: ${sqsBatchFail.batchItemFailures.length + 1}). \n${postResult} `)
 
-            //Add to BatchFail array to Retry processing the work
+            //Add to SQS BatchFail array to Retry processing the work
             sqsBatchFail.batchItemFailures.push({itemIdentifier: q.messageId})
 
-            S3DB_Logging("info", "509", `${s3dbQM.workKey} added back to Queue for Retry \nRetry Queue:\n ${JSON.stringify(sqsBatchFail)} `
-            )
-          } else if (postResult.toLowerCase().indexOf("unsuccessful post") > -1)
+            S3DB_Logging("warn", "509", `${s3dbQM.workKey} added back to Queue for Retry \nRetry Queue:\n ${JSON.stringify(sqsBatchFail)} `)
+          }
+          else if (postResult.toLowerCase().indexOf("unsuccessful post") > -1)
           {
             S3DB_Logging("error", "935", `Error - Unsuccessful POST (Hard Failure) for ${s3dbQM.workKey}: \n${postResult}\nCustomer: ${custconfig.customer}, ListId: ${custconfig.listid} ListName: ${custconfig.listname} `)
-          } else
+          }
+          else if (postResult.toLowerCase().indexOf("partially successful") > -1)
           {
-            if (postResult.toLowerCase().indexOf("partially successful") > -1)
-            {
-              S3DB_Logging("info", "508", `Work Partially Successful Posted to Campaign (work file (${s3dbQM.workKey}, updated ${s3dbQM.custconfig.listname} from ${s3dbQM.workKey}, however there were some exceptions: \n${postResult} `)
-            } else if (
-              postResult.toLowerCase().indexOf("successfully posted") > -1
-            )
-            {
-              S3DB_Logging("info", "508", `(508) Work Successfully Posted to Campaign (work file (${s3dbQM.workKey}, updated ${s3dbQM.custconfig.listname} from ${s3dbQM.workKey}, \n${postResult} \nThe Work will be deleted from the S3 Process Queue`)
-            }
+            S3DB_Logging("warn", "508", `Work Partially Successful Post of Updates (work file (${s3dbQM.workKey}, updated ${s3dbQM.custconfig.listname} from ${s3dbQM.workKey}, however there were some exceptions: \n${postResult} `)
+          }
+          else if (postResult.toLowerCase().indexOf("successfully posted") > -1)
+          {
+            S3DB_Logging("info", "508", `Work Successfully Posted (work file (${s3dbQM.workKey}, updated ${s3dbQM.custconfig.listname} from ${s3dbQM.workKey}, \n${postResult} \nThe Work will now be deleted from the S3 Process Queue`)
+            deleteWork = true
+          }
+          else
+          {
+            S3DB_Logging("error", "508", `Results of Posting Work is not determined: ${JSON.stringify(postResult)} \n(work file (${s3dbQM.workKey}, updated ${s3dbQM.custconfig.listname} from ${s3dbQM.workKey}, \n${postResult}`)
+          }
 
+          if (deleteWork)
+          {
             //Delete the Work file
             const d = await deleteS3Object(
               s3dbQM.workKey,
@@ -1543,18 +1548,23 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
             )
             if (d === "204")
             {
-
               S3DB_Logging("info", "924", `Successful Deletion of Queued Work file: ${s3dbQM.workKey}`)
-
             } else S3DB_Logging("error", "924", `Failed to Delete ${s3dbQM.workKey}.Expected '204' but received ${d} `)
+          }
 
             S3DB_Logging("info", "511", `Processed ${s3dbQM.updateCount} Updates from ${s3dbQM.workKey}`)
 
-            S3DB_Logging("info", "510", `Processed ${event.Records.length
-              } Work Queue Events. Posted: ${postResult}. \nItems Retry Count: ${sqsBatchFail.batchItemFailures.length
-              } \nItems Retry List: ${JSON.stringify(sqsBatchFail)} `
+            S3DB_Logging("info", "510", `Processed ${event.Records.length} Work Queue Events. Posted: ${postResult}. 
+            \nItems Retry Count: ${sqsBatchFail.batchItemFailures.length} 
+            \nItems Retry List: ${JSON.stringify(sqsBatchFail)} `
             )
-          }
+          
+          //ToDo: need to add similar status object like S3ObjectStreamResolution to QueueProcessor reporting
+          // S3DropBucketQueueProcessorResolution.postStatus = ....
+          // S3DropBucketQueueProcessorResolution.deleteStatus = ....
+          // S3DropBucketQueueProcessorResolution.returnedToQueueStatus = ....
+
+          
         } else throw new Error(`Failed to retrieve work file(${s3dbQM.workKey}) `)
       } catch (e)
       {
@@ -1562,6 +1572,9 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
       }
     }
 
+
+    //Deprecated but left for future use in a new treatment for maintenance
+    //
     //let maintenance: (number | string[])[] = []
     //if (S3DBConfig.S3DropBucketWorkQueueMaintHours > 0) {
     //  try {
@@ -2660,7 +2673,7 @@ async function packageUpdates(workSet: object[], key: string, custConfig: Custom
 
   let sqwResult: object = {}
 
-  S3DB_Logging("info", "918", `Processing ${workSet.length} updates from ${key} (File Stream Iter: ${iter}). \nBatch count so far ${batchCount}. `)
+  S3DB_Logging("info", "918", `Packaging ${workSet.length} updates from ${key} (File Stream Iter: ${iter}). \nBatch count so far ${batchCount}. `)
 
   //Check if these updates are to be Aggregated or this is an Aggregated file coming through. 
 
@@ -2714,7 +2727,7 @@ async function packageUpdates(workSet: object[], key: string, custConfig: Custom
       }
     }
     
-    S3DB_Logging("info", "943", `Completed processing ${key} (File Stream Iter: ${iter}) \n${JSON.stringify(sqwResult)}`)
+    S3DB_Logging("info", "943", `Completed FireHose Aggregator processing ${key} (File Stream Iter: ${iter}) \n${JSON.stringify(sqwResult)}`)
 
     return sqwResult = {
       ...sqwResult,
@@ -2741,31 +2754,26 @@ async function packageUpdates(workSet: object[], key: string, custConfig: Custom
       
         //Ok, now send to appropriate staging for actually updating endpoint (Campaign or Connect)
         if (custConfig.targetupdate.toLowerCase() === "connect")
-          sqwResult = await storeAndQueueConnectWork(updates, key, custConfig, iter).then(
-            (res) => {
-              //console.info( `Debug Await StoreAndQueueWork Result: ${ JSON.stringify( res ) }` )
-
+          sqwResult = await storeAndQueueConnectWork(updates, key, custConfig, iter)
+            .then((res) => {
+              //console.info( `Debug Await StoreAndQueueWork (Connect) Result: ${ JSON.stringify( res ) }` )
               return res
-            }
-          )
+            })
         else if (custConfig.targetupdate.toLowerCase() === "campaign")
         {
-
-          sqwResult = await storeAndQueueCampaignWork(updates, key, custConfig, iter).then(
-            (res) => {
-              //console.info( `Debug Await StoreAndQueueWork Result: ${ JSON.stringify( res ) }` )
-
+          sqwResult = await storeAndQueueCampaignWork(updates, key, custConfig, iter)
+            .then((res) => {
+              //console.info( `Debug Await StoreAndQueueWork (Campaign) Result: ${ JSON.stringify( res ) }` )
               return res
-            }
-          )
+            })
         }
-        else throw new Error(`Target for Update does not match any Target: ${custConfig.targetupdate}`)
+        else
+        {
+          throw new Error(`Target for Update does not match any Target: ${custConfig.targetupdate}`)
+        }
 
-        //console.info( `Debug sqwResult ${ JSON.stringify( sqwResult ) }` )
-      }
-
-      S3DB_Logging("info", "921", `PackageUpdates StoreAndQueueWork for ${key} (File Stream Iter: ${iter}). \nFor a total of ${recs} Updates in ${batchCount} Batches.  Result: \n${JSON.stringify(sqwResult)} `)
-  
+        S3DB_Logging("info", "921", `PackageUpdates StoreAndQueueWork for ${key} (File Stream Iter: ${iter}). \nFor a total of ${recs} Updates in ${batchCount} Batches.  Result: \n${JSON.stringify(sqwResult)} `)
+    }
     } catch (e)
     {
       debugger
@@ -2957,9 +2965,8 @@ async function storeAndQueueConnectWork(
     return {StoreQueueWorkException: sqwError, StoreS3WorkException: ""}
   }
 
-  S3DB_Logging("info", "915", `Results of Storing and Queuing Work (Connect): ${JSON.stringify(
-    addWorkToS3WorkBucketResult)} \n Add to Process Queue: ${JSON.stringify(addWorkToSQSWorkQueueResult)} `)
-
+  S3DB_Logging("info", "915", `Results of Storing and Queuing (Connect) Work ${key} to Work Queue: ${JSON.stringify(addWorkToSQSWorkQueueResult)} \n${JSON.stringify(
+    addWorkToS3WorkBucketResult)}`)
 
 //debugger
 //  //Testing - Call POST to Connect immediately
@@ -3082,8 +3089,8 @@ async function storeAndQueueCampaignWork(
     return { StoreQueueWorkException: sqwError, StoreS3WorkException: "" }
   }
 
-  S3DB_Logging("info", "915", `Results of Storing and Queuing Work (Campaign): ${JSON.stringify(
-    addWorkToS3WorkBucketResult)} \n Added to Work Queue: ${JSON.stringify(addWorkToSQSWorkQueueResult)} `)
+  S3DB_Logging("info", "915", `Results of Storing and Queuing (Campaign) Work ${key} to Work Queue: ${JSON.stringify(addWorkToSQSWorkQueueResult)} \n${JSON.stringify(
+    addWorkToS3WorkBucketResult)}`)
   
   return {
     AddWorkToS3WorkBucketResults: addWorkToS3WorkBucketResult,
@@ -3234,6 +3241,9 @@ async function putToFirehose(chunks: object[], key: string, cust: string, iter: 
   const tu = chunks.length
   let ut = 0
 
+  let x=0
+
+
   try
   {
 
@@ -3252,61 +3262,79 @@ async function putToFirehose(chunks: object[], key: string, cust: string, iter: 
         },
       } as PutRecordCommandInput
 
-      const fireCommand = new PutRecordCommand(fp)
+      const firehoseCommand = new PutRecordCommand(fp)
 
-      let firehosePutResult: object = 
+      interface FireHosePutResult {
+        PutToFireHoseAggregatorResult: string
+        PutToFireHoseAggregatorResultDetails: string
+        PutToFireHoseException: string
+        }
+      
+      let firehosePutResult: FireHosePutResult = 
         {
           PutToFireHoseAggregatorResult: "",
           PutToFireHoseAggregatorResultDetails: "",
           PutToFireHoseException: "",
         }
 
-      try
+      let fhRetry = true
+      while (fhRetry)
       {
-        putFirehoseResp = await client
-          .send(fireCommand)
-          .then((res: PutRecordCommandOutput) => {
+        try
+        {
+          putFirehoseResp = await fh_Client.send(firehoseCommand)
+            .then((res: PutRecordCommandOutput) => {
 
-            S3DB_Logging("info", "922", `Inbound Update from ${key} - Put to Firehose Aggregator (File Stream Iter: ${iter}) Detailed Result: \n${fd.toString()} \n\nFirehose Result: ${JSON.stringify(res)} `)
+              S3DB_Logging("info", "922", `Inbound Update from ${key} - Put to Firehose Aggregator (File Stream Iter: ${iter}) Detailed Result: \n${fd.toString()} \n\nFirehose Result: ${JSON.stringify(res)} `)
             
-            if (res.$metadata.httpStatusCode === 200)
-            {
-              ut++
-
-              firehosePutResult =
+              if (res.$metadata.httpStatusCode === 200)
               {
-                PutToFireHoseAggregatorResult: `${res.$metadata.httpStatusCode}`,
-                PutToFireHoseAggregatorResultDetails: `Successful Put to Firehose Aggregator for ${key} (File Stream Iter: ${iter}).\n${JSON.stringify(res)} \n${res.RecordId} `,
-                PutToFireHoseException: "",
-              }
-            } else
-            {
-              firehosePutResult =
+                ut++
+                
+                firehosePutResult.PutToFireHoseAggregatorResult = `${res.$metadata.httpStatusCode}`
+                firehosePutResult.PutToFireHoseAggregatorResultDetails = `Successful Put to Firehose Aggregator for ${key} (File Stream Iter: ${iter}).\n${JSON.stringify(res)} \n${res.RecordId} `
+                firehosePutResult.PutToFireHoseException = ""
+               
+              } else
               {
-                PutToFireHoseAggregatorResult: `${res.$metadata.httpStatusCode}`,
-                PutToFireHoseAggregatorResultDetails: `UnSuccessful Put to Firehose Aggregator for ${key} (File Stream Iter: ${iter}) \n ${JSON.stringify(res)} `,
-                PutToFireHoseException: "",
+                firehosePutResult.PutToFireHoseAggregatorResult = `${res.$metadata.httpStatusCode}`
+                firehosePutResult.PutToFireHoseAggregatorResultDetails = `UnSuccessful Put to Firehose Aggregator for ${key} (File Stream Iter: ${iter}) \n ${JSON.stringify(res)} `
+                firehosePutResult.PutToFireHoseException = ""
               }
-            }
-            
-            return firehosePutResult
 
-          })
-          .catch((e) => {
-            S3DB_Logging("exception", "", `Exception - Put to Firehose Aggregator (promise catch) (File Stream Iter: ${iter}) for ${key} \n${e} `)
+              return firehosePutResult
 
-            firehosePutResult =
-            {
-              PutToFireHoseAggregatorResultDetails: `UnSuccessful Put to Firehose Aggregator for ${key} (File Stream Iter: ${iter}) \n ${JSON.stringify(e)} `,
-              PutToFireHoseException: `Exception - Put to Firehose Aggregator for ${key} (File Stream Iter: ${iter}) \n${e} `
-            }
+            })
+            .catch((e) => {
+              S3DB_Logging("exception", "", `Exception - Put to Firehose Aggregator (promise catch) (File Stream Iter: ${iter}) for ${key} \n${e} `)
 
-            return firehosePutResult
-          })
-      } catch (e)
-      {
-        S3DB_Logging("exception", "", `Exception - PutToFirehose (catch) (File Stream Iter: ${iter}) \n${e} `)
+              firehosePutResult.PutToFireHoseAggregatorResultDetails = `UnSuccessful Put to Firehose Aggregator for ${key} (File Stream Iter: ${iter}) \n ${JSON.stringify(e)} `
+              firehosePutResult.PutToFireHoseException = `Exception - Put to Firehose Aggregator for ${key} (File Stream Iter: ${iter}) \n${e} `
+              
+              return firehosePutResult
+            })
+          
+          x++
+          if (x % 20 === 0)
+          {
+            debugger
+          }
+          if (firehosePutResult.PutToFireHoseAggregatorResultDetails.indexOf("ServiceUnavailableException: Slow down") > -1)
+          {
+            fhRetry = true
+            setTimeout(() => { }, 100)
+          }
+          else fhRetry = false
+
+        } catch (e)
+        {
+          S3DB_Logging("exception", "", `Exception - PutToFirehose (catch) (File Stream Iter: ${iter}) \n${e} `)
+        }
+
       }
+
+      S3DB_Logging("info", "922", `Completed Put to Firehose Aggregator (from ${key} - File Stream Iter: ${iter}) Detailed Result: \n${fd.toString()} \n\nFirehose Result: ${JSON.stringify(firehosePutResult)} `)
+
     }
 
     if (tu === ut) S3DB_Logging("info", "942", `Put to Firehose Aggregator results for inbound Updates (File Stream Iter: ${iter}) from ${key}. Successfully sent ${ut} of ${tu} updates to Aggregator.`)
