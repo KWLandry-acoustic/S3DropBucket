@@ -621,8 +621,7 @@ export const s3DropBucketHandler: Handler = async (
             streamRes.Key = key
             streamRes.Processed = streamRes.OnEndRecordStatus
 
-            S3DB_Logging("info", "503", `Completed processing all records of the S3 Object ${key} \neTag: ${et}. \nStatus: ${streamRes.OnEndRecordStatus}`
-            )
+            S3DB_Logging("info", "503", `Completed processing all records of the S3 Object ${key} \neTag: ${et}. \nStatus: ${streamRes.OnEndRecordStatus}`)
           
 
             //Don't delete the test data
@@ -637,13 +636,32 @@ export const s3DropBucketHandler: Handler = async (
             // all of the object may not be filled in,
             //ToDo: refactor ProcessS3ObjectStreamResolution to dynamically add status sections rather than presets
 
+
             if (typeof streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult === "undefined")
-              streamRes.OnEndStreamEndResult = ProcessS3ObjectStreamResolutionInit.OnEndStreamEndResult
+            {
+              S3DB_Logging("info", "504", `Processing Complete for ${key}. Stream Result StoreAndQueueWorkResult Not Complete.  \n${JSON.stringify(streamRes)}`)
+              //streamRes.OnEndStreamEndResult =                        //ProcessS3ObjectStreamResolutionInit.OnEndStreamEndResult
+            }
 
             if (typeof streamRes.PutToFireHoseAggregatorResult === "undefined")
-              streamRes.PutToFireHoseAggregatorResult = ProcessS3ObjectStreamResolutionInit.PutToFireHoseAggregatorResult
+            {
+              S3DB_Logging("info", "504", `Processing Complete for ${key}. Stream Result PutToFireHoseAggregatorResult Not Complete.  \n${JSON.stringify(streamRes)}`)
+              //streamRes.PutToFireHoseAggregatorResult = 
+            }
 
+            if (typeof streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToS3WorkBucketResults?.S3ProcessBucketResult === "undefined")
+            {
+              S3DB_Logging("info", "504", `Processing Complete for ${key}. Stream Result PutToFireHoseAggregatorResult Not Complete.  \n${JSON.stringify(streamRes)}`)
+              //streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToS3WorkBucketResults?.S3ProcessBucketResult
+            }
 
+            if (typeof streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToSQSWorkQueueResults?.SQSWriteResult === "undefined")
+            {
+              S3DB_Logging("info", "504", `Processing Complete for ${key}. Stream Result AddWorkToSQSWorkQueueResults?.SQSWriteResult Not Complete.  \n${JSON.stringify(streamRes)}`)
+              //streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToSQSWorkQueueResults?.SQSWriteResult 
+            }
+
+           
             
             debugger
 
@@ -2681,7 +2699,7 @@ async function packageUpdates(workSet: object[], key: string, custConfig: Custom
   //    send to Aggregator (unless these are updates coming through FROM an Aggregated file).
   if (
     key.toLowerCase().indexOf("s3dropbucket_aggregator") < 0 &&     //This is Not an Aggregator file
-    custConfig.updates.toLowerCase() === "singular" &&              //Cust Config notes these updates are to be Aggregated when coming through
+    custConfig.updates.toLowerCase() === "singular" &&              //Cust Config marks these updates to be Aggregated when coming through
     workSet.length > 0)                                             //There are Updates to be processed 
   {
 
