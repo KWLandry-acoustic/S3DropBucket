@@ -270,6 +270,7 @@ export interface S3DBConfig {
   s3dropbucket_queuebucketquiesce: boolean
   s3dropbucket_workqueuebucketpurgecount: number
   s3dropbucket_workqueuebucketpurge: string
+  s3dropbucket_sftp: boolean
 }
 
 let S3DBConfig = {} as S3DBConfig
@@ -1641,15 +1642,9 @@ export const s3DropBucketSFTPHandler: Handler = async (
 ) => {
   // const SFTPClient = new sftpClient()
 
-
   S3DB_Logging("info", "97", `S3 Dropbucket SFTP Processor - Environment Vars: ${JSON.stringify(process.env)} `)
-  S3DB_Logging("info", "98", `S3 Dropbucket SFTP Processor - S3DropBucket Configuration: ${JSON.stringify(S3DBConfig)} `)
   S3DB_Logging("info", "99", `S3 Dropbucket SFTP Processor - S3DropBucket Logging Options(process.env): ${process.env.S3DropBucketSelectiveLogging} `)
-
-
-  S3DB_Logging("info", "700", `S3 Dropbucket SFTP Processor - Received Event: ${JSON.stringify(event)}.\nContext: ${context} `)
-  S3DB_Logging("info", "701", `S3 Dropbucket SFTP Processor - Selective Debug Set is: ${S3DBConfig.s3dropbucket_selectivelogging!} `)
-
+  
   //ToDo: change out the env var checked
   if (
     process.env["WorkQueueVisibilityTimeout"] === undefined ||
@@ -1663,6 +1658,16 @@ export const s3DropBucketSFTPHandler: Handler = async (
 
   }
 
+  S3DB_Logging("info", "98", `S3 Dropbucket SFTP Processor - S3DropBucket Configuration: ${JSON.stringify(S3DBConfig)} `)
+
+  
+
+  S3DB_Logging("info", "700", `S3 Dropbucket SFTP Processor - Received Event: ${JSON.stringify(event)}.\nContext: ${context} `)
+
+
+  if(!S3DBConfig.s3dropbucket_sftp) return
+
+ 
 
   //Existing Event Emit at every 1 minute
 
