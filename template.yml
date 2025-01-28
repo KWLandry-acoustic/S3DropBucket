@@ -73,9 +73,11 @@ Resources:
         be processed as fast as Campaign APIs allow.
       Environment:
         Variables:
-          Version: !Ref AppId
+          AppId: !Ref AppId
           # NODE_OPTIONS: --enable-source-map --trace-warnings --unhandled-rejections=warn
           NODE_OPTIONS: '--trace-warnings --unhandled-rejections=warn'
+          S3DropBucketConfigFile: s3dropbucket_config.jsonc
+          S3DropBucketConfigBucket: s3dropbucket-configs-fr
       #Role: arn:aws:iam::777957353822:role/tricklercacheExecutionRole
       #Role: !Ref roleARN
       #Role: !FindInMap [RegionRoles, !Ref "AWS::Region", RoleArn]
@@ -129,9 +131,11 @@ Resources:
       Description: A Lambda function triggered on a file sent to an S3 bucket.
       Environment:
         Variables:
-          Version: !Ref AppId
+          AppId: !Ref AppId
           # NODE_OPTIONS: --enable-source-map --trace-warnings --unhandled-rejections=warn
           NODE_OPTIONS: '--trace-warnings --unhandled-rejections=warn'
+          S3DropBucketConfigFile: s3dropbucket_config.jsonc
+          S3DropBucketConfigBucket: s3dropbucket-configs-fr
       #Role: arn:aws:iam::777957353822:role/tricklercacheExecutionRole
       #Role: !Sub ${RegionRoles[!Ref "AWS::Region"].RoleArn}
       #Role: !FindInMap [RegionRoles, !Ref "AWS::Region", RoleArn]
@@ -200,9 +204,11 @@ Resources:
       #       Type: SQS
       Environment:
         Variables:
-          Version: !Ref AppId
+          AppId: !Ref AppId
           # NODE_OPTIONS: --enable-source-map --trace-warnings --unhandled-rejections=warn
           NODE_OPTIONS: '--trace-warnings --unhandled-rejections=warn'
+          S3DropBucketConfigFile: s3dropbucket_config.jsonc
+          S3DropBucketConfigBucket: s3dropbucket-configs-fr
       #Role: arn:aws:iam::777957353822:role/tricklercacheExecutionRole
       #Role: !Sub ${RegionRoles[!Ref "AWS::Region"].RoleArn}
       #Role: !FindInMap [RegionRoles, !Ref "AWS::Region", RoleArn]

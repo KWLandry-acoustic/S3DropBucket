@@ -809,16 +809,16 @@ export function S3DB_Logging(level: string, index: string,  msg:string) {
 
   const selectiveDebug = process.env.S3DropBucketSelectiveLogging ?? S3DBConfig.s3dropbucket_selectivelogging ?? "_97,_98,_99,_503,_504,_511,_901,_910,_924,"
   
-  if (localTesting) process.env.S3DropBucket_LogLevel = "ALL"
+  if (localTesting) process.env.S3DropBucketLogLevel = "ALL"
 
   const li = `_${index},`
 
   if (
-    (selectiveDebug.indexOf(li) > -1 || index === "" || process.env.S3DropBucket_LogLevel?.toLowerCase() === 'all') &&
-    process.env.S3DropBucket_LogLevel?.toLowerCase() !== 'none'
+    (selectiveDebug.indexOf(li) > -1 || index === "" || process.env.S3DropBucketLogLevel?.toLowerCase() === 'all') &&
+    process.env.S3DropBucketLogLevel?.toLowerCase() !== 'none'
   )
   {
-    if (process.env.S3DropBucket_LogLevel?.toLowerCase() === 'all') index = `(LOG ALL-${index})`
+    if (process.env.S3DropBucketLogLevel?.toLowerCase() === 'all') index = `(LOG ALL-${index})`
 
     if (level.toLowerCase() === "info")  console.info(`S3DBLog-Info ${index}: ${msg} \nversion: ${version}`)
     if (level.toLowerCase() === "warn")  console.warn(`S3DBLog-Warning ${index}: ${msg} \nversion: ${version}`)
@@ -1918,11 +1918,9 @@ async function getValidateS3DropBucketConfig() {
     Key: undefined,
   }
 
-  if (!process.env.S3DropBucketConfigBucket)
-    process.env.S3DropBucketConfigBucket = "s3dropbucket-configs"
+  if (!process.env.S3DropBucketConfigBucket) process.env.S3DropBucketConfigBucket = "s3dropbucket-configs"
 
-  if (!process.env.S3DropBucketConfigFile)
-    process.env.S3DropBucketConfigFile = "s3dropbucket_config.jsonc"
+  if (!process.env.S3DropBucketConfigFile) process.env.S3DropBucketConfigFile = "s3dropbucket_config.jsonc"
   
   getObjectCmd = {
     Bucket: process.env.S3DropBucketConfigBucket,
@@ -2022,7 +2020,7 @@ async function getValidateS3DropBucketConfig() {
       throw new Error(
         `S3DropBucket Config invalid definition: missing LogLevel.`
       )
-    } else process.env.s3dropbucket_loglevel = s3dbc.s3dropbucket_loglevel
+    } else process.env.s3dropbucketLogLevel = s3dbc.s3dropbucket_loglevel
 
 
     if (!s3dbc.s3dropbucket_selectivelogging || s3dbc.s3dropbucket_selectivelogging === "")
