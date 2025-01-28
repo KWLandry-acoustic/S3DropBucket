@@ -3341,7 +3341,10 @@ async function putToFirehose(chunks: object[], key: string, cust: string, iter: 
           if (firehosePutResult.PutToFireHoseAggregatorResultDetails.indexOf("ServiceUnavailableException: Slow down") > -1)
           {
             fhRetry = true
-            setTimeout(() => { }, 100)
+            setTimeout(() => {
+              () => {
+                S3DB_Logging("warn", "944", `Retrying Put to Firehose Aggregator (Slow Down requested) for ${key} (File Stream Iter: ${iter}) `)
+            }}, 100)
           }
           else fhRetry = false
 
