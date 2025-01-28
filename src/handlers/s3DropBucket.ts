@@ -483,7 +483,7 @@ export const s3DropBucketHandler: Handler = async (
     }
 
     S3DB_Logging("info", "97", `Environment Vars: ${JSON.stringify(process.env)} `)
-    S3DB_Logging("info", "98", `S3DropBucket Options: ${JSON.stringify(S3DBConfig)} `)
+    S3DB_Logging("info", "98", `S3DropBucket Configuration: ${JSON.stringify(S3DBConfig)} `)
     S3DB_Logging("info", "99", `S3DropBucket Logging Options(process.env): ${process.env.S3DropBucketSelectiveLogging} `)
 
 
@@ -1386,7 +1386,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
     }
   
     S3DB_Logging("info", "97", `Environment Vars: ${JSON.stringify(process.env)} `)
-    S3DB_Logging("info", "98", `S3DropBucket Options: ${JSON.stringify(S3DBConfig)} `)
+    S3DB_Logging("info", "98", `S3DropBucket Configuration: ${JSON.stringify(S3DBConfig)} `)
     S3DB_Logging("info", "99", `S3DropBucket Logging Options: ${process.env.S3DropBucketSelectiveLogging} `)
 
     if (S3DBConfig.s3dropbucket_workqueuequiesce)
@@ -1640,7 +1640,17 @@ export const s3DropBucketSFTPHandler: Handler = async (
   context: Context
 ) => {
   // const SFTPClient = new sftpClient()
-//ToDo: change out the env var checked
+
+
+  S3DB_Logging("info", "97", `S3 Dropbucket SFTP Processor - Environment Vars: ${JSON.stringify(process.env)} `)
+  S3DB_Logging("info", "98", `S3 Dropbucket SFTP Processor - S3DropBucket Configuration: ${JSON.stringify(S3DBConfig)} `)
+  S3DB_Logging("info", "99", `S3 Dropbucket SFTP Processor - S3DropBucket Logging Options(process.env): ${process.env.S3DropBucketSelectiveLogging} `)
+
+
+  S3DB_Logging("info", "700", `S3 Dropbucket SFTP Processor - Received Event: ${JSON.stringify(event)}.\nContext: ${context} `)
+  S3DB_Logging("info", "701", `S3 Dropbucket SFTP Processor - Selective Debug Set is: ${S3DBConfig.s3dropbucket_selectivelogging!} `)
+
+  //ToDo: change out the env var checked
   if (
     process.env["WorkQueueVisibilityTimeout"] === undefined ||
     process.env["WorkQueueVisibilityTimeout"] === "" ||
@@ -1653,9 +1663,6 @@ export const s3DropBucketSFTPHandler: Handler = async (
 
   }
 
-  S3DB_Logging("info", "98", `S3 Dropbucket SFTP Processor - Process Environment Vars: ${JSON.stringify(process.env)} `)
-  S3DB_Logging("info", "700", `S3 Dropbucket SFTP Processor - Received Event: ${JSON.stringify(event)}.\nContext: ${context} `)
-  S3DB_Logging("info", "701", `S3 Dropbucket SFTP Processor - Selective Debug Set is: ${S3DBConfig.s3dropbucket_selectivelogging!} `)
 
   //Existing Event Emit at every 1 minute
 
@@ -1947,8 +1954,7 @@ async function getValidateS3DropBucketConfig() {
   let s3dbc = {} as S3DBConfig
 
   try {
-    s3dbc = await s3
-      .send(new GetObjectCommand(getObjectCmd))
+    s3dbc = await s3.send(new GetObjectCommand(getObjectCmd))
       .then(async (getConfigS3Result: GetObjectCommandOutput) => {
         s3dbcr = (await getConfigS3Result.Body?.transformToString(
           "utf8"
