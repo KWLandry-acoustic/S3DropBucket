@@ -462,14 +462,21 @@ export const s3DropBucketHandler: Handler = async (
       localTesting = false
     }
 
-  
-
-    if (typeof process.env.S3DropBucketRegion !== "undefined" && process.env.S3DropBucketRegion?.length > 6 )
-      s3 = new S3Client({region: process.env.S3DropBucketRegion})
-    else
+  if (typeof process.env.AWS_REGION !== "undefined") 
     {
-      s3 = new S3Client({region: process.env.AWS_REGION}   )    //{region: 'us-east-1'})
+      s3 = new S3Client({region: process.env.AWS_REGION})    //{region: 'us-east-1'})
     }
+  else
+    if (typeof process.env.S3DropBucketRegion !== "undefined" && process.env.S3DropBucketRegion?.length > 6) 
+      s3 = new S3Client({region: process.env.S3DropBucketRegion})
+    
+    else 
+    {
+      S3DB_Logging("warn","96",`AWS Region can not be determined. Region returns as:${process.env.AWS_REGION}`)
+      throw new Error(`AWS Region can not be determined. Region returns as:${process.env.AWS_REGION}`) 
+    }
+
+    
 
     if (
       process.env["EventEmitterMaxListeners"] === undefined ||
@@ -812,7 +819,8 @@ export function S3DB_Logging(level: string, index: string,  msg:string) {
   
   if (localTesting) process.env.S3DropBucketLogLevel = "ALL"
 
-  const r = `Region: ${s3.config.region ?? "Unknown"}`
+  //const r = `Region: ${s3.config.region ?? "Unknown"}`
+  const r = `Region: ${process.env.AWS_REGION ?? "Unknown"}`
   const li = `_${index},`
 
   if (
@@ -2301,7 +2309,7 @@ async function getFormatCustomerConfig(filekey: string) {
   }
 
   //Now, need to 'normalize' all other strings that are possible to arrive at a valid dataflow name with a trilling underscore 
-  if (customer.lastIndexOf('_') > 3)   //needs to have at least 4 chars for dataflowname 
+  if (customer.lastIndexOf('_') > 3)   //needs to have at least 4 chars for dataflow name 
   {  
     let i = customer.lastIndexOf('_')
     customer = customer.substring(0, i)
