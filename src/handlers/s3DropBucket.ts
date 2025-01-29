@@ -2281,11 +2281,13 @@ async function getFormatCustomerConfig(filekey: string) {
   // Retrieve file's prefix as the Customer Name
   if (!filekey)
     throw new Error(
-        `Exception - Cannot resolve Customer Config without a valid Customer Prefix in filename (filename is ${filekey})`
+        `Exception - Cannot resolve Customer Config without a valid filename (filename is ${filekey})`
     )
 
   let customer = filekey
 
+
+//Need to 'normalize' filename by removing Path details
   while (customer.indexOf("/") > -1) {
     //remove any folders from name
     customer = customer.split("/").at(-1) ?? customer
@@ -2297,16 +2299,31 @@ async function getFormatCustomerConfig(filekey: string) {
   if (customer.match(r)) {
     customer = customer.replace(r, "") //remove timestamp from name
   }
-  
-  customer = customer.split('_')[0] + '_'      //initial treatment, get prefix up to first underscore
 
-  //Should be left with customername, data flow and trailing underscore
+  //Now, need to 'normalize' all other strings that are possible to arrive at a valid dataflow name with a trilling underscore 
+  if (customer.lastIndexOf('_') > 3)   //needs to have at least 4 chars for dataflowname 
+  {  
+    let i = customer.lastIndexOf('_')
+    customer = customer.substring(0, i)
+    let ca = customer.split('_')
+    let c = ""
+    for (const n in ca)
+    {
+      c += ca[n] + '_'
+    }
+    customer = c
+  } else
+  {
+    S3DB_Logging("exception","",`Exception - Parsing File Name for Dataflow Config Name returns: ${customer}}. Cannot continue.`)
+    throw new Error(`Exception - Parsing File Name for Dataflow Config Name returns: ${customer}}. Cannot continue.`)
+  } 
+
+  //Should be left with valid Dataflow Name, data flow and trailing underscore
   if (!customer.endsWith('_'))
   {
     throw new Error(
       `Exception - Cannot resolve Customer Config without a valid Customer Prefix (filename is ${filekey})`
     )
-    
   }
 
   
