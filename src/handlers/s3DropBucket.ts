@@ -812,6 +812,7 @@ export function S3DB_Logging(level: string, index: string,  msg:string) {
   
   if (localTesting) process.env.S3DropBucketLogLevel = "ALL"
 
+  const r = `Region: ${s3.config.region ?? "Unknown"}`
   const li = `_${index},`
 
   if (
@@ -821,13 +822,13 @@ export function S3DB_Logging(level: string, index: string,  msg:string) {
   {
     if (process.env.S3DropBucketLogLevel?.toLowerCase() === 'all') index = `(LOG ALL-${index})`
 
-    if (level.toLowerCase() === "info") console.info(`S3DBLog-Info ${index}: ${msg} \nRegion: ${s3.config.region} Version: ${version}`)
-    if (level.toLowerCase() === "warn") console.warn(`S3DBLog-Warning ${index}: ${msg} \nRegion: ${s3.config.region} Version: ${version}`)
-    if (level.toLowerCase() === "error") console.error(`S3DBLog-Error ${index}: ${msg} \nRegion: ${s3.config.region} Version: ${version}`)
-    if (level.toLowerCase() === "debug") console.debug(`S3DBLog-Debug ${index}: ${msg} \nRegion: ${s3.config.region} Version: ${version}`)
+    if (level.toLowerCase() === "info") console.info(`S3DBLog-Info ${index}: ${msg} \nRegion: ${r} Version: ${version}`)
+    if (level.toLowerCase() === "warn") console.warn(`S3DBLog-Warning ${index}: ${msg} \nRegion: ${r} Version: ${version}`)
+    if (level.toLowerCase() === "error") console.error(`S3DBLog-Error ${index}: ${msg} \nRegion: ${r} Version: ${version}`)
+    if (level.toLowerCase() === "debug") console.debug(`S3DBLog-Debug ${index}: ${msg} \nRegion: ${r} Version: ${version}`)
   }
       
-  if (level.toLowerCase() === "exception") console.error(`S3DBLog-Exception ${index}: ${msg}  \nRegion: ${s3.config.region} Version: ${version}`)
+  if (level.toLowerCase() === "exception") console.error(`S3DBLog-Exception ${index}: ${msg}  \nRegion: ${r} Version: ${version}`)
     
     //ToDo: Send Logging to Firehose Aggregator 
     // Send All debug messaging regardless of S3DropBucket Config??
