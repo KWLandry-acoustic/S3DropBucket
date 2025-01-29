@@ -2301,14 +2301,24 @@ async function getFormatCustomerConfig(filekey: string) {
     customer = customer.split("/").at(-1) ?? customer
   }
 
-  //Check for timestamp - if timestamp - normalize timestamp (remove underscores) 
+  //Normalize if timestamp - normalize timestamp out 
   const r = new RegExp(/\d{4}_\d{2}_\d{2}T.*Z.*/, "gm")
   //remove timestamps from name as can confuse customer name parsing
   if (customer.match(r)) {
     customer = customer.replace(r, "") //remove timestamp from name
   }
 
-  //Now, need to 'normalize' all other strings that are possible to arrive at a valid dataflow name with a trilling underscore 
+  //Normalize if Aggregator File
+  //Check for Aggregator File Name - normalize Aggregator file string out 
+  const r2 = new RegExp(/(S3DropBucket_Aggregator.*)/, "gm")
+  //remove Aggregator File String from name as can confuse dataflow name parsing
+  if (customer.match(r2))
+  {
+    customer = customer.replace(r2, "") //remove S3DropBucket_Aggregator and rest of string from name
+  }
+
+
+  //Now, need to 'normalize' (deconstruct) all other strings that are possible to arrive at (reconstruct) a valid dataflow name with a trailing underscore 
   if (customer.lastIndexOf('_') > 3)   //needs to have at least 4 chars for dataflow name 
   {  
     let i = customer.lastIndexOf('_')
