@@ -116,7 +116,7 @@ import sftpClient, {ListFilterFunction} from "ssh2-sftp-client"
 
 let s3 = {} as S3Client
 
-const fh_Client = new FirehoseClient({region: process.env.s3DropBucketRegion})
+const fh_Client = new FirehoseClient({region: process.env.S3DropBucketRegion})
 
 const SFTPClient = new sftpClient()
 
@@ -124,7 +124,7 @@ const SFTPClient = new sftpClient()
 //For when needed to reference Lambda execution environment /tmp folder
 // import { ReadStream, close } from 'fs'
 
-const sqsClient = new SQSClient({region: process.env.s3DropBucketRegion})
+const sqsClient = new SQSClient({region: process.env.S3DropBucketRegion})
 
 export type sqsObject = {
   bucketName: string
@@ -464,11 +464,11 @@ export const s3DropBucketHandler: Handler = async (
 
   
 
-    if (process.env.s3DropBucketRegion?.length ?? 0 > 6)
-      s3 = new S3Client({region: process.env.s3DropBucketRegion})
+    if (typeof process.env.S3DropBucketRegion !== "undefined" && process.env.S3DropBucketRegion?.length > 6 )
+      s3 = new S3Client({region: process.env.S3DropBucketRegion})
     else
     {
-      s3 = new S3Client({region: 'us-east-1'})
+      s3 = new S3Client({region: process.env.AWS_REGION}   )    //{region: 'us-east-1'})
     }
 
     if (
@@ -1367,11 +1367,12 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
   {
     if (process.env.AWS_REGION?.length ?? 0 > 6)
     {
-      //s3 = new S3Client({region: process.env.s3DropBucketRegion})
+      //s3 = new S3Client({region: process.env.S3DropBucketRegion})
       s3 = new S3Client({region: process.env.AWS_REGION})
     }
     else
     {
+      throw new Error
       s3 = new S3Client({region: 'us-east-1'})
     }
   
@@ -1645,7 +1646,7 @@ export const s3DropBucketSFTPHandler: Handler = async (
   S3DB_Logging("info", "97", `S3 Dropbucket SFTP Processor - Environment Vars: ${JSON.stringify(process.env)} `)
   S3DB_Logging("info", "99", `S3 Dropbucket SFTP Processor - S3DropBucket Logging Options(process.env): ${process.env.S3DropBucketSelectiveLogging} `)
   
-  //ToDo: change out the env var checked
+  //ToDo: change out the env var checked to determine config 
   if (
     process.env["WorkQueueVisibilityTimeout"] === undefined ||
     process.env["WorkQueueVisibilityTimeout"] === "" ||

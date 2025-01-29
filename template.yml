@@ -8,6 +8,11 @@ Mappings:
       RoleArn: arn:aws:iam::777957353822:role/tricklercacheExecutionRole
     eu-central-1:
       RoleArn: arn:aws:iam::993487360810:role/s3DropBucketExecutionRole
+  S3DropBucketConfigBucket:
+    us-east-1:
+      configBucket: s3dropbucket-config
+    eu-central-1:
+      configBucket: s3dropbucket-config-fr
 
 #Outputs:
 #  roleARN:
@@ -77,11 +82,19 @@ Resources:
           # NODE_OPTIONS: --enable-source-map --trace-warnings --unhandled-rejections=warn
           NODE_OPTIONS: '--trace-warnings --unhandled-rejections=warn'
           S3DropBucketConfigFile: s3dropbucket_config.jsonc
-          S3DropBucketConfigBucket: s3dropbucket-configs-fr
+          #S3DropBucketConfigBucket: s3dropbucket-configs-fr
+          S3DropBucketConfigBucket: !FindInMap
+            - S3DropBucketConfigBucket
+            - !Ref AWS::Region
+            - configBucket
+          #AWS_REGION: !Ref AWS::Region
       #Role: arn:aws:iam::777957353822:role/tricklercacheExecutionRole
       #Role: !Ref roleARN
       #Role: !FindInMap [RegionRoles, !Ref "AWS::Region", RoleArn]
-      Role: !FindInMap [RegionRoles, !Ref "AWS::Region", RoleArn]
+      Role: !FindInMap
+        - RegionRoles
+        - !Ref AWS::Region
+        - RoleArn
       #Role: !Sub ${RegionRoles[!Ref "AWS::Region"].RoleArn}
 
       #CodeUri: ./
@@ -135,11 +148,19 @@ Resources:
           # NODE_OPTIONS: --enable-source-map --trace-warnings --unhandled-rejections=warn
           NODE_OPTIONS: '--trace-warnings --unhandled-rejections=warn'
           S3DropBucketConfigFile: s3dropbucket_config.jsonc
-          S3DropBucketConfigBucket: s3dropbucket-configs-fr
+          #S3DropBucketConfigBucket: s3dropbucket-configs-fr
+          S3DropBucketConfigBucket: !FindInMap
+            - S3DropBucketConfigBucket
+            - !Ref AWS::Region
+            - configBucket
+          #AWS_REGION: !Ref AWS::Region
       #Role: arn:aws:iam::777957353822:role/tricklercacheExecutionRole
       #Role: !Sub ${RegionRoles[!Ref "AWS::Region"].RoleArn}
       #Role: !FindInMap [RegionRoles, !Ref "AWS::Region", RoleArn]
-      Role: !FindInMap [RegionRoles, !Ref "AWS::Region", RoleArn]
+      Role: !FindInMap
+        - RegionRoles
+        - !Ref AWS::Region
+        - RoleArn
       #Role: !Sub ${roleArn}
       #Role: !Ref roleARN
       #CodeUri: ./
@@ -208,11 +229,19 @@ Resources:
           # NODE_OPTIONS: --enable-source-map --trace-warnings --unhandled-rejections=warn
           NODE_OPTIONS: '--trace-warnings --unhandled-rejections=warn'
           S3DropBucketConfigFile: s3dropbucket_config.jsonc
-          S3DropBucketConfigBucket: s3dropbucket-configs-fr
+          #S3DropBucketConfigBucket: s3dropbucket-configs-fr
+          S3DropBucketConfigBucket: !FindInMap
+            - S3DropBucketConfigBucket
+            - !Ref AWS::Region
+            - configBucket
+          #AWS_REGION: !Ref AWS::Region
       #Role: arn:aws:iam::777957353822:role/tricklercacheExecutionRole
       #Role: !Sub ${RegionRoles[!Ref "AWS::Region"].RoleArn}
       #Role: !FindInMap [RegionRoles, !Ref "AWS::Region", RoleArn]
-      Role: !FindInMap [RegionRoles, !Ref "AWS::Region", RoleArn]
+      Role: !FindInMap
+        - RegionRoles
+        - !Ref AWS::Region
+        - RoleArn
       #Role: !Sub ${roleArn}
       #Role: !Ref roleARN
       #CodeUri: ./
