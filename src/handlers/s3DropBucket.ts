@@ -821,13 +821,13 @@ export function S3DB_Logging(level: string, index: string,  msg:string) {
   {
     if (process.env.S3DropBucketLogLevel?.toLowerCase() === 'all') index = `(LOG ALL-${index})`
 
-    if (level.toLowerCase() === "info")  console.info(`S3DBLog-Info ${index}: ${msg} \nversion: ${version}`)
-    if (level.toLowerCase() === "warn")  console.warn(`S3DBLog-Warning ${index}: ${msg} \nversion: ${version}`)
-    if (level.toLowerCase() === "error") console.error(`S3DBLog-Error ${index}: ${msg} \nversion: ${version}`)
-    if (level.toLowerCase() === "debug") console.debug(`S3DBLog-Debug ${index}: ${msg} \nversion: ${version}`)
+    if (level.toLowerCase() === "info") console.info(`S3DBLog-Info ${index}: ${msg} \nRegion: ${s3.config.region} Version: ${version}`)
+    if (level.toLowerCase() === "warn") console.warn(`S3DBLog-Warning ${index}: ${msg} \nRegion: ${s3.config.region} Version: ${version}`)
+    if (level.toLowerCase() === "error") console.error(`S3DBLog-Error ${index}: ${msg} \nRegion: ${s3.config.region} Version: ${version}`)
+    if (level.toLowerCase() === "debug") console.debug(`S3DBLog-Debug ${index}: ${msg} \nRegion: ${s3.config.region} Version: ${version}`)
   }
       
-  if (level.toLowerCase() === "exception") console.error(`S3DBLog-Exception ${index}: ${msg}  \nversion: ${version}`)
+  if (level.toLowerCase() === "exception") console.error(`S3DBLog-Exception ${index}: ${msg}  \nRegion: ${s3.config.region} Version: ${version}`)
     
     //ToDo: Send Logging to Firehose Aggregator 
     // Send All debug messaging regardless of S3DropBucket Config??
@@ -1978,7 +1978,8 @@ async function getValidateS3DropBucketConfig() {
 
         return JSON.parse(s3dbcr)
       })
-  } catch (e) {
+  } catch (e)
+  {
     S3DB_Logging("exception", "", `Exception - Pulling S3DropBucket Config File (bucket:${getObjectCmd.Bucket}  key:${getObjectCmd.Key}) \nResult: ${s3dbcr} \nException: \n${e} `)
     //return {} as s3DBConfig
 
@@ -2377,13 +2378,13 @@ async function getFormatCustomerConfig(filekey: string) {
           )
 
         throw new Error(
-          `Exception - Retrieving Config (${customer}config.jsonc) from ${S3DBConfig.s3dropbucket_configs} \nException ${e} `
+          `Exception - Retrieving Config (${customer}config.jsonc) from ${S3DBConfig.s3dropbucket_configs}. \nException ${e} `
         )
       })
 
   } catch (e) {
     debugger
-    S3DB_Logging("exception", "", `Exception - On Try when Pulling Customer Config \n${ccr} \n${e} `)
+    S3DB_Logging("exception", "", `Exception - On Try when Pulling Customer Config \n${ccr}. \n${e} `)
     throw new Error(`Exception - (Try) Pulling Customer Config \n${ccr} \n${e} `)
   }
 
@@ -3320,13 +3321,13 @@ async function putToFirehose(chunks: object[], key: string, cust: string, iter: 
                 ut++
                 
                 firehosePutResult.PutToFireHoseAggregatorResult = `${res.$metadata.httpStatusCode}`
-                firehosePutResult.PutToFireHoseAggregatorResultDetails = `Successful Put to Firehose Aggregator for ${key} (File Stream Iter: ${iter}).\n${JSON.stringify(res)} \n${res.RecordId} `
+                firehosePutResult.PutToFireHoseAggregatorResultDetails = `Successful Put to Firehose Aggregator for ${key} (File Stream Iter: ${iter}).\n${JSON.stringify(res)}. \n${res.RecordId} `
                 firehosePutResult.PutToFireHoseException = ""
                
               } else
               {
                 firehosePutResult.PutToFireHoseAggregatorResult = `${res.$metadata.httpStatusCode}`
-                firehosePutResult.PutToFireHoseAggregatorResultDetails = `UnSuccessful Put to Firehose Aggregator for ${key} (File Stream Iter: ${iter}) \n ${JSON.stringify(res)} `
+                firehosePutResult.PutToFireHoseAggregatorResultDetails = `UnSuccessful Put to Firehose Aggregator for ${key} (File Stream Iter: ${iter}). \n ${JSON.stringify(res)} `
                 firehosePutResult.PutToFireHoseException = ""
               }
 
@@ -3408,7 +3409,7 @@ async function addWorkToS3WorkBucket(queueUpdates: string, key: string) {
       .then(async (s3PutResult: PutObjectCommandOutput) => {
         if (s3PutResult.$metadata.httpStatusCode !== 200) {
           throw new Error(
-            `Failed to write Work File to S3 Process Store (Result ${s3PutResult}) for ${key} of ${queueUpdates.length} characters`
+            `Failed to write Work File to S3 Process Store (Result ${s3PutResult}) for ${key} of ${queueUpdates.length} characters.`
           )
         }
         return s3PutResult
@@ -3433,7 +3434,7 @@ async function addWorkToS3WorkBucket(queueUpdates: string, key: string) {
 
   const vidString = addWorkToS3ProcessBucket.VersionId ?? ""
 
-  S3DB_Logging("info", "914", `Added Work File ${key} to Work Bucket (${S3DBConfig.s3dropbucket_workbucket}) \n${JSON.stringify(addWorkToS3ProcessBucket)}`)
+  S3DB_Logging("info", "914", `Added Work File ${key} to Work Bucket (${S3DBConfig.s3dropbucket_workbucket}). \n${JSON.stringify(addWorkToS3ProcessBucket)}`)
 
   const aw3pbr = {
     versionId: vidString,
@@ -3500,7 +3501,7 @@ async function addWorkToSQSWorkQueue(
       .then((sqsSendMessageResult: SendMessageCommandOutput) => {
         sqsWriteResult = JSON.stringify(sqsSendMessageResult.$metadata.httpStatusCode, null, 2)
         if (sqsWriteResult !== "200") {
-          const storeQueueWorkException = `Failed writing to SQS Process Queue (queue URL: ${sqsParams.QueueUrl }), ${sqsQMsgBody.workKey}, SQS Params${JSON.stringify(sqsParams)})`
+          const storeQueueWorkException = `Failed writing to SQS Process Queue (queue URL: ${sqsParams.QueueUrl}), ${sqsQMsgBody.workKey}, SQS Params${JSON.stringify(sqsParams)})`
           return { StoreQueueWorkException: storeQueueWorkException }
         }
         //sqsSendResult = sqsSendMessageResult
@@ -3511,7 +3512,7 @@ async function addWorkToSQSWorkQueue(
       })
       .catch((err) => {
         debugger
-        const storeQueueWorkException = `Failed writing to SQS Process Queue (${err}) \nQueue URL: ${sqsParams.QueueUrl})\nWork to be Queued: ${
+        const storeQueueWorkException = `Failed writing to SQS Process Queue (${err}). \nQueue URL: ${sqsParams.QueueUrl})\nWork to be Queued: ${
           sqsQMsgBody.workKey}\nSQS Params: ${JSON.stringify(sqsParams)}`
         
         S3DB_Logging("exception", "", `Failed to Write to SQS Process Queue. \n${storeQueueWorkException}`)
@@ -3523,7 +3524,7 @@ async function addWorkToSQSWorkQueue(
       }), ${sqsQMsgBody.workKey}, SQS Params${JSON.stringify(sqsParams)}) - Error: ${e}`)
   }
 
-  S3DB_Logging("info", "940", `Work Queued (${key} for ${recCount} updates) to the SQS Work Queue (${S3DBConfig.s3dropbucket_workqueue}) \nSQS Params: \n${JSON.stringify(sqsParams)} \nresults: \n${JSON.stringify({SQSWriteResult: sqsWriteResult, AddToSQSQueue: JSON.stringify(sqsSendResult)})}`)
+  S3DB_Logging("info", "940", `Work Queued (${key} for ${recCount} updates) to the SQS Work Queue (${S3DBConfig.s3dropbucket_workqueue}) \nSQS Params: \n${JSON.stringify(sqsParams)}. \nresults: \n${JSON.stringify({SQSWriteResult: sqsWriteResult, AddToSQSQueue: JSON.stringify(sqsSendResult)})}`)
 
   return {
     SQSWriteResult: sqsWriteResult,

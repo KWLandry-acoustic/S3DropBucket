@@ -10,9 +10,9 @@ Mappings:
       RoleArn: arn:aws:iam::993487360810:role/s3DropBucketExecutionRole
   S3DropBucketConfigBucket:
     us-east-1:
-      configBucket: s3dropbucket-config
+      configBucket: s3dropbucket-configs
     eu-central-1:
-      configBucket: s3dropbucket-config-fr
+      configBucket: s3dropbucket-configs-fr
 
 #Outputs:
 #  roleARN:
