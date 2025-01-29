@@ -644,38 +644,41 @@ export const s3DropBucketHandler: Handler = async (
             // all of the object may not be filled in,
             //ToDo: refactor ProcessS3ObjectStreamResolution to dynamically add status sections rather than presets
 
+            //if (typeof streamRes.PutToFireHoseAggregatorResult === "undefined")
+            //{
+            //  S3DB_Logging("info", "504", `Processing Complete for ${key}. Stream Result PutToFireHoseAggregatorResult Not Complete.  \n${JSON.stringify(streamRes)}`)
+            //  //streamRes.PutToFireHoseAggregatorResult = 
+            //}
 
-            if (typeof streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult === "undefined")
-            {
-              S3DB_Logging("info", "504", `Processing Complete for ${key}. Stream Result StoreAndQueueWorkResult Not Complete.  \n${JSON.stringify(streamRes)}`)
-              //streamRes.OnEndStreamEndResult =                        //ProcessS3ObjectStreamResolutionInit.OnEndStreamEndResult
-            }
+            //if (typeof streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult === "undefined")
+            //{
+            //  S3DB_Logging("info", "504", `Processing Complete for ${key}. Stream Result StoreAndQueueWorkResult Not Complete.  \n${JSON.stringify(streamRes)}`)
+            //  //streamRes.OnEndStreamEndResult =    //ProcessS3ObjectStreamResolutionInit.OnEndStreamEndResult
+            //}
 
-            if (typeof streamRes.PutToFireHoseAggregatorResult === "undefined")
-            {
-              S3DB_Logging("info", "504", `Processing Complete for ${key}. Stream Result PutToFireHoseAggregatorResult Not Complete.  \n${JSON.stringify(streamRes)}`)
-              //streamRes.PutToFireHoseAggregatorResult = 
-            }
+            //if (typeof streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToS3WorkBucketResults?.S3ProcessBucketResult === "undefined")
+            //{
+            //  S3DB_Logging("info", "504", `Processing Complete for ${key}. Stream Result PutToFireHoseAggregatorResult Not Complete.  \n${JSON.stringify(streamRes)}`)
+            //  //streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToS3WorkBucketResults?.S3ProcessBucketResult
+            //}
 
-            if (typeof streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToS3WorkBucketResults?.S3ProcessBucketResult === "undefined")
-            {
-              S3DB_Logging("info", "504", `Processing Complete for ${key}. Stream Result PutToFireHoseAggregatorResult Not Complete.  \n${JSON.stringify(streamRes)}`)
-              //streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToS3WorkBucketResults?.S3ProcessBucketResult
-            }
-
-            if (typeof streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToSQSWorkQueueResults?.SQSWriteResult === "undefined")
-            {
-              S3DB_Logging("info", "504", `Processing Complete for ${key}. Stream Result AddWorkToSQSWorkQueueResults?.SQSWriteResult Not Complete.  \n${JSON.stringify(streamRes)}`)
-              //streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToSQSWorkQueueResults?.SQSWriteResult 
-            }
+            //if (typeof streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToSQSWorkQueueResults?.SQSWriteResult === "undefined")
+            //{
+            //  S3DB_Logging("info", "504", `Processing Complete for ${key}. Stream Result AddWorkToSQSWorkQueueResults?.SQSWriteResult Not Complete.  \n${JSON.stringify(streamRes)}`)
+            //  //streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToSQSWorkQueueResults?.SQSWriteResult 
+            //}
 
            
             
             debugger
 
             if (
-                (streamRes.PutToFireHoseAggregatorResult === "200" ) ||
-              (streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToS3WorkBucketResults?.S3ProcessBucketResult === "200" &&
+              (typeof streamRes.PutToFireHoseAggregatorResult !== "undefined" && streamRes.PutToFireHoseAggregatorResult === "200") ||
+              
+              (typeof streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToS3WorkBucketResults?.S3ProcessBucketResult !== "undefined" &&
+                streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToS3WorkBucketResults?.S3ProcessBucketResult === "200") &&
+              
+              (typeof streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToSQSWorkQueueResults?.SQSWriteResult !== "undefined" &&
                 streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToSQSWorkQueueResults?.SQSWriteResult === "200")
             )
             {
