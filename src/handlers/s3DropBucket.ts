@@ -285,21 +285,34 @@ export interface SQSBatchItemFails {
   ]
 }
 
-export interface StoreAndQueueWorkResult {
-  AddWorkToS3WorkBucketResults?: {
-    versionId: string
-    S3ProcessBucketResult: string
-    AddWorkToS3ProcessBucket: string
-  }
-  AddWorkToSQSWorkQueueResults?: {
-    SQSWriteResult: string
-    AddToSQSQueue: string
-  }
+interface AddWorkToS3Results {
+  versionId: string
+  S3ProcessBucketResult: string
+  AddWorkToS3ProcessBucket: string
 }
 
-export interface ProcessS3ObjectStreamResult {
-  Key: string                           // S3 File/Object that triggered this run
-  Processed: string                     // Total of all records processed this run
+interface SQSResults {
+  SQSWriteResult: string
+  AddToSQSQueue: string
+}
+
+interface StoreAndQueueWorkResults {
+  AddWorkToS3WorkBucketResults: AddWorkToS3Results
+  AddWorkToSQSWorkQueueResults: SQSResults
+  PutToFireHoseAggregatorResult: string
+  PutToFireHoseAggregatorResultDetails: string
+  PutToFireHoseException: string
+}
+
+interface StoreAndQueueDataWorkResults {
+  AddWorkToS3WorkBucketResults: AddWorkToS3Results
+  AddWorkToSQSWorkQueueResults: SQSResults
+}
+
+
+interface ProcessS3ObjectStreamResult {
+  Key: string
+  Processed: string
   ReadStreamEndResult: string
   ReadStreamException: string
   OnEndRecordStatus: string
@@ -308,67 +321,57 @@ export interface ProcessS3ObjectStreamResult {
   ProcessS3ObjectStreamCatch: string
   OnClose_Result: string
   StreamReturnLocation: string
-  OnDataStoreAndQueueWorkResult: {      // During Streaming, If Data received exceeds limit, we'll write work and Queue it
-    StoreAndQueueWorkResult: StoreAndQueueWorkResult
-    StoreQueueWorkException?: string
-    StoreS3WorkException?: string
-    },
-  OnEndStreamEndResult: {               //At the End of Streaming Data, write work and Queue it
-    StoreAndQueueWorkResult: StoreAndQueueWorkResult,
-    StoreQueueWorkException?: string
-    StoreS3WorkException?: string
-    },
-  //Additional Messaging of alternate process steps
-  PutToFireHoseAggregatorResult: string
-  PutToFireHoseAggregatorResultDetails: string
-  PutToFireHoseException: string
+  OnDataResult: {
+    StoreAndQueueWorkResult: StoreAndQueueDataWorkResults
+  }
+  OnEndStreamEndResult: {
+    StoreAndQueueWorkResult: StoreAndQueueWorkResults
+  }
   DeleteResult: string
 }
 
-
 let ProcessS3ObjectStreamResolutionInit: ProcessS3ObjectStreamResult = {
-  Key: "",                           // S3 File/Object that triggered this run
-  Processed: "",                     // Total of all records processed this run
-  ReadStreamEndResult: "",
-  ReadStreamException: "",
-  OnEndRecordStatus: "",
-  OnDataReadStreamException: "",
-  OnEndNoRecordsException: "",
-  ProcessS3ObjectStreamCatch: "",
-  OnClose_Result: "",
-  StreamReturnLocation: "",
-  OnDataStoreAndQueueWorkResult: {
-    StoreAndQueueWorkResult: [{
-      AddWorkToS3WorkBucketResults: {
-        versionId: "",
-        S3ProcessBucketResult: "",
-        AddWorkToS3ProcessBucket: ""
-      },
-      AddWorkToSQSWorkQueueResults: {
-        SQSWriteResult: "",
-        AddToSQSQueue: ""
-      },
-    }]
-  }, 
-  OnEndStreamEndResult: {             //At the end of Streaming all Data, write work and Queue it
+  Key: '',
+  Processed: '',
+  ReadStreamEndResult: '',
+  ReadStreamException: '',
+  OnEndRecordStatus: '',
+  OnDataReadStreamException: '',
+  OnEndNoRecordsException: '',
+  ProcessS3ObjectStreamCatch: '',
+  OnClose_Result: '',
+  StreamReturnLocation: '',
+  OnDataResult: {
     StoreAndQueueWorkResult: {
       AddWorkToS3WorkBucketResults: {
-        versionId: "",
-        S3ProcessBucketResult: "",
-        AddWorkToS3ProcessBucket: ""
+        versionId: '',
+        S3ProcessBucketResult: '',
+        AddWorkToS3ProcessBucket: ''
       },
       AddWorkToSQSWorkQueueResults: {
-        SQSWriteResult: "",
-        AddToSQSQueue: ""
+        SQSWriteResult: '',
+        AddToSQSQueue: ''
       }
     }
   },
-  //Additional Messaging of alternate process steps
-  PutToFireHoseAggregatorResult: "",
-  PutToFireHoseAggregatorResultDetails: "",
-  PutToFireHoseException: "",
-  DeleteResult: ""
-} as ProcessS3ObjectStreamResult
+  OnEndStreamEndResult: {
+    StoreAndQueueWorkResult: {
+      AddWorkToS3WorkBucketResults: {
+        versionId: '',
+        S3ProcessBucketResult: '',
+        AddWorkToS3ProcessBucket: ''
+      },
+      AddWorkToSQSWorkQueueResults: {
+        SQSWriteResult: '',
+        AddToSQSQueue: ''
+      },
+      PutToFireHoseAggregatorResult: '',
+      PutToFireHoseAggregatorResultDetails: '',
+      PutToFireHoseException: ''
+    }
+  },
+  DeleteResult: ''
+};
 
 
 const sqsBatchFail: SQSBatchItemFails = {
@@ -675,7 +678,7 @@ export const s3DropBucketHandler: Handler = async (
             debugger
 
             if (
-              (typeof streamRes.PutToFireHoseAggregatorResult !== "undefined" && streamRes.PutToFireHoseAggregatorResult === "200") ||
+              (typeof streamRes.OnEndStreamEndResult.StoreAndQueueWorkResult.PutToFireHoseAggregatorResult !== "undefined" && streamRes.OnEndStreamEndResult.StoreAndQueueWorkResult.PutToFireHoseAggregatorResult === "200") ||
               
               (typeof streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToS3WorkBucketResults?.S3ProcessBucketResult !== "undefined" &&
                 streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToS3WorkBucketResults?.S3ProcessBucketResult === "200") &&
@@ -1050,7 +1053,7 @@ async function processS3ObjectContentStream(
       recs = 0
       let iter = 0 
       
-      let packageResult = {} as StoreAndQueueWorkResult
+      let packageResult = {} as StoreAndQueueWorkResults
       
       await new Promise((resolve, reject) => {
         s3ContentReadableStream
@@ -1168,12 +1171,12 @@ async function processS3ObjectContentStream(
                     recs += chunk.length
                     batchCount++
 
-                    packageResult = await packageUpdates(updates, key, custConfig, iter) as StoreAndQueueWorkResult
+                    packageResult = await packageUpdates(updates, key, custConfig, iter) as StoreAndQueueWorkResults
         
                     //ToDo: Refactor this status approach, need a way to preserve every Update status without storing volumes
                     streamResult = {
                       ...streamResult,
-                      OnDataStoreAndQueueWorkResult: {StoreAndQueueWorkResult: packageResult}
+                      OnDataResult: {StoreAndQueueWorkResult: packageResult}
                     }
                   }
                 }
@@ -1234,7 +1237,7 @@ async function processS3ObjectContentStream(
                   //ToDo: Refactor this status approach, only getting the last, need a way to preserve every Update status without storing volumes
                   packageResult = await packageUpdates(updates, key, custConfig, iter)
                     .then((res) => {
-                      return res as StoreAndQueueWorkResult
+                      return res as StoreAndQueueWorkResults
                     })
                 }
               }
