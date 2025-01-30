@@ -3391,7 +3391,7 @@ async function putToFirehose(chunks: object[], key: string, cust: string, iter: 
 
               const fr = await fh_Client.config.region()
 
-              S3DB_Logging("exception", "", `Exception - Put to Firehose Aggregator (promise catch) (File Stream Iter: ${iter}) for ${key} \n(FH Put Command: ${JSON.stringify(fp)} FH Client Region: ${fr})  \n${e} `)
+              S3DB_Logging("exception", "", `Exception - Put to Firehose Aggregator (promise catch) (File Stream Iter: ${iter}) for ${key} \n( FH Data Length: ${fp.Record?.Data?.length}. FH Delivery Stream: ${JSON.stringify(fp.DeliveryStreamName)} FH Client Region: ${fr})  \n${e} `)
               
               firehosePutResult.PutToFireHoseAggregatorResult = "Exception"
               firehosePutResult.PutToFireHoseAggregatorResultDetails = `UnSuccessful Put to Firehose Aggregator for ${key} (File Stream Iter: ${iter}) \n ${JSON.stringify(e)} `
