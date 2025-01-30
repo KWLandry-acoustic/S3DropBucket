@@ -19,7 +19,7 @@
         "runtime": "nodejs20.x",
         "environmentVariables": {
           "NODE_OPTIONS": "--enable-source-map --trace-warnings --unhandled-rejections=warn --stopOnEntry",
-          "S3DropBucketConfigBucket": "s3dropbucket-configs-fr",
+          "S3DropBucketConfigBucket": "s3dropbucket-configs",
           "S3DropBucketConfigsFile": "s3dropbucket_config.jsonc",
           "s3DropBucketRegion": "us-east-1",
         },
@@ -82,7 +82,7 @@
         "runtime": "nodejs20.x",
         "environmentVariables": {
           "NODE_OPTIONS": "--enable-source-map --trace-warnings --unhandled-rejections=warn",
-          "S3DropBucketConfigBucket": "s3dropbucket-configs-fr",
+          "S3DropBucketConfigBucket": "s3dropbucket-configs",
           "S3DropBucketConfigsFile": "s3dropbucket_config.jsonc",
           "s3DropBucketRegion": "us-east-1",
         },
