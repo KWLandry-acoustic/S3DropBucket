@@ -11,11 +11,11 @@ loglevel = "debug"
 SLS_DEBUG = true
 
 [default.build.parameters]
-save_params = false
+#save_params = false
 #region = "us-east-1"
 #manifest = "/Users/kwlandry/Dropbox/Documents/A. Campaign/CodeFolder/A. S3DropBucket_main/s3dropbucket/package.json"
 #manifest = "./package.json"
-clean = true
+#clean = true
 cached = true
 parallel = true
 # sourcemap = true

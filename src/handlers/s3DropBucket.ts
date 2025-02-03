@@ -395,6 +395,7 @@ let et = ""
 let testS3Key: string
 let testS3Bucket: string
 testS3Bucket = "s3dropbucket-configs"
+//testS3Bucket = "s3dropbucket-process"
 
 const testdata = ""
 
@@ -420,7 +421,11 @@ const testdata = ""
 //testS3Key = "TestData/alerusreassignrepsignature_advisors.json"
 //testS3Key = "TestData/KingsfordWeather_00210.csv"
 //testS3Key = "TestData/KingsfordWeather_00211.csv"
+
 testS3Key = "TestData/MasterCustomer_Sample1.json"
+//testS3Key = "MasterCustomer_Sample1-json-update-1-6-c436dca1-6ec9-4c8b-bc78-6e1d774591ca.json"
+//testS3Key = "MasterCustomer_Sample1-json-update-1-6-0bb2f92e-3344-41e6-af95-90f5d32a73dc.json"
+
 //testS3Key = "TestData/KingsfordWeather_S3DropBucket_Aggregator-10-2025-01-09-19-29-39-da334f11-53a4-31cc-8c9f-8b417725560b.json"
 
 
@@ -1401,11 +1406,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
 
   const s3ClientRegion = await s3.config.region()
 
-  debugger
-
-
-
-  //If an obscure config does not exist in process.env then we need to get them all
+  //If an obscure config does not exist in process.env then we need to refresh S3DropBucket Config 
   if (
     process.env["EventEmitterMaxListeners"] === undefined ||
     process.env["EventEmitterMaxListeners"] === "" ||
@@ -1494,19 +1495,21 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
     //  s3dbQM.workKey = (await getAnS3ObjectforTesting(S3DBConfig.s3dropbucket_workbucket)) ?? ""
     //}
 
-    //if (s3dbQM.workKey === "devtest.xml")
-    //{
-    //  //tqm.workKey = await getAnS3ObjectforTesting( tcc.s3DropBucketWorkBucket! ) ?? ""
-    //  s3dbQM.workKey = testS3Key
-    //  s3dbQM.custconfig.customer = testS3Key
-    //  S3DBConfig.s3dropbucket_workbucket = testS3Bucket
-    //  localTesting = true
-    //} else
-    //{
-    //  testS3Key = ""
-    //  testS3Bucket = ""
-    //  localTesting = false
-    //}
+    if (s3dbQM.workKey === "devtest.xml")
+    {
+      //tqm.workKey = await getAnS3ObjectforTesting( tcc.s3DropBucketWorkBucket! ) ?? ""
+      s3dbQM.workKey = testS3Key
+      s3dbQM.custconfig.customer = testS3Key
+      S3DBConfig.s3dropbucket_workbucket = testS3Bucket
+      localTesting = true
+    } else
+    {
+      testS3Key = ""
+      testS3Bucket = ""
+      localTesting = false
+    }
+
+
   
     S3DB_Logging("info", "507", `Start Processing ${s3dbQM.workKey} off Work Queue. `)
     
@@ -1532,25 +1535,30 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
         //Retrieve Contents of the Work File
         S3DB_Logging("info", "512", `S3 Retrieve results for Work file ${s3dbQM.workKey}: ${JSON.stringify(work)}`)
 
-        if ((custconfig.updatetype.toLowerCase() === 'referenceset') || localTesting)
+        if ((custconfig.updatetype.toLowerCase() === 'createcontacts') ||
+          (custconfig.updatetype.toLowerCase() === 'updatecontacts') ||
+          (custconfig.updatetype.toLowerCase() === 'createattributes')
+          // || localTesting)
+        )
+        { 
           postResult = await postToConnect(
             work,
             custconfig as CustomerConfig,
             s3dbQM.updateCount,
             s3dbQM.workKey
           )
-
+        }
         
         if (custconfig.updatetype.toLowerCase() === 'relational' ||
           custconfig.updatetype.toLowerCase() === 'dbkeyed' ||
-          custconfig.updatetype.toLowerCase() === 'dbnonkeyed')
+          custconfig.updatetype.toLowerCase() === 'dbnonkeyed') {
           postResult = await postToCampaign(
             work,
             custconfig as CustomerConfig,
             s3dbQM.updateCount,
             s3dbQM.workKey
           )
-
+      }
         //  postResult can contain:
         //      retry
         //      unsuccessful post
@@ -1572,7 +1580,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
         }
         else if (postResult.toLowerCase().indexOf("unsuccessful post") > -1)
         {
-          S3DB_Logging("error", "935", `Error - Unsuccessful POST (Hard Failure) for ${s3dbQM.workKey}: \n${postResult}\nCustomer: ${custconfig.customer}, ListId: ${custconfig.listid} ListName: ${custconfig.listname} `)
+          S3DB_Logging("error", "935", `Error - Unsuccessful POST (Hard Failure) for ${s3dbQM.workKey}: \n${postResult}\nCustomer: ${custconfig.customer} `)
         }
         else if (postResult.toLowerCase().indexOf("partially successful") > -1)
         {
@@ -2880,10 +2888,10 @@ async function storeAndQueueConnectWork(
   updates: object[],
   s3Key: string,
   custConfig: CustomerConfig,
-  iter: number 
+  iter: number
 ) {
 
-  if (batchCount > S3DBConfig.s3dropbucket_maxbatcheswarning && batchCount % 100 === 0 )
+  if (batchCount > S3DBConfig.s3dropbucket_maxbatcheswarning && batchCount % 100 === 0)
     S3DB_Logging("info", "", `Warning: Updates from the S3 Object(${s3Key}) (File Stream Iter: ${iter}) are exceeding (${batchCount}) the Warning Limit of ${S3DBConfig.s3dropbucket_maxbatcheswarning} Batches per Object.`)
 
   const updateCount = updates.length
@@ -2920,7 +2928,7 @@ async function storeAndQueueConnectWork(
   
 
 
-
+  //For now will need to treat Reference Sets completely differently until an API shows up, hopefully similar to Contacts API
   if (customersConfig.updatetype.toLowerCase() === "referenceset")
   {
     mutations = await buildMutationReferenceSet(updates, custConfig)
@@ -2929,9 +2937,9 @@ async function storeAndQueueConnectWork(
       })
   }
   
-  if (customersConfig.updatetype.toLowerCase() === "createcontacts")
+  if (customersConfig.updatetype.toLowerCase() === "createcontacts" || customersConfig.updatetype.toLowerCase() === "updatecontacts")
   {
-    mutations = await buildMutationCreateContacts(updates, custConfig)
+    mutations = await buildMutationsConnect(updates, custConfig)
       .then((r) => {
         return r
       })
@@ -2944,30 +2952,25 @@ async function storeAndQueueConnectWork(
   //cv.dataSetId = config.datasetid
   //cv.contactsInput = [ca]
 
+  //Defer this for now, indicated as not preferred to create attributes in this process. @Thomas Jan2025
+  //if (customersConfig.updatetype.toLowerCase() === "createattributes")
+  //{
+  //  mutations = await buildMutationCreateAttributes(updates, custConfig)
+  //    .then((r) => {
+  //      return r
+  //    })
+  //}
 
-
-  if (customersConfig.updatetype.toLowerCase() === "updatecontacts")
-  {
-    mutations = await buildMutationUpdateContacts(updates, custConfig)
-      .then((r) => {
-        return r
-      })
-  }
-
-  if (customersConfig.updatetype.toLowerCase() === "createattributes")
-  {
-    mutations = await buildMutationCreateAttributes(updates, custConfig)
-      .then((r) => {
-        return r
-      })
-  }
-
-  
-  debugger
-    
   const mutationUpdates = JSON.stringify(mutations)
   
-  S3DB_Logging("info", "855", `GraphQL Call (S3DBConfig.connectapiurl) \n${mutationUpdates}`)
+  S3DB_Logging("info", "855", `GraphQL Call (${S3DBConfig.connectapiurl}) Updates: \n${mutationUpdates}`)
+
+
+
+//  //Testing - Call POST to Connect immediately
+  const c = await postToConnect(mutationUpdates, customersConfig, "6", s3Key)
+    
+  debugger
 
 
   if (s3Key.indexOf("TestData") > -1)
@@ -2983,7 +2986,7 @@ async function storeAndQueueConnectWork(
     key = key.split("/").at(-1) ?? key
   }
 
-  key = key.replace(".", "_")
+  key = key.replace(".", "-")
 
   key = `${key}-update-${batchCount}-${updateCount}-${uuidv4()}.json`
 
@@ -3052,11 +3055,6 @@ async function storeAndQueueConnectWork(
 
   S3DB_Logging("info", "915", `Results of Storing and Queuing (Connect) Work ${key} to Work Queue: ${JSON.stringify(addWorkToSQSWorkQueueResult)} \n${JSON.stringify(
     addWorkToS3WorkBucketResult)}`)
-
-//debugger
-//  //Testing - Call POST to Connect immediately
-//  const c = await postToConnect(mutationUpdates, customersConfig, "6", key)
-//debugger
 
   return {
     AddWorkToS3WorkBucketResults: addWorkToS3WorkBucketResult,
@@ -3999,488 +3997,70 @@ export async function getAccessToken(config: CustomerConfig) {
 }
 
 
-
-async function testStoreQueueConnectPOST() {
-
-  
-  //interface Attribute {
-  //  name: string
-  //  value: string
-  //}
-  //interface contactsInput {
-  //  attributes: Attribute[]
-  //}
-  //interface createContacts {
-  //  dataSetId: string
-  //  contacts: contactsInput[]
-  //}
-
-
-  /*  
-    const variables_working = {
-      dataSetId: "df07969b-7126-47f2-812d-b7b5876627f7",
-      contactsInput: [
-        {
-          attributes: [
-            {name: "Firstname", value: "Diego"},
-            {name: "Lastname", value: "Cotto"},
-            {name: "Country", value: "Argentina"},
-            {name: "Email", value: "diego11736@example.com"}
-          ]
-        },
-        {
-          attributes: [
-            {name: "Firstname", value: "Taio"},
-            {name: "Lastname", value: "Daio"},
-            {name: "Country", value: "Canada"},
-            {name: "Email", value: "taio234o@example.com"}
-          ]
-        },
-        {
-          attributes: [
-            {name: "Firstname", value: "Anna"},
-            {name: "Lastname", value: "Banana"},
-            {name: "Country", value: "Canada"},
-            {name: "Email", value: "anna1989@example.com"}
-          ]
-        }
-      ]
-    }
-    */
-
-  //createMultipleContacts {
-  //      createContacts(
-  //        contactsInput: [
-  //          {
-  //          attributes: []
-  //        }
-  //      ]
-  //      )
-  //    }
-
-
-  //const query = `mutation CreateMultipleContacts($dataSetId: ID!, $contacts: [ContactCreateInput!]!) {
-  //  createContacts(dataSetId: $dataSetId, contactsInput: $contacts) {
-  //      items {
-  //      contactId
-  //    }
-  //  }
-  //}`
-
-  //const variables = {
-  //  dataSetId: config.datasetid,
-  //  contacts: [
-  //    {
-  //     attributes: c.attributes
-  //    }
-  //  ]
-  //}
-
-
-
-
-  //const mutation = `
-  //  mutation createMultipleContacts {
-  //    createContacts(
-  //      contactsInput: ${JSON.stringify(cc.contacts)}
-  //      dataSetId: "${cc.dataSetId}"
-  //    `
-
-
-
-
-
-
-
-
-
-  //mutation createMultipleContacts {
-  //  createContacts(
-  //    contactsInput: [
-  //    {
-  //      attributes: [
-  //        {name: "First Name", value: "Diego"}
-  //        {name: "Country", value: "Argentina"}
-  //        {name: "Email Address", value: "diego11736@example.com"}
-  //      ]
-  //    }
-  //    {
-  //      attributes: [
-  //        {name: "First Name", value: "Taio"}
-  //        {name: "Country", value: "Canada"}
-  //        {name: "Email Address", value: "taio234o@example.com"}
-  //      ]
-  //    }
-  //    {
-  //      attributes: [
-  //        {name: "First Name", value: "Anna"}
-  //        {name: "Country", value: "Canada"}
-  //        {name: "Email Address", value: "anna1989@example.com"}
-  //      ]
-  //    }
-  //  ]
-  //  dataSetId: "4fe4136f-c007-44a3-b38f-92220xxxxxxxx"
-  //  ) {
-  //  items {
-  //      contactId
-  //    }
-  //  }
-  //}
-
-  //  const qquery = `
-  //  mutation CreateNewTodo($title: String!) {
-  //    todoCreate(input: {
-  //      title: $title
-  //    }) {
-  //      todo {
-  //        id
-  //      }
-  //    }
-  //  }
-  //`
-  // mutation createMultipleContacts {
-  //    createContacts(
-  //      contactsInput: [
-  //      {
-  //        attributes: [
-  //          {name: "First Name", value: "Diego"}
-  //          {name: "Country", value: "Argentina"}
-  //          {name: "Email Address", value: "diego11736@example.com"}
-  //        ]
-  //      }
-  //      {
-  //        attributes: [
-  //          {name: "First Name", value: "Taio"}
-  //          {name: "Country", value: "Canada"}
-  //          {name: "Email Address", value: "taio234o@example.com"}
-  //        ]
-  //      }
-  //      {
-  //        attributes: [
-  //          {name: "First Name", value: "Anna"}
-  //          {name: "Country", value: "Canada"}
-  //          {name: "Email Address", value: "anna1989@example.com"}
-  //        ]
-  //      }
-  //    ]
-  //    dataSetId: "4fe4136f-c007-44a3-b38f-92220xxxxxxxx"
-  //    ) {
-  //    items {
-  //        contactId
-  //      }
-  //    }
-  //  }
-
-
-
-
-
-  //const v = {
-  //"variables": {
-  //  "dataSetId": "4fe4136f-c007-44a3-b38f-92220xxxxxxxx",
-  //    "contacts": [
-  //      {
-  //        "attributes": [
-  //          {
-  //            "name": "First Name",
-  //            "value": "Diego"
-  //          },
-  //          {
-  //            "name": "Country",
-  //            "value": "Argentina"
-  //          },
-  //          {
-  //            "name": "Email Address",
-  //            "value": "diego11736@example.com"
-  //          }
-  //        ]
-  //      },
-  //      {
-  //        "attributes": [
-  //          {
-  //            "name": "First Name",
-  //            "value": "Taio"
-  //          },
-  //          {
-  //            "name": "Country",
-  //            "value": "Canada"
-  //          },
-  //          {
-  //            "name": "Email Address",
-  //            "value": "taio234o@example.com"
-  //          }
-  //        ]
-  //      },
-  //      {
-  //        "attributes": [
-  //          {
-  //            "name": "First Name",
-  //            "value": "Anna"
-  //          },
-  //          {
-  //            "name": "Country",
-  //            "value": "Canada"
-  //          },
-  //          {
-  //            "name": "Email Address",
-  //            "value": "anna1989@example.com"
-  //          }
-  //        ]
-  //      }
-  //    ]
-  //}
-
-
-  //const contactArray: Contact[] = [
-  //  {
-  //    attributes: [
-  //      {name: "First Name", value: "Diego"},
-  //      {name: "Country", value: "Argentina"},
-  //      {name: "Email Address", value: "diego11736@example.com"}
-  //    ]
-  //  },
-  //  {
-  //    attributes: [
-  //      {name: "First Name", value: "Taio"},
-  //      {name: "Country", value: "Canada"},
-  //      {name: "Email Address", value: "taio234o@example.com"}
-  //    ]
-  //  }
-  //]
-
-
-  const q = {
-    "query": "mutation CreateMultipleContacts($dataSetId: ID!, $contacts: [ContactCreateInput!]!) {createContacts(dataSetId: $dataSetId, contactsInput: $contacts) { items {contactId} } }",
-    "variables": {
-      "dataSetId": "4fe4136f-c007-44a3-b38f-92220xxxxxxxx",
-      "contacts": [
-        {
-          "attributes": [
-            {
-              "name": "First Name",
-              "value": "Diego"
-            },
-            {
-              "name": "Country",
-              "value": "Argentina"
-            },
-            {
-              "name": "Email Address",
-              "value": "diego11736@example.com"
-            }
-          ]
-        },
-        {
-          "attributes": [
-            {
-              "name": "First Name",
-              "value": "Taio"
-            },
-            {
-              "name": "Country",
-              "value": "Canada"
-            },
-            {
-              "name": "Email Address",
-              "value": "taio234o@example.com"
-            }
-          ]
-        },
-        {
-          "attributes": [
-            {
-              "name": "First Name",
-              "value": "Anna"
-            },
-            {
-              "name": "Country",
-              "value": "Canada"
-            },
-            {
-              "name": "Email Address",
-              "value": "anna1989@example.com"
-            }
-          ]
-        }
-      ]
-    }
-  }
-
-
-
-
-
-  const query = `mutation createMultipleContacts($dataSetId: ID!, $contactsInput: [ContactCreateInput!]!) {
-    createContacts(
-      dataSetId: $dataSetId
-      contactsInput: $contactsInput
-    ) {
-        items {
-          contactId
-        }
-    }
-}`
-
-
-  //const variables = {
-  //  dataSetId: "df07969b-7126-47f2-812d-b7b5876627f7",
-  //  contacts: [{
-  //    contactId: "123509",
-  //    to: {
-  //      attributes: [
-  //        {name: "Unique ID", value: "123509"},
-  //        {name: "Firstname", value: "Barney"},
-  //        {name: "Lastname", value: "Rubble"},
-  //        {name: "Email", value: "barney.rubble@quarry.com"}
-  //      ].filter(attr => attr.value != null), // Remove any null values
-  //      consent: {
-  //        consentGroups: [{
-  //          id: "3a7134b8-dcb5-509a-b7ff-946b48333cc9",
-  //          name: "Newsletters",
-  //          status: "OPT_IN"
-  //        }]
-  //      }
-  //    }
-  //  }]
-  //};
-
-  const variables = {
-    dataSetId: "df07969b-7126-47f2-812d-b7b5876627f7",
-    contactsInput: [
-      {
-        attributes: [
-          {name: "Firstname", value: "Diego"},
-          {name: "Lastname", value: "Cotto"},
-          {name: "Country", value: "Argentina"},
-          {name: "Email", value: "diego11736@example.com"}
-        ]
-      },
-      {
-        attributes: [
-          {name: "Firstname", value: "Taio"},
-          {name: "Lastname", value: "Daio"},
-          {name: "Country", value: "Canada"},
-          {name: "Email", value: "taio234o@example.com"}
-        ]
-      },
-      {
-        attributes: [
-          {name: "Firstname", value: "Anna"},
-          {name: "Lastname", value: "Banana"},
-          {name: "Country", value: "Canada"},
-          {name: "Email", value: "anna1989@example.com"}
-        ]
-      }
-    ]
-  }
-
-
-
-  const qquery = `mutation createMultipleContacts {
-    createContacts(
-        dataSetId: "df07969b-7126-47f2-812d-b7b5876627f7"
-        updateContactInputs: [
-            {
-                contactId: "123509"
-                to: {
-                    attributes: [
-                        { name: "Unique ID", value: "123509" }
-                        { name: "Firstname", value: "Barney" }
-                        { name: "Lastname", value: "Rubble" }
-                        { name: "Email", value: "barney.rubble@quarry.com" }
-                    ]
-                    consent: {
-                        consentGroups: [
-                            {
-                                id: "3a7134b8-dcb5-509a-b7ff-946b48333cc9"
-                                name: "Newsletters"
-                                status: OPT_IN
-                            }
-                        ]
-                    }
-                }
-            }
-        ]
-    ) {
-        modifiedCount
-    }
-  }`
-
-
-  //const host = S3DBConfig.connectapiurl
-  const host = 'https://connect-api-us-1.goacoustic.com/api/graph'
-
-  try
-  {
-    const response = await fetch(host, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'subscriptionId': 'bb6758fc16bbfffbe4248214486c06cc3a924edf',
-        //'x-api-key': 'b1fa7ef5024e4da3b0a40aed8331761c',
-        'x-api-key': '41d0316c76e24cd6bf31d202a12a37c2_gka',
-        'x-acoustic-region': 'us-east-1'
-      },
-      //body: JSON.stringify({
-      //  query: mutation,
-      //  variables
-      //})      
-      //body: JSON.stringify(res)      
-      body: JSON.stringify({query, variables})
-    })
-
-    const result = await response.json()
-
-    S3DB_Logging("info", "855", `GraphQL Call (${S3DBConfig.connectapiurl}): ${JSON.stringify({query, variables})}`)
-    S3DB_Logging("info", "855", `GraphQL Result: \n${JSON.stringify(result)}`)
-
-    debugger
-
-    //return JSON.stringify(result.data)
-
-  } catch (error)
-  {
-    console.error('Error creating contacts:', error)
-    throw error
-  }
-
-
-  debugger
-
-
-
-
-}
-
-
 interface ContactAttribute {
   name: string
   value: string
 }
-
 interface Contact {
   attributes: ContactAttribute[]
 }
 
-interface VariablesCreateContacts {
+interface VariablesContacts {
   dataSetId: string
   contactsInput: Contact[]
 }
 
-async function buildMutationCreateContacts(updates: object[], config: CustomerConfig) {
 
-  const query = `mutation createMultipleContacts($dataSetId: ID!, $contactsInput: [ContactCreateInput!]!) {
+
+async function buildMutationsConnect(updates: object[], config: CustomerConfig) {
+
+  const createQuery = `mutation createMultipleContacts($dataSetId: ID!, $contactsInput: [ContactCreateInputs!]!) {
     createContacts(
       dataSetId: $dataSetId
       contactsInput: $contactsInput
     ) {
-        items {
-          contactId
-        }
+      items {
+        contactId
+      }
     }
-}`
+  }`
+  
+  const updateQuery = `mutation updateMultipleContacts($dataSetId: ID!, $contactsInput: [updateContactInputs!]!) {
+    updateContacts(
+      dataSetId: $dataSetId
+      updateContactInputs: $contactsInput
+    ) {
+      modifiedCount
+    }
+  }`
 
-  let variables: VariablesCreateContacts = {"dataSetId": config.datasetid,"contactsInput": []}
+//  "query": "mutation {
+//    updateContacts(
+//        dataSetId: "df07969b-7126-47f2-812d-b7b5876627f7"
+//        updateContactInputs: [
+//            {
+//                contactId: "123509" 
+//                to: {
+//                    attributes: [
+//                        { name: "Unique ID", value: "123509" }
+//                        { name: "Firstname", value: "Barney" }
+//                        { name: "Lastname", value: "Rubble" }
+//                        { name: "Email", value: "barney.rubble@quarry.com" }
+//                    ]
+
+//                }
+//            }
+//        ]
+//    ) {
+//        modifiedCount
+//    }
+//}
+
+
+  let query = createQuery
+  if(config.updatetype.toLowerCase() === "updatecontacts") query = updateQuery
+
+  let variables: VariablesContacts = {"dataSetId": config.datasetid, "contactsInput": []}
 
   for (const upd in updates)
   {
@@ -4489,7 +4069,6 @@ async function buildMutationCreateContacts(updates: object[], config: CustomerCo
 
     for (const [key, value] of Object.entries(updates[upd]))
     {
-
       let v
       if (typeof value === 'string') v = value as string
       else v = String(value)
@@ -4503,23 +4082,42 @@ async function buildMutationCreateContacts(updates: object[], config: CustomerCo
 
   }
 
-S3DB_Logging("info", "817", `Create Multiple Contacts Mutation: \n${query} and Vars: \n${JSON.stringify(variables)}`)
-
+  S3DB_Logging("info", "817", `Create Multiple Contacts Mutation: \n${query} and Vars: \n${JSON.stringify(variables)}`)
+  
   return {query, variables}
 
+//Example:
+//{
+//  "query": "mutation createMultipleContacts($dataSetId: ID!, $contactsInput: [ContactCreateInput!]!) {\n    createContacts(\n      dataSetId: $dataSetId\n      contactsInput: $contactsInput\n    ) {\n        items {\n          contactId\n        }\n    }\n}",
+//  "variables": {
+//    "dataSetId": "df07969b-7126-47f2-812d-b7b5876627f7",
+//    "contactsInput": [
+//      {
+//        "attributes": [
+//          { "name": "dateday", "value": "Wednesday" },
+//          { "name": "Email", "value": "shefali.bisht@sandmartin.com" },
+//          { "name": "PostalCode", "value": "undefined" },
+//          { "name": "Group", "value": "005Ho00000A10ApIAJ" },
+//          { "name": "Firstname", "value": "Shefali" },
+//          { "name": "Lastname", "value": "Bisht" },
+//          { "name": "Branding", "value": "null" },
+//          { "name": "AE_Name", "value": "null" },
+//          { "name": "Access_Phone", "value": "null" },
+//          { "name": "Employee", "value": "null" }
+//        ]
+//      },
+//      {
+
+
+
+
+
+
+
 }
 
-interface VariablesUpdateContacts {
-  dataSetId: string
-  updateContactInputs: Contact[]
-}
 
-interface Contact {
-  attributes: ContactAttribute[]
-}
-
-
-async function buildMutationUpdateContacts(updates: object[], config: CustomerConfig) {
+/*async function buildMutationUpdateContacts(updates: object[], config: CustomerConfig) {
 
   
 const query = `mutation updateMultipleContacts($dataSetId: ID!, $updateContactInputs: [UpdateContactInput!]!) {
@@ -4543,7 +4141,7 @@ const query = `mutation updateMultipleContacts($dataSetId: ID!, $updateContactIn
 //    }
 //}`
 
-  let variables: VariablesUpdateContacts = {"dataSetId": config.datasetid, "updateContactInputs": []}
+  let variables: VariablesContacts = {"dataSetId": config.datasetid, "updateContactInputs": []}
 
   //const variables1 = {
   //  dataSetId: "config.datasetId",
@@ -4587,6 +4185,8 @@ const query = `mutation updateMultipleContacts($dataSetId: ID!, $updateContactIn
   return {query, variables}
 
 }
+*/
+
 
 async function buildMutationCreateAttributes(updates: object[], config: CustomerConfig) {
 
@@ -4698,9 +4298,9 @@ async function postToConnect(mutations: string, custconfig: CustomerConfig, upda
   const myHeaders = new Headers()
   //myHeaders.append("Content-Type", "text/xml")
   //myHeaders.append("Authorization", "Bearer " + process.env[`${c}_accessToken`])
-  myHeaders.append("subscriptionId", customersConfig.subscriptionid)
-  myHeaders.append("x-api-key", customersConfig.x_api_key)
-  myHeaders.append("x-acoustic-region", customersConfig.x_acoustic_region)
+  myHeaders.append("subscriptionId", custconfig.subscriptionid)
+  myHeaders.append("x-api-key", custconfig.x_api_key)
+  myHeaders.append("x-acoustic-region", custconfig.x_acoustic_region)
   myHeaders.append("Content-Type", "application/json")
   myHeaders.append("Connection", "keep-alive")
   myHeaders.append("Accept", "*/*")
@@ -4709,7 +4309,7 @@ async function postToConnect(mutations: string, custconfig: CustomerConfig, upda
   const requestOptions: RequestInit = {
     method: "POST",
     headers: myHeaders,
-    body:  mutations,
+    body: mutations,
     redirect: "follow"
   }
 
@@ -4720,42 +4320,122 @@ async function postToConnect(mutations: string, custconfig: CustomerConfig, upda
 
   let connectQueryResult: string = ""
 
-  debugger
+  interface ConnectSuccessResult {       
+    "data": {
+      "createContacts": {
+        "items": [
+          {
+            "contactId": string
+          }
+        ]
+      }
+    }
+  }
 
+  interface ConnectErrorResult {      
+    "data": null,
+    "errors": [
+      {
+        "message": string
+        "locations": [{"line": number, "column": number}],
+        "path": [string],
+        "extensions": {"code": string}
+      }
+    ]
+  }
 
-  // try
-  // {
+   try
+   {
   connectQueryResult = await fetch(host, requestOptions)
-    .then((response) => response.text())
+    .then((response) => response.json())  // .text())
     .then(async (result) => {
-      S3DB_Logging("info", "808", `POST Response (${workFile}) : ${result}`)
+      S3DB_Logging("info", "808", `Connect Query Response (${workFile}) : ${JSON.stringify(result)}`)
 
-      S3DB_Logging("warn", "829", `Temporary Failure - POST Updates - Marked for Retry. \n${result}`)
+      //const r2 = {
+      //  "data": null,
+      //  "errors": [
+      //    {
+      //      "message": "No defined Attribute with name: 'dateday'",
+      //      "locations": [{"line": 1, "column": 99}],
+      //      "path": ["createContacts"],
+      //      "extensions": {"code": "ATTRIBUTE_NOT_DEFINED"}
+      //    }
+      //  ]
+      //}
 
+      //const r3 = {
+      //      "data" : {
+      //        "createContacts" : {
+      //          "items" : [
+      //            {
+      //              "contactId" : "529dbe72-11c6-515a-a6f4-0069988668f5"
+      //            },
+      //            {
+      //              "contactId" : "5510fe0f-27b1-56ea-90a9-67a3bad9f364"
+      //            },
+      //            {
+      //              "contactId" : "c341af1a-968d-5d0b-8873-5a41d7d495e5"
+      //            },
+      //            {
+      //              "contactId" : "b357ad45-9396-5a24-ba56-1fb66289bd5f"
+      //            },
+      //            {
+      //              "contactId" : "e533ff9b-def4-5da5-9725-3edae92cab65"
+      //            },
+      //            {
+      //              "contactId" : "59a7dcfe-4db5-5db7-a789-3f0c39d23d71"
+      //            }
+      //          ]
+      //        }
+      //      }
+      //    }
+
+      if (JSON.stringify(result).indexOf("errors") > 0)
+      {
+        //const resultMsg = JSON.parse(result) 
+        const cr = result as ConnectErrorResult
+
+        //if (cr.errors.length > 0)      //need to check if there are Partial Success/Errors. 
+          for (const e in cr.errors)
+          {
+            S3DB_Logging("error", "827", `PostToConnect - Error: ${cr.errors[e].message}`)
+            throw new Error(`PostToConnect - Create Contact Error ${cr.errors[e].message}`)
+          }
+        
+        return "successfully posted"
+      }
+        
+      //S3DB_Logging("warn", "829", `Temporary Failure - POST Updates - Marked for Retry. \n${result}`)
       //S3DB_Logging("error", "827", `Unsuccessful POST of the Updates (${m.length} of ${count}) - \nFailure Msg: ${JSON.stringify(msg)}`)
 
-      //return `Error - Unsuccessful POST of the Updates (${m.length} of ${count}) - \nFailure Msg: ${JSON.stringify(msg)}`
+
+      const cr = result as ConnectSuccessResult 
 
       //If we haven't returned before now then it's a successful post 
-      result = result.replace("\n", " ")
-      S3DB_Logging("info", "826", `Successful POST Result: ${result}`)
+      const nr = JSON.stringify(cr).replace("\n", " ")
+
+      S3DB_Logging("info", "826", `Successful POST Result: ${nr}`)
+
       //return `Successfully POSTed (${count}) Updates - Result: ${result}`
-      return ""
+      return "successfully posted"
     })
     .catch((e) => {
 
-      if (e.indexOf("econnreset") > -1)
+      if (e.message.indexOf("econnreset") > -1)
       {
-        S3DB_Logging("exception", "829", `Error - Temporary failure to POST the Updates - Marked for Retry. ${e}`)
-
+        S3DB_Logging("exception", "829", `PostToConnect Error (then.catch) - Temporary failure to POST the Updates - Marked for Retry. ${e}`)
         return "retry"
       } else
       {
-        S3DB_Logging("exception", "827", `Error - Unsuccessful POST of the Updates: ${e}`)
-        //throw new Error( `Exception - Unsuccessful POST of the Updates \n${ e }` )
+        S3DB_Logging("exception", "", `Error - Unsuccessful POST of the Updates: ${e}`)
         return "Unsuccessful POST of the Updates"
       }
     })
+}catch (e)
+{
+     S3DB_Logging("error", "829", `PostToConnect - Error (try-catch): ${e}`)
+     return "unsuccessful post"
+}
 
   //retry
   //unsuccessful post
@@ -4818,7 +4498,7 @@ export async function postToCampaign(
   postRes = await fetch(host, requestOptions)
     .then((response) => response.text())
     .then(async (result) => {
-      S3DB_Logging("info", "908", `POST Response (${workFile}) : ${result}`)
+      S3DB_Logging("info", "908", `Campaign Raw POST Response (${workFile}) : ${result}`)
 
       const faults: string[] = []
 
@@ -4835,7 +4515,8 @@ export async function postToCampaign(
 
       } else if (result.indexOf("<FaultString><![CDATA[") > -1)
       {
-        
+        S3DB_Logging("error", "", `Failed Campaign POST of Updates - \nResults\n ${JSON.stringify(result)}`)
+
         //Add this fail
         //<RESULT>
         //    <SUCCESS>false</SUCCESS>
@@ -4875,6 +4556,8 @@ export async function postToCampaign(
         //    //<SUCCESS> true < /SUCCESS>
         //    //    < FAILURES >
         //    //    <FAILURE failure_type="permanent" description = "There is no column registeredAdvisorTitle" >
+        //
+
         //    const m = result.match( /<FAILURE failure_(.*)"/gm )
 
         const m = result.match(/<FAILURE (.*)>$/g)
@@ -4892,6 +4575,7 @@ export async function postToCampaign(
           return `Error - Unsuccessful POST of the Updates (${m.length} of ${count}) - \nFailure Msg: ${JSON.stringify(msg)}`
         }
       }
+
 
       //If we haven't returned before now then it's a successful post 
       result = result.replace("\n", " ")
@@ -5324,3 +5008,7 @@ async function getAllCustomerConfigsList(bucket: string) {
 //  const l = reQueue.length
 //  return [l, reQueue]
 //}
+
+
+
+

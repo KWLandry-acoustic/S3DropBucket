@@ -44,8 +44,9 @@ phases:
       #- sam --clean --debug
       #- sam build --debug
       #- sam build --cached --parallel
-      - sam build --parallel --manifest package.json --debug
+      #- sam build --parallel --manifest package.json --debug
       #- sam build --parallel --debug
+      - sam build
 
 
       #- sam package --s3-bucket aws-us-east-1-777957353822-tricklercache-pipe --force-upload --debug
@@ -92,10 +93,10 @@ phases:
 
 artifacts:
   files:
-    - node_modules/**/*
+    #- node_modules/**/*
     - template-export.yml
-    - sampackaged.yaml
-    - .aws-sam/**/*
+    #- sampackaged.yaml
+    #- .aws-sam/**/*
     #- package-lock.json
     #- package.json
 
