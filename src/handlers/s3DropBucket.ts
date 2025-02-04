@@ -415,14 +415,18 @@ const testdata = ""
 //testS3Key = "TestData/Funding_Circle_Limited_CampaignDatabase1_2024_11_12T11_20_56_317Z.json"
 //testS3Key = "TestData/Funding_Circle_Limited_CampaignDatabase1_2024_11_28T22_16_03_400Z_json-update-1-1-0a147575-2123-44ff-a7bf-d12b0a0d839f.xml"
 //testS3Key = "TestData/Funding_Circle_Limited_CampaignRelationalTable1_2024_10_08T10_16_49_700Z.json"
+//testS3Key = "TestData/Funding_Circle_Limited_CampaignDatabase1_2025_02_04T16_06_39_169Z.json"
+testS3Key = "TestData/Funding_Circle_Limited_CampaignRelationalTable1_2025_02_04T16_11_50_592Z.json"
 //testS3Key = "TestData/Funding_Circle_Limited_CampaignDatabase1_2024_10_08T09_52_13_903Z.json"
+
+testS3Key = "TestData/Funding_Circle_Limited_CampaignRelationalTable1_S3DropBucket_Aggregator-2-2025-02-04-16-03-43-f73b015e-43f7-3d2d-8223-dc2a91a89222.json"
 
 //testS3Key = "TestData/alerusrepsignature_advisors.json"
 //testS3Key = "TestData/alerusreassignrepsignature_advisors.json"
 //testS3Key = "TestData/KingsfordWeather_00210.csv"
 //testS3Key = "TestData/KingsfordWeather_00211.csv"
 
-testS3Key = "TestData/MasterCustomer_Sample1.json"
+//testS3Key = "TestData/MasterCustomer_Sample1.json"
 //testS3Key = "MasterCustomer_Sample1-json-update-1-6-c436dca1-6ec9-4c8b-bc78-6e1d774591ca.json"
 //testS3Key = "MasterCustomer_Sample1-json-update-1-6-0bb2f92e-3344-41e6-af95-90f5d32a73dc.json"
 
@@ -839,11 +843,11 @@ export async function S3DB_Logging(level: string, index: string,  msg:string) {
   const li = `_${index},`
 
   if (
-    (selectiveDebug.indexOf(li) > -1 || index === "" || process.env.S3DropBucketLogLevel?.toLowerCase() === 'all') &&
-    process.env.S3DropBucketLogLevel?.toLowerCase() !== 'none'
+    (selectiveDebug.indexOf(li) > -1 || index === "" || process.env.S3DropBucketLogLevel?.toLowerCase() === "all") &&
+    process.env.S3DropBucketLogLevel?.toLowerCase() !== "none"
   )
   {
-    if (process.env.S3DropBucketLogLevel?.toLowerCase() === 'all') index = `(LOG ALL-${index})`
+    if (process.env.S3DropBucketLogLevel?.toLowerCase() === "all") index = `(LOG ALL-${index})`
 
     if (level.toLowerCase() === "info") console.info(`S3DBLog-Info ${index}: ${msg} \nRegion: ${r} Version: ${version}`)
     if (level.toLowerCase() === "warn") console.warn(`S3DBLog-Warning ${index}: ${msg} \nRegion: ${r} Version: ${version}`)
@@ -1535,9 +1539,9 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
         //Retrieve Contents of the Work File
         S3DB_Logging("info", "512", `S3 Retrieve results for Work file ${s3dbQM.workKey}: ${JSON.stringify(work)}`)
 
-        if ((custconfig.updatetype.toLowerCase() === 'createcontacts') ||
-          (custconfig.updatetype.toLowerCase() === 'updatecontacts') ||
-          (custconfig.updatetype.toLowerCase() === 'createattributes')
+        if ((custconfig.updatetype.toLowerCase() === "createcontacts") ||
+          (custconfig.updatetype.toLowerCase() === "updatecontacts") ||
+          (custconfig.updatetype.toLowerCase() === "createattributes")
           // || localTesting)
         )
         { 
@@ -1549,9 +1553,9 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
           )
         }
         
-        if (custconfig.updatetype.toLowerCase() === 'relational' ||
-          custconfig.updatetype.toLowerCase() === 'dbkeyed' ||
-          custconfig.updatetype.toLowerCase() === 'dbnonkeyed') {
+        if (custconfig.updatetype.toLowerCase() === "relational" ||
+          custconfig.updatetype.toLowerCase() === "dbkeyed" ||
+          custconfig.updatetype.toLowerCase() === "dbnonkeyed") {
           postResult = await postToCampaign(
             work,
             custconfig as CustomerConfig,
@@ -1854,7 +1858,7 @@ export const s3DropBucketSFTPHandler: Handler = async (
     //             console.info(`Work Successfully Posted to Campaign(${ tqm.workKey }), Deleting Work from S3 Process Queue`)
 
     //             const d: string = await deleteS3Object(tqm.workKey, 's3dropbucket-process')
-    //             if (d === '204') console.info(`Successful Deletion of Work: ${ tqm.workKey } `)
+    //             if (d === "204") console.info(`Successful Deletion of Work: ${ tqm.workKey } `)
     //             else console.error(`Failed to Delete ${ tqm.workKey }. Expected '204' but received ${ d } `)
     //         }
 
@@ -2056,7 +2060,7 @@ async function getValidateS3DropBucketConfig() {
     //debugger
 
     //  *Must* set EventEmitterMaxListeners in environment vars as this flags whether config is already parsed.
-    if (!isNaN(s3dbc.s3dropbucket_eventemittermaxlisteners) && typeof s3dbc.s3dropbucket_eventemittermaxlisteners === 'number') process.env["EventEmitterMaxListeners"] = s3dbc.s3dropbucket_eventemittermaxlisteners.toString()
+    if (!isNaN(s3dbc.s3dropbucket_eventemittermaxlisteners) && typeof s3dbc.s3dropbucket_eventemittermaxlisteners === "number") process.env["EventEmitterMaxListeners"] = s3dbc.s3dropbucket_eventemittermaxlisteners.toString()
     else {
       throw new Error(
         `S3DropBucket Config invalid or missing definition: EventEmitterMaxListeners.`
@@ -2161,7 +2165,7 @@ async function getValidateS3DropBucketConfig() {
       )
     
     //process.env["RetryQueueInitialWaitTimeSeconds"]
-    if (!isNaN(s3dbc.s3dropbucket_maxbatcheswarning) && typeof s3dbc.s3dropbucket_maxbatcheswarning === 'number') process.env["MaxBatchesWarning"] = s3dbc.s3dropbucket_maxbatcheswarning.toFixed()
+    if (!isNaN(s3dbc.s3dropbucket_maxbatcheswarning) && typeof s3dbc.s3dropbucket_maxbatcheswarning === "number") process.env["MaxBatchesWarning"] = s3dbc.s3dropbucket_maxbatcheswarning.toFixed()
     else
       throw new Error(
         `S3DropBucket Config invalid definition: missing MaxBatchesWarning - ${s3dbc.s3dropbucket_maxbatcheswarning} `
@@ -2173,42 +2177,42 @@ async function getValidateS3DropBucketConfig() {
         `S3DropBucket Config invalid or missing definition: DropBucketQuiesce - ${s3dbc.s3dropbucket_quiesce} `
       )
 
-    if (!isNaN(s3dbc.s3dropbucket_mainthours) && typeof s3dbc.s3dropbucket_mainthours === 'number') process.env["S3DropBucketMaintHours"] = s3dbc.s3dropbucket_mainthours.toString()
+    if (!isNaN(s3dbc.s3dropbucket_mainthours) && typeof s3dbc.s3dropbucket_mainthours === "number") process.env["S3DropBucketMaintHours"] = s3dbc.s3dropbucket_mainthours.toString()
     else
     {
       s3dbc.s3dropbucket_mainthours = -1
       process.env["S3DropBucketMaintHours"] = s3dbc.s3dropbucket_mainthours.toString()
     }
 
-    if (!isNaN(s3dbc.s3dropbucket_maintlimit) && typeof s3dbc.s3dropbucket_maintlimit === 'number') process.env["S3DropBucketMaintLimit"] = s3dbc.s3dropbucket_maintlimit.toString()
+    if (!isNaN(s3dbc.s3dropbucket_maintlimit) && typeof s3dbc.s3dropbucket_maintlimit === "number") process.env["S3DropBucketMaintLimit"] = s3dbc.s3dropbucket_maintlimit.toString()
     else
     { 
       s3dbc.s3dropbucket_maintlimit = 0
       process.env["S3DropBucketMaintLimit"] = s3dbc.s3dropbucket_maintlimit.toString()
     }
 
-    if (!isNaN(s3dbc.s3dropbucket_maintconcurrency) && typeof s3dbc.s3dropbucket_maintconcurrency === 'number') process.env["S3DropBucketMaintConcurrency"] = s3dbc.s3dropbucket_maintconcurrency.toString()
+    if (!isNaN(s3dbc.s3dropbucket_maintconcurrency) && typeof s3dbc.s3dropbucket_maintconcurrency === "number") process.env["S3DropBucketMaintConcurrency"] = s3dbc.s3dropbucket_maintconcurrency.toString()
     else
     {
       s3dbc.s3dropbucket_maintlimit = 1
       process.env["S3DropBucketMaintConcurrency"] = s3dbc.s3dropbucket_maintconcurrency.toString()
     }
 
-    if (!isNaN(s3dbc.s3dropbucket_workqueuemainthours) && typeof s3dbc.s3dropbucket_workqueuemaintlimit === 'number') process.env["S3DropBucketWorkQueueMaintHours"] = s3dbc.s3dropbucket_workqueuemainthours.toString()
+    if (!isNaN(s3dbc.s3dropbucket_workqueuemainthours) && typeof s3dbc.s3dropbucket_workqueuemaintlimit === "number") process.env["S3DropBucketWorkQueueMaintHours"] = s3dbc.s3dropbucket_workqueuemainthours.toString()
     else
     {
       s3dbc.s3dropbucket_workqueuemainthours = -1
       process.env["S3DropBucketWorkQueueMaintHours"] = s3dbc.s3dropbucket_workqueuemainthours.toString()
     }
 
-    if (!isNaN(s3dbc.s3dropbucket_workqueuemaintlimit) && typeof s3dbc.s3dropbucket_workqueuemaintlimit === 'number') process.env["S3DropBucketWorkQueueMaintLimit"] = s3dbc.s3dropbucket_workqueuemaintlimit.toString()
+    if (!isNaN(s3dbc.s3dropbucket_workqueuemaintlimit) && typeof s3dbc.s3dropbucket_workqueuemaintlimit === "number") process.env["S3DropBucketWorkQueueMaintLimit"] = s3dbc.s3dropbucket_workqueuemaintlimit.toString()
     else
     {
       s3dbc.s3dropbucket_workqueuemaintlimit = 0
       process.env["S3DropBucketWorkQueueMaintLimit"] = s3dbc.s3dropbucket_workqueuemaintlimit.toString()
     }
 
-    if (!isNaN(s3dbc.s3dropbucket_workqueuemaintconcurrency) && typeof s3dbc.s3dropbucket_workqueuemaintconcurrency === 'number') process.env["S3DropBucketWorkQueueMaintConcurrency"] = s3dbc.s3dropbucket_workqueuemaintconcurrency.toString()
+    if (!isNaN(s3dbc.s3dropbucket_workqueuemaintconcurrency) && typeof s3dbc.s3dropbucket_workqueuemaintconcurrency === "number") process.env["S3DropBucketWorkQueueMaintConcurrency"] = s3dbc.s3dropbucket_workqueuemaintconcurrency.toString()
     else
     {
       s3dbc.s3dropbucket_workqueuemaintconcurrency = 1
@@ -2233,7 +2237,7 @@ async function getValidateS3DropBucketConfig() {
       )
     } else process.env["S3DropBucketPurge"] = s3dbc.s3dropbucket_purge
 
-    if (!isNaN(s3dbc.s3dropbucket_purgecount) && typeof s3dbc.s3dropbucket_purgecount === 'number') process.env["S3DropBucketPurgeCount"] = s3dbc.s3dropbucket_purgecount.toFixed()
+    if (!isNaN(s3dbc.s3dropbucket_purgecount) && typeof s3dbc.s3dropbucket_purgecount === "number") process.env["S3DropBucketPurgeCount"] = s3dbc.s3dropbucket_purgecount.toFixed()
     else {
       throw new Error(
         `S3DropBucket Config invalid or missing definition: S3DropBucketPurgeCount - ${s3dbc.s3dropbucket_purgecount} `
@@ -2253,7 +2257,7 @@ async function getValidateS3DropBucketConfig() {
       )
     } else process.env["S3DropBucketWorkQueueBucketPurge"] = s3dbc.s3dropbucket_workqueuebucketpurge
 
-    if (!isNaN(s3dbc.s3dropbucket_workqueuebucketpurgecount) && typeof s3dbc.s3dropbucket_workqueuebucketpurgecount === 'number') process.env["S3DropBucketWorkQueueBucketPurgeCount"] = s3dbc.s3dropbucket_workqueuebucketpurgecount.toFixed()
+    if (!isNaN(s3dbc.s3dropbucket_workqueuebucketpurgecount) && typeof s3dbc.s3dropbucket_workqueuebucketpurgecount === "number") process.env["S3DropBucketWorkQueueBucketPurgeCount"] = s3dbc.s3dropbucket_workqueuebucketpurgecount.toFixed()
     else
     {
       throw new Error(
@@ -2309,8 +2313,8 @@ async function getValidateS3DropBucketConfig() {
 async function getFormatCustomerConfig(filekey: string) {
 
   //Populate/Refresh Customer Config List 
-  if (process.env.S3DropBucketConfigBucket === '')  process.env.S3DropBucketConfigBucket = 's3dropbucket-configs'
-  const ccl = await getAllCustomerConfigsList(process.env.S3DropBucketConfigBucket ?? 's3dropbucket-configs')
+  if (process.env.S3DropBucketConfigBucket === "")  process.env.S3DropBucketConfigBucket = "s3dropbucket-configs"
+  const ccl = await getAllCustomerConfigsList(process.env.S3DropBucketConfigBucket ?? "s3dropbucket-configs")
   process.env.S3DropBucketCustomerConfigsList = JSON.stringify(ccl)
 
 
@@ -2469,7 +2473,7 @@ async function getFormatCustomerConfig(filekey: string) {
 
       if (container.match(new RegExp(/jsonmap|csvmap|ignore/))) continue
 
-      //if (typeof object[k] === 'object') setPropsLowCase(object[k])
+      //if (typeof object[k] === "object") setPropsLowCase(object[k])
       if (Object.prototype.toString.call(object[k]) === "[object Object]") setPropsLowCase(object[k], lk)
 
       if(k === lk) continue
@@ -2913,9 +2917,9 @@ async function storeAndQueueConnectWork(
 
   let mutations
   ////DBKeyed, DBNonKeyed, Relational, ReferenceSet, CreateContacts, UpdateContacts, CreateAttributes
-  //if (customersConfig.updatetype.toLowerCase() === 'updatecontacts') res = ConnectUpdateContacts()
-  //if (customersConfig.updatetype.toLowerCase() === 'createcontacts') res = ConnectCreateMultipleContacts()
-  //if (customersConfig.updatetype.toLowerCase() === 'createattributes') res = ConnectCreateAttributes()
+  //if (customersConfig.updatetype.toLowerCase() === "updatecontacts") res = ConnectUpdateContacts()
+  //if (customersConfig.updatetype.toLowerCase() === "createcontacts") res = ConnectCreateMultipleContacts()
+  //if (customersConfig.updatetype.toLowerCase() === "createattributes") res = ConnectCreateAttributes()
   ////if (true) res = ConnectReferenceSet().then((m) => {return m})
   //const mutationCall = JSON.stringify(res)
   //const m = buildConnectMutation(JSON.parse(updates))
@@ -3191,6 +3195,8 @@ function convertJSONToXML_RTUpdates(updates: object[], config: CustomerConfig) {
   xmlRows = `<Envelope> <Body> <InsertUpdateRelationalTable> <TABLE_ID> ${config.listid} </TABLE_ID><ROWS>`
 
   let r = 0
+
+  debugger 
 
   for (const upd in updates) {
 
@@ -3606,8 +3612,10 @@ function transforms(updates: object[], config: CustomerConfig) {
   //
   try
   {
-    //ToDo: Fix: refactor this out of Kingsford specific, config based 
-    if (config.transforms.methods.daydate && config.transforms.methods.daydate !== "")
+    if (typeof config.transforms.methods.daydate !== "undefined" &&
+      config.transforms.methods.daydate.length > 3 &&
+      config.transforms.methods.daydate !== " " &&
+      config.transforms.methods.daydate !== "")
       {
       const ddColumn: string = config.transforms.methods.daydate ?? 'datetime' 
     
@@ -3622,7 +3630,7 @@ function transforms(updates: object[], config: CustomerConfig) {
         "Saturday",
       ]
 
-      let d: string = ''
+      let d: string = ""
       for (const jo of updates)
       {
         //if ("datetime" in jo)
@@ -4070,7 +4078,7 @@ async function buildMutationsConnect(updates: object[], config: CustomerConfig) 
     for (const [key, value] of Object.entries(updates[upd]))
     {
       let v
-      if (typeof value === 'string') v = value as string
+      if (typeof value === "string") v = value as string
       else v = String(value)
   
       ca = {"name": key, "value": v}
@@ -4168,7 +4176,7 @@ const query = `mutation updateMultipleContacts($dataSetId: ID!, $updateContactIn
     {
 
       let v
-      if (typeof value === 'string') v = value as string
+      if (typeof value === "string") v = value as string
       else v = String(value)
 
       ca = {"name": key, "value": v}
@@ -4971,9 +4979,9 @@ async function getAllCustomerConfigsList(bucket: string) {
 
 //  //                     const obj = s3ListResult.Contents[ n ]
 //  //                     const key = obj.Key ?? ""
-//  //                     let versionId = ''
-//  //                     let batch = ''
-//  //                     let updates = ''
+//  //                     let versionId = ""
+//  //                     let batch = ""
+//  //                     let updates = ""
 
 //  //                     const r1 = new RegExp( /json_update_(.*)_/g )
 //  //                     let rm = r1.exec( key ) ?? ""
