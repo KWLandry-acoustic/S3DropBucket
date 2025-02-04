@@ -36,6 +36,7 @@ import {
   GetObjectCommandOutput,
   GetObjectCommandInput,
   DeleteObjectCommandOutput,
+  InventoryConfigurationFilterSensitiveLog,
   //CopyObjectCommand,
 } from "@aws-sdk/client-s3"
 
@@ -3789,11 +3790,13 @@ function transforms(updates: object[], config: CustomerConfig) {
   {
     debugger 
 
+    const igno = config.transforms.ignore as typeof config.transforms.ignore
+    
     //If this is processing an Aggregator file then we need to remove "Customer" column that is added by the Aggregator. 
     //Which we will not reach here if not an Aggregator as transforms are not applied before sending to Aggregator
-    if(config.updates.toLowerCase() === "singular") config.transforms.ignore.push("Customer")
-
-    if (config.transforms.ignore.length > 0)
+    if (config.updates.toLowerCase() === "singular") igno.push("Customer")
+  
+    if (igno.length > 0)
     {
       const i: typeof updates = []  //start an ignore processed update set
       try
@@ -3801,7 +3804,7 @@ function transforms(updates: object[], config: CustomerConfig) {
         for (const jo of updates)
         {
 
-          for (const ig of config.transforms.ignore)
+          for (const ig of igno)
           {
             type dk = keyof typeof jo
             const k: dk = ig as dk
