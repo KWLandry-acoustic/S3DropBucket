@@ -166,6 +166,7 @@ interface CustomerConfig {
   subscriptionid: string
   x_api_key: string
   x_acoustic_region: string
+  selectivelogging: string
   sftp: {
     user: string
     password: string
@@ -204,7 +205,8 @@ let customersConfig: CustomerConfig = {
     datasetid: "",
     subscriptionid: "",
     x_api_key: "",
-    x_acoustic_region: "",
+  x_acoustic_region: "",
+    selectivelogging: "",
     sftp: {
       user: "",
       password: "",
@@ -416,7 +418,7 @@ const testdata = ""
 //testS3Key = "TestData/Funding_Circle_Limited_CampaignDatabase1_2024_11_28T22_16_03_400Z_json-update-1-1-0a147575-2123-44ff-a7bf-d12b0a0d839f.xml"
 //testS3Key = "TestData/Funding_Circle_Limited_CampaignRelationalTable1_2024_10_08T10_16_49_700Z.json"
 //testS3Key = "TestData/Funding_Circle_Limited_CampaignDatabase1_2025_02_04T16_06_39_169Z.json"
-testS3Key = "TestData/Funding_Circle_Limited_CampaignRelationalTable1_2025_02_04T16_11_50_592Z.json"
+//testS3Key = "TestData/Funding_Circle_Limited_CampaignRelationalTable1_2025_02_04T16_11_50_592Z.json"
 //testS3Key = "TestData/Funding_Circle_Limited_CampaignDatabase1_2024_10_08T09_52_13_903Z.json"
 
 testS3Key = "TestData/Funding_Circle_Limited_CampaignRelationalTable1_S3DropBucket_Aggregator-2-2025-02-04-16-03-43-f73b015e-43f7-3d2d-8223-dc2a91a89222.json"
@@ -832,7 +834,11 @@ export default s3DropBucketHandler
 
 export async function S3DB_Logging(level: string, index: string,  msg:string) {
 
-  const selectiveDebug = process.env.S3DropBucketSelectiveLogging ?? S3DBConfig.s3dropbucket_selectivelogging ?? "_97,_98,_99,_503,_504,_511,_901,_910,_924,"
+  let selectiveDebug = process.env.S3DropBucketSelectiveLogging ?? S3DBConfig.s3dropbucket_selectivelogging ?? "_97,_98,_99,_503,_504,_511,_901,_910,_924,"
+  
+  if (typeof customersConfig.selectivelogging !== "undefined" &&
+    customersConfig.selectivelogging.length > 0 &&
+    customersConfig.selectivelogging !== "") selectiveDebug = customersConfig.selectivelogging
   
   if (localTesting) process.env.S3DropBucketLogLevel = "ALL"
 
@@ -1372,6 +1378,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
       subscriptionid: "",
       x_api_key: "",
       x_acoustic_region: "",
+      selectivelogging: "",
       sftp: {
         user: "",
         password: "",
@@ -2828,7 +2835,7 @@ async function packageUpdates(workSet: object[], key: string, custConfig: Custom
 
     return sqwResult = {
       ...sqwResult,
-      PutToFireHoseResults: `PutToFirehose Results: \n${firehoseResults} `,
+      PutToFireHoseResults: `PutToFirehose Results: \n${JSON.stringify(firehoseResults)} `,
     }
 
   } else        //Based on outcome of If - Not Firehose Aggregator work so need to package to Connect or Campaign
@@ -3416,6 +3423,7 @@ async function putToFirehose(chunks: object[], key: string, cust: string, iter: 
           {
             fhRetry = true
             setTimeout(() => {
+              //Don't like this approach but it appears to be the best way to get a promise safe retry
                 S3DB_Logging("warn", "944", `Retrying Put to Firehose Aggregator (Slow Down requested) for ${key} (File Stream Iter: ${iter}) `)
             }, 100)
           }
@@ -3779,6 +3787,12 @@ function transforms(updates: object[], config: CustomerConfig) {
   // Ignore must be last to take advantage of cleaning up any extraneous columns after previous transforms
   try
   {
+    debugger 
+
+    //If this is processing an Aggregator file then we need to remove "Customer" column that is added by the Aggregator. 
+    //Which we will not reach here if not an Aggregator as transforms are not applied before sending to Aggregator
+    if(config.updates.toLowerCase() === "singular") config.transforms.ignore.push("Customer")
+
     if (config.transforms.ignore.length > 0)
     {
       const i: typeof updates = []  //start an ignore processed update set
