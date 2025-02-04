@@ -3016,14 +3016,14 @@ async function storeAndQueueConnectWork(
   {
     addWorkToS3WorkBucketResult = await addWorkToS3WorkBucket(mutationUpdates, key)
       .then((res) => {
-        return res //{"AddWorktoS3Results": res}
+        return {"workfile":key, ...res} //{"AddWorktoS3Results": res}
       })
       .catch((err) => {
-        S3DB_Logging("exception", "", `Exception - AddWorkToS3WorkBucket ${err}`)
+        S3DB_Logging("exception", "", `Exception - AddWorkToS3WorkBucket (file: ${key}) ${err}`)
       })
   } catch (e)
   {
-    const sqwError = `Exception - StoreAndQueueWork Add work to S3 Bucket exception \n${e} `
+    const sqwError = `Exception - StoreAndQueueWork Add work (file: ${key}) to S3 Work Bucket exception \n${e} `
     S3DB_Logging("exception", "", sqwError)
 
     debugger
@@ -3139,13 +3139,13 @@ async function storeAndQueueCampaignWork(
   try {
     addWorkToS3WorkBucketResult = await addWorkToS3WorkBucket(xmlRows, key)
       .then((res) => {
-        return res 
+        return {"workfile":key, ...res}  //return res 
       })
       .catch((err) => {
-        S3DB_Logging("exception", "", `Exception - AddWorkToS3WorkBucket ${err} (File Stream Iter: ${iter})`)
+        S3DB_Logging("exception", "", `Exception - AddWorkToS3WorkBucket ${err} (File Stream Iter: ${iter} file: ${key})`)
       })
   } catch (e) {
-    const sqwError = `Exception - StoreAndQueueWork Add work (File Stream Iter: ${iter}) to S3 Bucket exception \n${e} `
+    const sqwError = `Exception - StoreAndQueueWork Add work (File Stream Iter: ${iter} (file: ${key})) to S3 Bucket exception \n${e} `
     S3DB_Logging("exception", "", sqwError)
     
     debugger
@@ -3800,8 +3800,6 @@ function transforms(updates: object[], config: CustomerConfig) {
       {
         for (const jo of updates)
         {
-          //const jo = JSON.parse( l )
-
 
           for (const ig of config.transforms.ignore)
           {
