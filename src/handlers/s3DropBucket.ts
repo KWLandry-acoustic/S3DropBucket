@@ -422,14 +422,14 @@ const testdata = ""
 //testS3Key = "TestData/Funding_Circle_Limited_CampaignRelationalTable1_2025_02_04T16_11_50_592Z.json"
 //testS3Key = "TestData/Funding_Circle_Limited_CampaignDatabase1_2024_10_08T09_52_13_903Z.json"
 
-testS3Key = "TestData/Funding_Circle_Limited_CampaignRelationalTable1_S3DropBucket_Aggregator-2-2025-02-04-16-03-43-f73b015e-43f7-3d2d-8223-dc2a91a89222.json"
+//testS3Key = "TestData/Funding_Circle_Limited_CampaignRelationalTable1_S3DropBucket_Aggregator-2-2025-02-04-16-03-43-f73b015e-43f7-3d2d-8223-dc2a91a89222.json"
 
 //testS3Key = "TestData/alerusrepsignature_advisors.json"
 //testS3Key = "TestData/alerusreassignrepsignature_advisors.json"
 //testS3Key = "TestData/KingsfordWeather_00210.csv"
 //testS3Key = "TestData/KingsfordWeather_00211.csv"
 
-//testS3Key = "TestData/MasterCustomer_Sample1.json"
+testS3Key = "TestData/MasterCustomer_Sample1.json"
 //testS3Key = "MasterCustomer_Sample1-json-update-1-6-c436dca1-6ec9-4c8b-bc78-6e1d774591ca.json"
 //testS3Key = "MasterCustomer_Sample1-json-update-1-6-0bb2f92e-3344-41e6-af95-90f5d32a73dc.json"
 
@@ -685,10 +685,7 @@ export const s3DropBucketHandler: Handler = async (
             //  //streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToSQSWorkQueueResults?.SQSWriteResult 
             //}
 
-           
-            
-            debugger
-
+          
             if (
               (typeof streamRes.OnEndStreamEndResult.StoreAndQueueWorkResult.PutToFireHoseAggregatorResult !== "undefined" && streamRes.OnEndStreamEndResult.StoreAndQueueWorkResult.PutToFireHoseAggregatorResult === "200") ||
               
@@ -1588,7 +1585,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
           //Add to SQS BatchFail array to Retry processing the work
           sqsBatchFail.batchItemFailures.push({itemIdentifier: q.messageId})
 
-          S3DB_Logging("warn", "509", `${s3dbQM.workKey} added back to Queue for Retry \nRetry Queue:\n ${JSON.stringify(sqsBatchFail)} `)
+          S3DB_Logging("warn", "509", `${s3dbQM.workKey} added back to Queue for Retry \nRetry Queue:\n ${JSON.stringify(sqsBatchFail)} POST Result: ${postResult}`)
         }
         else if (postResult.toLowerCase().indexOf("unsuccessful post") > -1)
         {
@@ -2060,7 +2057,8 @@ async function getValidateS3DropBucketConfig() {
     sf
 
     //debugger
-
+    
+    //ToDo Validaet Configs through Schema definition
     //const vs = validateBySchema.validate(sf, s3dbc)
 
     //S3DB_Logging("info", "",`Schema Validation returns: ${vs}`)
@@ -2979,7 +2977,7 @@ async function storeAndQueueConnectWork(
 
 
 
-//  //Testing - Call POST to Connect immediately
+//  //  Testing - Call POST to Connect immediately
   const c = await postToConnect(mutationUpdates, customersConfig, "6", s3Key)
     
   debugger
@@ -3204,8 +3202,6 @@ function convertJSONToXML_RTUpdates(updates: object[], config: CustomerConfig) {
 
   let r = 0
 
-  debugger 
-
   for (const upd in updates) {
 
     //const updAtts = JSON.parse( updates[ upd ] )
@@ -3415,6 +3411,7 @@ async function putToFirehose(chunks: object[], key: string, cust: string, iter: 
               return firehosePutResult
             })
           
+          // Testing - sample firehose put 
           x++
           if (x % 20 === 0)
           {
@@ -3788,12 +3785,11 @@ function transforms(updates: object[], config: CustomerConfig) {
   // Ignore must be last to take advantage of cleaning up any extraneous columns after previous transforms
   try
   {
-    debugger 
 
     const igno = config.transforms.ignore as typeof config.transforms.ignore
     
-    //If this is processing an Aggregator file then we need to remove "Customer" column that is added by the Aggregator. 
-    //Which we will not reach here if not an Aggregator as transforms are not applied before sending to Aggregator
+    //When processing an Aggregator file we need to remove "Customer" column that is added by the Aggregator. 
+    //Which, we will not reach here if not an Aggregator, as transforms are not applied before sending to Aggregator
     if (config.updates.toLowerCase() === "singular") igno.push("Customer")
   
     if (igno.length > 0)
@@ -4024,20 +4020,30 @@ interface ContactAttribute {
   name: string
   value: string
 }
-interface Contact {
-  attributes: ContactAttribute[]
+interface ContactRecord {
+  attributes: ContactAttribute[] 
+}
+interface UpdateContactRecord {
+  contactId: string
+  to: ContactRecord[]
 }
 
-interface VariablesContacts {
-  dataSetId: string
-  contactsInput: Contact[]
+interface UpdateContact {
+  contactsInput: UpdateContactRecord[]
 }
 
+interface CreateContact {
+  datasetId: string
+  contactsInput: ContactRecord[]
+}
 
 
 async function buildMutationsConnect(updates: object[], config: CustomerConfig) {
 
-  const createQuery = `mutation createMultipleContacts($dataSetId: ID!, $contactsInput: [ContactCreateInputs!]!) {
+  const createQuery = `mutation createMultipleContacts (
+    $dataSetId: ID!,
+    $contactsInput: [ContactCreateInput!]!
+    ) {
     createContacts(
       dataSetId: $dataSetId
       contactsInput: $contactsInput
@@ -4048,48 +4054,54 @@ async function buildMutationsConnect(updates: object[], config: CustomerConfig) 
     }
   }`
   
-  const updateQuery = `mutation updateMultipleContacts($dataSetId: ID!, $contactsInput: [updateContactInputs!]!) {
+  const updateQuery = `mutation updateMultipleContacts(
+     $contactsInput: [UpdateContactInput!]!
+     ) {
     updateContacts(
-      dataSetId: $dataSetId
-      updateContactInputs: $contactsInput
-    ) {
-      modifiedCount
+        updateContactInputs: $contactsInput
+        ) 
+    {
+    modifiedCount 
     }
-  }`
+}`
 
-//  "query": "mutation {
-//    updateContacts(
-//        dataSetId: "df07969b-7126-47f2-812d-b7b5876627f7"
-//        updateContactInputs: [
-//            {
-//                contactId: "123509" 
-//                to: {
-//                    attributes: [
-//                        { name: "Unique ID", value: "123509" }
-//                        { name: "Firstname", value: "Barney" }
-//                        { name: "Lastname", value: "Rubble" }
-//                        { name: "Email", value: "barney.rubble@quarry.com" }
-//                    ]
+  //  "query": "mutation {
+  //    updateContacts(
+  //        dataSetId: "df07969b-7126-47f2-812d-b7b5876627f7"
+  //        updateContactInputs: [
+  //            {
+  //                contactId: "123509" 
+  //                to: {
+  //                    attributes: [
+  //                        { name: "Unique ID", value: "123509" }
+  //                        { name: "Firstname", value: "Barney" }
+  //                        { name: "Lastname", value: "Rubble" }
+  //                        { name: "Email", value: "barney.rubble@quarry.com" }
+  //                    ]
+  //                }
+  //            }
+  //        ]
+  //    ) {
+  //        modifiedCount
+  //    }
+  //}
 
-//                }
-//            }
-//        ]
-//    ) {
-//        modifiedCount
-//    }
-//}
 
+  let query
+  if (config.updatetype.toLowerCase() === "createcontacts") query = createQuery
+  if (config.updatetype.toLowerCase() === "updatecontacts") query = updateQuery
+  
+  let variables = {} as CreateContact | UpdateContact
+  if (config.updatetype.toLowerCase() === "createcontacts") variables = {datasetId: config.datasetid, contactsInput: []} as CreateContact
+  if (config.updatetype.toLowerCase() === "updatecontacts") variables = {contactsInput: []} as UpdateContact
 
-  let query = createQuery
-  if(config.updatetype.toLowerCase() === "updatecontacts") query = updateQuery
-
-  let variables: VariablesContacts = {"dataSetId": config.datasetid, "contactsInput": []}
 
   for (const upd in updates)
   {
-    let co: Contact = {"attributes": []}
+    //Build Attribute Array from each row of inbound data
+    let cr: ContactRecord = {"attributes": []}
     let ca: ContactAttribute = {"name": "", "value": ""}
-
+  
     for (const [key, value] of Object.entries(updates[upd]))
     {
       let v
@@ -4097,12 +4109,21 @@ async function buildMutationsConnect(updates: object[], config: CustomerConfig) 
       else v = String(value)
   
       ca = {"name": key, "value": v}
-      co.attributes.push(ca)
+      cr.attributes.push(ca)
 
     }
-  
-  variables.contactsInput.push(co)
 
+    //if (config.updatetype.toLowerCase() === "createcontacts") variables.contactsInput.push(cr)  //currently
+    //if (typeof variables === typeof UpdateContact)
+    //{
+    //  const uc: UpdateContactRecord = {contactId: "", to: [cr]}
+    //  variables.contactsInput.push(uc)  //currently
+    //}
+
+    //variables.to.push(co) as UpdateContact
+
+debugger
+  
   }
 
   S3DB_Logging("info", "817", `Create Multiple Contacts Mutation: \n${query} and Vars: \n${JSON.stringify(variables)}`)
