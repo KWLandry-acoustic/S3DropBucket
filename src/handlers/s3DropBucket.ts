@@ -1651,11 +1651,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
     } catch (e: any)
     {
       S3DB_Logging("exception", "", `Exception - Processing Work File (${s3dbQM.workKey} off the Work Queue - \n${e}} `)
-      //Error: Exception - Work Not Found on S3 Process Queue (Funding_Circle_Limited_CampaignDatabase1_S3DropBucket_Aggregator_json-update.xml. Work will not be marked for Retry. 
-      //NoSuchKey: The specified key does not exist.} 
-      
-      //console.error(`Process Work Not Found Exception - Index: ${JSON.stringify(e).indexOf("Work Not Found")} \n String E: ${String(e)} \n e: ${JSON.stringify(e)}`)
-      
+            
       if (String(e).indexOf("Work Not Found") > -1)
       {
         //Work File not found - so, let's make sure to delete the Queued Event Message else it can possibly come back in the Queue
@@ -3936,7 +3932,7 @@ async function getS3Work(s3Key: string, bucket: string) {
     const err: string = JSON.stringify(e)
     if (err.toLowerCase().indexOf("nosuchkey") > -1)
     {
-      S3DB_Logging("exception", "", `Work Not Found on S3 Process Queue (${s3Key}. Work will not be marked for Retry.`)
+      //S3DB_Logging("exception", "", `Work Not Found on S3 Process Queue (${s3Key}. Work will not be marked for Retry.`)
       throw new Error(
         `Exception - Work Not Found on S3 Process Queue (${s3Key}. Work will not be marked for Retry. \n${e}`
       )
