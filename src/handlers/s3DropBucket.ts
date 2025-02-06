@@ -41,6 +41,7 @@ import {
 } from "@aws-sdk/client-s3"
 
 import {
+  DeleteMessageCommand,
   SQSClient,
   SendMessageCommand,
   SendMessageCommandOutput,
@@ -1590,6 +1591,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
         else if (postResult.toLowerCase().indexOf("unsuccessful post") > -1)
         {
           S3DB_Logging("error", "935", `Error - Unsuccessful POST (Hard Failure) for ${s3dbQM.workKey}: \n${postResult}\nCustomer: ${custconfig.customer} `)
+          deleteWork = true
         }
         else if (postResult.toLowerCase().indexOf("partially successful") > -1)
         {
@@ -1602,21 +1604,35 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
         }
         else
         {
-          S3DB_Logging("error", "508", `Results of Posting Work is not determined: ${JSON.stringify(postResult)} \n(work file (${s3dbQM.workKey}, updated ${s3dbQM.custconfig.listname} from ${s3dbQM.workKey}, \n${postResult}`)
+          S3DB_Logging("exception", "", `Results of Posting Work is not determined: ${JSON.stringify(postResult)} \n(work file (${s3dbQM.workKey}, updated ${s3dbQM.custconfig.listname} from ${s3dbQM.workKey}, \n${postResult}`)
         }
 
         if (deleteWork)
         {
           //Delete the Work file
-          const d = await deleteS3Object(
+          const fd = await deleteS3Object(
             s3dbQM.workKey,
             S3DBConfig.s3dropbucket_workbucket
           )
-          if (d === "204")
+          if (fd === "204")
           {
             S3DB_Logging("info", "924", `Successful Deletion of Queued Work file: ${s3dbQM.workKey}`)
-          } else S3DB_Logging("error", "924", `Failed to Delete ${s3dbQM.workKey}.Expected '204' but received ${d} `)
+          } else S3DB_Logging("error", "924", `Failed to Delete ${s3dbQM.workKey}.Expected '204' but received ${fd} `)
+        
+
+            const qd = await sqsClient.send(
+              new DeleteMessageCommand({
+                QueueUrl: S3DBConfig.s3dropbucket_workqueue,
+                ReceiptHandle: q.receiptHandle
+              })
+            )
+          if (qd.$metadata.httpStatusCode === 200)
+          {
+            S3DB_Logging("info", "924", `Successful Deletion of Queue Message: ${q.messageId} \nDeletion Response: ${JSON.stringify(qd)}`)
+          } else S3DB_Logging("error", "924", `Failed to Delete Queue Message: ${q.messageId}. Expected '200' but received ${qd.$metadata.httpStatusCode} \nDeletion Response: ${JSON.stringify(qd)}`)
+
         }
+
 
         S3DB_Logging("info", "511", `Processed ${s3dbQM.updateCount} Updates from ${s3dbQM.workKey}`)
 
