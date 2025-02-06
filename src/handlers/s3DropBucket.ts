@@ -1648,15 +1648,15 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
 
           
       } else throw new Error(`Failed to retrieve work file(${s3dbQM.workKey}) `)
-    } catch (e)
+    } catch (e: any)
     {
       S3DB_Logging("exception", "", `Exception - Processing Work File (${s3dbQM.workKey} off the Work Queue - \n${e}} `)
       //Error: Exception - Work Not Found on S3 Process Queue (Funding_Circle_Limited_CampaignDatabase1_S3DropBucket_Aggregator_json-update.xml. Work will not be marked for Retry. 
       //NoSuchKey: The specified key does not exist.} 
       
-      console.error(`Process Work Not Found Exception - Index: ${JSON.stringify(e).indexOf("NoSuchKey:")} \n e: ${JSON.stringify(e)}`)
+      console.error(`Process Work Not Found Exception - Index: ${JSON.stringify(e).indexOf("NoSuchKey:")} \n e: ${typeof e}`)
       
-      if (JSON.stringify(e).indexOf("NoSuchKey:") > -1)
+      if (e.indexOf("NoSuchKey:") > -1)
       {
         //Work File not found - so, let's make sure to delete the Queued Event Message else it can possibly come back in the Queue
         const qd = await sqsClient.send(
