@@ -1651,8 +1651,27 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
     } catch (e)
     {
       S3DB_Logging("exception", "", `Exception - Processing Work File (${s3dbQM.workKey} off the Work Queue - \n${e}} `)
+      //Error: Exception - Work Not Found on S3 Process Queue (Funding_Circle_Limited_CampaignDatabase1_S3DropBucket_Aggregator_json-update.xml. Work will not be marked for Retry. 
+      //NoSuchKey: The specified key does not exist.} 
+      if (JSON.stringify(e).indexOf("NoSuchKey:") > -1)
+      {
+        
+        //Work File not found - so, let's make sure to delete the Queued Event Message else it can possibly come back in the Queue
+        const qd = await sqsClient.send(
+              new DeleteMessageCommand({
+                QueueUrl: S3DBConfig.s3dropbucket_workqueue,
+                ReceiptHandle: q.receiptHandle
+              })
+            )
+          if (qd.$metadata.httpStatusCode === 200)
+          {
+            S3DB_Logging("info", "945", `Deletion of Queue Message due to Work file not found Exception: ${q.messageId} \nDeletion Response: ${JSON.stringify(qd)}`)
+          } else S3DB_Logging("error", "945", `Deletion of Queue Message due to Work file not found Exception Failed: ${q.messageId}. Expected '200' but received ${qd.$metadata.httpStatusCode} \nDeletion Response: ${JSON.stringify(qd)}`)
+      }
     }
   }
+
+    
 
 
   //Deprecated but left for future use in a new treatment for maintenance
@@ -4129,6 +4148,7 @@ async function buildMutationsConnect(updates: object[], config: CustomerConfig) 
 
     }
 
+    //here
     //if (config.updatetype.toLowerCase() === "createcontacts") variables.contactsInput.push(cr)  //currently
     //if (typeof variables === typeof UpdateContact)
     //{
