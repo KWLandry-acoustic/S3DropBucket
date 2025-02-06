@@ -1656,7 +1656,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
       
       console.error(`Process Work Not Found Exception - Index: ${JSON.stringify(e).indexOf("Work Not Found")} \n String E: ${String(e)} \n e: ${JSON.stringify(e)}`)
       
-      if (JSON.stringify(e).indexOf("Work Not Found") > -1)
+      if (String(e).indexOf("Work Not Found") > -1)
       {
         //Work File not found - so, let's make sure to delete the Queued Event Message else it can possibly come back in the Queue
         const qd = await sqsClient.send(
