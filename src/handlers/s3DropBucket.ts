@@ -1653,9 +1653,11 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
       S3DB_Logging("exception", "", `Exception - Processing Work File (${s3dbQM.workKey} off the Work Queue - \n${e}} `)
       //Error: Exception - Work Not Found on S3 Process Queue (Funding_Circle_Limited_CampaignDatabase1_S3DropBucket_Aggregator_json-update.xml. Work will not be marked for Retry. 
       //NoSuchKey: The specified key does not exist.} 
+      
+      console.error(`Process Work Not Found Exception - Index: ${JSON.stringify(e).indexOf("NoSuchKey:")} \n e: ${JSON.stringify(e)}`)
+      
       if (JSON.stringify(e).indexOf("NoSuchKey:") > -1)
       {
-        
         //Work File not found - so, let's make sure to delete the Queued Event Message else it can possibly come back in the Queue
         const qd = await sqsClient.send(
               new DeleteMessageCommand({
@@ -2308,7 +2310,7 @@ async function getValidateS3DropBucketConfig() {
 
     if (s3dbc.s3dropbucket_prefixfocus && s3dbc.s3dropbucket_prefixfocus !== "" && s3dbc.s3dropbucket_prefixfocus.length > 3) {
       process.env["S3DropBucketPrefixFocus"] = s3dbc.s3dropbucket_prefixfocus
-      S3DB_Logging("warn", "933", `A Prefix Focus has been configured. Only S3DropBucket Objects with the prefix "${s3dbc.s3dropbucket_prefixfocus}" will be processed.`)
+      S3DB_Logging("warn", "937", `A Prefix Focus has been configured. Only S3DropBucket Objects with the prefix "${s3dbc.s3dropbucket_prefixfocus}" will be processed.`)
     } else process.env["S3DropBucketPrefixFocus"] = s3dbc.s3dropbucket_prefixfocus
 
 
