@@ -1586,25 +1586,25 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
           //Add to SQS BatchFail array to Retry processing the work
           sqsBatchFail.batchItemFailures.push({itemIdentifier: q.messageId})
 
-          S3DB_Logging("warn", "509", `${s3dbQM.workKey} added back to Queue for Retry \nRetry Queue:\n ${JSON.stringify(sqsBatchFail)} POST Result: ${postResult}`)
+          S3DB_Logging("warn", "509", `${s3dbQM.workKey} added back to Queue for Retry (Queue MessageId: ${q.messageId}) \nRetry Queue:\n ${JSON.stringify(sqsBatchFail)} POST Result: ${postResult}`)
         }
         else if (postResult.toLowerCase().indexOf("unsuccessful post") > -1)
         {
-          S3DB_Logging("error", "935", `Error - Unsuccessful POST (Hard Failure) for ${s3dbQM.workKey}: \n${postResult}\nCustomer: ${custconfig.customer} `)
+          S3DB_Logging("error", "935", `Error - Unsuccessful POST (Hard Failure) for ${s3dbQM.workKey}: \n${postResult} \nQueue MessageId: ${q.messageId} \nCustomer: ${custconfig.customer} `)
           deleteWork = true
         }
         else if (postResult.toLowerCase().indexOf("partially successful") > -1)
         {
-          S3DB_Logging("warn", "508", `Work Partially Successful Post of Updates (work file (${s3dbQM.workKey}, updated ${s3dbQM.custconfig.listname} from ${s3dbQM.workKey}, however there were some exceptions: \n${postResult} `)
+          S3DB_Logging("warn", "508", `Work Partially Successful Post of Updates (work file (${s3dbQM.workKey}) \nQueue MessageId: ${q.messageId}, \nUpdated ${s3dbQM.custconfig.listname} from ${s3dbQM.workKey}, however there were some exceptions: \n${postResult} `)
         }
         else if (postResult.toLowerCase().indexOf("successfully posted") > -1)
         {
-          S3DB_Logging("info", "508", `Work Successfully Posted (work file (${s3dbQM.workKey}, updated ${s3dbQM.custconfig.listname} from ${s3dbQM.workKey}, \n${postResult} \nThe Work will now be deleted from the S3 Process Queue`)
+          S3DB_Logging("info", "508", `Work Successfully Posted (work file (${s3dbQM.workKey}). \nQueue MessageId: ${q.messageId} \nUpdated ${s3dbQM.custconfig.listname} from ${s3dbQM.workKey}, \n${postResult} \nThe Work will now be deleted from the S3 Process Queue`)
           deleteWork = true
         }
         else
         {
-          S3DB_Logging("exception", "", `Results of Posting Work is not determined: ${JSON.stringify(postResult)} \n(work file (${s3dbQM.workKey}, updated ${s3dbQM.custconfig.listname} from ${s3dbQM.workKey}, \n${postResult}`)
+          S3DB_Logging("exception", "", `Results of Posting Work is not determined: ${JSON.stringify(postResult)} \n(work file (${s3dbQM.workKey}). \nQueue MessageId: ${q.messageId} \nUpdated ${s3dbQM.custconfig.listname} from ${s3dbQM.workKey}, \n${postResult}`)
         }
 
         if (deleteWork)
@@ -1616,8 +1616,8 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
           )
           if (fd === "204")
           {
-            S3DB_Logging("info", "924", `Successful Deletion of Queued Work file: ${s3dbQM.workKey}`)
-          } else S3DB_Logging("error", "924", `Failed to Delete ${s3dbQM.workKey}.Expected '204' but received ${fd} `)
+            S3DB_Logging("info", "924", `Successful Deletion of Queued Work file: ${s3dbQM.workKey}  \nQueue MessageId: ${q.messageId}`)
+          } else S3DB_Logging("error", "924", `Failed to Delete ${s3dbQM.workKey}. Expected '204' but received ${fd} \nQueue MessageId: ${q.messageId}`)
         
 
             const qd = await sqsClient.send(
@@ -1654,7 +1654,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
       //Error: Exception - Work Not Found on S3 Process Queue (Funding_Circle_Limited_CampaignDatabase1_S3DropBucket_Aggregator_json-update.xml. Work will not be marked for Retry. 
       //NoSuchKey: The specified key does not exist.} 
       
-      console.error(`Process Work Not Found Exception - Index: ${JSON.stringify(e).indexOf("Work Not Found")} \n String E: ${String(e)} \n e: ${JSON.stringify(e)}`)
+      //console.error(`Process Work Not Found Exception - Index: ${JSON.stringify(e).indexOf("Work Not Found")} \n String E: ${String(e)} \n e: ${JSON.stringify(e)}`)
       
       if (String(e).indexOf("Work Not Found") > -1)
       {
