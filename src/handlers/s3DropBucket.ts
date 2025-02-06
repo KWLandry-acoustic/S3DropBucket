@@ -1619,7 +1619,6 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
             S3DB_Logging("info", "924", `Successful Deletion of Queued Work file: ${s3dbQM.workKey}  \nQueue MessageId: ${q.messageId}`)
           } else S3DB_Logging("error", "924", `Failed to Delete ${s3dbQM.workKey}. Expected '204' but received ${fd} \nQueue MessageId: ${q.messageId}`)
         
-
             const qd = await sqsClient.send(
               new DeleteMessageCommand({
                 QueueUrl: S3DBConfig.s3dropbucket_workqueue,
@@ -1628,8 +1627,8 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
             )
           if (qd.$metadata.httpStatusCode === 200)
           {
-            S3DB_Logging("info", "924", `Successful Deletion of Queue Message: ${q.messageId} \nDeletion Response: ${JSON.stringify(qd)}`)
-          } else S3DB_Logging("error", "924", `Failed to Delete Queue Message: ${q.messageId}. Expected '200' but received ${qd.$metadata.httpStatusCode} \nDeletion Response: ${JSON.stringify(qd)}`)
+            S3DB_Logging("info", "924", `Successful Deletion of Queue Message (Queue MessageId: ${q.messageId}) \nDeletion Response: ${JSON.stringify(qd)}`)
+          } else S3DB_Logging("error", "924", `Failed to Delete Queue Message (Queue MessageId: ${q.messageId}). \nExpected '200' but received ${qd.$metadata.httpStatusCode} \nDeletion Response: ${JSON.stringify(qd)}`)
 
         }
 
@@ -1650,7 +1649,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
       } else throw new Error(`Failed to retrieve work file(${s3dbQM.workKey}) `)
     } catch (e: any)
     {
-      S3DB_Logging("exception", "", `Exception - Processing Work File (${s3dbQM.workKey} off the Work Queue - \n${e}} `)
+      S3DB_Logging("exception", "", `Exception - Processing Work File (${s3dbQM.workKey} off the Work Queue \nFor Queue MessageId: ${q.messageId} \n${e}} `)
             
       if (String(e).indexOf("Work Not Found") > -1)
       {
@@ -1663,8 +1662,8 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
             )
           if (qd.$metadata.httpStatusCode === 200)
           {
-            S3DB_Logging("info", "945", `Deletion of Queue Message due to Work file not found Exception: ${q.messageId} \nDeletion Response: ${JSON.stringify(qd)}`)
-          } else S3DB_Logging("error", "945", `Deletion of Queue Message due to Work file not found Exception Failed: ${q.messageId}. Expected '200' but received ${qd.$metadata.httpStatusCode} \nDeletion Response: ${JSON.stringify(qd)}`)
+            S3DB_Logging("info", "945", `Deletion of Queue Message (Queue MessageId: ${q.messageId} due to Work file not found Exception. \nDeletion Response: ${JSON.stringify(qd)}`)
+          } else S3DB_Logging("error", "945", `Deletion of Queue Message (Queue MessageId: ${q.messageId} due to Work file not found Exception Failed: ${q.messageId}. Expected '200' but received ${qd.$metadata.httpStatusCode} \nDeletion Response: ${JSON.stringify(qd)}`)
       }
     }
   }
