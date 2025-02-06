@@ -1654,7 +1654,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
       //Error: Exception - Work Not Found on S3 Process Queue (Funding_Circle_Limited_CampaignDatabase1_S3DropBucket_Aggregator_json-update.xml. Work will not be marked for Retry. 
       //NoSuchKey: The specified key does not exist.} 
       
-      console.error(`Process Work Not Found Exception - Index: ${JSON.stringify(e).indexOf("Work Not Found")} \n e: ${JSON.stringify(e)}`)
+      console.error(`Process Work Not Found Exception - Index: ${JSON.stringify(e).indexOf("Work Not Found")} \n String E: ${String(e)} \n e: ${JSON.stringify(e)}`)
       
       if (JSON.stringify(e).indexOf("Work Not Found") > -1)
       {
