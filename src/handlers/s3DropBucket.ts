@@ -4594,7 +4594,7 @@ export async function postToCampaign(
 
       } else if (result.indexOf("<FaultString><![CDATA[") > -1)
       {
-        S3DB_Logging("error", "", `Failed Campaign POST of Updates - \nResults\n ${JSON.stringify(result)}`)
+        S3DB_Logging("error", "928", `An Update or Updates Failed in Campaign POST of Updates - \nResults\n ${JSON.stringify(result)}`)
 
         //Add this fail
         //<RESULT>
