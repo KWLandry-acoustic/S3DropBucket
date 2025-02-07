@@ -150,13 +150,13 @@ interface CustomerConfig {
   customer: string
   format: string      // CSV or JSON
   separator: string
-  updates: string     // singular or Multiple (default) (also 'bulk' as legacy)
+  updates: string     // singular or Multiple (default)
   targetupdate: string
   listid: string
   listname: string
   updatetype: string
   dbkey: string
-  lookupkeys: string
+  lookupkeys: string      //ToDo: Changeup to an Array-Strings per Customer Config Schema
   updateKey: string
   pod: string             // 1,2,3,4,5,6,7,8,9,A,B
   region: string          // US, EU, AP
@@ -176,6 +176,7 @@ interface CustomerConfig {
     schedule: string
   }
   transforms: {
+    audience: {[key: string]: string}
     methods: {
       daydate: string
       method2: string
@@ -216,6 +217,7 @@ let customersConfig: CustomerConfig = {
       schedule: ""
     },
   transforms: {
+    audience: {},
     methods: {
       "daydate": "",
       "method2": ""
@@ -1385,6 +1387,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
         schedule: "",
       },
       transforms: {
+        audience: {},
         methods: {
           daydate: "",
           method2: "",
@@ -1662,8 +1665,8 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
             )
           if (qd.$metadata.httpStatusCode === 200)
           {
-            S3DB_Logging("info", "945", `Deletion of Queue Message (Queue MessageId: ${q.messageId} due to Work file not found Exception. \nDeletion Response: ${JSON.stringify(qd)}`)
-          } else S3DB_Logging("error", "945", `Deletion of Queue Message (Queue MessageId: ${q.messageId} due to Work file not found Exception Failed: ${q.messageId}. Expected '200' but received ${qd.$metadata.httpStatusCode} \nDeletion Response: ${JSON.stringify(qd)}`)
+            S3DB_Logging("info", "945", `Deletion of Queue Message (Queue MessageId: ${q.messageId}) due to Work file not found (${s3dbQM.workKey}) Exception. \nDeletion Response: ${JSON.stringify(qd)}`)
+          } else S3DB_Logging("error", "945", `Deletion of Queue Message (Queue MessageId: ${q.messageId}) due to Work file not found (${s3dbQM.workKey}) Exception Failed: Expected '200' but received ${qd.$metadata.httpStatusCode} \nDeletion Response: ${JSON.stringify(qd)}`)
       }
     }
   }
@@ -3470,8 +3473,8 @@ async function putToFirehose(chunks: object[], key: string, cust: string, iter: 
 
     }
 
-    if (tu === ut) S3DB_Logging("info", "942", `Put to Firehose Aggregator results for inbound Updates (File Stream Iter: ${iter}) from ${key}. Successfully sent ${ut} of ${tu} updates to Aggregator.`)
-    else S3DB_Logging("info", "942", `Put to Firehose Aggregator results for inbound Updates (File Stream Iter: ${iter}) from ${key}.  Partially successful sending ${ut} of ${tu} updates to Aggregator.`)
+    if (tu === ut) S3DB_Logging("info", "942", `Firehose Aggregator PUT results for inbound Updates (File Stream Iter: ${iter}) from ${key}. Successfully sent ${ut} of ${tu} updates to Aggregator.`)
+    else S3DB_Logging("info", "942", `Firehose Aggregator PUT results for inbound Updates (File Stream Iter: ${iter}) from ${key}.  Partially successful sending ${ut} of ${tu} updates to Aggregator.`)
     
     return putFirehoseResp
   } catch (e)
@@ -3635,8 +3638,6 @@ async function addWorkToSQSWorkQueue(
 function transforms(updates: object[], config: CustomerConfig) {
   //Apply Transforms
 
-  //Add dateday column
-
   // Prep to add transform in Config file:
   //Get Method to apply - const method = config.transforms.method (if "dateDay") )
   //Get column to update - const column = config.transforms.methods[0].updColumn
@@ -3675,8 +3676,8 @@ function transforms(updates: object[], config: CustomerConfig) {
 
         if (ddColumn in jo)
         {
-  //Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{} '.
-          //No index signature with a parameter of type 'string' was found on type '{}'.ts(7053)
+        //Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{} '.
+        //No index signature with a parameter of type 'string' was found on type '{}'.ts(7053)
           const jot: {[key: string]: string} = jo as {[key: string]: string}
 
           d = jot[ddColumn] as string
@@ -3826,7 +3827,7 @@ function transforms(updates: object[], config: CustomerConfig) {
   
     if (igno.length > 0)
     {
-      const i: typeof updates = []  //start an ignore processed update set
+      const i: typeof updates = []  //start an 'ignore processed' update set
       try
       {
         for (const jo of updates)
@@ -4145,6 +4146,7 @@ async function buildMutationsConnect(updates: object[], config: CustomerConfig) 
 
     }
 
+    
     //here
     //if (config.updatetype.toLowerCase() === "createcontacts") variables.contactsInput.push(cr)  //currently
     //if (typeof variables === typeof UpdateContact)
