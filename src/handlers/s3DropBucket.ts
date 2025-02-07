@@ -1868,7 +1868,7 @@ export const s3DropBucketSFTPHandler: Handler = async (
     tqm.workKey = JSON.parse(q.body).workKey
 
     //When Testing - get some actual work queued
-    if (tqm.workKey === "process_2_pura_2023_10_27T15_11_40_732Z.csv") {
+    if (tqm.workKey === "devtest.csv") {
       tqm.workKey = (await getAnS3ObjectforTesting(S3DBConfig.s3dropbucket!)) ?? ""
     }
 
@@ -3087,7 +3087,9 @@ async function storeAndQueueConnectWork(
       //     {
       //         sqsWriteResult: "200",
       //         workQueuedSuccess: true,
-      //         SQSSendResult: "{\"$metadata\":{\"httpStatusCode\":200,\"requestId\":\"e70fba06-94f2-5608-b104-e42dc9574636\",\"attempts\":1,\"totalRetryDelay\":0},\"MD5OfMessageAttributes\":\"0bca0dfda87c206313963daab8ef354a\",\"MD5OfMessageBody\":\"940f4ed5927275bc93fc945e63943820\",\"MessageId\":\"cf025cb3-dce3-4564-89a5-23dcae86dd42\"}",
+      //         SQSSendResult: "{\"$metadata\":{\"httpStatusCode\":200,\"requestId\":\"e70fba06-94f2-5608-b104-e42dc9574636\",\"attempts\":1,
+      // \"totalRetryDelay\":0},\"MD5OfMessageAttributes\":\"0bca0dfda87c206313963daab8ef354a\",\"MD5OfMessageBody\":\"940f4ed5927275bc93fc945e63943820\",
+      // \"MessageId\":\"cf025cb3-dce3-4564-89a5-23dcae86dd42\"}",
       // }
     })
   } catch (e)
@@ -3207,7 +3209,9 @@ async function storeAndQueueCampaignWork(
       //     {
       //         sqsWriteResult: "200",
       //         workQueuedSuccess: true,
-      //         SQSSendResult: "{\"$metadata\":{\"httpStatusCode\":200,\"requestId\":\"e70fba06-94f2-5608-b104-e42dc9574636\",\"attempts\":1,\"totalRetryDelay\":0},\"MD5OfMessageAttributes\":\"0bca0dfda87c206313963daab8ef354a\",\"MD5OfMessageBody\":\"940f4ed5927275bc93fc945e63943820\",\"MessageId\":\"cf025cb3-dce3-4564-89a5-23dcae86dd42\"}",
+      //         SQSSendResult: "{\"$metadata\":{\"httpStatusCode\":200,\"requestId\":\"e70fba06-94f2-5608-b104-e42dc9574636\",
+      // \"attempts\":1,\"totalRetryDelay\":0},\"MD5OfMessageAttributes\":\"0bca0dfda87c206313963daab8ef354a\",\"MD5OfMessageBody\":
+      // \"940f4ed5927275bc93fc945e63943820\",\"MessageId\":\"cf025cb3-dce3-4564-89a5-23dcae86dd42\"}",
       // }
     })
   } catch (e) {
@@ -3608,9 +3612,9 @@ async function addWorkToSQSWorkQueue(
           return { StoreQueueWorkException: storeQueueWorkException }
         }
         //sqsSendResult = sqsSendMessageResult
-        //S3DB_Logging("info", "940", `Queued Work to SQS Process Queue (${sqsQMsgBody.workKey}) - Result: ${sqsWriteResult} `)
+        S3DB_Logging("info", "940", `Queued Work to SQS Process Queue (${sqsQMsgBody.workKey}) \nResult: ${sqsWriteResult} `)
+        
         //return sqsSendMessageResult
-
         return sqsSendResult
       })
       .catch((err) => {
