@@ -3606,13 +3606,18 @@ async function addWorkToSQSWorkQueue(
     await sqsClient
       .send(new SendMessageCommand(sqsParams))
       .then((sqsSendMessageResult: SendMessageCommandOutput) => {
+        
         sqsWriteResult = JSON.stringify(sqsSendMessageResult.$metadata.httpStatusCode, null, 2)
-        if (sqsWriteResult !== "200") {
+        
+        if (sqsWriteResult !== "200")
+        {
           const storeQueueWorkException = `Failed writing to SQS Process Queue (queue URL: ${sqsParams.QueueUrl}), ${sqsQMsgBody.workKey}, SQS Params${JSON.stringify(sqsParams)})`
           return { StoreQueueWorkException: storeQueueWorkException }
         }
         //sqsSendResult = sqsSendMessageResult
-        S3DB_Logging("info", "940", `Queued Work to SQS Process Queue (${sqsQMsgBody.workKey}) \nResult: ${sqsWriteResult} `)
+        //S3DB_Logging("info", "946", `Queued Work to SQS Process Queue (${sqsQMsgBody.workKey}) \nResult: ${sqsWriteResult} \n${JSON.stringify(sqsSendMessageResult)} `)
+
+        S3DB_Logging("info", "946", `Queued Work (${sqsQMsgBody.workKey}} to SQS Process Queue (for ${recCount} updates). \nWork Queue (${S3DBConfig.s3dropbucket_workqueue}) \nSQS Params: ${JSON.stringify(sqsParams)}. \nresults: ${JSON.stringify(sqsSendMessageResult)} \nStatus: ${JSON.stringify({SQSWriteResult: sqsWriteResult, AddToSQSQueue: JSON.stringify(sqsSendResult)})}`)
         
         //return sqsSendMessageResult
         return sqsSendResult
@@ -3631,7 +3636,7 @@ async function addWorkToSQSWorkQueue(
       }), ${sqsQMsgBody.workKey}, SQS Params${JSON.stringify(sqsParams)}) - Error: ${e}`)
   }
 
-  S3DB_Logging("info", "940", `Work Queued (${key} for ${recCount} updates) to the SQS Work Queue (${S3DBConfig.s3dropbucket_workqueue}) \nSQS Params: \n${JSON.stringify(sqsParams)}. \nresults: \n${JSON.stringify({SQSWriteResult: sqsWriteResult, AddToSQSQueue: JSON.stringify(sqsSendResult)})}`)
+  S3DB_Logging("info", "940", `Work Queued (${key} for ${recCount} updates) to the SQS Work Queue (${S3DBConfig.s3dropbucket_workqueue}) \nresults: \n${JSON.stringify({SQSWriteResult: sqsWriteResult, AddToSQSQueue: JSON.stringify(sqsSendResult)})}`)
 
   return {
     SQSWriteResult: sqsWriteResult,
