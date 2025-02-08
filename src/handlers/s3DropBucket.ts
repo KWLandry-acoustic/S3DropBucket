@@ -517,7 +517,7 @@ export const s3DropBucketHandler: Handler = async (
 
     if (event.Records[0].s3.object.key.indexOf("S3DropBucket_Aggregator") > -1)
     {
-      S3DB_Logging("info", "925", `Processing an Aggregated File ${event.Records[0].s3.object.key}`)
+      S3DB_Logging("info", "947", `Processing an Aggregated File ${event.Records[0].s3.object.key}`)
     }
 
 
@@ -1630,8 +1630,8 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
             )
           if (qd.$metadata.httpStatusCode === 200)
           {
-            S3DB_Logging("info", "924", `Successful Deletion of Queue Message (Queue MessageId: ${q.messageId}) \nWorkfile ${s3dbQM.workKey}. \nDeletion Response: ${JSON.stringify(qd)}`)
-          } else S3DB_Logging("error", "924", `Failed to Delete Queue Message (Queue MessageId: ${q.messageId}) \nWorkfile ${s3dbQM.workKey}. \nExpected '200' but received ${qd.$metadata.httpStatusCode} \nDeletion Response: ${JSON.stringify(qd)}`)
+            S3DB_Logging("info", "925", `Successful Deletion of Queue Message (Queue MessageId: ${q.messageId}) \nWorkfile ${s3dbQM.workKey}. \nDeletion Response: ${JSON.stringify(qd)}`)
+          } else S3DB_Logging("error", "925", `Failed to Delete Queue Message (Queue MessageId: ${q.messageId}) \nWorkfile ${s3dbQM.workKey}. \nExpected '200' but received ${qd.$metadata.httpStatusCode} \nDeletion Response: ${JSON.stringify(qd)}`)
 
         }
 
