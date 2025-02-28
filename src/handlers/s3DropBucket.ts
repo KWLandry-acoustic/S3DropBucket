@@ -58,7 +58,7 @@ import {
   SchedulerClient,
   ListSchedulesCommand,
   ListSchedulesCommandInput,
-} from "@aws-sdk/client-scheduler" 
+} from "@aws-sdk/client-scheduler"
 
 import {
   Handler,
@@ -80,9 +80,9 @@ import {JSONParser} from '@streamparser/json-node'
 //import {transform} from '@streamparser/json-node'
 import {transform} from "stream-transform"
 
-import { v4 as uuidv4 } from "uuid"
+import {v4 as uuidv4} from "uuid"
 
-import { parse } from "csv-parse"
+import {parse} from "csv-parse"
 
 import jsonpath from "jsonpath"
 
@@ -186,7 +186,7 @@ interface CustomerConfig {
       date_iso1806_type: {[key: string]: string}
       phone_number_type: {[key: string]: string}
       string_to_number_type: {[key: string]: string}
-      method2:  {[key: string]: string}
+      method2: {[key: string]: string}
     }
     jsonmap: {[key: string]: string}
     csvmap: {[key: string]: string}
@@ -195,52 +195,52 @@ interface CustomerConfig {
 }
 
 let customersConfig: CustomerConfig = {
-    customer: "",
-    format: "",
-    separator: "",
-    updates: "",
-    targetupdate: "",
-    listid: "",
-    listname: "",
-    updatetype: "",
-    dbkey: "",
-    lookupkeys: "",
-    updateKey: "",
-    pod: "",
-    region: "",
-    updatemaxrows: 0,
-    refreshtoken: "",
-    clientid: "",
-    clientsecret: "",
-    datasetid: "",
-    subscriptionid: "",
-    x_api_key: "",
-    x_acoustic_region: "",
-    selectivelogging: "",
-    sftp: {
-      user: "",
-      password: "",
-      filepattern: "",
-      schedule: ""
+  customer: "",
+  format: "",
+  separator: "",
+  updates: "",
+  targetupdate: "",
+  listid: "",
+  listname: "",
+  updatetype: "",
+  dbkey: "",
+  lookupkeys: "",
+  updateKey: "",
+  pod: "",
+  region: "",
+  updatemaxrows: 0,
+  refreshtoken: "",
+  clientid: "",
+  clientsecret: "",
+  datasetid: "",
+  subscriptionid: "",
+  x_api_key: "",
+  x_acoustic_region: "",
+  selectivelogging: "",
+  sftp: {
+    user: "",
+    password: "",
+    filepattern: "",
+    schedule: ""
+  },
+  transforms: {
+    contactid: "",
+    contactkey: "",
+    addressablefields: {"": ""},
+    consent: {"": ""},
+    audienceupdate: {"": ""},
+    methods: {
+      "daydate": "",
+      "date_iso1806_type": {"": ""},
+      "phone_number_type": {"": ""},
+      "string_to_number_type": {"": ""},
+      "method2": {"": ""}
     },
-    transforms: {
-      contactid: "",
-      contactkey: "",
-      addressablefields: {"":""},
-      consent: {"": ""},
-      audienceupdate: {"": ""},    
-      methods: {
-        "daydate": "",
-        "date_iso1806_type": {"": ""},
-        "phone_number_type": {"": ""},
-        "string_to_number_type": {"": ""},
-        "method2":  {"": ""}
-      }, 
-      jsonmap: {},
-      csvmap: {},
-      ignore: []   //always last
-      }
-  } 
+    jsonmap: {},
+    csvmap: {},
+    ignore: []   //always last
+  }
+}
 
 export interface AccessRequest {
   access_token: string
@@ -391,7 +391,7 @@ let ProcessS3ObjectStreamResolutionInit: ProcessS3ObjectStreamResult = {
     }
   },
   DeleteResult: ''
-};
+}
 
 
 const sqsBatchFail: SQSBatchItemFails = {
@@ -446,11 +446,12 @@ const testdata = ""
 //testS3Key = "TestData/KingsfordWeather_00210.csv"
 //testS3Key = "TestData/KingsfordWeather_00211.csv"
 
-testS3Key = "TestData/MasterCustomer_Sample1.json"
+//testS3Key = "TestData/MasterCustomer_Sample1.json"
 //testS3Key = "MasterCustomer_Sample1-json-update-1-6-c436dca1-6ec9-4c8b-bc78-6e1d774591ca.json"
 //testS3Key = "MasterCustomer_Sample1-json-update-1-6-0bb2f92e-3344-41e6-af95-90f5d32a73dc.json"
 
 //testS3Key = "TestData/KingsfordWeather_S3DropBucket_Aggregator-10-2025-01-09-19-29-39-da334f11-53a4-31cc-8c9f-8b417725560b.json"
+testS3Key = "TestData/Funding_Circle_Limited_CampaignDatabase1_2025_02_28T19_19_26_268Z.json"
 
 
 /**
@@ -496,19 +497,19 @@ export const s3DropBucketHandler: Handler = async (
       localTesting = false
     }
 
-  if (typeof process.env.AWS_REGION !== "undefined") 
+    if (typeof process.env.AWS_REGION !== "undefined") 
     {
       s3 = new S3Client({region: process.env.AWS_REGION})    //{region: 'us-east-1'})
     }
-  else
-    if (typeof process.env.S3DropBucketRegion !== "undefined" && process.env.S3DropBucketRegion?.length > 6) 
-      s3 = new S3Client({region: process.env.S3DropBucketRegion})
-    
-    else 
-    {
-      S3DB_Logging("warn","96",`AWS Region can not be determined. Region returns as:${process.env.AWS_REGION}`)
-      throw new Error(`AWS Region can not be determined. Region returns as:${process.env.AWS_REGION}`) 
-    }
+    else
+      if (typeof process.env.S3DropBucketRegion !== "undefined" && process.env.S3DropBucketRegion?.length > 6)
+        s3 = new S3Client({region: process.env.S3DropBucketRegion})
+
+      else 
+      {
+        S3DB_Logging("warn", "96", `AWS Region can not be determined. Region returns as:${process.env.AWS_REGION}`)
+        throw new Error(`AWS Region can not be determined. Region returns as:${process.env.AWS_REGION}`)
+      }
 
     const s3ClientRegion = await s3.config.region()   //Future check when deploying new regions
 
@@ -535,7 +536,7 @@ export const s3DropBucketHandler: Handler = async (
     }
 
 
-  
+
     //if (S3DBConfig.S3DropBucketPurgeCount > 0) {
     //  console.warn(
     //    `Purge Requested, Only action will be to Purge ${S3DBConfig.S3DropBucketPurge} of ${S3DBConfig.S3DropBucketPurgeCount} Records. `
@@ -564,7 +565,7 @@ export const s3DropBucketHandler: Handler = async (
     {
       let key = r.s3.object.key
       const bucket = r.s3.bucket.name
-  
+
       if (process.env.S3DropBucketPrefixFocus !== undefined && process.env.S3DropBucketPrefixFocus !== "" && process.env.S3DropBucketPrefixFocus.length > 3 && !key.startsWith(process.env.S3DropBucketPrefixFocus))
       {
         S3DB_Logging("warn", "937", `PrefixFocus is configured, File Name ${key} does not fall within focus restricted by the configured PrefixFocus ${process.env.S3DropBucketPrefixFocus}`)
@@ -584,7 +585,7 @@ export const s3DropBucketHandler: Handler = async (
         //{
         //  key = key.replace("S3DropBucket_Aggregator-", "S3DropBucketAggregator-")
         //  S3DB_Logging("info", "", `Aggregator File key reformed: ${key}`)
-        //}
+        //}      
 
         customersConfig = await getFormatCustomerConfig(key) as CustomerConfig
 
@@ -611,7 +612,7 @@ export const s3DropBucketHandler: Handler = async (
       */
 
 
-    
+
 
 
       //ReQueue .xml files - in lieu of requeing through config, have work files (....xml) moved
@@ -642,7 +643,7 @@ export const s3DropBucketHandler: Handler = async (
         )
       }
       */
-    
+
 
 
       batchCount = 0
@@ -659,12 +660,12 @@ export const s3DropBucketHandler: Handler = async (
           .then(async (streamRes) => {
 
             let delResultCode
-          
+
             streamRes.Key = key
             streamRes.Processed = streamRes.OnEndRecordStatus
 
             S3DB_Logging("info", "503", `Completed processing all records of the S3 Object ${key} \neTag: ${et}. \nStatus: ${streamRes.OnEndRecordStatus}`)
-          
+
 
             //Don't delete the test data
             if (localTesting)
@@ -702,13 +703,13 @@ export const s3DropBucketHandler: Handler = async (
             //  //streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToSQSWorkQueueResults?.SQSWriteResult 
             //}
 
-          
+
             if (
               (typeof streamRes.OnEndStreamEndResult.StoreAndQueueWorkResult.PutToFireHoseAggregatorResult !== "undefined" && streamRes.OnEndStreamEndResult.StoreAndQueueWorkResult.PutToFireHoseAggregatorResult === "200") ||
-              
+
               (typeof streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToS3WorkBucketResults?.S3ProcessBucketResult !== "undefined" &&
                 streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToS3WorkBucketResults?.S3ProcessBucketResult === "200") &&
-              
+
               (typeof streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToSQSWorkQueueResults?.SQSWriteResult !== "undefined" &&
                 streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToSQSWorkQueueResults?.SQSWriteResult === "200")
             )
@@ -754,16 +755,16 @@ export const s3DropBucketHandler: Handler = async (
             return streamRes
           })
           .catch((e) => {
-        
+
             const err = `Exception - Process S3 Object Stream Catch - \n${e} \nStack: \n${e.stack}`
-          
+
             ProcessS3ObjectStreamResolutionInit = {
               ...ProcessS3ObjectStreamResolutionInit,
               ProcessS3ObjectStreamCatch: err,
             }
 
             S3DB_Logging("exception", "", JSON.stringify(ProcessS3ObjectStreamResolutionInit))
-          
+
             return ProcessS3ObjectStreamResolutionInit
           })
       } catch (e)
@@ -772,7 +773,7 @@ export const s3DropBucketHandler: Handler = async (
       }
 
 
-  
+
       S3DB_Logging("info", "903", `Returned from Processing S3 Object Content Stream for ${key}. Result: ${JSON.stringify(ProcessS3ObjectStreamResolutionInit)}`)
 
       //Check for important Config updates (which caches the config in Lambdas long-running cache)
@@ -821,10 +822,10 @@ export const s3DropBucketHandler: Handler = async (
       S3DB_Logging("warn", "920", `Final outcome (truncated to first and last 5,000 characters) of all processing for ${ProcessS3ObjectStreamResolutionInit.Key}: \n ${JSON.stringify(objectStreamResolution)}`)
     }
 
-  
+
     const k = ProcessS3ObjectStreamResolutionInit.Key
     const p = ProcessS3ObjectStreamResolutionInit.Processed
-  
+
     S3DB_Logging("info", "505", `Completing S3DropBucket Processing of Request Id ${event.Records[0].responseElements["x-amz-request-id"]} for ${k} \n${p}`)
     S3DB_Logging("info", "920", `Final outcome of all processing for ${ProcessS3ObjectStreamResolutionInit.Key}: \n${JSON.stringify(objectStreamResolution)}`)
 
@@ -833,13 +834,13 @@ export const s3DropBucketHandler: Handler = async (
 
     return objectStreamResolution   //Return the results logging object
   } catch (e)
-  { 
-    S3DB_Logging("exception","",`Exception thrown in Handler: ${e}`)
+  {
+    S3DB_Logging("exception", "", `Exception thrown in Handler: ${e}`)
   }
-  
-  
+
+
   //end of handler
-  }
+}
 
 //
 //
@@ -847,14 +848,14 @@ export const s3DropBucketHandler: Handler = async (
 export default s3DropBucketHandler
 
 
-export async function S3DB_Logging(level: string, index: string,  msg:string) {
+export async function S3DB_Logging (level: string, index: string, msg: string) {
 
   let selectiveDebug = process.env.S3DropBucketSelectiveLogging ?? S3DBConfig.s3dropbucket_selectivelogging ?? "_97,_98,_99,_503,_504,_511,_901,_910,_924,"
-  
+
   if (typeof customersConfig.selectivelogging !== "undefined" &&
     customersConfig.selectivelogging.length > 0 &&
     customersConfig.selectivelogging !== "") selectiveDebug = customersConfig.selectivelogging
-  
+
   if (localTesting) process.env.S3DropBucketLogLevel = "ALL"
 
   const r = await s3.config.region() ?? "Unknown"   //Authoritative
@@ -875,42 +876,42 @@ export async function S3DB_Logging(level: string, index: string,  msg:string) {
     if (level.toLowerCase() === "error") console.error(`S3DBLog-Error ${index}: ${msg} \nRegion: ${r} Version: ${version}`)
     if (level.toLowerCase() === "debug") console.debug(`S3DBLog-Debug ${index}: ${msg} \nRegion: ${r} Version: ${version}`)
   }
-      
-  if (level.toLowerCase() === "exception") console.error(`S3DBLog-Exception ${index}: ${msg}  \nRegion: ${r} Version: ${version}`)
-    
-    //ToDo: Send Logging to Firehose Aggregator 
-    // Send All debug messaging regardless of S3DropBucket Config??
-    // Send All info messaging regardless of S3DropBucket Config??
-    //  
-    //ToDo: Add Firehose Logging
-    //ToDo: Add DataDog Logging
 
-    //
-    //Possible Logging Option - Using Firehose
-    //
-    /*
-    if (S3DBConfig.S3DropBucketLog) {
-       const logMsg: object[] = [{osr}]      //need to check this one, 
-       debugger
-       const logKey = `S3DropBucket_Log_${new Date()
-         .toISOString()
-         .replace(/:/g, "_")}`
-       const fireHoseLog = await putToFirehose(
-         logMsg,
-         logKey,
-         "S3DropBucket_Logs_"
-       )
-       console.info(
-         `Write S3DropBucket Log to FireHose aggregation - ${JSON.stringify(
-           fireHoseLog
-         )}`
-       )
-     }
-     */
+  if (level.toLowerCase() === "exception") console.error(`S3DBLog-Exception ${index}: ${msg}  \nRegion: ${r} Version: ${version}`)
+
+  //ToDo: Send Logging to Firehose Aggregator 
+  // Send All debug messaging regardless of S3DropBucket Config??
+  // Send All info messaging regardless of S3DropBucket Config??
+  //  
+  //ToDo: Add Firehose Logging
+  //ToDo: Add DataDog Logging
+
+  //
+  //Possible Logging Option - Using Firehose
+  //
+  /*
+  if (S3DBConfig.S3DropBucketLog) {
+     const logMsg: object[] = [{osr}]      //need to check this one, 
+     debugger
+     const logKey = `S3DropBucket_Log_${new Date()
+       .toISOString()
+       .replace(/:/g, "_")}`
+     const fireHoseLog = await putToFirehose(
+       logMsg,
+       logKey,
+       "S3DropBucket_Logs_"
+     )
+     console.info(
+       `Write S3DropBucket Log to FireHose aggregation - ${JSON.stringify(
+         fireHoseLog
+       )}`
+     )
+   }
+   */
 
 }
 
-async function processS3ObjectContentStream(
+async function processS3ObjectContentStream (
   key: string,
   bucket: string,
   custConfig: CustomerConfig
@@ -953,7 +954,7 @@ async function processS3ObjectContentStream(
 
       if (
         custConfig.format.toLowerCase() === "csv" &&
-          key.indexOf("S3DropBucket_Aggregator") < 0
+        key.indexOf("S3DropBucket_Aggregator") < 0
       )
       {
         const csvParser = parse({
@@ -999,7 +1000,7 @@ async function processS3ObjectContentStream(
       //Placeholder - Everything should be JSON by the time we get here
       if (custConfig.format.toLowerCase() === "json")
       {
-      //selectiveLogging("info", "", `Future Logging Opportunity - JSON Flag`)
+        //selectiveLogging("info", "", `Future Logging Opportunity - JSON Flag`)
       }
 
       //Notes: Options to Handling Large JSON Files
@@ -1073,7 +1074,7 @@ async function processS3ObjectContentStream(
       // s3ContentReadableStream = s3ContentReadableStream.pipe(t).pipe(jsonParser)
       s3ContentReadableStream = s3ContentReadableStream.pipe(jsonParser)
       //s3ContentReadableStream = s3ContentReadableStream.pipe(tJsonParser)
-      
+
       s3ContentReadableStream.setMaxListeners(
         Number(S3DBConfig.s3dropbucket_eventemittermaxlisteners)
       )
@@ -1081,10 +1082,10 @@ async function processS3ObjectContentStream(
       chunksGlobal = []
       batchCount = 0
       recs = 0
-      let iter = 0 
-      
+      let iter = 0
+
       let packageResult = {} as StoreAndQueueWorkResults
-      
+
       await new Promise((resolve, reject) => {
         s3ContentReadableStream
           .on("error", async function (err: string) {
@@ -1110,13 +1111,13 @@ async function processS3ObjectContentStream(
 
           })
 
-          .on("data",async function (s3Chunk: {
-              key: string
-              parent: object
-              stack: object
-              value: object
+          .on("data", async function (s3Chunk: {
+            key: string
+            parent: object
+            stack: object
+            value: object
           }) {
-            
+
             if (typeof s3Chunk.value === "undefined") throw new Error(`S3ContentStream OnData (File Stream Iter: ${iter}) - s3Chunk.value is undefined for ${key}`)
 
             if (
@@ -1124,111 +1125,111 @@ async function processS3ObjectContentStream(
             )
             {
               S3DB_Logging("warn", "515", `The number of Updates in this batch (${recs}) from ${key} Exceeds Max Row Updates allowed in the Customers Config (${custConfig.updatemaxrows}). Review data file for unexpected data or update Customer Config. `)
-              
+
               //throw new Error(
               //  `The number of Updates in this batch (${recs}) Exceeds Max Row Updates allowed in the Customers Config (${custConfig.updatemaxrows}).  ${key} will not be deleted from ${S3DBConfig.s3dropbucket} to allow for review and possible restaging.`
               //)
             }
-          
+
             iter++
 
             S3DB_Logging("info", "913", `S3ContentStream OnData (File Stream Iter: ${iter}) - A Chunk or Line from ${key} has been read. Records previously processed: ${recs}`)
 
-              try
+            try
+            {
+              const oa = s3Chunk.value
+
+              //What is possible to come through here (Always JSON)
+              //  {} a single Object - Pura
+              //  [{},{},{}] An Array of Objects - Alerus
+              //  An Array of Line Delimited Objects - (Firehose Aggregated files)
+              //      [{}
+              //      {}
+              //       ...
+              //      {}]
+              // An array of Strings (when CSV Parsing creates the JSON)
+              //  [{"key1":"value1","key2":"value2"},{"key1":"value1","key2":"value2"},...]
+              //
+
+              //
+              //Next, Build a consistent Object of an Array of Objects
+              // [{},{},{},...]
+
+              //Debug buried undefined exception in Handler
+              if (typeof oa === "undefined") S3DB_Logging("exception", "", `OnData Array is Undefined`)
+
+              if (Array.isArray(oa))
               {
-                const oa = s3Chunk.value
+                preserveArraySize = oa.length
 
-                //What is possible to come through here (Always JSON)
-                //  {} a single Object - Pura
-                //  [{},{},{}] An Array of Objects - Alerus
-                //  An Array of Line Delimited Objects - (Firehose Aggregated files)
-                //      [{}
-                //      {}
-                //       ...
-                //      {}]
-                // An array of Strings (when CSV Parsing creates the JSON)
-                //  [{"key1":"value1","key2":"value2"},{"key1":"value1","key2":"value2"},...]
-                //
-                
-                //
-                //Next, Build a consistent Object of an Array of Objects
-                // [{},{},{},...]
-
-                //Debug buried undefined exception in Handler
-                if(typeof oa === "undefined") S3DB_Logging("exception","",`OnData Array is Undefined`)
-
-                if (Array.isArray(oa))
+                for (const a in oa)
                 {
-                  preserveArraySize = oa.length
-
-                  for (const a in oa)
+                  let e = oa[a]
+                  if (typeof e === "string")
                   {
-                    let e = oa[a]
-                    if (typeof e === "string")
-                    {
-                      e = JSON.parse(e)
-                    }
-                    chunksGlobal.push(e)
+                    e = JSON.parse(e)
                   }
-                } else
-                {
-                  //chunksGlobal.push( JSON.stringify( oa ) )
-                  chunksGlobal.push(oa)
+                  chunksGlobal.push(e)
                 }
-              } catch (e)
+              } else
               {
-                S3DB_Logging("exception", "", `Exception - ReadStream-OnData - Chunk aggregation for ${key} \nBatch ${batchCount} of ${recs} Updates. \n${e}`)
-
-                throw new Error(`Exception - ReadStream (OnData) Chunk aggregation for ${key} \nBatch ${batchCount} of ${recs} Updates.\n${e}`)
-                streamResult = {
-                  ...streamResult,
-                  OnDataReadStreamException: `Exception - First Catch - ReadStream-OnData Processing for ${key} \nBatch ${batchCount} of ${recs} Updates. \n${e} `
-                }
+                //chunksGlobal.push( JSON.stringify( oa ) )
+                chunksGlobal.push(oa)
               }
-            //OnEnd gets the bulk of the data when files are moderate in size, for Large files OnData processes through multiple Read Chunks 
-            //At each 99 updates, package them up, if there are fewer than 99 then "OnEnd" will pick up the remainder. 
-              try 
-              {
-                if (chunksGlobal.length > 99)
-                {
-                  const updates = []
-                  
-                  while (chunksGlobal.length > 0)
-                  { 
-                    const chunk = chunksGlobal.splice(0, 100)
-                    updates.push(...chunk)
-                    S3DB_Logging("info", "938", `S3ContentStream OnData - A Batch (${batchCount}) of Updates from ${key} is now being sent to Packaging. \nPreviously processed ${recs} records of the size of the data read of ${preserveArraySize} records.`)
-                    recs += chunk.length
-                    batchCount++
+            } catch (e)
+            {
+              S3DB_Logging("exception", "", `Exception - ReadStream-OnData - Chunk aggregation for ${key} \nBatch ${batchCount} of ${recs} Updates. \n${e}`)
 
-                    packageResult = await packageUpdates(updates, key, custConfig, iter) as StoreAndQueueWorkResults
-        
-                    //ToDo: Refactor this status approach, need a way to preserve every Update status without storing volumes
-                    streamResult = {
-                      ...streamResult,
-                      OnDataResult: {StoreAndQueueWorkResult: packageResult}
-                    }
-                  }
-                }
-              } catch (e)
-              {
-                S3DB_Logging("exception", "", `Exception - ReadStream-OnData - Batch Packaging for ${key} \nBatch ${batchCount} of ${recs} Updates. \n${e} `)
-                
-                streamResult = {
-                  ...streamResult,
-                  OnDataReadStreamException: `Exception - Second Catch - ReadStream-OnData - Batch Packaging for ${key} \nBatch ${batchCount} of ${recs} Updates. \n${e} `,
-                }
+              throw new Error(`Exception - ReadStream (OnData) Chunk aggregation for ${key} \nBatch ${batchCount} of ${recs} Updates.\n${e}`)
+              streamResult = {
+                ...streamResult,
+                OnDataReadStreamException: `Exception - First Catch - ReadStream-OnData Processing for ${key} \nBatch ${batchCount} of ${recs} Updates. \n${e} `
               }
             }
+            //OnEnd gets the bulk of the data when files are moderate in size, for Large files OnData processes through multiple Read Chunks 
+            //At each 99 updates, package them up, if there are fewer than 99 then "OnEnd" will pick up the remainder. 
+            try 
+            {
+              if (chunksGlobal.length > 99)
+              {
+                const updates = []
+
+                while (chunksGlobal.length > 0)
+                {
+                  const chunk = chunksGlobal.splice(0, 100)
+                  updates.push(...chunk)
+                  S3DB_Logging("info", "938", `S3ContentStream OnData - A Batch (${batchCount}) of Updates from ${key} is now being sent to Packaging. \nPreviously processed ${recs} records of the size of the data read of ${preserveArraySize} records.`)
+                  recs += chunk.length
+                  batchCount++
+
+                  packageResult = await packageUpdates(updates, key, custConfig, iter) as StoreAndQueueWorkResults
+
+                  //ToDo: Refactor this status approach, need a way to preserve every Update status without storing volumes
+                  streamResult = {
+                    ...streamResult,
+                    OnDataResult: {StoreAndQueueWorkResult: packageResult}
+                  }
+                }
+              }
+            } catch (e)
+            {
+              S3DB_Logging("exception", "", `Exception - ReadStream-OnData - Batch Packaging for ${key} \nBatch ${batchCount} of ${recs} Updates. \n${e} `)
+
+              streamResult = {
+                ...streamResult,
+                OnDataReadStreamException: `Exception - Second Catch - ReadStream-OnData - Batch Packaging for ${key} \nBatch ${batchCount} of ${recs} Updates. \n${e} `,
+              }
+            }
+          }
           )
 
           //File completed streaming, chunkcGlobal holds any updates left to be processed -> Packaged 
           .on("end", async function () {
-            
+
             if (recs < 1 && chunksGlobal.length < 1)      //Ooops, We got here without finding/processing any data 
             {
               S3DB_Logging("exception", "", `Stream Exception - No records returned from parsing file. Check the contents of the file and that the file extension and file format matches the configured file type(${custConfig.format}).`)
-              
+
               streamResult = {
                 ...streamResult,
                 OnEndNoRecordsException: `Exception - No records returned from parsing file.Check the content as well as the configured file format(${custConfig.format}) matches the content of the file.`,
@@ -1238,7 +1239,7 @@ async function processS3ObjectContentStream(
 
               return streamResult
             }
-            
+
             try     //Overall Try/Catch for On-End processing
             {
               iter++
@@ -1247,9 +1248,9 @@ async function processS3ObjectContentStream(
 
               //ChunksGlobal has been populated in OnData, so when OnEnd hits it contains all the data leftover after OnData processing
               //S3DB_Logging("info", "", `Debug (OnEnd): ${chunksGlobal.length} ${batchCount}`) 
-              
+
               //Need to keep an eye on arriving here with an array with more than 100 entries, more than 100 should be processed in OnData above.
-              if (chunksGlobal.length > 0 )  //Should be the case but may not be
+              if (chunksGlobal.length > 0)  //Should be the case but may not be
               {
 
                 //const updates = chunksGlobal
@@ -1263,7 +1264,7 @@ async function processS3ObjectContentStream(
 
                   recs += chunk.length
                   batchCount++
-                  
+
                   //ToDo: Refactor this status approach, only getting the last, need a way to preserve every Update status without storing volumes
                   packageResult = await packageUpdates(updates, key, custConfig, iter)
                     .then((res) => {
@@ -1271,11 +1272,11 @@ async function processS3ObjectContentStream(
                     })
                 }
               }
-                
-            streamResult = {
-              ...streamResult,
-              OnEndStreamEndResult: {StoreAndQueueWorkResult: packageResult}
-            }
+
+              streamResult = {
+                ...streamResult,
+                OnEndStreamEndResult: {StoreAndQueueWorkResult: packageResult}
+              }
 
             } catch (e)    //Overall Try/Catch for On-End processing
             {
@@ -1284,7 +1285,7 @@ async function processS3ObjectContentStream(
               S3DB_Logging("exception", "", sErr)
               return {...streamResult, OnEndStreamResult: sErr}
             }
-            
+
             //
             //wrap up all OnEnd processing 
             //
@@ -1295,14 +1296,14 @@ async function processS3ObjectContentStream(
               ReadStreamEndResult: streamEndResult,
               OnEndRecordStatus: `Processed ${recs} records as ${batchCount} batches.`
             }
-          
-              S3DB_Logging("info", "902", `Content Stream OnEnd for (${key}) - Store and Queue Work of ${batchCount} Batches of ${recs} records - Stream Result: \n${JSON.stringify(streamResult)} `)
 
-              resolve({...streamResult})
+            S3DB_Logging("info", "902", `Content Stream OnEnd for (${key}) - Store and Queue Work of ${batchCount} Batches of ${recs} records - Stream Result: \n${JSON.stringify(streamResult)} `)
 
-              // return streamResult
+            resolve({...streamResult})
+
+            // return streamResult
           })
-            
+
           .on("close", async function () {
             streamResult = {
               ...streamResult,
@@ -1334,14 +1335,14 @@ async function processS3ObjectContentStream(
     .catch((e) => {
       debugger //catch
       //throw new Error( `Exception(throw) - ReadStream - For ${ key }.\nResults: ${ JSON.stringify( streamResult ) }.\n${ e } ` )
-      
+
       streamResult = {
         ...streamResult,
         ReadStreamException: `Exception (ProcessS3ObjectStreamResult catch) - ReadStream - For ${key}.\n ${JSON.stringify(streamResult)}.\n${e} `
       }
 
       S3DB_Logging("exception", "", `Exception (ProcessS3ObjectStreamResult catch) - ReadStream - For ${key}.\nResults: ${JSON.stringify(streamResult)}.\n${e} `)
-      
+
       //return {
       //  ...streamResult,
       //  ReadStreamException: `Exception (ProcessS3ObjectStreamResult catch) - ReadStream - For ${key}.\nResults: ${JSON.stringify(streamResult)}.\n${e} `
@@ -1401,17 +1402,17 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
         schedule: "",
       },
       transforms: {
-      contactid: "",
-      contactkey: "",
-      addressablefields: {"": ""},
-      consent: {"": ""},
-      audienceupdate: {"": ""},
+        contactid: "",
+        contactkey: "",
+        addressablefields: {"": ""},
+        consent: {"": ""},
+        audienceupdate: {"": ""},
         methods: {
           daydate: "",
           date_iso1806_type: {"": ""},
           phone_number_type: {"": ""},
-          string_to_number_type: {"":""},
-          method2: {"":""}
+          string_to_number_type: {"": ""},
+          method2: {"": ""}
         },
         jsonmap: {},
         csvmap: {},
@@ -1420,319 +1421,320 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
     }
   }
 
-  try {
-
-  if (typeof process.env.AWS_REGION !== "undefined") 
+  try
   {
-    s3 = new S3Client({region: process.env.AWS_REGION})    //{region: 'us-east-1'})
-  }
-  else
-  {
-    if (typeof process.env.S3DropBucketRegion !== "undefined" && process.env.S3DropBucketRegion?.length > 6)
-      s3 = new S3Client({region: process.env.S3DropBucketRegion})
 
-    else 
+    if (typeof process.env.AWS_REGION !== "undefined") 
     {
-      S3DB_Logging("warn", "96", `AWS Region can not be determined. Region returns as:${process.env.AWS_REGION}`)
-      throw new Error(`AWS Region can not be determined. Region returns as:${process.env.AWS_REGION}`)
+      s3 = new S3Client({region: process.env.AWS_REGION})    //{region: 'us-east-1'})
     }
-  }
-
-  const s3ClientRegion = await s3.config.region()
-
-  //If an obscure config does not exist in process.env then we need to refresh S3DropBucket Config 
-  if (
-    process.env["EventEmitterMaxListeners"] === undefined ||
-    process.env["EventEmitterMaxListeners"] === "" ||
-    process.env["EventEmitterMaxListeners"] === null
-  )
-  {
-    S3DBConfig = await getValidateS3DropBucketConfig()
-    S3DB_Logging("info", "901", `Parsed S3DropBucket Config:  process.env.S3DropBucketConfigFile: \n${JSON.stringify(S3DBConfig)} `)
-  }
-  
-  S3DB_Logging("info", "97", `Environment Vars: ${JSON.stringify(process.env)} `)
-  S3DB_Logging("info", "98", `S3DropBucket Configuration: ${JSON.stringify(S3DBConfig)} `)
-  S3DB_Logging("info", "99", `S3DropBucket Logging Options: ${process.env.S3DropBucketSelectiveLogging} `)
-
-  if (S3DBConfig.s3dropbucket_workqueuequiesce)
-  {
-    S3DB_Logging("warn", "923", `WorkQueue Quiesce is in effect, no New Work will be Queued up in the SQS Process Queue.`)
-    return
-  }
-
-  //if (S3DBConfig.WorkQueueBucketPurgeCount > 0) {
-  //  console.info(
-  //    `Purge Requested, Only action will be to Purge ${S3DBConfig.WorkQueueBucketPurge} of ${S3DBConfig.WorkQueueBucketPurgeCount} Records. `
-  //  )
-  //  const d = await purgeBucket(
-  //    Number(process.env["WorkQueueBucketPurgeCount"]!),
-  //    process.env["WorkQueueBucketPurge"]!
-  //  )
-  //  return d
-  //}
-
-  // Backoff strategy for failed invocations
-
-  //When an invocation fails, Lambda attempts to retry the invocation while implementing a backoff strategy.
-  // The backoff strategy differs slightly depending on whether Lambda encountered the failure due to an error in
-  //  your function code, or due to throttling.
-
-  //If your function code caused the error, Lambda gradually backs off retries by reducing the amount of
-  // concurrency allocated to your Amazon SQS event source mapping.If invocations continue to fail, Lambda eventually
-  //  drops the message without retrying.
-
-  //If the invocation fails due to throttling, Lambda gradually backs off retries by reducing the amount of
-  // concurrency allocated to your Amazon SQS event source mapping.Lambda continues to retry the message until
-  // the message's timestamp exceeds your queue's visibility timeout, at which point Lambda drops the message.
-
-  let custconfig: CustomerConfig = customersConfig
-
-  let postResult: string = "false"
-
-  S3DB_Logging("info", "506", `Received a Batch of SQS Work Queue Events (${event.Records.length} Work Queue Records): \n${JSON.stringify(event)} \nContext: ${JSON.stringify(context)}`)
-  
-  //Empty the BatchFail array
-  sqsBatchFail.batchItemFailures.forEach(() => {
-    sqsBatchFail.batchItemFailures.pop()
-  })
-
-  //Process this Inbound Batch
-  for (const q of event.Records)
-  {
- 
-    s3dbQM = JSON.parse(q.body)
-
-    if (typeof s3dbQM.workKey === "undefined")
+    else
     {
-      S3DB_Logging("error", "941", `Error Parsing Incoming Queue Message for WorkKey:  \n${JSON.stringify(s3dbQM)}`)
-    }
-    if (typeof s3dbQM.custconfig === "undefined")
-    {
-      S3DB_Logging("error", "941", `Error Parsing Incoming Queue Message for CustConfig:  \n${JSON.stringify(s3dbQM)}`)
-    }
-    if (typeof s3dbQM.custconfig.customer === "undefined")
-    {
-      S3DB_Logging("error", "941", `Error Parsing Incoming Queue Message for Customer:  \n${JSON.stringify(s3dbQM)}`)
-    }
-    if (typeof s3dbQM.updateCount === "undefined")
-    {
-      S3DB_Logging("error", "941", `Error Parsing Incoming Queue Message for UpdateCount:  \n${JSON.stringify(s3dbQM)}`)
-      s3dbQM.updateCount = "'Not Provided'"
-    }
+      if (typeof process.env.S3DropBucketRegion !== "undefined" && process.env.S3DropBucketRegion?.length > 6)
+        s3 = new S3Client({region: process.env.S3DropBucketRegion})
 
-
-
-    ////When Testing locally  (Launch config has pre-stored queue message payload) - get some actual work queued
-    //if (s3dbQM.workKey === "")
-    //{
-    //  s3dbQM.workKey = (await getAnS3ObjectforTesting(S3DBConfig.s3dropbucket_workbucket)) ?? ""
-    //}
-
-    if (s3dbQM.workKey === "devtest.xml")
-    {
-      //tqm.workKey = await getAnS3ObjectforTesting( tcc.s3DropBucketWorkBucket! ) ?? ""
-      s3dbQM.workKey = testS3Key
-      s3dbQM.custconfig.customer = testS3Key
-      S3DBConfig.s3dropbucket_workbucket = testS3Bucket
-      localTesting = true
-    } else
-    {
-      testS3Key = ""
-      testS3Bucket = ""
-      localTesting = false
-    }
-
-
-  
-    S3DB_Logging("info", "507", `Start Processing ${s3dbQM.workKey} off Work Queue. `)
-    
-    S3DB_Logging("info", "911", `Start Processing Work Item: SQS Event: \n${JSON.stringify(q)}`)
- 
-    //try
-    //{
-
-    //} catch (e)
-    //{
-    //  S3DB_Logging("exception", "", `Exception - Retrieving Customer Config for Work Queue Processing (work file: ${s3dbQM.workKey} \n${e}} \n${JSON.stringify(s3dbQM)}`)
-    //}
-
-    try
-    {
-
-      custconfig = await getFormatCustomerConfig(s3dbQM.custconfig.customer) as CustomerConfig
-
-      const work = await getS3Work(s3dbQM.workKey, S3DBConfig.s3dropbucket_workbucket)
-
-      if (work.length > 0)
+      else 
       {
-        //Retrieve Contents of the Work File
-        S3DB_Logging("info", "512", `S3 Retrieve results for Work file ${s3dbQM.workKey}: ${JSON.stringify(work)}`)
-
-        if ((custconfig.updatetype.toLowerCase() === "createcontacts") ||
-          (custconfig.updatetype.toLowerCase() === "updatecontacts") ||
-          (custconfig.updatetype.toLowerCase() === "createattributes")
-          // || localTesting)
-        )
-        { 
-          postResult = await postToConnect(
-            work,
-            custconfig as CustomerConfig,
-            s3dbQM.updateCount,
-            s3dbQM.workKey
-          )
-        }
-        
-        if (custconfig.updatetype.toLowerCase() === "relational" ||
-          custconfig.updatetype.toLowerCase() === "dbkeyed" ||
-          custconfig.updatetype.toLowerCase() === "dbnonkeyed") {
-          postResult = await postToCampaign(
-            work,
-            custconfig as CustomerConfig,
-            s3dbQM.updateCount,
-            s3dbQM.workKey
-          )
+        S3DB_Logging("warn", "96", `AWS Region can not be determined. Region returns as:${process.env.AWS_REGION}`)
+        throw new Error(`AWS Region can not be determined. Region returns as:${process.env.AWS_REGION}`)
       }
-        //  postResult can contain:
-        //      retry
-        //      unsuccessful post
-        //      partially successful
-        //      successfully posted
+    }
 
-        S3DB_Logging("info", "509", `POST Result for ${s3dbQM.workKey}: ${postResult} `)
+    const s3ClientRegion = await s3.config.region()
 
-        let deleteWork = false
+    //If an obscure config does not exist in process.env then we need to refresh S3DropBucket Config 
+    if (
+      process.env["EventEmitterMaxListeners"] === undefined ||
+      process.env["EventEmitterMaxListeners"] === "" ||
+      process.env["EventEmitterMaxListeners"] === null
+    )
+    {
+      S3DBConfig = await getValidateS3DropBucketConfig()
+      S3DB_Logging("info", "901", `Parsed S3DropBucket Config:  process.env.S3DropBucketConfigFile: \n${JSON.stringify(S3DBConfig)} `)
+    }
 
-        if (postResult.indexOf("retry") > -1)
-        {
-          //Add to SQS BatchFail array to Retry processing the work
-          sqsBatchFail.batchItemFailures.push({itemIdentifier: q.messageId})
+    S3DB_Logging("info", "97", `Environment Vars: ${JSON.stringify(process.env)} `)
+    S3DB_Logging("info", "98", `S3DropBucket Configuration: ${JSON.stringify(S3DBConfig)} `)
+    S3DB_Logging("info", "99", `S3DropBucket Logging Options: ${process.env.S3DropBucketSelectiveLogging} `)
 
-          S3DB_Logging("warn", "516", `Retry Marked for ${s3dbQM.workKey}, added back to Queue for Retry (Queue MessageId: ${q.messageId}) \nRetry Queue Items:\n ${JSON.stringify(sqsBatchFail)} (Total Retry Count: ${sqsBatchFail.batchItemFailures.length + 1}) \nPOST Result requiring retry: ${postResult}`)
-        }
-        else if (postResult.toLowerCase().indexOf("unsuccessful post") > -1)
-        {
-          S3DB_Logging("error", "935", `Error - Unsuccessful POST (Hard Failure) for ${s3dbQM.workKey}: \n${postResult} \nQueue MessageId: ${q.messageId} \nCustomer: ${custconfig.customer} `)
-          deleteWork = true
-        }
-        else if (postResult.toLowerCase().indexOf("partially successful") > -1)
-        {
-          S3DB_Logging("warn", "508", `Work Partially Successful Post of Updates (work file (${s3dbQM.workKey}) \nQueue MessageId: ${q.messageId}, \nUpdated ${s3dbQM.custconfig.listname} from ${s3dbQM.workKey}, however there were some exceptions: \n${postResult} `)
-        }
-        else if (postResult.toLowerCase().indexOf("successfully posted") > -1)
-        {
-          S3DB_Logging("info", "508", `Work Successfully Posted (work file (${s3dbQM.workKey}). \nQueue MessageId: ${q.messageId} \nUpdated ${s3dbQM.custconfig.listname} from ${s3dbQM.workKey}, \n${postResult} \nThe Work will now be deleted from the S3 Process Queue`)
-          deleteWork = true
-        }
-        else
-        {
-          S3DB_Logging("exception", "", `Results of Posting Work is not determined: ${JSON.stringify(postResult)} \n(work file (${s3dbQM.workKey}). \nQueue MessageId: ${q.messageId} \nUpdated ${s3dbQM.custconfig.listname} from ${s3dbQM.workKey}, \n${postResult}`)
-        }
+    if (S3DBConfig.s3dropbucket_workqueuequiesce)
+    {
+      S3DB_Logging("warn", "923", `WorkQueue Quiesce is in effect, no New Work will be Queued up in the SQS Process Queue.`)
+      return
+    }
 
-        if (deleteWork)
+    //if (S3DBConfig.WorkQueueBucketPurgeCount > 0) {
+    //  console.info(
+    //    `Purge Requested, Only action will be to Purge ${S3DBConfig.WorkQueueBucketPurge} of ${S3DBConfig.WorkQueueBucketPurgeCount} Records. `
+    //  )
+    //  const d = await purgeBucket(
+    //    Number(process.env["WorkQueueBucketPurgeCount"]!),
+    //    process.env["WorkQueueBucketPurge"]!
+    //  )
+    //  return d
+    //}
+
+    // Backoff strategy for failed invocations
+
+    //When an invocation fails, Lambda attempts to retry the invocation while implementing a backoff strategy.
+    // The backoff strategy differs slightly depending on whether Lambda encountered the failure due to an error in
+    //  your function code, or due to throttling.
+
+    //If your function code caused the error, Lambda gradually backs off retries by reducing the amount of
+    // concurrency allocated to your Amazon SQS event source mapping.If invocations continue to fail, Lambda eventually
+    //  drops the message without retrying.
+
+    //If the invocation fails due to throttling, Lambda gradually backs off retries by reducing the amount of
+    // concurrency allocated to your Amazon SQS event source mapping.Lambda continues to retry the message until
+    // the message's timestamp exceeds your queue's visibility timeout, at which point Lambda drops the message.
+
+    let custconfig: CustomerConfig = customersConfig
+
+    let postResult: string = "false"
+
+    S3DB_Logging("info", "506", `Received a Batch of SQS Work Queue Events (${event.Records.length} Work Queue Records): \n${JSON.stringify(event)} \nContext: ${JSON.stringify(context)}`)
+
+    //Empty the BatchFail array
+    sqsBatchFail.batchItemFailures.forEach(() => {
+      sqsBatchFail.batchItemFailures.pop()
+    })
+
+    //Process this Inbound Batch
+    for (const q of event.Records)
+    {
+
+      s3dbQM = JSON.parse(q.body)
+
+      if (typeof s3dbQM.workKey === "undefined")
+      {
+        S3DB_Logging("error", "941", `Error Parsing Incoming Queue Message for WorkKey:  \n${JSON.stringify(s3dbQM)}`)
+      }
+      if (typeof s3dbQM.custconfig === "undefined")
+      {
+        S3DB_Logging("error", "941", `Error Parsing Incoming Queue Message for CustConfig:  \n${JSON.stringify(s3dbQM)}`)
+      }
+      if (typeof s3dbQM.custconfig.customer === "undefined")
+      {
+        S3DB_Logging("error", "941", `Error Parsing Incoming Queue Message for Customer:  \n${JSON.stringify(s3dbQM)}`)
+      }
+      if (typeof s3dbQM.updateCount === "undefined")
+      {
+        S3DB_Logging("error", "941", `Error Parsing Incoming Queue Message for UpdateCount:  \n${JSON.stringify(s3dbQM)}`)
+        s3dbQM.updateCount = "'Not Provided'"
+      }
+
+
+
+      ////When Testing locally  (Launch config has pre-stored queue message payload) - get some actual work queued
+      //if (s3dbQM.workKey === "")
+      //{
+      //  s3dbQM.workKey = (await getAnS3ObjectforTesting(S3DBConfig.s3dropbucket_workbucket)) ?? ""
+      //}
+
+      if (s3dbQM.workKey === "devtest.xml")
+      {
+        //tqm.workKey = await getAnS3ObjectforTesting( tcc.s3DropBucketWorkBucket! ) ?? ""
+        s3dbQM.workKey = testS3Key
+        s3dbQM.custconfig.customer = testS3Key
+        S3DBConfig.s3dropbucket_workbucket = testS3Bucket
+        localTesting = true
+      } else
+      {
+        testS3Key = ""
+        testS3Bucket = ""
+        localTesting = false
+      }
+
+
+
+      S3DB_Logging("info", "507", `Start Processing ${s3dbQM.workKey} off Work Queue. `)
+
+      S3DB_Logging("info", "911", `Start Processing Work Item: SQS Event: \n${JSON.stringify(q)}`)
+
+      //try
+      //{
+
+      //} catch (e)
+      //{
+      //  S3DB_Logging("exception", "", `Exception - Retrieving Customer Config for Work Queue Processing (work file: ${s3dbQM.workKey} \n${e}} \n${JSON.stringify(s3dbQM)}`)
+      //}
+
+      try
+      {
+
+        custconfig = await getFormatCustomerConfig(s3dbQM.custconfig.customer) as CustomerConfig
+
+        const work = await getS3Work(s3dbQM.workKey, S3DBConfig.s3dropbucket_workbucket)
+
+        if (work.length > 0)
         {
-          //Delete the Work file
-          const fd = await deleteS3Object(
-            s3dbQM.workKey,
-            S3DBConfig.s3dropbucket_workbucket
+          //Retrieve Contents of the Work File
+          S3DB_Logging("info", "512", `S3 Retrieve results for Work file ${s3dbQM.workKey}: ${JSON.stringify(work)}`)
+
+          if ((custconfig.updatetype.toLowerCase() === "createcontacts") ||
+            (custconfig.updatetype.toLowerCase() === "updatecontacts") ||
+            (custconfig.updatetype.toLowerCase() === "createattributes")
+            // || localTesting)
           )
-          if (fd === "204")
           {
-            S3DB_Logging("info", "924", `Processing Successful - Deletion of Queued Work file: ${s3dbQM.workKey}  \nQueue MessageId: ${q.messageId}`)
-          } else S3DB_Logging("error", "924", `Processing Successful but Failed to Delete Queued Work File ${s3dbQM.workKey}. Expected '204' but received ${fd} \nQueue MessageId: ${q.messageId}`)
-        
+            postResult = await postToConnect(
+              work,
+              custconfig as CustomerConfig,
+              s3dbQM.updateCount,
+              s3dbQM.workKey
+            )
+          }
+
+          if (custconfig.updatetype.toLowerCase() === "relational" ||
+            custconfig.updatetype.toLowerCase() === "dbkeyed" ||
+            custconfig.updatetype.toLowerCase() === "dbnonkeyed")
+          {
+            postResult = await postToCampaign(
+              work,
+              custconfig as CustomerConfig,
+              s3dbQM.updateCount,
+              s3dbQM.workKey
+            )
+          }
+          //  postResult can contain:
+          //      retry
+          //      unsuccessful post
+          //      partially successful
+          //      successfully posted
+
+          S3DB_Logging("info", "509", `POST Result for ${s3dbQM.workKey}: ${postResult} `)
+
+          let deleteWork = false
+
+          if (postResult.indexOf("retry") > -1)
+          {
+            //Add to SQS BatchFail array to Retry processing the work
+            sqsBatchFail.batchItemFailures.push({itemIdentifier: q.messageId})
+
+            S3DB_Logging("warn", "516", `Retry Marked for ${s3dbQM.workKey}, added back to Queue for Retry (Queue MessageId: ${q.messageId}) \nRetry Queue Items:\n ${JSON.stringify(sqsBatchFail)} (Total Retry Count: ${sqsBatchFail.batchItemFailures.length + 1}) \nPOST Result requiring retry: ${postResult}`)
+          }
+          else if (postResult.toLowerCase().indexOf("unsuccessful post") > -1)
+          {
+            S3DB_Logging("error", "935", `Error - Unsuccessful POST (Hard Failure) for ${s3dbQM.workKey}: \n${postResult} \nQueue MessageId: ${q.messageId} \nCustomer: ${custconfig.customer} `)
+            deleteWork = true
+          }
+          else if (postResult.toLowerCase().indexOf("partially successful") > -1)
+          {
+            S3DB_Logging("warn", "508", `Work Partially Successful Post of Updates (work file (${s3dbQM.workKey}) \nQueue MessageId: ${q.messageId}, \nUpdated ${s3dbQM.custconfig.listname} from ${s3dbQM.workKey}, however there were some exceptions: \n${postResult} `)
+          }
+          else if (postResult.toLowerCase().indexOf("successfully posted") > -1)
+          {
+            S3DB_Logging("info", "508", `Work Successfully Posted (work file (${s3dbQM.workKey}). \nQueue MessageId: ${q.messageId} \nUpdated ${s3dbQM.custconfig.listname} from ${s3dbQM.workKey}, \n${postResult} \nThe Work will now be deleted from the S3 Process Queue`)
+            deleteWork = true
+          }
+          else
+          {
+            S3DB_Logging("exception", "", `Results of Posting Work is not determined: ${JSON.stringify(postResult)} \n(work file (${s3dbQM.workKey}). \nQueue MessageId: ${q.messageId} \nUpdated ${s3dbQM.custconfig.listname} from ${s3dbQM.workKey}, \n${postResult}`)
+          }
+
+          if (deleteWork)
+          {
+            //Delete the Work file
+            const fd = await deleteS3Object(
+              s3dbQM.workKey,
+              S3DBConfig.s3dropbucket_workbucket
+            )
+            if (fd === "204")
+            {
+              S3DB_Logging("info", "924", `Processing Successful - Deletion of Queued Work file: ${s3dbQM.workKey}  \nQueue MessageId: ${q.messageId}`)
+            } else S3DB_Logging("error", "924", `Processing Successful but Failed to Delete Queued Work File ${s3dbQM.workKey}. Expected '204' but received ${fd} \nQueue MessageId: ${q.messageId}`)
+
             const qd = await sqsClient.send(
               new DeleteMessageCommand({
                 QueueUrl: S3DBConfig.s3dropbucket_workqueue,
                 ReceiptHandle: q.receiptHandle
               })
             )
-          if (qd.$metadata.httpStatusCode === 200)
-          {
-            S3DB_Logging("info", "925", `Processing Successful - Deletion of SQS Queue Message (Queue MessageId: ${q.messageId}) \nWorkfile ${s3dbQM.workKey}. \nDeletion Response: ${JSON.stringify(qd)}`)
-          } else S3DB_Logging("error", "925", `Processing Successful but Failed to Delete SQS Queue Message (Queue MessageId: ${q.messageId}) \nWorkfile ${s3dbQM.workKey}. \nExpected '200' but received ${qd.$metadata.httpStatusCode} \nDeletion Response: ${JSON.stringify(qd)}`)
+            if (qd.$metadata.httpStatusCode === 200)
+            {
+              S3DB_Logging("info", "925", `Processing Successful - Deletion of SQS Queue Message (Queue MessageId: ${q.messageId}) \nWorkfile ${s3dbQM.workKey}. \nDeletion Response: ${JSON.stringify(qd)}`)
+            } else S3DB_Logging("error", "925", `Processing Successful but Failed to Delete SQS Queue Message (Queue MessageId: ${q.messageId}) \nWorkfile ${s3dbQM.workKey}. \nExpected '200' but received ${qd.$metadata.httpStatusCode} \nDeletion Response: ${JSON.stringify(qd)}`)
 
-        }
+          }
 
+          S3DB_Logging("info", "511", `Processed ${s3dbQM.updateCount} Updates from ${s3dbQM.workKey}`)
 
-        S3DB_Logging("info", "511", `Processed ${s3dbQM.updateCount} Updates from ${s3dbQM.workKey}`)
-
-        S3DB_Logging("info", "510", `Processed ${event.Records.length} Work Queue Events. Posted: ${postResult}. 
+          S3DB_Logging("info", "510", `Processed ${event.Records.length} Work Queue Events. Posted: ${postResult}. 
             \nItems Retry Count: ${sqsBatchFail.batchItemFailures.length} 
             \nItems Retry List: ${JSON.stringify(sqsBatchFail)} `
-        )
-          
-        //ToDo: need to add similar status object like S3ObjectStreamResolution to QueueProcessor reporting
-        // S3DropBucketQueueProcessorResolution.postStatus = ....
-        // S3DropBucketQueueProcessorResolution.deleteStatus = ....
-        // S3DropBucketQueueProcessorResolution.returnedToQueueStatus = ....
+          )
 
-          
-      } else throw new Error(`Failed to retrieve work file(${s3dbQM.workKey}) `)
-    } catch (e: any)
-    {
-      S3DB_Logging("exception", "", `Exception - Processing Work File (${s3dbQM.workKey} off the Work Queue \nFor Queue MessageId: ${q.messageId} \n${e}} `)
-            
-      if (String(e).indexOf("Work Not Found") > -1)
+          //ToDo: need to add similar status object like S3ObjectStreamResolution to QueueProcessor reporting
+          // S3DropBucketQueueProcessorResolution.postStatus = ....
+          // S3DropBucketQueueProcessorResolution.deleteStatus = ....
+          // S3DropBucketQueueProcessorResolution.returnedToQueueStatus = ....
+
+
+        } else throw new Error(`Failed to retrieve work file(${s3dbQM.workKey}) `)
+      } catch (e: any)
       {
-        //Work File not found - so, let's make sure to delete the Queued Event Message else it can possibly come back in the Queue
-        const qd = await sqsClient.send(
-              new DeleteMessageCommand({
-                QueueUrl: S3DBConfig.s3dropbucket_workqueue,
-                ReceiptHandle: q.receiptHandle
-              })
-            )
+        S3DB_Logging("exception", "", `Exception - Processing Work File (${s3dbQM.workKey} off the Work Queue \nFor Queue MessageId: ${q.messageId} \n${e}} `)
+
+        if (String(e).indexOf("Work Not Found") > -1)
+        {
+          //Work File not found - so, let's make sure to delete the Queued Event Message else it can possibly come back in the Queue
+          const qd = await sqsClient.send(
+            new DeleteMessageCommand({
+              QueueUrl: S3DBConfig.s3dropbucket_workqueue,
+              ReceiptHandle: q.receiptHandle
+            })
+          )
           if (qd.$metadata.httpStatusCode === 200)
           {
             S3DB_Logging("info", "945", `Deletion of Queue Message (Queue MessageId: ${q.messageId}) due to Work file not found (${s3dbQM.workKey}) Exception. \nDeletion Response: ${JSON.stringify(qd)}`)
           } else S3DB_Logging("error", "945", `Deletion of Queue Message (Queue MessageId: ${q.messageId}) due to Work file not found (${s3dbQM.workKey}) Exception Failed: Expected '200' but received ${qd.$metadata.httpStatusCode} \nDeletion Response: ${JSON.stringify(qd)}`)
+        }
       }
     }
-  }
-
-    
 
 
-  //Deprecated but left for future use in a new treatment for maintenance
-  //
-  //let maintenance: (number | string[])[] = []
-  //if (S3DBConfig.S3DropBucketWorkQueueMaintHours > 0) {
-  //  try {
-  //    maintenance = (await maintainS3DropBucketQueueBucket()) ?? [0, ""]
-
-  //    if (S3DBConfig.SelectiveLogging.indexOf("_927,") > -1) {
-  //      const l = maintenance[0] as number
-  //      if (l > 0)
-  //        console.info(
-  //          `Selective Debug 927 - ReQueued Work Files: \n${maintenance} `
-  //        )
-  //      else
-  //        console.info(
-  //          `Selective Debug 927 - No Work files met criteria to ReQueue`
-  //        )
-  //    }
-  //  } catch (e) {
-  //    debugger //catch
-  //  }
-  //}
 
 
-  S3DB_Logging("info", "507", `Completed Processing ${s3dbQM.workKey}. Return to Retry Queue List:\n${JSON.stringify(sqsBatchFail)} `)
+    //Deprecated but left for future use in a new treatment for maintenance
+    //
+    //let maintenance: (number | string[])[] = []
+    //if (S3DBConfig.S3DropBucketWorkQueueMaintHours > 0) {
+    //  try {
+    //    maintenance = (await maintainS3DropBucketQueueBucket()) ?? [0, ""]
 
-  return sqsBatchFail
+    //    if (S3DBConfig.SelectiveLogging.indexOf("_927,") > -1) {
+    //      const l = maintenance[0] as number
+    //      if (l > 0)
+    //        console.info(
+    //          `Selective Debug 927 - ReQueued Work Files: \n${maintenance} `
+    //        )
+    //      else
+    //        console.info(
+    //          `Selective Debug 927 - No Work files met criteria to ReQueue`
+    //        )
+    //    }
+    //  } catch (e) {
+    //    debugger //catch
+    //  }
+    //}
 
-  //For debugging - report no fails
-  // return {
-  //     batchItemFailures: [
-  //         {
-  //             itemIdentifier: ''
-  //         }
-  //     ]
-  // }
+
+    S3DB_Logging("info", "507", `Completed Processing ${s3dbQM.workKey}. Return to Retry Queue List:\n${JSON.stringify(sqsBatchFail)} `)
+
+    return sqsBatchFail
+
+    //For debugging - report no fails
+    // return {
+    //     batchItemFailures: [
+    //         {
+    //             itemIdentifier: ''
+    //         }
+    //     ]
+    // }
 
   } catch (e)
   {
-    S3DB_Logging("exception","",`QueueProcessorHandler Exception processing Work Queue items ${JSON.stringify(s3dbQM)} \n${e}`)
+    S3DB_Logging("exception", "", `QueueProcessorHandler Exception processing Work Queue items ${JSON.stringify(s3dbQM)} \n${e}`)
   }
 
 }
@@ -1745,7 +1747,7 @@ export const s3DropBucketSFTPHandler: Handler = async (
 
   S3DB_Logging("info", "97", `S3 Dropbucket SFTP Processor - Environment Vars: ${JSON.stringify(process.env)} `)
   S3DB_Logging("info", "99", `S3 Dropbucket SFTP Processor - S3DropBucket Logging Options(process.env): ${process.env.S3DropBucketSelectiveLogging} `)
-  
+
   //ToDo: change out the env var checked to determine config 
   if (
     process.env["WorkQueueVisibilityTimeout"] === undefined ||
@@ -1761,14 +1763,12 @@ export const s3DropBucketSFTPHandler: Handler = async (
 
   S3DB_Logging("info", "98", `S3 Dropbucket SFTP Processor - S3DropBucket Configuration: ${JSON.stringify(S3DBConfig)} `)
 
-  
-
   S3DB_Logging("info", "700", `S3 Dropbucket SFTP Processor - Received Event: ${JSON.stringify(event)}.\nContext: ${context} `)
 
 
-  if(!S3DBConfig.s3dropbucket_sftp) return
+  if (!S3DBConfig.s3dropbucket_sftp) return
 
- 
+
 
   //Existing Event Emit at every 1 minute
 
@@ -1817,7 +1817,7 @@ export const s3DropBucketSFTPHandler: Handler = async (
 
       return err
     })
-  
+
   // { // ListSchedulesOutput
   //   NextToken: "STRING_VALUE",
   //   Schedules: [ // ScheduleList // required
@@ -1835,7 +1835,7 @@ export const s3DropBucketSFTPHandler: Handler = async (
   //   ],
   // };
 
-  
+
   //console.info(
   //  `Received SFTP SQS Events Batch of ${event.Records.length} records.`
   //)
@@ -1852,7 +1852,7 @@ export const s3DropBucketSFTPHandler: Handler = async (
 
   sftpDeleteFile('remotefilepath')
   sftpDownloadFile('remoteFile', 'localFile')
-  sftpUploadFile('localFile', 'remoteFile') 
+  sftpUploadFile('localFile', 'remoteFile')
   sftpListFiles('remoteDir', {} as ListFilterFunction)
   sftpDisconnect()
   sftpConnect(
@@ -1875,7 +1875,8 @@ export const s3DropBucketSFTPHandler: Handler = async (
   })
 
   //Process this Inbound Batch
-  for (const q of event.Records) {
+  for (const q of event.Records)
+  {
     //General Plan:
     // Process SQS Events being emitted for Check FTP Directory for Customer X
     // Process SQS Events being emitted for
@@ -1887,11 +1888,12 @@ export const s3DropBucketSFTPHandler: Handler = async (
     tqm.workKey = JSON.parse(q.body).workKey
 
     //When Testing - get some actual work queued
-    if (tqm.workKey === "devtest.csv") {
+    if (tqm.workKey === "devtest.csv")
+    {
       tqm.workKey = (await getAnS3ObjectforTesting(S3DBConfig.s3dropbucket!)) ?? ""
     }
 
-    S3DB_Logging("info", "513", `SQS Events - Processing Batch Item ${JSON.stringify(q)} \nProcessing Work Queue for ${tqm.workKey}`) 
+    S3DB_Logging("info", "513", `SQS Events - Processing Batch Item ${JSON.stringify(q)} \nProcessing Work Queue for ${tqm.workKey}`)
 
     // try
     // {
@@ -1944,7 +1946,7 @@ export const s3DropBucketSFTPHandler: Handler = async (
   // }
 }
 
-async function sftpConnect(options: {
+async function sftpConnect (options: {
   host: string
   port: string
   username?: string
@@ -1952,33 +1954,40 @@ async function sftpConnect(options: {
 }) {
   S3DB_Logging("info", "700", `Connecting to ${options.host}: ${options.port}`)
 
-  try {
+  try
+  {
     // await SFTPClient.connect(options)
-  } catch (err) {
+  } catch (err)
+  {
     S3DB_Logging("exception", "", `Failed to connect: ${err}`)
   }
 }
 
-async function sftpDisconnect() {
+async function sftpDisconnect () {
   // await SFTPClient.end()
 }
 
-async function sftpListFiles(remoteDir: string, fileGlob: ListFilterFunction) {
+async function sftpListFiles (remoteDir: string, fileGlob: ListFilterFunction) {
   S3DB_Logging("info", "700", `Listing ${remoteDir} ...`)
 
   let fileObjects: sftpClient.FileInfo[] = []
-  try {
-     fileObjects = await SFTPClient.list(remoteDir, fileGlob)
-  } catch (err) {
+  try
+  {
+    fileObjects = await SFTPClient.list(remoteDir, fileGlob)
+  } catch (err)
+  {
     S3DB_Logging("exception", "", `Listing failed: ${err}`)
   }
 
   const fileNames = []
 
-  for (const file of fileObjects) {
-    if (file.type === "d") {
+  for (const file of fileObjects)
+  {
+    if (file.type === "d")
+    {
       S3DB_Logging("info", "700", `${new Date(file.modifyTime).toISOString()} PRE ${file.name}`)
-    } else {
+    } else
+    {
       S3DB_Logging("info", "700", `${new Date(file.modifyTime).toISOString()} ${file.size} ${file.name}`)
     }
 
@@ -1988,36 +1997,42 @@ async function sftpListFiles(remoteDir: string, fileGlob: ListFilterFunction) {
   return fileNames
 }
 
-async function sftpUploadFile(localFile: string, remoteFile: string) {
+async function sftpUploadFile (localFile: string, remoteFile: string) {
   S3DB_Logging("info", "700", `Uploading ${localFile} to ${remoteFile} ...`)
-  try {
+  try
+  {
     // await SFTPClient.put(localFile, remoteFile)
-  } catch (err) {
+  } catch (err)
+  {
     S3DB_Logging("exception", "", `Uploading failed: ${err}`)
   }
 }
 
-async function sftpDownloadFile(remoteFile: string, localFile: string) {
+async function sftpDownloadFile (remoteFile: string, localFile: string) {
   S3DB_Logging("info", "700", `Downloading ${remoteFile} to ${localFile} ...`)
-  try {
+  try
+  {
     // await SFTPClient.get(remoteFile, localFile)
-  } catch (err) {
+  } catch (err)
+  {
     S3DB_Logging("exception", "", `Downloading failed: ${err}`)
   }
 }
 
-async function sftpDeleteFile(remoteFile: string) {
+async function sftpDeleteFile (remoteFile: string) {
   S3DB_Logging("info", "700", `Deleting ${remoteFile}`)
-  try {
+  try
+  {
     // await SFTPClient.delete(remoteFile)
-  } catch (err) {
+  } catch (err)
+  {
     S3DB_Logging("exception", "", `Deleting failed: ${err}`)
   }
 }
 
 
 
-async function getValidateS3DropBucketConfig() {
+async function getValidateS3DropBucketConfig () {
   //Article notes that Lambda runs faster referencing process.env vars, lets see.
   //Did not pan out, with all the issues with conversions needed to actually use as primary reference, can't see it being faster
   //Using process.env as a useful reference store, especially for accessToken, good across invocations
@@ -2034,7 +2049,7 @@ async function getValidateS3DropBucketConfig() {
   if (!process.env.S3DropBucketConfigBucket) process.env.S3DropBucketConfigBucket = "s3dropbucket-configs"
 
   if (!process.env.S3DropBucketConfigFile) process.env.S3DropBucketConfigFile = "s3dropbucket_config.jsonc"
-  
+
   getObjectCmd = {
     Bucket: process.env.S3DropBucketConfigBucket,
     Key: process.env.S3DropBucketConfigFile,
@@ -2059,7 +2074,8 @@ async function getValidateS3DropBucketConfig() {
   let s3dbcr
   let s3dbc = {} as S3DBConfig
 
-  try {
+  try
+  {
     s3dbc = await s3.send(new GetObjectCommand(getObjectCmd))
       .then(async (getConfigS3Result: GetObjectCommandOutput) => {
         s3dbcr = (await getConfigS3Result.Body?.transformToString(
@@ -2092,7 +2108,7 @@ async function getValidateS3DropBucketConfig() {
 
   try
   {
-    
+
     const validateBySchema = new Ajv()
     const su = "https://raw.githubusercontent.com/KWLandry-acoustic/s3dropbucket_Schemas/main/json-schema-s3dropbucket_config.json"
     const fetchSchema = async () => {
@@ -2110,7 +2126,7 @@ async function getValidateS3DropBucketConfig() {
     const sf = await fetchSchema() as string
     sf
 
-    
+
     //ToDo Validate Configs through Schema definition
     //const vs = validateBySchema.validate(sf, s3dbc)
 
@@ -2119,11 +2135,12 @@ async function getValidateS3DropBucketConfig() {
 
     //  *Must* set EventEmitterMaxListeners in environment vars as this flags whether config is already parsed.
     if (!isNaN(s3dbc.s3dropbucket_eventemittermaxlisteners) && typeof s3dbc.s3dropbucket_eventemittermaxlisteners === "number") process.env["EventEmitterMaxListeners"] = s3dbc.s3dropbucket_eventemittermaxlisteners.toString()
-    else {
+    else
+    {
       throw new Error(
         `S3DropBucket Config invalid or missing definition: EventEmitterMaxListeners.`
       )
-    } 
+    }
 
 
     //ToDo: refactor to a foreach validation instead of the Long List approach. 
@@ -2140,7 +2157,7 @@ async function getValidateS3DropBucketConfig() {
       throw new Error(
         `S3DropBucket Config invalid definition: missing SelectiveLogging.`
       )
-      
+
     } else process.env["S3DropBucketSelectiveLogging"] = s3dbc.s3dropbucket_selectivelogging
 
     if (!s3dbc.s3dropbucket || s3dbc.s3dropbucket === "")
@@ -2170,14 +2187,14 @@ async function getValidateS3DropBucketConfig() {
         `S3DropBucket Config invalid definition: missing S3DropBucketWorkQueue (${s3dbc.s3dropbucket_workqueue}) `
       )
     } else process.env["S3DropBucketWorkQueue"] = s3dbc.s3dropbucket_workqueue
-    
+
 
     if (!s3dbc.connectapiurl || s3dbc.connectapiurl === "")
     {
       throw new Error(
         `S3DropBucket Config invalid definition: missing connectapiurl - ${s3dbc.connectapiurl} `)
     } else process.env["connectapiurl"] = s3dbc.connectapiurl
-    
+
     if (!s3dbc.xmlapiurl || s3dbc.xmlapiurl === "")
     {
       throw new Error(
@@ -2215,13 +2232,13 @@ async function getValidateS3DropBucketConfig() {
       if (s3dbc.s3dropbucket_jsonseparator.toLowerCase() === "\n") s3dbc.s3dropbucket_jsonseparator = "\n"
       process.env["S3DropBucketJsonSeparator"] = s3dbc.s3dropbucket_jsonseparator
     }
-    
+
     if (s3dbc.s3dropbucket_workqueuequiesce === true || s3dbc.s3dropbucket_workqueuequiesce === false) process.env["WorkQueueQuiesce"] = s3dbc.s3dropbucket_workqueuequiesce.toString()
     else
       throw new Error(
         `S3DropBucket Config invalid definition: WorkQueueQuiesce - ${s3dbc.s3dropbucket_workqueuequiesce} `
       )
-    
+
     //process.env["RetryQueueInitialWaitTimeSeconds"]
     if (!isNaN(s3dbc.s3dropbucket_maxbatcheswarning) && typeof s3dbc.s3dropbucket_maxbatcheswarning === "number") process.env["MaxBatchesWarning"] = s3dbc.s3dropbucket_maxbatcheswarning.toFixed()
     else
@@ -2244,7 +2261,7 @@ async function getValidateS3DropBucketConfig() {
 
     if (!isNaN(s3dbc.s3dropbucket_maintlimit) && typeof s3dbc.s3dropbucket_maintlimit === "number") process.env["S3DropBucketMaintLimit"] = s3dbc.s3dropbucket_maintlimit.toString()
     else
-    { 
+    {
       s3dbc.s3dropbucket_maintlimit = 0
       process.env["S3DropBucketMaintLimit"] = s3dbc.s3dropbucket_maintlimit.toString()
     }
@@ -2289,27 +2306,31 @@ async function getValidateS3DropBucketConfig() {
     if (!s3dbc.s3dropbucket_logbucket || s3dbc.s3dropbucket_logbucket === "") s3dbc.s3dropbucket_logbucket = ""
     process.env["S3DropBucketLogBucket"] = s3dbc.s3dropbucket_logbucket.toString()
 
-    if (!s3dbc.s3dropbucket_purge || s3dbc.s3dropbucket_purge === "") {
+    if (!s3dbc.s3dropbucket_purge || s3dbc.s3dropbucket_purge === "")
+    {
       throw new Error(
         `S3DropBucket Config invalid or missing definition: DropBucketPurge - ${s3dbc.s3dropbucket_purge} `
       )
     } else process.env["S3DropBucketPurge"] = s3dbc.s3dropbucket_purge
 
     if (!isNaN(s3dbc.s3dropbucket_purgecount) && typeof s3dbc.s3dropbucket_purgecount === "number") process.env["S3DropBucketPurgeCount"] = s3dbc.s3dropbucket_purgecount.toFixed()
-    else {
+    else
+    {
       throw new Error(
         `S3DropBucket Config invalid or missing definition: S3DropBucketPurgeCount - ${s3dbc.s3dropbucket_purgecount} `
       )
-    } 
-    
-    if (s3dbc.s3dropbucket_queuebucketquiesce === true || s3dbc.s3dropbucket_queuebucketquiesce === false) {
+    }
+
+    if (s3dbc.s3dropbucket_queuebucketquiesce === true || s3dbc.s3dropbucket_queuebucketquiesce === false)
+    {
       process.env["S3DropBucketQueueBucketQuiesce"] = s3dbc.s3dropbucket_queuebucketquiesce.toString()
     } else
       throw new Error(
         `S3DropBucket Config invalid or missing definition: QueueBucketQuiesce - ${s3dbc.s3dropbucket_queuebucketquiesce} `
       )
 
-    if (!s3dbc.s3dropbucket_workqueuebucketpurge || s3dbc.s3dropbucket_workqueuebucketpurge === "") {
+    if (!s3dbc.s3dropbucket_workqueuebucketpurge || s3dbc.s3dropbucket_workqueuebucketpurge === "")
+    {
       throw new Error(
         `S3DropBucket Config invalid or missing definition: WorkQueueBucketPurge - ${s3dbc.s3dropbucket_workqueuebucketpurge} `
       )
@@ -2323,7 +2344,8 @@ async function getValidateS3DropBucketConfig() {
       )
     }
 
-    if (s3dbc.s3dropbucket_prefixfocus && s3dbc.s3dropbucket_prefixfocus !== "" && s3dbc.s3dropbucket_prefixfocus.length > 3) {
+    if (s3dbc.s3dropbucket_prefixfocus && s3dbc.s3dropbucket_prefixfocus !== "" && s3dbc.s3dropbucket_prefixfocus.length > 3)
+    {
       process.env["S3DropBucketPrefixFocus"] = s3dbc.s3dropbucket_prefixfocus
       S3DB_Logging("warn", "937", `A Prefix Focus has been configured. Only S3DropBucket Objects with the prefix "${s3dbc.s3dropbucket_prefixfocus}" will be processed.`)
     } else process.env["S3DropBucketPrefixFocus"] = s3dbc.s3dropbucket_prefixfocus
@@ -2361,17 +2383,18 @@ async function getValidateS3DropBucketConfig() {
 
 
 
-  } catch (e) {
+  } catch (e)
+  {
     S3DB_Logging("exception", "", `Exception - Parsing S3DropBucket Config File ${e} `)
     throw new Error(`Exception - Parsing S3DropBucket Config File ${e} `)
   }
   return s3dbc
 }
 
-async function getFormatCustomerConfig(filekey: string) {
+async function getFormatCustomerConfig (filekey: string) {
 
   //Populate/Refresh Customer Config List 
-  if (process.env.S3DropBucketConfigBucket === "")  process.env.S3DropBucketConfigBucket = "s3dropbucket-configs"
+  if (process.env.S3DropBucketConfigBucket === "") process.env.S3DropBucketConfigBucket = "s3dropbucket-configs"
   const ccl = await getAllCustomerConfigsList(process.env.S3DropBucketConfigBucket ?? "s3dropbucket-configs")
   process.env.S3DropBucketCustomerConfigsList = JSON.stringify(ccl)
 
@@ -2379,14 +2402,15 @@ async function getFormatCustomerConfig(filekey: string) {
   // Retrieve file's prefix as the Customer Name
   if (!filekey)
     throw new Error(
-        `Exception - Cannot resolve Customer Config without a valid filename (filename is ${filekey})`
+      `Exception - Cannot resolve Customer Config without a valid filename (filename is ${filekey})`
     )
 
   let customer = filekey
 
 
-//Need to 'normalize' filename by removing Path details
-  while (customer.indexOf("/") > -1) {
+  //Need to 'normalize' filename by removing Path details
+  while (customer.indexOf("/") > -1)
+  {
     //remove any folders from name
     customer = customer.split("/").at(-1) ?? customer
   }
@@ -2394,7 +2418,8 @@ async function getFormatCustomerConfig(filekey: string) {
   //Normalize if timestamp - normalize timestamp out 
   const r = new RegExp(/\d{4}_\d{2}_\d{2}T.*Z.*/, "gm")
   //remove timestamps from name as can confuse customer name parsing
-  if (customer.match(r)) {
+  if (customer.match(r))
+  {
     customer = customer.replace(r, "") //remove timestamp from name
   }
 
@@ -2410,7 +2435,7 @@ async function getFormatCustomerConfig(filekey: string) {
 
   //Now, need to 'normalize' (deconstruct) all other strings that are possible to arrive at (reconstruct) a valid dataflow name with a trailing underscore 
   if (customer.lastIndexOf('_') > 3)   //needs to have at least 4 chars for dataflow name 
-  {  
+  {
     let i = customer.lastIndexOf('_')
     customer = customer.substring(0, i)
     let ca = customer.split('_')
@@ -2422,9 +2447,9 @@ async function getFormatCustomerConfig(filekey: string) {
     customer = c
   } else
   {
-    S3DB_Logging("exception","",`Exception - Parsing File Name for Dataflow Config Name returns: ${customer}}. Cannot continue.`)
+    S3DB_Logging("exception", "", `Exception - Parsing File Name for Dataflow Config Name returns: ${customer}}. Cannot continue.`)
     throw new Error(`Exception - Parsing File Name for Dataflow Config Name returns: ${customer}}. Cannot continue.`)
-  } 
+  }
 
   //Should be left with valid Dataflow Name, data flow and trailing underscore
   if (!customer.endsWith('_'))
@@ -2434,27 +2459,30 @@ async function getFormatCustomerConfig(filekey: string) {
     )
   }
 
-  
+
   //ToDo: Need to change this up to getting a listing of all configs and matching up against filename,
   //  allowing Configs to match on filename regardless of case
   //  populate 'process.env.S3DropBucketConfigsList' and walk over it to match config to filename
-  
+
   let ccKey = `${customer}config.jsonc`
-  
+
   //Match File to Customer Config file
   //ToDo: test and confirm 
-    try
+  try
+  {
+    const cclist = JSON.parse(process.env.S3DropBucketCustomerConfigsList ?? "")
+    for (const i in cclist)
     {
-        const cclist = JSON.parse(process.env.S3DropBucketCustomerConfigsList ?? "")
-        for (const i in cclist)
-        {
-          if (cclist[i].toLowerCase() === `${customer}config.jsonc`.toLowerCase()) ccKey = `${cclist[i]}`
-          break
-        }
-    } catch (e)
-    {
-      S3DB_Logging("exception", "", `${e}`)
+      if (cclist[i].toLowerCase() === `${customer}config.jsonc`.toLowerCase()) ccKey = `${cclist[i]}`
+      break
     }
+  } catch (e)
+  {
+
+    debugger //catch
+
+    S3DB_Logging("exception", "", `Matching filename to Customer config : \n${e}`)
+  }
 
   const getObjectCommand = {
     Key: ccKey,
@@ -2465,35 +2493,37 @@ async function getFormatCustomerConfig(filekey: string) {
   let ccr
   let configJSON = customersConfig as CustomerConfig
 
-  try {
+  try
+  {
     ccr = await s3
       .send(new GetObjectCommand(getObjectCommand))
       .then(async (getConfigS3Result: GetObjectCommandOutput) => {
-        
+
         let cc = (await getConfigS3Result.Body?.transformToString(
           "utf8"
         )) as string
 
-        S3DB_Logging("info", "910", `Customer (${customer}) Config: \n ${cc.trim()} `) 
-        
+        S3DB_Logging("info", "910", `Customer (${customer}) Config: \n ${cc.trim()} `)
+
         //S3DB_Logging("info", "910", `Customer (${customer}) Config: \n ${cc.replace(/\s/g, '')} `)
-        
+
         //Remove Schema line to avoid parsing error
         cc = cc.replaceAll(new RegExp(/^.*?"\$schema.*?$/gm), "")
-        
+
         //Parse comments out of the json before parse for config
         cc = cc.replaceAll(new RegExp(/[^:](\/\/.*(,|$|")?)/g), "")
         const cc1 = cc.replaceAll("\n", "")
-        
+
         //Parse comments out of the json before parse
         //const ccr1 = ccr.replaceAll(new RegExp(/(".*":)/g), (match) => match.toLowerCase())
         const cc2 = cc1.replaceAll(new RegExp(/(\/\/.*(?:$|\W|\w|\S|\s|\r).*)/gm), "")
         const cc3 = cc2.replaceAll(new RegExp(/\n/gm), "")
         cc = cc3.replaceAll("   ", "")
+
         return cc
       })
       .catch((e) => {
-        const err: string = JSON.stringify(e)    
+        const err: string = JSON.stringify(e)
 
         if (err.indexOf("specified key does not exist") > -1)
           throw new Error(
@@ -2510,14 +2540,15 @@ async function getFormatCustomerConfig(filekey: string) {
         )
       })
 
-  } catch (e) {
+  } catch (e)
+  {
     debugger //catch
     S3DB_Logging("exception", "", `Exception - On Try when Pulling Customer Config \n${ccr}. \n${e} `)
     throw new Error(`Exception - (Try) Pulling Customer Config \n${ccr} \n${e} `)
   }
 
   configJSON = JSON.parse(ccr) as CustomerConfig
-  
+
   //Potential Transform opportunity (values only)
   //configJSON = JSON.parse(ccr, function (key, value) {
   //  return value
@@ -2527,7 +2558,7 @@ async function getFormatCustomerConfig(filekey: string) {
     type okt = keyof typeof object
     for (const key in object)
     {
-      const k = key as okt 
+      const k = key as okt
 
       const lk = (key as string).toLowerCase()
 
@@ -2536,321 +2567,335 @@ async function getFormatCustomerConfig(filekey: string) {
       //if (typeof object[k] === "object") setPropsLowCase(object[k])
       if (Object.prototype.toString.call(object[k]) === "[object Object]") setPropsLowCase(object[k], lk)
 
-      if(k === lk) continue
-      object[lk as okt] = object[k]  
+      if (k === lk) continue
+      object[lk as okt] = object[k]
       delete object[k]
     }
     return object
   }
 
   configJSON = setPropsLowCase(configJSON, '') as CustomerConfig
+
   configJSON = await validateCustomerConfig(configJSON) as CustomerConfig
 
   return configJSON as CustomerConfig
 }
 
-async function validateCustomerConfig(config: CustomerConfig) {
-  
-  if (!config || config === null)
+async function validateCustomerConfig (config: CustomerConfig) {
+
+  try
   {
-    throw new Error("Invalid  CustomerConfig - empty or null config")
-  }
-  
-  if (!config.targetupdate)
-  {
+    if (!config || config === null)
+    {
+      throw new Error("Invalid  CustomerConfig - empty or null config")
+    }
+
+    if (!config.targetupdate)
+    {
+      {
+        throw new Error(
+          "Invalid Customer Config - TargetUpdate is required and must be either 'Connect' or 'Campaign'  "
+        )
+      }
+    }
+
+    if (!config.targetupdate.toLowerCase().match(/^(?:connect|campaign)$/gim))
     {
       throw new Error(
         "Invalid Customer Config - TargetUpdate is required and must be either 'Connect' or 'Campaign'  "
       )
     }
-  }
-    
-  if (!config.targetupdate.toLowerCase().match(/^(?:connect|campaign)$/gim))
-  {
-    throw new Error(
-      "Invalid Customer Config - TargetUpdate is required and must be either 'Connect' or 'Campaign'  "
-    )
-  }
 
 
-  if (!config.updatetype)
-  {
-    throw new Error("Invalid Customer Config - updatetype is not defined")
-  }
-
-
-////Confirm updatetype has a valid value
-//  if ( !config.updatetype.toLowerCase().match(/^(?:relational|dbkeyed|dbnonkeyed|referenceset|createcontacts|updatecontacts|createattributes)$/gim)
-//    //DBKeyed, DBNonKeyed, Relational, ReferenceSet, CreateContacts, UpdateContacts, CreateAttributes
-//  )
-//  {
-//    throw new Error(
-//      "Invalid Customer Config - updatetype is required and must be either 'Relational', 'DBKeyed' or 'DBNonKeyed', ReferenceSet, CreateContacts, UpdateContacts, CreateAttributes. "
-//    )
-//  }
-
-  if (config.targetupdate.toLowerCase() == "campaign")
-  {
-    //updatetype has valid Campaign values and Campaign dependent values
-    if (!config.updatetype.toLowerCase().match(/^(?:relational|dbkeyed|dbnonkeyed)$/gim))
-    //DBKeyed, DBNonKeyed, Relational
+    if (!config.updatetype)
     {
-      throw new Error(
-        "Invalid Customer Config - Update set to be Campaign, however updatetype is not Relational, DBKeyed, or DBNonKeyed. "
-      )
-    }
-
-    if (config.updatetype.toLowerCase() == "dbkeyed" && !config.dbkey)
-    {
-      throw new Error(
-        "Invalid Customer Config - Update set as Database Keyed but DBKey is not defined. "
-      )
-    }
-
-    if (config.updatetype.toLowerCase() == "dbnonkeyed" && !config.lookupkeys)
-    {
-      throw new Error(
-        "Invalid Customer Config - Update set as Database NonKeyed but LookupKeys is not defined. "
-      )
-    }
-
-    if (!config.clientid)
-    {
-      throw new Error("Invalid Customer Config - Target Update is Campaign but ClientId is not defined")
-    }
-    if (!config.clientsecret)
-    {
-      throw new Error("Invalid Customer Config - Target Update is Campaign but ClientSecret is not defined")
-    }
-    if (!config.refreshtoken)
-    {
-      throw new Error("Invalid Customer Config - Target Update is Campaign but RefreshToken is not defined")
+      throw new Error("Invalid Customer Config - updatetype is not defined")
     }
 
 
-    if (!config.listid)
-    {
-      throw new Error("Invalid Customer Config - ListId is not defined")
-    }
-    if (!config.listname)
-    {
-      throw new Error("Invalid Customer Config - Target Update is Campaign but ListName is not defined")
-    }
-    if (!config.pod)
-    {
-      throw new Error("Invalid Customer Config - Target Update is Campaign but Pod is not defined")
-    }
-    if (!config.region)
-    {
-      //Campaign POD Region
-      throw new Error("Invalid Customer Config - Target Update is Campaign but Region is not defined")
-    }
+    ////Confirm updatetype has a valid value
+    //  if ( !config.updatetype.toLowerCase().match(/^(?:relational|dbkeyed|dbnonkeyed|referenceset|createcontacts|updatecontacts|createattributes)$/gim)
+    //    //DBKeyed, DBNonKeyed, Relational, ReferenceSet, CreateContacts, UpdateContacts, CreateAttributes
+    //  )
+    //  {
+    //    throw new Error(
+    //      "Invalid Customer Config - updatetype is required and must be either 'Relational', 'DBKeyed' or 'DBNonKeyed', ReferenceSet, CreateContacts, UpdateContacts, CreateAttributes. "
+    //    )
+    //  }
 
-    if (!config.region.toLowerCase().match(/^(?:us|eu|ap|ca)$/gim))
+    if (config.targetupdate.toLowerCase() == "campaign")
     {
-      throw new Error(
-        "Invalid Customer Config - Region is not 'US', 'EU', CA' or 'AP'. "
-      )
-    }
-
-  }
-
-  if (config.targetupdate.toLowerCase() === "connect")
-  {
-    //updatetype has valid Campaign values and Campaign dependent values
-    if (config.updatetype.toLowerCase().match(/^(?:referenceset|createcontacts|updatecontacts|createattributes)$/gim))
-    //DBKeyed, DBNonKeyed, Relational
-    {
-      
-      if (!config.datasetid)
+      //updatetype has valid Campaign values and Campaign dependent values
+      if (!config.updatetype.toLowerCase().match(/^(?:relational|dbkeyed|dbnonkeyed)$/gim))
+      //DBKeyed, DBNonKeyed, Relational
       {
-        throw new Error("Invalid Customer Config - Target Update is Connect but DataSetId is not defined")
-      } if (!config.subscriptionid)
-      {
-        throw new Error("Invalid Customer Config - Target Update is Connect but SubscriptionId is not defined")
-      }
-      if (!config.x_api_key)
-      {
-        throw new Error("Invalid Customer Config - Target Update is Connect but X-Api-Key is not defined")
-      }
-      if (!config.x_acoustic_region)
-      {
-        throw new Error("Invalid Customer Config - Target Update is Connect but X-Acoustic-Region is not defined")
+        throw new Error(
+          "Invalid Customer Config - Update set to be Campaign, however updatetype is not Relational, DBKeyed, or DBNonKeyed. "
+        )
       }
 
-      if (config.x_acoustic_region.toLowerCase().match(/^(?:"us-east-1"| "us-east-2"| "us-west-1"| "us-west-2"| "af-south-1"| "ap-east-1"| "ap-south-1"| "ap-south-2"| "ap-southeast-1"| "ap-southeast-2"| "ap-southeast-3"| "ap-southeast-4"| "ap-northeast-1"| "ap-northeast-2"| "ap-northeast-3"| "ca-central-1"| "eu-central-1"| "eu-central-2"| "eu-north-1"| "eu-south-1"| "eu-south-2"| "eu-west-1"| "eu-west-2"| "eu-west-3"| "il-central-1"| "me-central-1"| "me-south-1"| "sa-east-1" )$/gim))
+      if (config.updatetype.toLowerCase() == "dbkeyed" && !config.dbkey)
       {
-        throw new Error("Invalid Customer Config - Target Update is Connect but Region is incorrect or undefined")
+        throw new Error(
+          "Invalid Customer Config - Update set as Database Keyed but DBKey is not defined. "
+        )
+      }
+
+      if (config.updatetype.toLowerCase() == "dbnonkeyed" && !config.lookupkeys)
+      {
+        throw new Error(
+          "Invalid Customer Config - Update set as Database NonKeyed but LookupKeys is not defined. "
+        )
+      }
+
+      if (!config.clientid)
+      {
+        throw new Error("Invalid Customer Config - Target Update is Campaign but ClientId is not defined")
+      }
+      if (!config.clientsecret)
+      {
+        throw new Error("Invalid Customer Config - Target Update is Campaign but ClientSecret is not defined")
+      }
+      if (!config.refreshtoken)
+      {
+        throw new Error("Invalid Customer Config - Target Update is Campaign but RefreshToken is not defined")
+      }
+
+
+      if (!config.listid)
+      {
+        throw new Error("Invalid Customer Config - ListId is not defined")
+      }
+      if (!config.listname)
+      {
+        throw new Error("Invalid Customer Config - Target Update is Campaign but ListName is not defined")
+      }
+      if (!config.pod)
+      {
+        throw new Error("Invalid Customer Config - Target Update is Campaign but Pod is not defined")
+      }
+      if (!config.region)
+      {
+        //Campaign POD Region
+        throw new Error("Invalid Customer Config - Target Update is Campaign but Region is not defined")
+      }
+
+      if (!config.region.toLowerCase().match(/^(?:us|eu|ap|ca)$/gim))
+      {
+        throw new Error(
+          "Invalid Customer Config - Region is not 'US', 'EU', CA' or 'AP'. "
+        )
       }
 
     }
-  }
-  
-  
-  if (!config.updates)
-  {
-    throw new Error("Invalid Customer Config - Updates is not defined")
-  }
 
-  if (!config.updates.toLowerCase().match(/^(?:singular|multiple|bulk)$/gim))
+    if (config.targetupdate.toLowerCase() === "connect")
+    {
+      //updatetype has valid Campaign values and Campaign dependent values
+      if (config.updatetype.toLowerCase().match(/^(?:referenceset|createcontacts|updatecontacts|createattributes)$/gim))
+      //DBKeyed, DBNonKeyed, Relational
+      {
+
+        if (!config.datasetid)
+        {
+          throw new Error("Invalid Customer Config - Target Update is Connect but DataSetId is not defined")
+        } if (!config.subscriptionid)
+        {
+          throw new Error("Invalid Customer Config - Target Update is Connect but SubscriptionId is not defined")
+        }
+        if (!config.x_api_key)
+        {
+          throw new Error("Invalid Customer Config - Target Update is Connect but X-Api-Key is not defined")
+        }
+        if (!config.x_acoustic_region)
+        {
+          throw new Error("Invalid Customer Config - Target Update is Connect but X-Acoustic-Region is not defined")
+        }
+
+        if (config.x_acoustic_region.toLowerCase().match(/^(?:"us-east-1"| "us-east-2"| "us-west-1"| "us-west-2"| "af-south-1"| "ap-east-1"| "ap-south-1"| "ap-south-2"| "ap-southeast-1"| "ap-southeast-2"| "ap-southeast-3"| "ap-southeast-4"| "ap-northeast-1"| "ap-northeast-2"| "ap-northeast-3"| "ca-central-1"| "eu-central-1"| "eu-central-2"| "eu-north-1"| "eu-south-1"| "eu-south-2"| "eu-west-1"| "eu-west-2"| "eu-west-3"| "il-central-1"| "me-central-1"| "me-south-1"| "sa-east-1" )$/gim))
+        {
+          throw new Error("Invalid Customer Config - Target Update is Connect but Region is incorrect or undefined")
+        }
+
+      }
+    }
+
+
+    if (!config.updates)
+    {
+      throw new Error("Invalid Customer Config - Updates is not defined")
+    }
+
+    if (!config.updates.toLowerCase().match(/^(?:singular|multiple|bulk)$/gim))
     {
       throw new Error(
         "Invalid Customer Config - Updates is not 'Singular' or 'Multiple' "
       )
-  }
-  
-  //Remove legacy config value
-  if (config.updates.toLowerCase() === "bulk") config.updates = "Multiple"
+    }
+
+    //Remove legacy config value
+    if (config.updates.toLowerCase() === "bulk") config.updates = "Multiple"
 
 
-  if (!config.format) {
-    throw new Error("Invalid Customer Config - Format is not defined")
-  }
-  if (!config.format.toLowerCase().match(/^(?:csv|json)$/gim)) {
-    throw new Error("Invalid Customer Config - Format is not 'CSV' or 'JSON' ")
-  }
+    if (!config.format)
+    {
+      throw new Error("Invalid Customer Config - Format is not defined")
+    }
+    if (!config.format.toLowerCase().match(/^(?:csv|json)$/gim))
+    {
+      throw new Error("Invalid Customer Config - Format is not 'CSV' or 'JSON' ")
+    }
 
-  if (!config.separator) {
-    //see: https://www.npmjs.com/package/@streamparser/json-node
-    //JSONParser / Node separator option: null = `''` empty = '', otherwise a separator eg. '\n'
-    config.separator = "\n"
-  }
+    if (!config.separator)
+    {
+      //see: https://www.npmjs.com/package/@streamparser/json-node
+      //JSONParser / Node separator option: null = `''` empty = '', otherwise a separator eg. '\n'
+      config.separator = "\n"
+    }
 
-  //Customer specific separator
-  if (config.separator.toLowerCase() === "null") config.separator = `''`
-  if (config.separator.toLowerCase() === "empty") config.separator = `""`
-  if (config.separator.toLowerCase() === "\n") config.separator = "\n"
-
-
-  if (!config.pod.match(/^(?:0|1|2|3|4|5|6|7|8|9|a|b)$/gim)) {
-    throw new Error(
-      "Invalid Customer Config - Pod is not 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, A, or B. "
-    )
-  }
-
-  //
-  //    XMLAPI Endpoints
-  //Pod 1 - https://api-campaign-us-1.goacoustic.com/XMLAPI
-  //Pod 2 - https://api-campaign-us-2.goacoustic.com/XMLAPI
-  //Pod 3 - https://api-campaign-us-3.goacoustic.com/XMLAPI
-  //Pod 4 - https://api-campaign-us-4.goacoustic.com/XMLAPI
-  //Pod 5 - https://api-campaign-us-5.goacoustic.com/XMLAPI
-  //Pod 6 - https://api-campaign-eu-1.goacoustic.com/XMLAPI
-  //Pod 7 - https://api-campaign-ap-2.goacoustic.com/XMLAPI
-  //Pod 8 - https://api-campaign-ca-1.goacoustic.com/XMLAPI
-  //Pod 9 - https://api-campaign-us-6.goacoustic.com/XMLAPI
-  //Pod A - https://api-campaign-ap-1.goacoustic.com/XMLAPI
-  //pod B - https://api-campaign-ap-3.goacoustic.com/XMLAPI
-
-  switch (config.pod.toLowerCase()) {
-    case "6":
-      config.pod = "1"
-      break
-    case "7":
-      config.pod = "2"
-      break
-    case "8":
-      config.pod = "1"
-      break
-    case "9":
-      config.pod = "6"
-      break
-    case "a":
-      config.pod = "1"
-      break
-    case "b":
-      config.pod = "3"
-      break
-
-    default:
-      break
-  }
+    //Customer specific separator
+    if (config.separator.toLowerCase() === "null") config.separator = `''`
+    if (config.separator.toLowerCase() === "empty") config.separator = `""`
+    if (config.separator.toLowerCase() === "\n") config.separator = "\n"
 
 
-
-
-  if (!config.sftp) {
-    config.sftp = { user: "", password: "", filepattern: "", schedule: "" }
-  }
-
-  if (config.sftp.user && config.sftp.user !== "")
-  {
-    S3DB_Logging("info", "700", `SFTP User: ${config.sftp.user}`)
-  }
-  if (config.sftp.password && config.sftp.password !== "")
-  {
-    S3DB_Logging("info", "700", `SFTP Pswd: ${config.sftp.password}`)
-  }
-  if (config.sftp.filepattern && config.sftp.filepattern !== "")
-  {
-    S3DB_Logging("info", "700", `SFTP File Pattern: ${config.sftp.filepattern}`)
-  }
-  if (config.sftp.schedule && config.sftp.schedule !== "")
-  {
-    S3DB_Logging("info", "700", `SFTP Schedule: ${config.sftp.schedule}`)
-  }
-  
-  if (!config.transforms) {
-    Object.assign(config, { transforms: {} })
-  }
-  if (!config.transforms.jsonmap) {
-    Object.assign(config.transforms, { jsonmap: {} })
-  }
-  if (!config.transforms.csvmap) {
-    Object.assign(config.transforms, { csvmap: {} })
-  }
-  if (!config.transforms.ignore) {
-    Object.assign(config.transforms, { ignore: [] })
-  }
-
-  S3DB_Logging("info", "919", `Transforms configured: \n${JSON.stringify(config.transforms)}`)
-  
-  if (config.transforms.jsonmap)
-  {
-    const tmpMap: { [key: string]: string } = {}
-    const jm = config.transforms.jsonmap as {[key: string]: string}
-    for (const m in jm) {
-  
-      const p = jm[m]
-      const p2 = p.substring(2, config.transforms.contactid.length)
-      
-      if (["contactid", "contactkey", "addressablefields", "consent", "audience"].includes(m.toLowerCase()) ||
-        ["contactid", "contactkey", "addressablefields", "consent", "audience"].includes(p2.toLowerCase())
+    if (!config.pod.match(/^(?:0|1|2|3|4|5|6|7|8|9|a|b)$/gim))
+    {
+      throw new Error(
+        "Invalid Customer Config - Pod is not 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, A, or B. "
       )
+    }
+
+    //
+    //    XMLAPI Endpoints
+    //Pod 1 - https://api-campaign-us-1.goacoustic.com/XMLAPI
+    //Pod 2 - https://api-campaign-us-2.goacoustic.com/XMLAPI
+    //Pod 3 - https://api-campaign-us-3.goacoustic.com/XMLAPI
+    //Pod 4 - https://api-campaign-us-4.goacoustic.com/XMLAPI
+    //Pod 5 - https://api-campaign-us-5.goacoustic.com/XMLAPI
+    //Pod 6 - https://api-campaign-eu-1.goacoustic.com/XMLAPI
+    //Pod 7 - https://api-campaign-ap-2.goacoustic.com/XMLAPI
+    //Pod 8 - https://api-campaign-ca-1.goacoustic.com/XMLAPI
+    //Pod 9 - https://api-campaign-us-6.goacoustic.com/XMLAPI
+    //Pod A - https://api-campaign-ap-1.goacoustic.com/XMLAPI
+    //pod B - https://api-campaign-ap-3.goacoustic.com/XMLAPI
+
+    switch (config.pod.toLowerCase())
+    {
+      case "6":
+        config.pod = "1"
+        break
+      case "7":
+        config.pod = "2"
+        break
+      case "8":
+        config.pod = "1"
+        break
+      case "9":
+        config.pod = "6"
+        break
+      case "a":
+        config.pod = "1"
+        break
+      case "b":
+        config.pod = "3"
+        break
+
+      default:
+        break
+    }
+
+
+
+
+    if (!config.sftp)
+    {
+      config.sftp = {user: "", password: "", filepattern: "", schedule: ""}
+    }
+
+    if (config.sftp.user && config.sftp.user !== "")
+    {
+      S3DB_Logging("info", "700", `SFTP User: ${config.sftp.user}`)
+    }
+    if (config.sftp.password && config.sftp.password !== "")
+    {
+      S3DB_Logging("info", "700", `SFTP Pswd: ${config.sftp.password}`)
+    }
+    if (config.sftp.filepattern && config.sftp.filepattern !== "")
+    {
+      S3DB_Logging("info", "700", `SFTP File Pattern: ${config.sftp.filepattern}`)
+    }
+    if (config.sftp.schedule && config.sftp.schedule !== "")
+    {
+      S3DB_Logging("info", "700", `SFTP Schedule: ${config.sftp.schedule}`)
+    }
+
+    if (!config.transforms)
+    {
+      Object.assign(config, {transforms: {}})
+    }
+    if (!config.transforms.jsonmap)
+    {
+      Object.assign(config.transforms, {jsonmap: {}})
+    }
+    if (!config.transforms.csvmap)
+    {
+      Object.assign(config.transforms, {csvmap: {}})
+    }
+    if (!config.transforms.ignore)
+    {
+      Object.assign(config.transforms, {ignore: []})
+    }
+
+    S3DB_Logging("info", "919", `Transforms configured: \n${JSON.stringify(config.transforms)}`)
+
+    if (config.transforms.jsonmap)
+    {
+      const tmpMap: {[key: string]: string} = {}
+      const jm = config.transforms.jsonmap as {[key: string]: string}
+      for (const m in jm)
       {
-        S3DB_Logging("error", "999", `JSONMap config: Either part of the JSONMap statement, the Column to create or the JSONPath statement, cannot use a reserved word ("contactid", "contactkey", "addressablefields", "consent", or "audience") ${m}: ${p}`)
-        throw new Error(`JSONMap config: Either part of the JSONMap statement, the Column to create or the JSONPath statement, cannot reference a reserved word ("contactid", "contactkey", "addressablefields", "consent", or "audience") ${m}: ${p}`)
-      }
-      else
-      {
-        try
+
+debugger ///
+        const p = jm[m]
+        const p2 = p.substring(2, p.length)
+
+        if (["contactid", "contactkey", "addressablefields", "consent", "audience"].includes(m.toLowerCase()) ||
+          ["contactid", "contactkey", "addressablefields", "consent", "audience"].includes(p2.toLowerCase())
+        )
         {
-          const v = jsonpath.parse(p)  //checking for parse exception highlighting invalid jsonpath
-          tmpMap[m] = jm[m]        
-        } catch (e)
+          S3DB_Logging("error", "999", `JSONMap config: Either part of the JSONMap statement, the Column to create or the JSONPath statement, cannot use a reserved word ("contactid", "contactkey", "addressablefields", "consent", or "audience") ${m}: ${p}`)
+          
+          throw new Error(`JSONMap config: Either part of the JSONMap statement, the Column to create or the JSONPath statement, cannot reference a reserved word ("contactid", "contactkey", "addressablefields", "consent", or "audience") ${m}: ${p}`)
+        }
+        else
         {
-          S3DB_Logging("exception", "", `Invalid JSONPath defined in Customer config: ${m}: "${m}", \nInvalid JSONPath - ${e} `)
+          try
+          {
+            const v = jsonpath.parse(p)  //checking for parse exception highlighting invalid jsonpath
+            tmpMap[m] = jm[m]
+          } catch (e)
+          {
+            S3DB_Logging("exception", "", `Invalid JSONPath defined in Customer config: ${m}: "${m}", \nInvalid JSONPath - ${e} `)
+          }
         }
       }
+      config.transforms.jsonmap = tmpMap
     }
-    config.transforms.jsonmap = tmpMap
+
+  } catch (e)
+  {
+    debugger //catch
+    S3DB_Logging("error", "", `Exception - Validate Customer Config: \n${e}`)
   }
-
-
   //Need CSVMap Validation
   //Need CSVMap jsonpath validation - reserved words
-  
-
   //Need Ignore Validation
-
-
-
-
 
   return config as CustomerConfig
 }
 
-async function packageUpdates(workSet: object[], key: string, custConfig: CustomerConfig, iter: number 
+async function packageUpdates (workSet: object[], key: string, custConfig: CustomerConfig, iter: number
 ) {
 
   let sqwResult: object = {}
@@ -2895,9 +2940,9 @@ async function packageUpdates(workSet: object[], key: string, custConfig: Custom
           ...sqwResult,
           ...fRes,
         }
-         
+
         return sqwResult
-      
+
       })
     } catch (e)    //Interior try/catch for firehose processing
     {
@@ -2908,7 +2953,7 @@ async function packageUpdates(workSet: object[], key: string, custConfig: Custom
         PutToFireHoseException: `Exception - PutToFirehose \n${e} `,
       }
     }
-    
+
     S3DB_Logging("info", "943", `Completed FireHose Aggregator processing ${key} (File Stream Iter: ${iter}) \n${JSON.stringify(sqwResult)}`)
 
     return sqwResult = {
@@ -2933,7 +2978,7 @@ async function packageUpdates(workSet: object[], key: string, custConfig: Custom
 
           updates.push(c)
         }
-      
+
         //Ok, now send to appropriate staging for actually updating endpoint (Campaign or Connect)
         if (custConfig.targetupdate.toLowerCase() === "connect")
           sqwResult = await storeAndQueueConnectWork(updates, key, custConfig, iter)
@@ -2955,7 +3000,7 @@ async function packageUpdates(workSet: object[], key: string, custConfig: Custom
         }
 
         S3DB_Logging("info", "921", `PackageUpdates StoreAndQueueWork for ${key} (File Stream Iter: ${iter}). \nFor a total of ${recs} Updates in ${batchCount} Batches.  Result: \n${JSON.stringify(sqwResult)} `)
-    }
+      }
     } catch (e)
     {
       debugger //catch
@@ -2973,7 +3018,7 @@ async function packageUpdates(workSet: object[], key: string, custConfig: Custom
 
 
 
-async function storeAndQueueConnectWork(
+async function storeAndQueueConnectWork (
   updates: object[],
   s3Key: string,
   custConfig: CustomerConfig,
@@ -2988,7 +3033,7 @@ async function storeAndQueueConnectWork(
   //Customers marked as "Singular" updates files are not transformed, but sent to Firehose prior to getting here.
   //  therefore if Aggregate file, or files config'd as "Multiple" updates, then need to perform Transforms before queuing up the work
   try
-  { 
+  {
 
     //Apply Transforms, if any, 
     updates = transforms(updates, custConfig)
@@ -2997,7 +3042,7 @@ async function storeAndQueueConnectWork(
     S3DB_Logging("exception", "", `Exception - Transforms - ${e}`)
     throw new Error(`Exception - Transforms - ${e}`)
   }
-  
+
 
 
   S3DB_Logging("info", "800", `After Transform (Updates: ${updateCount}. File Stream Iter: ${iter}): \n${JSON.stringify(updates)}`)
@@ -3010,7 +3055,7 @@ async function storeAndQueueConnectWork(
   ////if (true) res = ConnectReferenceSet().then((m) => {return m})
   //const mutationCall = JSON.stringify(res)
   //const m = buildConnectMutation(JSON.parse(updates))
-  
+
 
   // ReferenceSet   -    Need to establish SFTP and Job Creation for this
   // CreateContacts   - Done
@@ -3023,16 +3068,10 @@ async function storeAndQueueConnectWork(
 
 
   //For now will need to treat Reference Sets completely differently until an API shows up, hopefully similar to Contacts API
-  if (customersConfig.updatetype.toLowerCase() === "referenceset")
-  {
-    mutations = await buildMutationReferenceSet(updates, custConfig)
-      .then((r) => {
-        return r
-      })
-  }
-  
+
   if (customersConfig.updatetype.toLowerCase() === "createcontacts" ||
-    customersConfig.updatetype.toLowerCase() === "updatecontacts")
+    customersConfig.updatetype.toLowerCase() === "updatecontacts" ||
+    customersConfig.updatetype.toLowerCase() === "referenceset")
   {
     mutations = await buildMutationsConnect(updates, custConfig)
       .then((r) => {
@@ -3040,19 +3079,19 @@ async function storeAndQueueConnectWork(
       })
   }
 
-  
+
 
   const mutationUpdates = JSON.stringify(mutations)
 
-    //  Testing - Call POST to Connect immediately
-    S3DB_Logging("info", "855", `Testing - GraphQL Call (${S3DBConfig.connectapiurl}) Updates: \n${mutationUpdates}`)
-    const c = await postToConnect(mutationUpdates, customersConfig, "6", s3Key)
-    
-    debugger
+  //  Testing - Call POST to Connect immediately
+  S3DB_Logging("info", "855", `Testing - GraphQL Call (${S3DBConfig.connectapiurl}) Updates: \n${mutationUpdates}`)
+  const c = await postToConnect(mutationUpdates, customersConfig, "6", s3Key)
+
+  debugger
 
 
 
-  
+
 
 
   if (s3Key.indexOf("TestData") > -1)
@@ -3086,7 +3125,7 @@ async function storeAndQueueConnectWork(
   {
     addWorkToS3WorkBucketResult = await addWorkToS3WorkBucket(mutationUpdates, key)
       .then((res) => {
-        return {"workfile":key, ...res} //{"AddWorktoS3Results": res}
+        return {"workfile": key, ...res} //{"AddWorktoS3Results": res}
       })
       .catch((err) => {
         S3DB_Logging("exception", "", `Exception - AddWorkToS3WorkBucket (file: ${key}) ${err}`)
@@ -3146,12 +3185,12 @@ async function storeAndQueueConnectWork(
 }
 
 
-async function storeAndQueueCampaignWork(
+async function storeAndQueueCampaignWork (
   updates: object[],
   s3Key: string,
   config: CustomerConfig,
-  iter: number 
-) {  
+  iter: number
+) {
 
   if (batchCount > S3DBConfig.s3dropbucket_maxbatcheswarning)
     S3DB_Logging("info", "", `Warning: Updates from the S3 Object(${s3Key}) (File Stream Iter: ${iter}) are exceeding(${batchCount}) the Warning Limit of ${S3DBConfig.s3dropbucket_maxbatcheswarning} Batches per Object.`)
@@ -3175,23 +3214,27 @@ async function storeAndQueueCampaignWork(
   if (
     customersConfig.updatetype.toLowerCase() === "dbkeyed" ||
     customersConfig.updatetype.toLowerCase() === "dbnonkeyed"
-  ) {
+  )
+  {
     xmlRows = convertJSONToXML_DBUpdates(updates, config)
   }
 
-  if (customersConfig.updatetype.toLowerCase() === "relational") {
+  if (customersConfig.updatetype.toLowerCase() === "relational")
+  {
     xmlRows = convertJSONToXML_RTUpdates(updates, config)
   }
 
   //ToDo: refactor this above this function
-  if (s3Key.indexOf("TestData") > -1) {
+  if (s3Key.indexOf("TestData") > -1)
+  {
     //strip /testdata folder from key
     s3Key = s3Key.split("/").at(-1) ?? s3Key
   }
 
   let key = s3Key
 
-  while (key.indexOf("/") > -1) {
+  while (key.indexOf("/") > -1)
+  {
     key = key.split("/").at(-1) ?? key
   }
 
@@ -3208,18 +3251,20 @@ async function storeAndQueueCampaignWork(
   let addWorkToS3WorkBucketResult
   let addWorkToSQSWorkQueueResult
 
-  try {
+  try
+  {
     addWorkToS3WorkBucketResult = await addWorkToS3WorkBucket(xmlRows, key)
       .then((res) => {
-        return {"workfile":key, ...res}  //return res 
+        return {"workfile": key, ...res}  //return res 
       })
       .catch((err) => {
         S3DB_Logging("exception", "", `Exception - AddWorkToS3WorkBucket ${err} (File Stream Iter: ${iter} file: ${key})`)
       })
-  } catch (e) {
+  } catch (e)
+  {
     const sqwError = `Exception - StoreAndQueueWork Add work (File Stream Iter: ${iter} (file: ${key})) to S3 Bucket exception \n${e} `
     S3DB_Logging("exception", "", sqwError)
-    
+
     debugger //catch
 
     S3DB_Logging("info", "939", `Add Work File ${key} (from ${s3Key}) to S3 Work Bucket Result (\nBatch ${batchCount} of ${updateCount} records, File Stream Iter: ${iter}) \n\n${addWorkToS3WorkBucketResult}`)
@@ -3233,7 +3278,8 @@ async function storeAndQueueCampaignWork(
 
   const marker = "Initially Queued on " + new Date()
 
-  try {
+  try
+  {
     addWorkToSQSWorkQueueResult = await addWorkToSQSWorkQueue(
       config,
       key,
@@ -3250,24 +3296,26 @@ async function storeAndQueueCampaignWork(
       // \"940f4ed5927275bc93fc945e63943820\",\"MessageId\":\"cf025cb3-dce3-4564-89a5-23dcae86dd42\"}",
       // }
     })
-  } catch (e) {
+  } catch (e)
+  {
     const sqwError = `Exception - StoreAndQueueWork Add work to SQS Queue exception \n${e} `
     S3DB_Logging("exception", "", sqwError)
 
-    return { StoreQueueWorkException: sqwError, StoreS3WorkException: "" }
+    return {StoreQueueWorkException: sqwError, StoreS3WorkException: ""}
   }
 
   S3DB_Logging("info", "915", `Results of Storing and Queuing (Campaign) Work ${key} to Work Queue: ${JSON.stringify(addWorkToSQSWorkQueueResult)} \n${JSON.stringify(
     addWorkToS3WorkBucketResult)}`)
-  
+
   return {
     AddWorkToS3WorkBucketResults: addWorkToS3WorkBucketResult,
     AddWorkToSQSWorkQueueResults: addWorkToSQSWorkQueueResult,
   }
 }
 
-function convertJSONToXML_RTUpdates(updates: object[], config: CustomerConfig) {
-  if (updates.length < 1) {
+function convertJSONToXML_RTUpdates (updates: object[], config: CustomerConfig) {
+  if (updates.length < 1)
+  {
     throw new Error(
       `Exception - Convert JSON to XML for RT - No Updates(${updates.length}) were passed to process into XML. Customer ${config.customer} `
     )
@@ -3277,7 +3325,8 @@ function convertJSONToXML_RTUpdates(updates: object[], config: CustomerConfig) {
 
   let r = 0
 
-  for (const upd in updates) {
+  for (const upd in updates)
+  {
 
     //const updAtts = JSON.parse( updates[ upd ] )
     const updAtts = updates[upd]
@@ -3285,10 +3334,11 @@ function convertJSONToXML_RTUpdates(updates: object[], config: CustomerConfig) {
     r++
     xmlRows += `<ROW>`
     // Object.entries(jo).forEach(([key, value]) => {
-        
+
     type ua = keyof typeof updAtts
 
-    for (const uv in updAtts) {
+    for (const uv in updAtts)
+    {
       const uVal: ua = uv as ua
       xmlRows += `<COLUMN name="${uVal}"> <![CDATA[${updAtts[uVal]}]]> </COLUMN>`
     }
@@ -3297,17 +3347,18 @@ function convertJSONToXML_RTUpdates(updates: object[], config: CustomerConfig) {
   }
 
   //Tidy up the XML
-  xmlRows += `</ROWS></InsertUpdateRelationalTable></Body></Envelope>` 
-  
+  xmlRows += `</ROWS></InsertUpdateRelationalTable></Body></Envelope>`
+
   S3DB_Logging("info", "906", `Converting ${r} updates to XML RT Updates. Packaged ${Object.values(updates).length} rows as updates to ${config.customer}'s ${config.listname} \nJSON to be converted to XML RT Updates: ${JSON.stringify(updates)}`)
-    
+
   S3DB_Logging("info", "917", `Converting ${r} updates to XML RT Updates. Packaged ${Object.values(updates).length} rows as updates to ${config.customer}'s ${config.listname} \nXML from JSON for RT Updates: ${xmlRows}`)
 
   return xmlRows
 }
 
-function convertJSONToXML_DBUpdates(updates: object[], config: CustomerConfig) {
-  if (updates.length < 1) {
+function convertJSONToXML_DBUpdates (updates: object[], config: CustomerConfig) {
+  if (updates.length < 1)
+  {
     throw new Error(
       `Exception - Convert JSON to XML for DB - No Updates (${updates.length}) were passed to process. Customer ${config.customer} `
     )
@@ -3316,10 +3367,11 @@ function convertJSONToXML_DBUpdates(updates: object[], config: CustomerConfig) {
   xmlRows = `<Envelope><Body>`
   let r = 0
 
-  try {
+  try
+  {
     for (const upd in updates)
     {
-      
+
       r++
 
       const updAtts = updates[upd]
@@ -3330,9 +3382,10 @@ function convertJSONToXML_DBUpdates(updates: object[], config: CustomerConfig) {
       // If Keyed, then Column that is the key must be present in Column Set
       // If Not Keyed must add Lookup Fields
       // Use SyncFields as 'Lookup" values, Columns hold the Updates while SyncFields hold the 'lookup' values.
-      
+
       //Only needed on non-keyed (In Campaign use DB -> Settings -> LookupKeys to find what fields are Lookup Keys)
-      if (config.updatetype.toLowerCase() === "dbnonkeyed") {
+      if (config.updatetype.toLowerCase() === "dbnonkeyed")
+      {
         const lk = config.lookupkeys.split(",")
 
         xmlRows += `<SYNC_FIELDS>`
@@ -3342,10 +3395,10 @@ function convertJSONToXML_DBUpdates(updates: object[], config: CustomerConfig) {
           {
             k = k.trim()
             const lu = lk[k] as keyof typeof updAtts
-            if (updAtts[lu ] === undefined)
-            throw new Error(
-              `No value for LookupKey found in the update. LookupKey: \n${k}`
-            )
+            if (updAtts[lu] === undefined)
+              throw new Error(
+                `No value for LookupKey found in the update. LookupKey: \n${k}`
+              )
             const sf = `<SYNC_FIELD><NAME>${lu}</NAME><VALUE><![CDATA[${updAtts[lu]}]]></VALUE></SYNC_FIELD>`
             xmlRows += sf
           }
@@ -3372,12 +3425,13 @@ function convertJSONToXML_DBUpdates(updates: object[], config: CustomerConfig) {
 
 
       //
-      if (config.updatetype.toLowerCase() === "dbkeyed") {
+      if (config.updatetype.toLowerCase() === "dbkeyed")
+      {
         //Placeholder
         //Don't need to do anything with DBKey, it's superfluous but documents the keys of the keyed DB
       }
 
-      
+
       type ua = keyof typeof updAtts
 
       for (const uv in updAtts)
@@ -3402,14 +3456,14 @@ function convertJSONToXML_DBUpdates(updates: object[], config: CustomerConfig) {
   return xmlRows
 }
 
-async function putToFirehose(chunks: object[], key: string, cust: string, iter: number ) {
+async function putToFirehose (chunks: object[], key: string, cust: string, iter: number) {
 
   let putFirehoseResp: object = {}
 
   const tu = chunks.length
   let ut = 0
 
-  let x=0
+  let x = 0
 
 
   try
@@ -3420,9 +3474,9 @@ async function putToFirehose(chunks: object[], key: string, cust: string, iter: 
 
       let jo = chunks[j]
 
-      jo = Object.assign(jo, { Customer: cust })
+      jo = Object.assign(jo, {Customer: cust})
       const fd = Buffer.from(JSON.stringify(jo), "utf-8")
-      
+
       const fp = {
         DeliveryStreamName: S3DBConfig.s3dropbucket_firehosestream,
         Record: {
@@ -3436,14 +3490,14 @@ async function putToFirehose(chunks: object[], key: string, cust: string, iter: 
         PutToFireHoseAggregatorResult: string
         PutToFireHoseAggregatorResultDetails: string
         PutToFireHoseException: string
-        }
-      
-      let firehosePutResult: FireHosePutResult = 
-        {
-          PutToFireHoseAggregatorResult: "",
-          PutToFireHoseAggregatorResultDetails: "",
-          PutToFireHoseException: "",
-        }
+      }
+
+      let firehosePutResult: FireHosePutResult =
+      {
+        PutToFireHoseAggregatorResult: "",
+        PutToFireHoseAggregatorResultDetails: "",
+        PutToFireHoseException: "",
+      }
 
       let fhRetry = true
       while (fhRetry)
@@ -3454,15 +3508,15 @@ async function putToFirehose(chunks: object[], key: string, cust: string, iter: 
             .then((res: PutRecordCommandOutput) => {
 
               S3DB_Logging("info", "922", `Inbound Update from ${key} - Put to Firehose Aggregator (File Stream Iter: ${iter}) Detailed Result: \n${fd.toString()} \n\nFirehose Result: ${JSON.stringify(res)} `)
-            
+
               if (res.$metadata.httpStatusCode === 200)
               {
                 ut++
-                
+
                 firehosePutResult.PutToFireHoseAggregatorResult = `${res.$metadata.httpStatusCode}`
                 firehosePutResult.PutToFireHoseAggregatorResultDetails = `Successful Put to Firehose Aggregator for ${key} (File Stream Iter: ${iter}).\n${JSON.stringify(res)}. \n${res.RecordId} `
                 firehosePutResult.PutToFireHoseException = ""
-               
+
               } else
               {
                 firehosePutResult.PutToFireHoseAggregatorResult = `${res.$metadata.httpStatusCode}`
@@ -3478,14 +3532,14 @@ async function putToFirehose(chunks: object[], key: string, cust: string, iter: 
               const fr = await fh_Client.config.region()
 
               S3DB_Logging("exception", "", `Exception - Put to Firehose Aggregator (promise catch) (File Stream Iter: ${iter}) for ${key} \n( FH Data Length: ${fp.Record?.Data?.length}. FH Delivery Stream: ${JSON.stringify(fp.DeliveryStreamName)} FH Client Region: ${fr})  \n${e} `)
-              
+
               firehosePutResult.PutToFireHoseAggregatorResult = "Exception"
               firehosePutResult.PutToFireHoseAggregatorResultDetails = `UnSuccessful Put to Firehose Aggregator for ${key} (File Stream Iter: ${iter}) \n ${JSON.stringify(e)} `
               firehosePutResult.PutToFireHoseException = `Exception - Put to Firehose Aggregator for ${key} (File Stream Iter: ${iter}) \n${e} `
-              
+
               return firehosePutResult
             })
-          
+
           // Testing - sample firehose put 
           x++
           if (x % 20 === 0)
@@ -3498,7 +3552,7 @@ async function putToFirehose(chunks: object[], key: string, cust: string, iter: 
             fhRetry = true
             setTimeout(() => {
               //Don't like this approach but it appears to be the best way to get a promise safe retry
-                S3DB_Logging("warn", "944", `Retrying Put to Firehose Aggregator (Slow Down requested) for ${key} (File Stream Iter: ${iter}) `)
+              S3DB_Logging("warn", "944", `Retrying Put to Firehose Aggregator (Slow Down requested) for ${key} (File Stream Iter: ${iter}) `)
             }, 100)
           }
           else fhRetry = false
@@ -3516,7 +3570,7 @@ async function putToFirehose(chunks: object[], key: string, cust: string, iter: 
 
     if (tu === ut) S3DB_Logging("info", "942", `Firehose Aggregator PUT results for inbound Updates (File Stream Iter: ${iter}) from ${key}. Successfully sent ${ut} of ${tu} updates to Aggregator.`)
     else S3DB_Logging("info", "942", `Firehose Aggregator PUT results for inbound Updates (File Stream Iter: ${iter}) from ${key}.  Partially successful sending ${ut} of ${tu} updates to Aggregator.`)
-    
+
     return putFirehoseResp
   } catch (e)
   {
@@ -3527,10 +3581,11 @@ async function putToFirehose(chunks: object[], key: string, cust: string, iter: 
 }
 
 
-async function addWorkToS3WorkBucket(queueUpdates: string, key: string) {
-  if (S3DBConfig.s3dropbucket_queuebucketquiesce) {
+async function addWorkToS3WorkBucket (queueUpdates: string, key: string) {
+  if (S3DBConfig.s3dropbucket_queuebucketquiesce)
+  {
     S3DB_Logging("warn", "923", `Work/Process Bucket Quiesce is in effect, no New Work Files are being written to the S3 Queue Bucket. This work file is for ${key}`)
-    
+
     return {
       versionId: "",
       S3ProcessBucketResult: "",
@@ -3547,11 +3602,13 @@ async function addWorkToS3WorkBucket(queueUpdates: string, key: string) {
   let s3ProcessBucketResult = ""
   let addWorkToS3ProcessBucket
 
-  try {
+  try
+  {
     addWorkToS3ProcessBucket = await s3
       .send(new PutObjectCommand(s3WorkPutInput))
       .then(async (s3PutResult: PutObjectCommandOutput) => {
-        if (s3PutResult.$metadata.httpStatusCode !== 200) {
+        if (s3PutResult.$metadata.httpStatusCode !== 200)
+        {
           throw new Error(
             `Failed to write Work File to S3 Process Store (Result ${s3PutResult}) for ${key} of ${queueUpdates.length} characters.`
           )
@@ -3574,7 +3631,7 @@ async function addWorkToS3WorkBucket(queueUpdates: string, key: string) {
     // return { StoreS3WorkException: e }
   }
 
-  s3ProcessBucketResult = JSON.stringify(addWorkToS3ProcessBucket.$metadata.httpStatusCode, null,2)
+  s3ProcessBucketResult = JSON.stringify(addWorkToS3ProcessBucket.$metadata.httpStatusCode, null, 2)
 
   const vidString = addWorkToS3ProcessBucket.VersionId ?? ""
 
@@ -3589,7 +3646,7 @@ async function addWorkToS3WorkBucket(queueUpdates: string, key: string) {
   return aw3pbr
 }
 
-async function addWorkToSQSWorkQueue(
+async function addWorkToSQSWorkQueue (
   config: CustomerConfig,
   key: string,
   //versionId: string,
@@ -3597,7 +3654,8 @@ async function addWorkToSQSWorkQueue(
   recCount: string,
   marker: string
 ) {
-  if (S3DBConfig.s3dropbucket_queuebucketquiesce) {
+  if (S3DBConfig.s3dropbucket_queuebucketquiesce)
+  {
     S3DB_Logging("warn", "923", `Work/Process Bucket Quiesce is in effect, no New Work Files are being written to the SQS Queue of S3 Work Bucket. This work file is for ${key}`)
 
     return {
@@ -3639,36 +3697,37 @@ async function addWorkToSQSWorkQueue(
   let sqsSendResult
   let sqsWriteResult
 
-  try {
+  try
+  {
     await sqsClient
       .send(new SendMessageCommand(sqsParams))
       .then((sqsSendMessageResult: SendMessageCommandOutput) => {
-        
+
         sqsWriteResult = JSON.stringify(sqsSendMessageResult.$metadata.httpStatusCode, null, 2)
-        
+
         if (sqsWriteResult !== "200")
         {
           const storeQueueWorkException = `Failed writing to SQS Process Queue (queue URL: ${sqsParams.QueueUrl}), ${sqsQMsgBody.workKey}, SQS Params${JSON.stringify(sqsParams)})`
-          return { StoreQueueWorkException: storeQueueWorkException }
+          return {StoreQueueWorkException: storeQueueWorkException}
         }
         //sqsSendResult = sqsSendMessageResult
         //S3DB_Logging("info", "946", `Queued Work to SQS Process Queue (${sqsQMsgBody.workKey}) \nResult: ${sqsWriteResult} \n${JSON.stringify(sqsSendMessageResult)} `)
 
         S3DB_Logging("info", "946", `Queued Work (${sqsQMsgBody.workKey}} to SQS Process Queue (for ${recCount} updates). \nWork Queue (${S3DBConfig.s3dropbucket_workqueue}) \nSQS Params: ${JSON.stringify(sqsParams)}. \nresults: ${JSON.stringify(sqsSendMessageResult)} \nStatus: ${JSON.stringify({SQSWriteResult: sqsWriteResult, AddToSQSQueue: JSON.stringify(sqsSendResult)})}`)
-        
+
         //return sqsSendMessageResult
         return sqsSendResult
       })
       .catch((err) => {
         debugger //catch
-        const storeQueueWorkException = `Failed writing to SQS Process Queue (${err}). \nQueue URL: ${sqsParams.QueueUrl})\nWork to be Queued: ${
-          sqsQMsgBody.workKey}\nSQS Params: ${JSON.stringify(sqsParams)}`
-        
+        const storeQueueWorkException = `Failed writing to SQS Process Queue (${err}). \nQueue URL: ${sqsParams.QueueUrl})\nWork to be Queued: ${sqsQMsgBody.workKey}\nSQS Params: ${JSON.stringify(sqsParams)}`
+
         S3DB_Logging("exception", "", `Failed to Write to SQS Process Queue. \n${storeQueueWorkException}`)
 
-        return { StoreQueueWorkException: storeQueueWorkException }
+        return {StoreQueueWorkException: storeQueueWorkException}
       })
-  } catch (e) {
+  } catch (e)
+  {
     S3DB_Logging("exception", "", `Exception - Writing to SQS Process Queue - (queue URL${sqsParams.QueueUrl
       }), ${sqsQMsgBody.workKey}, SQS Params${JSON.stringify(sqsParams)}) - Error: ${e}`)
   }
@@ -3681,7 +3740,7 @@ async function addWorkToSQSWorkQueue(
   }
 }
 
-function transforms(updates: object[], config: CustomerConfig) {
+function transforms (updates: object[], config: CustomerConfig) {
   //Apply Transforms
   //Approach: => Process Entire Set of Updates in Each Transform step, NOT each Transform against each update.
   //Sequence:  //Have to run transforms in the following sequence
@@ -3702,7 +3761,7 @@ function transforms(updates: object[], config: CustomerConfig) {
   // Ignore
 
 
-  
+
   //Transform: DayDate
   //
   //ToDo: Provide a transform to break timestamps out into
@@ -3712,11 +3771,11 @@ function transforms(updates: object[], config: CustomerConfig) {
   //
   //
 
-try
-    {
+  try
+  {
 
     if (Object.keys(config.transforms.methods.daydate).length > 0)
-    {            
+    {
       const t: typeof updates = []
       let toDay: string = ""
 
@@ -3728,26 +3787,25 @@ try
         "Thursday",
         "Friday",
         "Saturday",
-       ]
-      
+      ]
+
       for (const update of updates)
       {
-          Object.entries(config.transforms.methods.daydate).forEach(([key, val])  =>
+        Object.entries(config.transforms.methods.daydate).forEach(([key, val]) => {
+          //Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{} '.
+          //No index signature with a parameter of type 'string' was found on type '{}'.ts(7053)
+          const updateObj: {[key: string]: string} = update as {[key: string]: string}
+
+          toDay = updateObj[val] as string
+
+          if (typeof toDay !== "undefined" && toDay !== "")
           {
-              //Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{} '.
-              //No index signature with a parameter of type 'string' was found on type '{}'.ts(7053)
-              const updateObj: {[key: string]: string} = update as {[key: string]: string}
+            const dt = new Date(toDay)
+            const day = {dateday: days[dt.getDay()]}
+            Object.assign(update, day)
+          }
+        })
 
-              toDay = updateObj[val] as string
-
-              if (typeof toDay !== "undefined" && toDay !== "")
-              {
-                const dt = new Date(toDay)
-                const day = {dateday: days[dt.getDay()]}
-                Object.assign(update, day)
-              }
-          })
-        
         t.push(update)
       }
 
@@ -3760,7 +3818,7 @@ try
         throw new Error(
           `Error - Transform - Applying DayDate Transform returns fewer records (${t.length}) than initial set ${updates.length}`
         )
-      } 
+      }
     }
   } catch (e)
   {
@@ -3769,43 +3827,42 @@ try
   }
 
 
-  
+
   //Transform - Date-to-ISO-8601
   //
 
   try
-    {
+  {
 
     if (Object.keys(config.transforms.methods.date_iso1806_type).length > 0)
-    {    
+    {
       //const iso1806Col = config.transforms.methods.date_iso1806 ?? 'iso1806Date' 
-        
+
       const t: typeof updates = []
       let toISO1806: string = ""
 
       for (const update of updates)
-        {
-          Object.entries(config.transforms.methods.date_iso1806_type).forEach(([key, val])  =>
+      {
+        Object.entries(config.transforms.methods.date_iso1806_type).forEach(([key, val]) => {
+          //Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{} '.
+          //No index signature with a parameter of type 'string' was found on type '{}'.ts(7053)
+          const updateObj: {[key: string]: string} = update as {[key: string]: string}
+
+          toISO1806 = updateObj[val] as string
+
+          if (typeof toISO1806 !== "undefined" && toISO1806 !== "")
           {
-              //Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{} '.
-              //No index signature with a parameter of type 'string' was found on type '{}'.ts(7053)
-              const updateObj: {[key: string]: string} = update as {[key: string]: string}
+            const dt = new Date(toISO1806)
+            const isoString: string = dt.toISOString()
+            const tDate = {[key]: isoString}
+            Object.assign(update, tDate)
+          }
 
-              toISO1806 = updateObj[val] as string
+        })
 
-              if (typeof toISO1806 !== "undefined" && toISO1806 !== "")
-              {
-                const dt = new Date(toISO1806)
-                const isoString: string = dt.toISOString()
-                const tDate = {[key]: isoString}
-                Object.assign(update, tDate)
-              }
-
-          })
-        
         t.push(update)
       }
-      
+
       if (t.length === updates.length)
       {
         updates = t
@@ -3815,7 +3872,7 @@ try
         throw new Error(
           `Error - Transform - Applying date_iso1806 Transform returns fewer records (${t.length}) than initial set ${updates.length}`
         )
-      } 
+      }
     }
   } catch (e)
   {
@@ -3828,47 +3885,46 @@ try
   //
 
   try
-    {
-    
+  {
+
     if (Object.keys(config.transforms.methods.phone_number_type).length > 0)
-    {    
+    {
       //const iso1806Col = config.transforms.methods.date_iso1806 ?? 'iso1806Date' 
-        
+
       const t: typeof updates = []
       let pn: string = ""
 
       for (const update of updates)
-        {
-          Object.entries(config.transforms.methods.phone_number_type).forEach(([key, val])  =>
+      {
+        Object.entries(config.transforms.methods.phone_number_type).forEach(([key, val]) => {
+          //Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{} '.
+          //No index signature with a parameter of type 'string' was found on type '{}'.ts(7053)
+          const updateObj: {[key: string]: string} = update as {[key: string]: string}
+
+          pn = updateObj[val] as string
+
+          if (typeof pn !== "undefined" && pn !== "")
           {
-              //Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{} '.
-              //No index signature with a parameter of type 'string' was found on type '{}'.ts(7053)
-              const updateObj: {[key: string]: string} = update as {[key: string]: string}
 
-              pn = updateObj[val] as string
+            const npn = pn.replaceAll(new RegExp(/(\D)/gm), "")
 
-              if (typeof pn !== "undefined" && pn !== "")
-              {
-                      
-                const npn = pn.replaceAll(new RegExp(/(\D)/gm), "")
-                
-                if (!/\d{7,}/.test(npn))
-                {
-                  S3DB_Logging("error", "933", `Error - Transform - Applying Phone_Number Transform returns non-numeric value.`)
-                }
-
-                const pnu = {[key]: npn}
-                Object.assign(update, pnu)
-
-              }
-              else
-              {
-                S3DB_Logging("error", "933", `Error - Transform - Applying Phone_Number Transform ${key}: ${val} returns empty value.`)
+            if (!/\d{7,}/.test(npn))
+            {
+              S3DB_Logging("error", "933", `Error - Transform - Applying Phone_Number Transform returns non-numeric value.`)
             }
-          })
-          
+
+            const pnu = {[key]: npn}
+            Object.assign(update, pnu)
+
+          }
+          else
+          {
+            S3DB_Logging("error", "933", `Error - Transform - Applying Phone_Number Transform ${key}: ${val} returns empty value.`)
+          }
+        })
+
         t.push(update)
-        
+
       }
       if (t.length === updates.length)
       {
@@ -3879,7 +3935,7 @@ try
         throw new Error(
           `Error - Transform - Applying Phone_Number Transform returns fewer records (${t.length}) than initial set ${updates.length}`
         )
-      } 
+      }
     }
   } catch (e)
   {
@@ -3889,45 +3945,44 @@ try
 
 
 
-  
+
   //Transform - String-To-Number
   //
 
-try
-    {
+  try
+  {
     if (Object.keys(config.transforms.methods.string_to_number_type).length > 0)
-    {            
+    {
       const t: typeof updates = []
       let strToNumber: string = ""
 
       for (const update of updates)
-        {
-          Object.entries(config.transforms.methods.string_to_number_type).forEach(([key, val])  =>
+      {
+        Object.entries(config.transforms.methods.string_to_number_type).forEach(([key, val]) => {
+          //Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{} '.
+          //No index signature with a parameter of type 'string' was found on type '{}'.ts(7053)
+          const updateObj: {[key: string]: string} = update as {[key: string]: string}
+
+          strToNumber = updateObj[val] as string
+
+          if (typeof strToNumber !== "undefined" && strToNumber !== "")
           {
-              //Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{} '.
-              //No index signature with a parameter of type 'string' was found on type '{}'.ts(7053)
-              const updateObj: {[key: string]: string} = update as {[key: string]: string}
+            const n = Number(strToNumber)
+            if (String(n) === 'NaN')
+            {
+              S3DB_Logging("error", "933", `Error - Transform - String-To-Number transform failed as the string value for ${key} cannot be converted to a number: ${val}.`)
+            }
+            else
+            {
+              const num = {[key]: n}
+              Object.assign(update, num)
+            }
+          }
+        })
 
-              strToNumber = updateObj[val] as string
-
-              if (typeof strToNumber !== "undefined" && strToNumber !== "")
-              {
-                const n = Number(strToNumber)
-                if (String(n) === 'NaN')
-                {
-                  S3DB_Logging("error", "933", `Error - Transform - String-To-Number transform failed as the string value for ${key} cannot be converted to a number: ${val}.`)
-                }
-                else
-                {
-                  const num = {[key]: n}
-                  Object.assign(update, num)
-                }
-              }
-          })
-        
         t.push(update)
       }
-      
+
       if (t.length === updates.length)
       {
         updates = t
@@ -3937,11 +3992,11 @@ try
         throw new Error(
           `Error - Transform - Applying String-To-Number Transform returns fewer records (${t.length}) than initial set ${updates.length}`
         )
-      } 
+      }
     }
   } catch (e)
   {
-  debugger //catch
+    debugger //catch
     S3DB_Logging("exception", "934", `Exception - Applying String-To-Number Transform \n${e}`)
   }
 
@@ -3968,19 +4023,19 @@ try
         //let jmr
         for (const update of updates)
         {
-          
+
           Object.entries(config.transforms.jsonmap).forEach(([key, val]) => {
-       
-          //const jo = JSON.parse( l )
-            let j = applyJSONMap(update, { [key]: val })
+
+            //const jo = JSON.parse( l )
+            let j = applyJSONMap(update, {[key]: val})
             if (typeof j === "undefined" || j === "") j = "Not Found"
-            Object.assign(update, {[key]: j})          
+            Object.assign(update, {[key]: j})
           })
-          
+
           t.push(update)
         }
 
-        
+
       } catch (e)
       {
         debugger //catch
@@ -3999,7 +4054,7 @@ try
         throw new Error(
           `Error - Transform - Applying JSONMap returns fewer records (${t.length}) than initial set ${updates.length}`
         )
-      } 
+      }
 
       S3DB_Logging("info", "919", `Transforms (JsonMap) applied: \n${JSON.stringify(t)}`)
     }
@@ -4057,9 +4112,9 @@ try
             //}
 
           })
-          
+
           t.push(jo)
-        
+
         }
       } catch (e)
       {
@@ -4077,7 +4132,7 @@ try
         throw new Error(
           `Error - Transform - Applying CSVMap returns fewer records (${t.length}) than initial set ${updates.length}`
         )
-      }  
+      }
 
       S3DB_Logging("info", "919", `Transforms (CSVMap) applied: \n${JSON.stringify(t)}`)
     }
@@ -4157,7 +4212,7 @@ try
     let s: string = ""
     try
     {
-      
+
       if (config.transforms.contactkey.startsWith('$')) s = 'jsonpath'
       else if (config.transforms.contactkey.startsWith('@')) s = 'csvcolumn'
       else if (s === "" && config.transforms.contactkey.length > 3) s = 'static'
@@ -4473,7 +4528,7 @@ try
           config.transforms.consent["statement"] !== "")
         {
           Object.assign(update, {consent: config.transforms.consent["statement"]})
-        
+
         }
         else    //No 'Statement', so process individual Field definition(s)
         {
@@ -4661,19 +4716,19 @@ try
     }
 
   }
-  
+
   //Transform: Ignore
   // Ignore must be last to take advantage of cleaning up any extraneous columns after previous transforms
-  
+
   try
   {
 
     const igno = config.transforms.ignore as typeof config.transforms.ignore
-    
+
     //When processing an Aggregator file we need to remove "Customer" column that is added by the Aggregator. 
     //Which, we will not reach here if not an Aggregator, as transforms are not applied before sending to Aggregator
     if (config.updates.toLowerCase() === "singular") igno.push("Customer")
-  
+
     if (igno.length > 0)
     {
       const t: typeof updates = []  //start an 'ignore processed' update set
@@ -4694,21 +4749,21 @@ try
       {
         debugger //catch
         S3DB_Logging("exception", "932", `Exception - Transform - Applying Ignore - \n${e}`)
-        
+
       }
 
-       if (t.length === updates.length)
+      if (t.length === updates.length)
       {
         updates = t
       } else
       {
-         debugger //catch
+        debugger //catch
         S3DB_Logging("error", "932", `Error - Transform - Applying Ignore returns fewer records ${t.length} than initial set ${updates.length}`)
 
         throw new Error(
           `Error - Transform - Applying Ignore returns fewer records ${t.length} than initial set ${updates.length}`
         )
-      } 
+      }
 
       S3DB_Logging("info", "919", `Transforms (Ignore) applied: \n${JSON.stringify(t)}`)
     }
@@ -4721,7 +4776,7 @@ try
   return updates
 }
 
-function applyJSONMap(jsonObj: object, map: object) //map: {[key: string]: string}) {
+function applyJSONMap (jsonObj: object, map: object) //map: {[key: string]: string}) {
 {
   let j
   Object.entries(map).forEach(([key, jpath]) => {
@@ -4741,7 +4796,7 @@ function applyJSONMap(jsonObj: object, map: object) //map: {[key: string]: strin
     {
       j = jsonpath.value(jsonObj, jpath)
       //Object.assign(jsonObj, {[k]: j})
-     
+
       S3DB_Logging("info", "930", `JSONPath statement ${jpath} returns ${j} from: \nTarget Data: \n${JSON.stringify(jsonObj)} `)
     } catch (e)
     {
@@ -4765,7 +4820,7 @@ function applyJSONMap(jsonObj: object, map: object) //map: {[key: string]: strin
   return String(j)
 }
 
-async function getS3Work(s3Key: string, bucket: string) {
+async function getS3Work (s3Key: string, bucket: string) {
   S3DB_Logging("info", "517", `GetS3Work for Key: ${s3Key}`)
 
   const getObjectCmd = {
@@ -4773,18 +4828,20 @@ async function getS3Work(s3Key: string, bucket: string) {
     Key: s3Key,
   } as GetObjectCommandInput
 
-  
+
   let work: string = ""
 
-  try {
+  try
+  {
     await s3
       .send(new GetObjectCommand(getObjectCmd))
       .then(async (getS3Result: GetObjectCommandOutput) => {
         work = (await getS3Result.Body?.transformToString("utf8")) as string
         S3DB_Logging("info", "517", `Work Pulled (${work.length} chars): ${s3Key}`)
-        
+
       })
-  } catch (e) {
+  } catch (e)
+  {
     const err: string = JSON.stringify(e)
     if (err.toLowerCase().indexOf("nosuchkey") > -1)
     {
@@ -4814,7 +4871,7 @@ async function getS3Work(s3Key: string, bucket: string) {
 //    // ContentLength: Number(`${body.length}`),
 //  } as GetObjectCommandInput
 
-  
+
 //  let saveS3: string = ""
 
 //  try {
@@ -4831,7 +4888,7 @@ async function getS3Work(s3Key: string, bucket: string) {
 //  return saveS3
 //}
 
-async function deleteS3Object(s3ObjKey: string, bucket: string) {
+async function deleteS3Object (s3ObjKey: string, bucket: string) {
   let delRes = ""
 
   const s3D = {
@@ -4841,7 +4898,8 @@ async function deleteS3Object(s3ObjKey: string, bucket: string) {
 
   const d = new DeleteObjectCommand(s3D)
 
-  try {
+  try
+  {
     await s3
       .send(d)
       .then(async (s3DelResult: DeleteObjectCommandOutput) => {
@@ -4851,13 +4909,14 @@ async function deleteS3Object(s3ObjKey: string, bucket: string) {
         S3DB_Logging("exception", "", `Exception - Attempting S3 Delete Command for ${s3ObjKey}: \n ${e} `)
         return delRes
       })
-  } catch (e) {
+  } catch (e)
+  {
     S3DB_Logging("exception", "", `Exception - Attempting S3 Delete Command for ${s3ObjKey}: \n ${e} `)
   }
   return delRes
 }
 
-export async function getAccessToken(config: CustomerConfig) {
+export async function getAccessToken (config: CustomerConfig) {
   try
   {
     interface RatResp {
@@ -4893,10 +4952,10 @@ export async function getAccessToken(config: CustomerConfig) {
       }
 
       return await r.json() as RatResp
-  })
+    })
 
     const accessToken = rat.access_token
-    return { accessToken }.accessToken
+    return {accessToken}.accessToken
   } catch (e)
   {
     S3DB_Logging("exception", "900", `Exception - On GetAccessToken: \n ${e}`)
@@ -4905,10 +4964,163 @@ export async function getAccessToken(config: CustomerConfig) {
 }
 
 
-async function buildMutationsConnect(updates: object[], config: CustomerConfig) {
+async function buildMutationsConnect (updates: object[], config: CustomerConfig) {
 
   let query
   let variables
+  /*
+    try
+    {
+      if (config.updatetype.toLowerCase() === "referenceset")
+      {
+        
+    query = `mutation CreateImportJob {
+      createImportJob(
+          importInput: {
+              fileFormat: DELIMITED
+              delimiter: "\\n"
+              importType: ADD_UPDATE
+              notifications: null
+              mappings: { columnIndex: null, attributeName: null }
+              createSegment: true
+              segmentName: "S3DBSegment"
+              consent: {
+                  enableOverrideExistingOptOut: null
+                  channels: null
+                  consentGroups: null
+              }
+              dateFormat: MONTH_DAY_YEAR_SLASH_SEPARATED
+              dataSetId: "1234"
+              dataSetName: "xyz"
+              dataSetType: REFERENCE_SET
+              jobName: "S3DBRefSet"
+              fileLocation: { type: SFTP, folder: "S3DBFolder", filename: "S3DBFile" }
+              attributes: { create: null }
+              # When columnIndex is used for mapping, skipFirstRow determines whether the first row contains headers that should not be ingested as data When columnHeader is used for mapping, skipFirstRow must either not be supplied, or set to true.
+              skipFirstRow: null
+          }
+      ) {
+          id
+      }
+  }`
+  
+      query = {
+          mutation: {
+            createImportJob: {
+              importInput: {
+                fileFormat: "DELIMITED",
+                delimiter: "\n",
+                importType: "ADD_UPDATE",
+                mappings: {
+                  columnIndex: 0,
+                  attributeName: "id"
+                },
+                createSegment: true,
+                segmentName: "S3DBSegment",
+                consent: {
+                  enableOverrideExistingOptOut: false,
+                  channels: [],
+                  consentGroups: []
+                },
+                dateFormat: "MONTH_DAY_YEAR_SLASH_SEPARATED",
+                dataSetId: "1234",
+                dataSetName: "xyz",
+                dataSetType: "REFERENCE_SET",
+                jobName: "S3DBRefSet",
+                fileLocation: {
+                  type: "SFTP",
+                  folder: "S3DBFolder",
+                  filename: "S3DBFile"
+                },
+                attributes: {
+                  create: []
+                },
+                skipFirstRow: false
+              }
+            },
+            fields: {
+              id: true,
+              status: true,
+              message: true
+            }
+          }
+        }
+  
+        query.mutation.createImportJob.importInput.
+  
+        
+  
+        //let createVariables = {} as CreateContactsVariables
+        variables = {dataSetId: config.datasetid, contactsInput: []} as CreateContactsVariables
+  
+        for (const upd in updates)
+        {
+          //Audience is just a placeholder for now, so removing until it is valid in graphQL type
+          //let ccr: CreateContactsInput = {"to": {"audience":[], "consent":[], "attributes": []}}
+  
+          let ca: ContactAttribute = {name: "", value: ""}
+          let ccr: CreateContactRecord = {attributes: []}
+          let cci: CreateContactInput = {attributes: []}
+  
+          variables.contactsInput.push(cci)
+  
+          //Build ContactId, ContactKey, AddressableFields, Consent, Audience properties
+          const u = updates[upd] as Record<string, any>
+  
+          //ToDo: Add logic CreateContact vs UpdateContact Key/Id/Addressable fields
+          //Create:
+          //No Key, No Addressable but UniqueId must be in the data
+          //if (typeof u.contactId !== "undefined") Object.assign(variables.contactsInput[upd], {contactId: u.contactId})
+          //else if (typeof u.contactKey !== "undefined") Object.assign(variables.contactsInput[upd], {key: u.contactKey})
+          //else if (typeof u.addressable !== "undefined") Object.assign(variables.contactsInput[upd], {addressable: u.addressable})
+  
+          //if (typeof u.consent !== "undefined") Object.assign(variables.contactsInput, {consent: u.consent})
+          if (typeof u.consent !== "undefined") Object.assign(cci, {consent: u.consent})
+  
+  
+          //Audience is just a placeholder for now, so removing until it is valid in graphQL type
+          //if (typeof u.audience !== "undefined") Object.assign(variables.contactsInput, {audience: u.audience})
+  
+          //Add S3DBConfirmation value as a means to quickly confirm Testing outcomes
+          const now: Date = new Date()
+          const date: string = now.toLocaleDateString()
+          const time: string = now.toLocaleTimeString()
+          cci.attributes.push({name: "S3DBConfirmation", value: date + " - " + time})
+          //variables.contactsInput[upd].attributes[upd] = {name: "S3DBConfirmation", value: date + " - " + time}
+  
+  
+          //Build Attribute Array from each row of inbound data
+          for (const [key, value] of Object.entries(u))
+          {
+            //let v
+            //if (typeof value === "string") v = value
+            //else v = String(value)
+  
+            //Skip Payload Vars, Vars injected to carry Transformed Values and are already processed above,
+            // and are not valid for the actual Update
+            if (!["contactid", "contactkey", "addressable", "consent", "audience"].includes(key.toLowerCase()))
+            {
+              ca = {name: key, value: value}
+              cci.attributes.push(ca)
+            }
+  
+          }
+          Object.assign(variables.contactsInput[upd], cci)
+          //variables.contactsInput.push(cci)
+        }
+  
+        S3DB_Logging("info", "817", `Create Multiple Contacts Mutation: \n${query} and Vars: \n${JSON.stringify(variables)}`)
+        return {query, variables}
+  
+      }
+    } catch (e)
+    {
+      S3DB_Logging("exception", "", `Exception - Build Mutations - CreateContacts - ${e}`)
+      debugger //catch
+    }
+  
+  */
+
 
   try
   {
@@ -4938,7 +5150,7 @@ async function buildMutationsConnect(updates: object[], config: CustomerConfig) 
         contactsInput: CreateContactRecord[]
       }
 
-      
+
       query = `mutation createMultipleContacts (
         $dataSetId: ID!,
         $contactsInput: [ContactCreateInput!]!
@@ -4975,7 +5187,7 @@ async function buildMutationsConnect(updates: object[], config: CustomerConfig) 
       }`
 
       //let createVariables = {} as CreateContactsVariables
-      variables = {dataSetId: config.datasetid, contactsInput: [] } as CreateContactsVariables
+      variables = {dataSetId: config.datasetid, contactsInput: []} as CreateContactsVariables
 
       for (const upd in updates)
       {
@@ -4987,7 +5199,7 @@ async function buildMutationsConnect(updates: object[], config: CustomerConfig) 
         let cci: CreateContactInput = {attributes: []}
 
         variables.contactsInput.push(cci)
-        
+
         //Build ContactId, ContactKey, AddressableFields, Consent, Audience properties
         const u = updates[upd] as Record<string, any>
 
@@ -5022,10 +5234,10 @@ async function buildMutationsConnect(updates: object[], config: CustomerConfig) 
 
           //Skip Payload Vars, Vars injected to carry Transformed Values and are already processed above,
           // and are not valid for the actual Update
-          if( !["contactid","contactkey","addressable", "consent","audience"].includes(key.toLowerCase()))
-          {     
-          ca = {name: key, value: value}
-          cci.attributes.push(ca)
+          if (!["contactid", "contactkey", "addressable", "consent", "audience"].includes(key.toLowerCase()))
+          {
+            ca = {name: key, value: value}
+            cci.attributes.push(ca)
           }
 
         }
@@ -5035,17 +5247,17 @@ async function buildMutationsConnect(updates: object[], config: CustomerConfig) 
 
       S3DB_Logging("info", "817", `Create Multiple Contacts Mutation: \n${query} and Vars: \n${JSON.stringify(variables)}`)
       return {query, variables}
-      
+
     }
   } catch (e)
   {
-    S3DB_Logging("exception","",`Exception - Build Mutations - CreateContacts - ${e}`)
+    S3DB_Logging("exception", "", `Exception - Build Mutations - CreateContacts - ${e}`)
     debugger //catch
   }
-  
 
 
-try {
+  try
+  {
     if (config.updatetype.toLowerCase() === "updatecontacts")
     {
 
@@ -5092,39 +5304,39 @@ try {
         }
     }`
 
-      
 
-//mutation {
-//  updateContacts(
-//    updateContactInputs: [
-//      {
-//        key: "contact_key_value"
-//        to: {
-//          attributes: [
-//            { name: "firstName", value: "John" }
-//            { name: "lastName", value: "Doe" }
-//            { name: "email", value: "john.doe@acoustic.co" }
-//          ]
-//          consent: { channels: [{ channel: EMAIL, status: OPT_IN }] }
-//        }
-//      }
-//      { key: "another_contact_key_value", to: { attributes: [{ name: "email", value: null }] } }
-//    ]
-//  ) {
-//    modifiedCount
-//  }
-//}
 
-      variables = {contactsInput: [] } as UpdateContactsVariables
-      
+      //mutation {
+      //  updateContacts(
+      //    updateContactInputs: [
+      //      {
+      //        key: "contact_key_value"
+      //        to: {
+      //          attributes: [
+      //            { name: "firstName", value: "John" }
+      //            { name: "lastName", value: "Doe" }
+      //            { name: "email", value: "john.doe@acoustic.co" }
+      //          ]
+      //          consent: { channels: [{ channel: EMAIL, status: OPT_IN }] }
+      //        }
+      //      }
+      //      { key: "another_contact_key_value", to: { attributes: [{ name: "email", value: null }] } }
+      //    ]
+      //  ) {
+      //    modifiedCount
+      //  }
+      //}
+
+      variables = {contactsInput: []} as UpdateContactsVariables
+
       for (const upd in updates)
       {
         //Audience is just a placeholder for now, so removing until it is valid in graphQL type
         //let uci: UpdateContactsInput = {"to": {"audience":[], "consent":[], "attributes": []}}
-        
+
         let ca: ContactAttribute = {"name": "", "value": ""}
-        let ucr: UpdateContactRecord = {attributes: []} 
-        let uci: UpdateContactsInput = {to: { attributes: []}}
+        let ucr: UpdateContactRecord = {attributes: []}
+        let uci: UpdateContactsInput = {to: {attributes: []}}
 
         variables.contactsInput.push(uci)
 
@@ -5145,9 +5357,9 @@ try {
         const now: Date = new Date()
         const date: string = now.toLocaleDateString()
         const time: string = now.toLocaleTimeString()
-        uci.to.attributes.push( {name: "S3DBConfirmation", value: date + " - " + time} )
-        
-        
+        uci.to.attributes.push({name: "S3DBConfirmation", value: date + " - " + time})
+
+
         //Build Attribute Array from each row of inbound data
         for (const [key, value] of Object.entries(u))
         {
@@ -5157,7 +5369,7 @@ try {
 
           //Skip Payload Vars, Vars injected to carry Transformed Values and are already processed above,
           // and are not valid for the actual Update
-          if( !["contactid","contactkey", "addressable", "consent", "audience"].includes(key.toLowerCase()))
+          if (!["contactid", "contactkey", "addressable", "consent", "audience"].includes(key.toLowerCase()))
           {
             ca = {name: key, value: value}
             uci.to.attributes.push(ca)
@@ -5174,179 +5386,17 @@ try {
       return {query, variables}
 
     }
-    } catch (e)
-  {  
-  S3DB_Logging("exception", "", `Exception - Build Mutations - UpdateContacts - ${e}`)
-  debugger //catch
-}  
+  } catch (e)
+  {
+    S3DB_Logging("exception", "", `Exception - Build Mutations - UpdateContacts - ${e}`)
+    debugger //catch
+  }
 
 
 } //Function Close
 
 
-/*async function buildMutationUpdateContacts(updates: object[], config: CustomerConfig) {
-
-  
-const query = `mutation updateMultipleContacts($dataSetId: ID!, $updateContactInputs: [UpdateContactInput!]!) {
-    updateContacts(
-      dataSetId: $dataSetId
-      updateContactInputs: $updateContactInputs
-    ) {
-      modifiedCount
-    }
-}`
-
-
-//  const query_working = `mutation createMultipleContacts($dataSetId: ID!, $contactsInput: [ContactCreateInput!]!) {
-//    createContacts(
-//      dataSetId: $dataSetId
-//      contactsInput: $contactsInput
-//    ) {
-//        items {
-//          contactId
-//        }
-//    }
-//}`
-
-  let variables: VariablesContacts = {"dataSetId": config.datasetid, "updateContactInputs": []}
-
-  //const variables1 = {
-  //  dataSetId: "config.datasetId",
-  //  updateContactInputs: [
-  //    {
-  //      key: config.updateKey,
-  //      to: {
-  //        attributes: [
-  //          {name: "Country", value: "Germany"},
-  //          {name: "Cell Phone", value: "+4960100000001"}
-  //        ]
-  //      }
-  //    }
-  //  ]
-  //}
-
-
-  for (const upd in updates)
-  {
-    let co: Contact = {"attributes": []}
-    let ca: ContactAttribute = {"name": "", "value": ""}
-
-    for (const [key, value] of Object.entries(updates[upd]))
-    {
-
-      let v
-      if (typeof value === "string") v = value as string
-      else v = String(value)
-
-      ca = {"name": key, "value": v}
-      co.attributes.push(ca)
-
-    }
-
-    variables.updateContactInputs.push(co)
-
-  }
-
-  S3DB_Logging("info", "817", `Create Multiple Contacts Mutation: \n${query} and Vars: \n${JSON.stringify(variables)}`)
-
-  return {query, variables}
-
-}
-*/
-
-
-async function buildMutationCreateAttributes(updates: object[], config: CustomerConfig) {
-
-  //mutation {
-  //  updateDataSet(
-  //    where: {dataSetId: "4fe4136f-c007-44a3-b38f-92220xxxxxxxx"}
-  //  to: {
-  //    attributes: {
-  //      create: [
-  //        {name: "Last order", type: DATE, category: "Demographic"}
-  //        {name: "Avg. order amount", type: NUMBER, category: "Demographic", decimalPrecision: 0}
-  //      ]
-  //    }
-  //  }
-  //  ) {
-  //    dataSetId
-  //  }
-  //}
-
-  const q = {
-    "query": "mutation UpdateDataSet($dataSetId: ID!, $attributes: [AttributeInput!]!) { updateDataSet(where: { dataSetId: $dataSetId }, to: { attributes: { create: $attributes } }) { dataSetId } }",
-      "variables": {
-      "dataSetId": "4fe4136f-c007-44a3-b38f-92220xxxxxxxx",
-        "attributes": [
-          {
-            "name": "Last order",
-            "type": "DATE",
-            "category": "Demographic"
-          },
-          {
-            "name": "Avg. order amount",
-            "type": "NUMBER",
-            "category": "Demographic",
-            "decimalPrecision": 0
-          }
-        ]
-    }
-  }
-
-
-  return q 
-
-}
-
-
-async function buildMutationReferenceSet(updates: object[], config: CustomerConfig) {
-const q = ""
-  
-return q
-}
-
-
-
-async function buildConnectMutation(updates: object) {
-
-  /*
-  mutation {
-      updateContacts(
-        dataSetId: "df07969b-7126-47f2-812d-b7b5876627f7"
-          updateContactInputs: [
-        {
-          contactId: "123509"
-                  to: {
-            attributes: [
-              {name: "Unique ID", value: "123509"}
-                          {name: "Firstname", value: "Barney"}
-                          {name: "Lastname", value: "Rubble"}
-                          {name: "Email", value: "barney.rubble@quarry.com"}
-            ]
-                      consent: {
-              consentGroups: [
-                {
-                  id: "3a7134b8-dcb5-509a-b7ff-946b48333cc9"
-                                  name: "Newsletters"
-                                  status: OPT_IN
-                }
-              ]
-            }
-          }
-        }
-      ]
-      ) {
-        modifiedCount
-      }
-    }
-    */
-
-
-}
-
-
-
-async function postToConnect(mutations: string, custconfig: CustomerConfig, updateCount: string, workFile: string) {
+async function postToConnect (mutations: string, custconfig: CustomerConfig, updateCount: string, workFile: string) {
   //ToDo: 
   //Transform Add Contacts to Mutation Create Contact
   //Transform Updates to Mutation Update Contact
@@ -5387,7 +5437,7 @@ async function postToConnect(mutations: string, custconfig: CustomerConfig, upda
 
   let connectQueryResult: string = ""
 
-  interface ConnectSuccessResult {       
+  interface ConnectSuccessResult {
     "data": {
       "createContacts": {
         "items": [
@@ -5399,7 +5449,7 @@ async function postToConnect(mutations: string, custconfig: CustomerConfig, upda
     }
   }
 
-  interface ConnectErrorResult {      
+  interface ConnectErrorResult {
     "data": null,
     "errors": [
       {
@@ -5411,99 +5461,99 @@ async function postToConnect(mutations: string, custconfig: CustomerConfig, upda
     ]
   }
 
-   try
-   {
-  connectQueryResult = await fetch(host, requestOptions)
-    .then((response) => response.json())  // .text())
-    .then(async (result) => {
+  try
+  {
+    connectQueryResult = await fetch(host, requestOptions)
+      .then((response) => response.json())  // .text())
+      .then(async (result) => {
 
-      //ToDo: Create specific Messaging to line out this error as the Target DB does not have the attribute Defined
-      //{"errors": [{"message": "No defined Attribute with name: 'email'", "locations": [{"line": 1, "column": 38}], "path": ["updateContacts"], "extensions": {"code": "ATTRIBUTE_NOT_DEFINED"}}], "data": null} 
+        //ToDo: Create specific Messaging to line out this error as the Target DB does not have the attribute Defined
+        //{"errors": [{"message": "No defined Attribute with name: 'email'", "locations": [{"line": 1, "column": 38}], "path": ["updateContacts"], "extensions": {"code": "ATTRIBUTE_NOT_DEFINED"}}], "data": null} 
 
-      //const r3 = {
-      //      "data" : {
-      //        "createContacts" : {
-      //          "items" : [
-      //            {
-      //              "contactId" : "529dbe72-11c6-515a-a6f4-0069988668f5"
-      //            },
-      //            {
-      //              "contactId" : "5510fe0f-27b1-56ea-90a9-67a3bad9f364"
-      //            },
-      //            {
-      //              "contactId" : "c341af1a-968d-5d0b-8873-5a41d7d495e5"
-      //            },
-      //            {
-      //              "contactId" : "b357ad45-9396-5a24-ba56-1fb66289bd5f"
-      //            },
-      //            {
-      //              "contactId" : "e533ff9b-def4-5da5-9725-3edae92cab65"
-      //            },
-      //            {
-      //              "contactId" : "59a7dcfe-4db5-5db7-a789-3f0c39d23d71"
-      //            }
-      //          ]
-      //        }
-      //      }
-      //    }
+        //const r3 = {
+        //      "data" : {
+        //        "createContacts" : {
+        //          "items" : [
+        //            {
+        //              "contactId" : "529dbe72-11c6-515a-a6f4-0069988668f5"
+        //            },
+        //            {
+        //              "contactId" : "5510fe0f-27b1-56ea-90a9-67a3bad9f364"
+        //            },
+        //            {
+        //              "contactId" : "c341af1a-968d-5d0b-8873-5a41d7d495e5"
+        //            },
+        //            {
+        //              "contactId" : "b357ad45-9396-5a24-ba56-1fb66289bd5f"
+        //            },
+        //            {
+        //              "contactId" : "e533ff9b-def4-5da5-9725-3edae92cab65"
+        //            },
+        //            {
+        //              "contactId" : "59a7dcfe-4db5-5db7-a789-3f0c39d23d71"
+        //            }
+        //          ]
+        //        }
+        //      }
+        //    }
 
-      
-      //POST Result: {"message": "Endpoint request timed out"}
-      
-      S3DB_Logging("info", "808", `Connect Mutation POST - Response (${workFile}) : ${JSON.stringify(result)}`)
 
-      if (JSON.stringify(result).indexOf("Endpoint request timed out") > 0)
-      {
-        S3DB_Logging("warn", "827", `Connect Mutation POST - Temporary Error: Request Timed Out (${JSON.stringify(result)}). Work will be Sent back to Retry Queue. `)
-        return "retry"
-      }
+        //POST Result: {"message": "Endpoint request timed out"}
 
-      if (JSON.stringify(result).indexOf("errors") > 0)
-      {
-        //const resultMsg = JSON.parse(result) 
-        const cr = result as ConnectErrorResult
+        S3DB_Logging("info", "808", `Connect Mutation POST - Response (${workFile}) : ${JSON.stringify(result)}`)
 
-        //if (cr.errors.length > 0)      //need to check if there are Partial Success/Errors. 
+        if (JSON.stringify(result).indexOf("Endpoint request timed out") > 0)
+        {
+          S3DB_Logging("warn", "827", `Connect Mutation POST - Temporary Error: Request Timed Out (${JSON.stringify(result)}). Work will be Sent back to Retry Queue. `)
+          return "retry"
+        }
+
+        if (JSON.stringify(result).indexOf("errors") > 0)
+        {
+          //const resultMsg = JSON.parse(result) 
+          const cr = result as ConnectErrorResult
+
+          //if (cr.errors.length > 0)      //need to check if there are Partial Success/Errors. 
           for (const e in cr.errors)
           {
             S3DB_Logging("error", "827", `Connect Mutation POST - Error: ${cr.errors[e].message}`)
             throw new Error(`Connect Mutation POST - Error: ${cr.errors[e].message}`)
           }
-        
-        return "unsuccessfully posted"
-      }
-        
-      //S3DB_Logging("warn", "829", `Temporary Failure - POST Updates - Marked for Retry. \n${result}`)
-      //S3DB_Logging("error", "827", `Unsuccessful POST of the Updates (${m.length} of ${count}) - \nFailure Msg: ${JSON.stringify(msg)}`)
+
+          return "unsuccessfully posted"
+        }
+
+        //S3DB_Logging("warn", "829", `Temporary Failure - POST Updates - Marked for Retry. \n${result}`)
+        //S3DB_Logging("error", "827", `Unsuccessful POST of the Updates (${m.length} of ${count}) - \nFailure Msg: ${JSON.stringify(msg)}`)
 
 
-      const cr = result as ConnectSuccessResult 
+        const cr = result as ConnectSuccessResult
 
-      //If we haven't returned before now then it's a successful post 
-      const spr = JSON.stringify(cr).replace("\n", " ")
+        //If we haven't returned before now then it's a successful post 
+        const spr = JSON.stringify(cr).replace("\n", " ")
 
-      S3DB_Logging("info", "826", `Successful POST Result: ${spr}`)
+        S3DB_Logging("info", "826", `Successful POST Result: ${spr}`)
 
-      //return `Successfully POSTed (${count}) Updates - Result: ${result}`
-      return "successfully posted"
-    })
-    .catch((e) => {
+        //return `Successfully POSTed (${count}) Updates - Result: ${result}`
+        return "successfully posted"
+      })
+      .catch((e) => {
 
-      if (e.message.indexOf("econnreset") > -1)
-      {
-        S3DB_Logging("exception", "829", `PostToConnect Error (then.catch) - Temporary failure to POST the Updates - Marked for Retry. ${e}`)
-        return "retry"
-      } else
-      {
-        S3DB_Logging("exception", "", `Error - Unsuccessful POST of the Updates: ${e}`)
-        return "Unsuccessful POST of the Updates"
-      }
-    })
-}catch (e)
-{
-     S3DB_Logging("error", "829", `PostToConnect - Error (try-catch): ${e}`)
-     return "unsuccessful post"
-}
+        if (e.message.indexOf("econnreset") > -1)
+        {
+          S3DB_Logging("exception", "829", `PostToConnect Error (then.catch) - Temporary failure to POST the Updates - Marked for Retry. ${e}`)
+          return "retry"
+        } else
+        {
+          S3DB_Logging("exception", "", `Error - Unsuccessful POST of the Updates: ${e}`)
+          return "Unsuccessful POST of the Updates"
+        }
+      })
+  } catch (e)
+  {
+    S3DB_Logging("error", "829", `PostToConnect - Error (try-catch): ${e}`)
+    return "unsuccessful post"
+  }
 
   //retry
   //unsuccessful post
@@ -5514,7 +5564,7 @@ async function postToConnect(mutations: string, custconfig: CustomerConfig, upda
 }
 
 
-export async function postToCampaign(
+export async function postToCampaign (
   xmlCalls: string,
   config: CustomerConfig,
   count: string,
@@ -5527,13 +5577,15 @@ export async function postToCampaign(
     process.env[`${c}_accessToken`] === undefined ||
     process.env[`${c}_accessToken`] === null ||
     process.env[`${c}_accessToken`] === ""
-  ) {
+  )
+  {
     process.env[`${c}_accessToken`] = (await getAccessToken(config)) as string
     const at = process.env[`${c}_accessToken"`] ?? ""
     const l = at.length
     const redactAT = "......." + at.substring(l - 10, l)
     S3DB_Logging("info", "900", `Generated a new AccessToken: ${redactAT}`)  //ToDo: Add Debug Number 
-  } else {
+  } else
+  {
     const at = process.env["accessToken"] ?? ""
     const l = at.length
     const redactAT = "......." + at.substring(l - 8, l)
@@ -5576,9 +5628,10 @@ export async function postToCampaign(
         result.toLowerCase().indexOf("max number of concurrent") > -1 ||
         result.toLowerCase().indexOf("access token has expired") > -1 ||
         result.toLowerCase().indexOf("Error saving row") > -1
-      ) {
+      )
+      {
         S3DB_Logging("warn", "929", `Temporary Failure - POST Updates - Marked for Retry. \n${result}`)
-        
+
         return "retry"
 
       } else if (result.indexOf("<FaultString><![CDATA[") > -1)
@@ -5604,20 +5657,22 @@ export async function postToCampaign(
         //        < /Fault>
 
         const f = result.split(/<FaultString><!\[CDATA\[(.*)\]\]/g)
-        if (f && f?.length > 0) {
-          for (const fl in f) {
+        if (f && f?.length > 0)
+        {
+          for (const fl in f)
+          {
             faults.push(f[fl])
           }
         }
 
         S3DB_Logging("warn", "928", `Partially Successful POST of the Updates (${f.length} FaultStrings on ${count} updates) - \nResults\n ${JSON.stringify(faults)}`)
 
-        return `Partially Successful - (${
-          f.length
-        } FaultStrings on ${count} updates) \n${JSON.stringify(faults)}`
+        return `Partially Successful - (${f.length
+          } FaultStrings on ${count} updates) \n${JSON.stringify(faults)}`
       }
-        
-      else if (result.indexOf("<FAILURE  failure_type") > -1) {
+
+      else if (result.indexOf("<FAILURE  failure_type") > -1)
+      {
         let msg = ""
 
         //Add this Fail
@@ -5630,8 +5685,10 @@ export async function postToCampaign(
 
         const m = result.match(/<FAILURE (.*)>$/g)
 
-        if (m && m?.length > 0) {
-          for (const l in m) {
+        if (m && m?.length > 0)
+        {
+          for (const l in m)
+          {
             // "<FAILURE failure_type=\"permanent\" description=\"There is no column name\">"
             //Actual message is ambiguous, changing it to read less confusingly:
             l.replace("There is no column ", "There is no column named ")
@@ -5639,7 +5696,7 @@ export async function postToCampaign(
           }
 
           S3DB_Logging("error", "927", `Unsuccessful POST of the Updates (${m.length} of ${count}) - \nFailure Msg: ${JSON.stringify(msg)}`)
-          
+
           return `Error - Unsuccessful POST of the Updates (${m.length} of ${count}) - \nFailure Msg: ${JSON.stringify(msg)}`
         }
       }
@@ -5652,11 +5709,13 @@ export async function postToCampaign(
     })
     .catch((e) => {
 
-      if (e.indexOf("econnreset") > -1) {
+      if (e.indexOf("econnreset") > -1)
+      {
         S3DB_Logging("exception", "929", `Error - Temporary failure to POST the Updates - Marked for Retry. ${e}`)
 
         return "retry"
-      } else {
+      } else
+      {
         S3DB_Logging("exception", "927", `Error - Unsuccessful POST of the Updates: ${e}`)
         //throw new Error( `Exception - Unsuccessful POST of the Updates \n${ e }` )
         return "Unsuccessful POST of the Updates"
@@ -5678,7 +5737,7 @@ export async function postToCampaign(
 //  //ToDo:  Log where Columns are not matching
 //}
 
-async function getAnS3ObjectforTesting(bucket: string) {
+async function getAnS3ObjectforTesting (bucket: string) {
   let s3Key: string = ""
 
   if (testS3Key !== null) return
@@ -5731,16 +5790,16 @@ async function getAnS3ObjectforTesting(bucket: string) {
   return s3Key
 }
 
-async function getAllCustomerConfigsList(bucket: string) {
+async function getAllCustomerConfigsList (bucket: string) {
 
   const listReq = {
     Bucket: bucket,        //`${bucket}.s3.amazonaws.com`,
     MaxKeys: 500
     //Prefix: S3DBConfig.PrefixFocus,
   } as ListObjectsCommandInput
-  
+
   const l = [] as string[]
-  
+
   //"Exception - Retrieving Customer Configs List from s3dropbucket-configs: PermanentRedirect: The bucket you are 
   //attempting to access must be addressed using the specified endpoint.Please send all future requests to this 
   //endpoint. "
@@ -5755,7 +5814,7 @@ async function getAllCustomerConfigsList(bucket: string) {
       }
 
       const cc = (s3ListResult.Contents) as object[]
-      
+
       //Scrub all but '.jsonc' out 
       for (const m of cc)
       {
@@ -5765,13 +5824,12 @@ async function getAllCustomerConfigsList(bucket: string) {
         if (km.indexOf('.jsonc') > -1) l.push(km)
       }
 
-
     })
     .catch((e) => {
       debugger //catch
       S3DB_Logging("exception", "", `Exception - Retrieving Customer Configs List from ${bucket}: ${e} `)
     })
-  
+
   return l
 }
 
