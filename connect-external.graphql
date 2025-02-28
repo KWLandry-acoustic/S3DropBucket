@@ -1,0 +1,1133 @@
+directive @authenticated on ENUM | FIELD_DEFINITION | INTERFACE | OBJECT | SCALAR
+directive @requiresScopes(scopes: [[openfed__Scope!]!]!) on ENUM | FIELD_DEFINITION | INTERFACE | OBJECT | SCALAR
+scalar openfed__Scope
+type Query {
+  _fake: Boolean
+  """Get Reference Sets records using filters, pagination, and sorting"""
+  referenceSetRecords(
+    dataSetId: ID!
+    filter: [FilterRuleInput!]
+    """Grabs records ending before the given cursor."""
+    before: Cursor
+    """Grabs the last n records."""
+    last: Float
+    """Grabs records starting from after the given cursor."""
+    after: Cursor
+    """Grabs the first n records."""
+    first: Float
+    orderBy: [SortField!]
+  ): ReferenceSetRecordConnection!
+  dataSets(
+    """Grabs records ending before the given cursor."""
+    before: Cursor
+    """Grabs the last n records."""
+    last: Float
+    """Grabs records starting from after the given cursor."""
+    after: Cursor
+    """Grabs the first n records."""
+    first: Float
+    filter: [RuleInput!]
+  ): DataSetConnection!
+  contacts(
+    dataSetId: ID
+    orderBy: [SortField!]
+    """Grabs records ending before the given cursor."""
+    before: Cursor
+    """Grabs the last n records."""
+    last: Float
+    """Grabs records starting from after the given cursor."""
+    after: Cursor
+    """Grabs the first n records."""
+    first: Float
+    filter: [ContactRule!]
+    type: DataSetType = AUDIENCE
+  ): ContactConnection!
+  dataSetAttributeCategories: DataSetAttributeCategoriesConnection!
+  getConnectUser(userLogin: String, userId: String): ConnectUser!
+}
+input SortField {
+  field: String!
+  sort: Sort = ASC
+}
+"""Sort ordering"""
+enum Sort {
+  ASC
+  DESC
+}
+"""
+PageInfo is information about the paging/cursoring happening on the server. 
+You can use this information to request either the next or previous pages.
+Use it in conjunction with the `ForwardPaginationArgs` and `BackwardPaginationArgs`.
+"""
+type PageInfo {
+  """Whether the query has more records after the end cursor."""
+  hasNextPage: Boolean
+  """Whether the query has more records before the start cursor."""
+  hasPreviousPage: Boolean
+  """
+  The cursor representing the first record from the returned query. 
+  Can be used to query before or after this record.
+  """
+  startCursor: Cursor
+  """
+  The cursor representing the last record from the returned query. 
+  Can be used to query before or after this record.
+  """
+  endCursor: Cursor
+  """
+  The estimated total count of records that may be returned across multiple queries.
+  """
+  count: Float
+}
+"""Custom Cursor scalar"""
+scalar Cursor
+"""
+A date-time string at UTC, such as 2007-12-03T10:15:30Z, compliant with the `date-time` format outlined in section 5.6 of the RFC 3339 profile of the ISO 8601 standard for representation of dates and times using the Gregorian calendar.
+"""
+scalar DateTime
+"""
+The `JSON` scalar type represents JSON values as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf).
+"""
+scalar JSON
+type Mutation {
+  """Update data set"""
+  updateDataSet(
+    """Update data set input"""
+    to: UpdateDataSetInput!
+    """Data set to be updated"""
+    where: DataSetSelectorInput!
+  ): UpdateDataSetMutationResponse!
+  """Associates DataSet and Reference Sets"""
+  addReferenceSetAssociation(
+    """DataSet association fields"""
+    dataSetAssociation: DataSetAssociationInput!
+  ): AddReferenceSetAssociationResponse!
+  """Removes DataSet associations"""
+  deleteReferenceSetAssociation(
+    """DataSet "from" id"""
+    from: ID!
+    """DataSet "to" id"""
+    to: ID!
+  ): DeleteReferenceSetAssociationResponse!
+  createContacts(dataSetId: ID, contactsInput: [ContactCreateInput!]!): CreateContactsResponse!
+  updateContacts(updateContactInputs: [UpdateContactInput!]!): ContactMutationResponse!
+  deleteContacts(where: DeleteContactsInput!): DeleteContactsResponse!
+  """Triggers bulk import"""
+  createImportJob(
+    """Import information"""
+    importInput: ImportInput!
+  ): ImportJobResponse!
+  updatePublicKeyForConnectUser(publicKey: String!): ConnectUser!
+}
+input RuleInput {
+  source: String
+  id: String
+  field: String
+  """Contains"""
+  contains: String
+  """Does not contain"""
+  ncontains: String
+  """Equals to"""
+  eq: JSON
+  """Does not equal to"""
+  neq: JSON
+  """Is one of the following"""
+  in: [JSON!]
+  """Is not one of the following"""
+  nin: [JSON!]
+  """Is blank"""
+  blank: Boolean
+  """Starts with"""
+  startsWith: String
+  """Does not start with"""
+  nstartsWith: String
+  """Ends with"""
+  endsWith: String
+  """Does not end with"""
+  nendsWith: String
+  """Contains one of the following"""
+  containsOneOf: [String!]
+  """Does not contain one of the following"""
+  ncontainsOneOf: [String!]
+  """Starts with one of the following"""
+  startsWithOneOf: [String!]
+  """Does not start with one of the following"""
+  nstartsWithOneOf: [String!]
+  """Ends with one of the following"""
+  endsWithOneOf: [String!]
+  """Does not end with one of the following"""
+  nendsWithOneOf: [String!]
+  """Less than"""
+  lt: Float
+  """Less than or equal"""
+  lte: Float
+  """Greater than"""
+  gt: Float
+  """Greater than or equal"""
+  gte: Float
+  """Is between"""
+  between: ValueRangeInput
+  """Is today"""
+  isToday: Boolean
+  """Is today"""
+  isTodayTz: TimeZoneBooleanInput
+  """Is after today"""
+  isAfterToday: Boolean
+  """Is after today"""
+  isAfterTodayTz: Boolean
+  """Is before today"""
+  isBeforeToday: Boolean
+  """Is before today"""
+  isBeforeTodayTz: Boolean
+  """Is after"""
+  after: String
+  """Is before"""
+  before: String
+  """Is year"""
+  year: Float
+  """Equal to the specified month, values from 1 to 12"""
+  month: Float
+  """Equal to the specified day of the month, values from 1 to 31"""
+  day: Float
+  """
+  Is anniversary exactly the provided number of days/weeks/months ago/away
+  """
+  anniversary: ValueWithinInput
+  """Is anniversary today"""
+  isAnniversaryToday: Boolean
+  """Equals one of the following"""
+  eqOneOf: [String!]
+  """Does not equal one of the following"""
+  neqOneOf: [String!]
+  """Is within the provided number of last days/weeks/months"""
+  withinLast: ValueWithinInput
+  """Is not within the provided number of last days/weeks/months"""
+  nwithinLast: ValueWithinInput
+  """Is within the provided range of last days/weeks/months"""
+  withinLastRange: DateValueRangeInput
+  """Is within the provided number of next days/weeks/months"""
+  withinNext: ValueWithinInput
+  """Is not within the provided number of next days/weeks/months"""
+  nwithinNext: ValueWithinInput
+  """Is exactly the provided number of days/weeks/months ago/away"""
+  exactly: ValueWithinInput
+  """Is not exactly the provided number of days/weeks/months ago/away"""
+  nexactly: ValueWithinInput
+  and: [RuleInput!]
+  or: [RuleInput!]
+  """All rules inside should have the same 'source'"""
+  count: [RuleInput!]
+  not: RuleInput
+}
+input ValueRangeInput {
+  from: JSON!
+  to: JSON!
+}
+input TimeZoneBooleanInput {
+  timeZone: String!
+  value: Boolean!
+}
+input ValueWithinInput {
+  quantity: Float!
+  period: Period!
+}
+"""The basic periods"""
+enum Period {
+  days
+  weeks
+  months
+}
+input DateValueRangeInput {
+  from: Float!
+  to: Float!
+  period: Period!
+}
+"""Notification channels"""
+enum NotificationChannelType {
+  EMAIL
+}
+input NotificationInput {
+  """Where to send notifications. Send no notifications if not provided"""
+  channel: NotificationChannelType!
+  """Notification types. Example: Email"""
+  destination: String!
+}
+"""Channel type"""
+enum ChannelType {
+  EMAIL
+  SMS
+  WHATSAPP
+}
+type AudienceTracking {
+  """User who created the entity"""
+  createdBy: String!
+  """Time when the entity was created"""
+  createdAt: DateTime!
+  """Last user who modified the entity"""
+  lastModifiedBy: String!
+  """Last time the entity was modified"""
+  lastModifiedAt: DateTime!
+}
+type ReferenceSetRecordAttribute {
+  name: String!
+  value: JSON
+  type: ReferenceSetAttributeType
+}
+enum ReferenceSetAttributeType {
+  TEXT
+  NUMBER
+  BOOLEAN
+  DATE
+}
+type ReferenceSetRecord {
+  """dataSet Id"""
+  dataSetId: ID!
+  """Tracks the reference set updates"""
+  tracking: AudienceTracking!
+  attributes(selectByName: [String!]): [ReferenceSetRecordAttribute!]!
+}
+type ReferenceSetRecordEdge {
+  """The data of the record that goes along with this edge."""
+  node: ReferenceSetRecord!
+  """
+  Represents this location in the query use it in `before` and `after` args
+  to query before and after this location.
+  """
+  cursor: Cursor!
+}
+type ReferenceSetRecordConnection {
+  """
+  PageInfo is information about the paging/cursoring happening on the server.
+  You can use this information to request either the next or previous pages.
+  Use it in conjunction with the `ForwardPaginationArgs` and `BackwardPaginationArgs`.
+  """
+  pageInfo: PageInfo!
+  """
+  A list of objects with a record data (node) and its corresponding cursor from the query.
+  """
+  edges: [ReferenceSetRecordEdge!]!
+  nodes: [ReferenceSetRecord!]!
+  """A total number of reference set records matching the search criteria"""
+  totalCount: Int
+}
+input FilterRuleInput {
+  id: String
+  field: String
+  """Contains"""
+  contains: String
+  """Does not contain"""
+  ncontains: String
+  """Equals to"""
+  eq: JSON
+  """Does not equal to"""
+  neq: JSON
+  """Is one of the following"""
+  in: [JSON!]
+  """Is not one of the following"""
+  nin: [JSON!]
+  """Is blank"""
+  blank: Boolean
+  """Starts with"""
+  startsWith: String
+  """Does not start with"""
+  nstartsWith: String
+  """Ends with"""
+  endsWith: String
+  """Does not end with"""
+  nendsWith: String
+  """Contains one of the following"""
+  containsOneOf: [String!]
+  """Does not contain one of the following"""
+  ncontainsOneOf: [String!]
+  """Starts with one of the following"""
+  startsWithOneOf: [String!]
+  """Does not start with one of the following"""
+  nstartsWithOneOf: [String!]
+  """Ends with one of the following"""
+  endsWithOneOf: [String!]
+  """Does not end with one of the following"""
+  nendsWithOneOf: [String!]
+  """Less than"""
+  lt: Float
+  """Less than or equal"""
+  lte: Float
+  """Greater than"""
+  gt: Float
+  """Greater than or equal"""
+  gte: Float
+  """Is today"""
+  isToday: Boolean
+  """Is after today"""
+  isAfterToday: Boolean
+  """Is before today"""
+  isBeforeToday: Boolean
+  """Is after"""
+  after: String
+  """Is before"""
+  before: String
+  """Is year"""
+  year: Float
+  """Equal to the specified month, values from 1 to 12"""
+  month: Float
+  """Equal to the specified day of the month, values from 1 to 31"""
+  day: Float
+  """Is anniversary today"""
+  isAnniversaryToday: Boolean
+  """Equals one of the following"""
+  eqOneOf: [String!]
+  """Does not equal one of the following"""
+  neqOneOf: [String!]
+  and: [FilterRuleInput!]
+  or: [FilterRuleInput!]
+  """All rules inside should have the same 'source'"""
+  count: [FilterRuleInput!]
+  not: FilterRuleInput
+}
+"""Map as type"""
+enum MapAsType {
+  FIRST_NAME
+  LAST_NAME
+}
+type DataSetConnection {
+  """
+  PageInfo is information about the paging/cursoring happening on the server.
+  You can use this information to request either the next or previous pages.
+  Use it in conjunction with the `ForwardPaginationArgs` and `BackwardPaginationArgs`.
+  """
+  pageInfo: PageInfo!
+  """
+  A list of objects with a record data (node) and its corresponding cursor from the query.
+  """
+  edges: [DataSetEdge!]!
+  nodes: [DataSet!]!
+}
+type DataSetEdge {
+  """The data of the record that goes along with this edge."""
+  node: DataSet!
+  """
+  Represents this location in the query use it in `before` and `after` args
+  to query before and after this location.
+  """
+  cursor: Cursor!
+}
+type DataSet {
+  """Identifier indicating complete dataset"""
+  dataSetId: ID!
+  """Name descriptive to the data set"""
+  name: String!
+  """Data set type"""
+  type: DataSetType
+  tracking: AudienceTracking!
+  """All data set attributes"""
+  attributes(selectByName: [String!], selectByChannel: [ChannelType!]): [DataSetAttribute!]
+  """Data set size"""
+  size(filter: [RuleInput!]): Int
+  """The list of associated DataSets"""
+  associations: [DataSetAssociation!]
+  """The list of DataSets that are able to be associated to"""
+  associableDataSets: [DataSet!]
+  """The list of DataSets that are not able to be associated to"""
+  nonAssociableDataSets: [NonAssociableDataSet!]
+  """The list of associated consent groups"""
+  consentGroups(selectById: [String!]): [DataSetConsentGroup!]
+}
+"""Data set type"""
+enum DataSetType {
+  AUDIENCE
+  REFERENCE_SET
+}
+type DataSetAttribute {
+  type: AttributeTypeAudience!
+  """Decimal precision for attributes of numeric type"""
+  decimalPrecision: Int
+  name: String!
+  """Category name"""
+  category: String
+  tracking: AudienceTracking!
+  identifyAs: DataSetIdentity
+  """Maps the attribute"""
+  mapAs: MapAsType
+  """
+  The type of each element in the array. When sending data for this attribute, only properly formatted data according to this type will be accepted.
+  """
+  validateAs: ValidateAs
+}
+enum AttributeTypeAudience {
+  TEXT
+  NUMBER
+  BOOLEAN
+  DATE
+  JSON
+  ARRAY
+}
+type DataSetIdentity {
+  channels: [ChannelType!]
+  key: Boolean
+  index: Int
+}
+"""
+The type of value contained in the attribute value. When sending data for this attribute, only properly formatted data according to this type will be accepted.
+"""
+enum ValidateAs {
+  TEXT
+  NUMBER
+  BOOLEAN
+  DATE
+  URL
+}
+type DataSetAssociation {
+  """The outbound direction associated DataSet"""
+  to: DataSet!
+  """The list of foreign key field mappings"""
+  mappings: [DataSetForeignKeyFieldMapping!]!
+  tracking: DataSetAssociationTracking!
+}
+type DataSetForeignKeyFieldMapping {
+  toAttribute: String!
+  fromAttribute: String!
+}
+type DataSetAssociationTracking {
+  createdAt: DateTime!
+  createdBy: String!
+  lastModifiedAt: DateTime!
+  lastModifiedBy: String!
+}
+type NonAssociableDataSet {
+  """
+  The list of data sets that can not be associated to and the reason why it can not be associated
+  """
+  dataSet: DataSet
+  """The reason why the data set can not be associated"""
+  reason: NonAssociableDataSetReason
+}
+"""Reason why a dataset cannot be associated to a dataSet"""
+enum NonAssociableDataSetReason {
+  SELF_ASSOCIATION_NOT_ALLOWED
+  ALREADY_ASSOCIATED
+  MAXIMUM_DEPTH_EXCEEDED
+  BIDIRECTIONAL_ASSOCIATION_NOT_ALLOWED
+  ASSOCIATION_TO_AUDIENCE_NOT_ALLOWED
+}
+type DataSetConsentGroup {
+  """Identifier indicating consent group"""
+  id: ID!
+  """Name of consent group"""
+  name: String!
+}
+type ContactConnection {
+  """
+  PageInfo is information about the paging/cursoring happening on the server.
+  You can use this information to request either the next or previous pages.
+  Use it in conjunction with the `ForwardPaginationArgs` and `BackwardPaginationArgs`.
+  """
+  pageInfo: PageInfo!
+  """
+  A list of objects with a record data (node) and its corresponding cursor from the query.
+  """
+  edges: [ContactEdge!]!
+  nodes: [Contact!]!
+  """A total number of entities matching the search criteria"""
+  totalCount: Int
+}
+type ContactEdge {
+  """The data of the record that goes along with this edge."""
+  node: Contact!
+  """
+  Represents this location in the query use it in `before` and `after` args
+  to query before and after this location.
+  """
+  cursor: Cursor!
+}
+type Contact {
+  """Identifier indicating complete dataset"""
+  dataSetId: ID!
+  creationDate: DateTime @deprecated(reason: "Moved to tracking section")
+  modifiedDate: DateTime @deprecated(reason: "Moved to tracking section")
+  tracking: AudienceTracking!
+  attributes(selectByName: [String!], selectByChannel: ChannelType): [ContactAttribute!]!
+  consent: Consent
+  referenceSetRecords(dataSetId: ID!, limit: Float, orderBy: [SortField!]): [ReferenceSetDataRecord!]
+}
+type ContactAttribute {
+  name: String!
+  value: JSON
+  type: AttributeTypeAudience
+}
+type Consent {
+  sms: SmsConsent
+  email: EmailConsent
+  whatsApp: WhatsAppConsent
+  channels(selectByChannel: [ChannelType!]): [ConsentChannel!]
+  consentGroups(selectById: [String!]): [ConsentGroup!]
+}
+type SmsConsent {
+  doNotSend: Boolean
+  address: String
+}
+type EmailConsent {
+  doNotSend: Boolean
+  address: String
+}
+type WhatsAppConsent {
+  doNotSend: Boolean
+  address: String
+}
+type ConsentChannel {
+  channel: ChannelType!
+  status: ConsentStatus!
+}
+"""Consent status"""
+enum ConsentStatus {
+  OPT_IN
+  OPT_OUT
+  OPT_IN_UNVERIFIED
+}
+type ConsentGroup {
+  id: String!
+  channels(selectByChannel: [ChannelType!]): [ConsentChannel!]!
+}
+type ReferenceSetDataRecord {
+  attributes(selectByName: [String!], selectByChannel: ChannelType): [ContactReferenceSetRecordAttribute!]!
+}
+type ContactReferenceSetRecordAttribute {
+  name: String!
+  value: JSON
+  type: AttributeTypeAudience!
+}
+input ContactRule {
+  source: String
+  id: String
+  field: String
+  """Contains"""
+  contains: String
+  """Does not contain"""
+  ncontains: String
+  """Equals to"""
+  eq: JSON
+  """Does not equal to"""
+  neq: JSON
+  """Is one of the following"""
+  in: [JSON!]
+  """Is not one of the following"""
+  nin: [JSON!]
+  """Is blank"""
+  blank: Boolean
+  """Starts with"""
+  startsWith: String
+  """Does not start with"""
+  nstartsWith: String
+  """Ends with"""
+  endsWith: String
+  """Does not end with"""
+  nendsWith: String
+  """Contains one of the following"""
+  containsOneOf: [String!]
+  """Does not contain one of the following"""
+  ncontainsOneOf: [String!]
+  """Starts with one of the following"""
+  startsWithOneOf: [String!]
+  """Does not start with one of the following"""
+  nstartsWithOneOf: [String!]
+  """Ends with one of the following"""
+  endsWithOneOf: [String!]
+  """Does not end with one of the following"""
+  nendsWithOneOf: [String!]
+  """Less than"""
+  lt: Float
+  """Less than or equal"""
+  lte: Float
+  """Greater than"""
+  gt: Float
+  """Greater than or equal"""
+  gte: Float
+  """Is between"""
+  between: ValueRangeInput
+  """Is today"""
+  isToday: Boolean
+  """Is today"""
+  isTodayTz: TimeZoneBooleanInput
+  """Is after today"""
+  isAfterToday: Boolean
+  """Is after today"""
+  isAfterTodayTz: Boolean
+  """Is before today"""
+  isBeforeToday: Boolean
+  """Is before today"""
+  isBeforeTodayTz: Boolean
+  """Is after"""
+  after: String
+  """Is before"""
+  before: String
+  """Is year"""
+  year: Float
+  """Equal to the specified month, values from 1 to 12"""
+  month: Float
+  """Equal to the specified day of the month, values from 1 to 31"""
+  day: Float
+  """
+  Is anniversary exactly the provided number of days/weeks/months ago/away
+  """
+  anniversary: ValueWithinInput
+  """Is anniversary today"""
+  isAnniversaryToday: Boolean
+  """Equals one of the following"""
+  eqOneOf: [String!]
+  """Does not equal one of the following"""
+  neqOneOf: [String!]
+  """Is within the provided number of last days/weeks/months"""
+  withinLast: ValueWithinInput
+  """Is not within the provided number of last days/weeks/months"""
+  nwithinLast: ValueWithinInput
+  """Is within the provided range of last days/weeks/months"""
+  withinLastRange: DateValueRangeInput
+  """Is within the provided number of next days/weeks/months"""
+  withinNext: ValueWithinInput
+  """Is not within the provided number of next days/weeks/months"""
+  nwithinNext: ValueWithinInput
+  """Is exactly the provided number of days/weeks/months ago/away"""
+  exactly: ValueWithinInput
+  """Is not exactly the provided number of days/weeks/months ago/away"""
+  nexactly: ValueWithinInput
+  and: [RuleInput!]
+  or: [RuleInput!]
+  """All rules inside should have the same 'source'"""
+  count: [RuleInput!]
+  not: RuleInput
+  channel: ChannelOperator
+}
+input ChannelOperator {
+  sms: String
+  email: String
+  whatsApp: String
+}
+type DataSetAttributeCategoriesConnection {
+  """
+  PageInfo is information about the paging/cursoring happening on the server.
+  You can use this information to request either the next or previous pages.
+  Use it in conjunction with the `ForwardPaginationArgs` and `BackwardPaginationArgs`.
+  """
+  pageInfo: PageInfo!
+  """
+  A list of objects with a record data (node) and its corresponding cursor from the query.
+  """
+  edges: [DataSetAttributeCategoriesEdge!]!
+  nodes: [DataSetAttributeCategory!]!
+}
+type DataSetAttributeCategoriesEdge {
+  """The data of the record that goes along with this edge."""
+  node: DataSetAttributeCategory!
+  """
+  Represents this location in the query use it in `before` and `after` args
+  to query before and after this location.
+  """
+  cursor: Cursor!
+}
+type DataSetAttributeCategory {
+  """DataSet attribute category name"""
+  name: String!
+  """DataSet attribute category icon name"""
+  icon: String
+}
+type UpdateDataSetMutationResponse {
+  """Identifier indicating complete dataset"""
+  dataSetId: ID!
+  """Identifier indicating data job"""
+  dataJobId: ID
+}
+input UpdateDataSetInput {
+  """Data set attributes"""
+  attributes: MutateDataSetAttributeInput
+  """Name descriptive to the data set"""
+  name: String
+}
+input MutateDataSetAttributeInput {
+  """Insert attributes for selected data set"""
+  create: [UpdateDataSetCreateAttributeInput!]
+  """Update attributes for selected data set"""
+  update: [UpdateDataSetAttributeInput!]
+  """Remove attributes for selected data set"""
+  remove: [RemoveDataSetAttributeInput!]
+}
+input UpdateDataSetCreateAttributeInput {
+  type: AttributeTypeAudience!
+  """Decimal precision for attributes of numeric type"""
+  decimalPrecision: Int
+  name: String!
+  """Category name"""
+  category: String
+  """Maps the attribute"""
+  mapAs: MapAsType
+  """
+  The type of each element in the array. When sending data for this attribute, only properly formatted data according to this type will be accepted.
+  """
+  validateAs: ValidateAs
+  identifyAs: UpdateDataSetCreateAttributeIdentity
+}
+input UpdateDataSetCreateAttributeIdentity {
+  channels: [ChannelType!]
+}
+input UpdateDataSetAttributeInput {
+  name: String!
+  """Category to be updated to"""
+  category: String
+  """MapAs to be updated to"""
+  mapAs: MapAsType
+}
+input RemoveDataSetAttributeInput {
+  name: String!
+}
+input DataSetSelectorInput {
+  """Identifier indicating complete dataset"""
+  dataSetId: ID!
+}
+input DataSetAssociationInput {
+  """The ID of the dataset being mapped to"""
+  to: ID!
+  """The ID of the dataset being mapped from"""
+  from: ID!
+  mappings: [DataSetForeignKeyFieldMappingInput!]!
+}
+input DataSetForeignKeyFieldMappingInput {
+  toAttribute: String!
+  fromAttribute: String!
+}
+type CreateContactsResponse {
+  items: [CreateContactsResponseItem!]!
+}
+type CreateContactsResponseItem {
+  contactKey: String
+  identifyingField: ContactIdentifyingFieldInfo!
+  message: String!
+}
+type ContactIdentifyingFieldInfo {
+  value: JSON!
+  attributeData: DataSetAttribute!
+}
+input ContactCreateInput {
+  attributes: [ContactAttributeInput!]!
+  consent: ConsentInput
+}
+input ContactAttributeInput {
+  name: String!
+  """Value for attribute. Null values will not be stored"""
+  value: JSON
+}
+input ConsentInput {
+  channels: [ConsentChannelInput!]
+  consentGroups: [ConsentGroupInput!]
+}
+input ConsentChannelInput {
+  channel: ChannelType!
+  status: ConsentStatus!
+}
+input ConsentGroupInput {
+  consentGroupId: String!
+  status: ConsentStatus
+  channels: [ConsentChannelInput!]
+}
+type ContactMutationResponse {
+  modifiedCount: Int!
+}
+input UpdateContactInput {
+  """Identifier indicating contact."""
+  key: String
+  """Identifier indicating contact."""
+  addressable: [ContactAddressableSelector!]
+  to: ContactUpdateInput!
+}
+input ContactAddressableSelector {
+  field: String!
+  eq: String!
+}
+input ContactUpdateInput {
+  attributes: [ContactAttributeInput!]
+  consent: ConsentInput
+}
+type DeleteContactsResponse {
+  deletedCount: Int!
+}
+input DeleteContactsInput {
+  """Identifiers indicating contacts."""
+  keyList: [String!]
+  """Identifier indicating contact."""
+  addressableList: [[ContactAddressableSelector!]!]
+  deleteReason: DeleteReason!
+}
+"""Reason for deletion of contact"""
+enum DeleteReason {
+  USER_REQUEST
+  DEPROVISIONING
+  RIGHT_TO_BE_FORGOTTEN
+}
+type ValueRangeType {
+  from: JSON!
+  to: JSON!
+}
+type TimeZoneBooleanType {
+  timeZone: String!
+  value: Boolean!
+}
+type ValueWithinType {
+  quantity: Float!
+  period: Period!
+}
+type DateValueRangeType {
+  from: Float!
+  to: Float!
+  period: Period!
+}
+enum BulkImportFileLocationType {
+  SFTP
+}
+"""Import types"""
+enum ImportType {
+  CREATE
+  ADD_UPDATE
+  DELETE
+}
+"""File format type"""
+enum FileFormatType {
+  DELIMITED
+}
+type ImportJobResponse {
+  """The import job identifier"""
+  id: ID!
+}
+input ImportInput {
+  """
+  Specifies the import action to perform on the DataSet. The options are
+  CREATE - Create a new DataSet and add records
+  ADD_UPDATE - Add and update existing records in a DataSet
+  DELETE - Delete records from a DataSet
+  """
+  importType: ImportType!
+  """Where to send notifications. Send no notifications if not provided"""
+  notifications: [NotificationInput!]
+  """File format type. Default to DELIMITED if not provided"""
+  fileFormat: FileFormatType! = DELIMITED
+  """Specifies the delimiter character when using fileFormat: DELIMITED"""
+  delimiter: String! = ","
+  """
+  When columnIndex is used for mapping, skipFirstRow determines whether the first row contains headers that should not be ingested as data
+  When columnHeader is used for mapping, skipFirstRow must either not be supplied, or set to true.
+  """
+  skipFirstRow: Boolean! = false
+  """
+  Maps the data from the import file to the audience.  Defaults to use the header row (1st row in the file) if not provided
+  """
+  mappings: [BulkImportAttributeMappingInput!]!
+  """Indicates whether a segment should be created after import completes"""
+  createSegment: Boolean! = false
+  """The name of the segment to create."""
+  segmentName: String
+  """Consent handling options"""
+  consent: ConsentImportOptionsInput
+  """Date format"""
+  dateFormat: BulkImportDateFormat
+  """The dataset identifier"""
+  dataSetId: ID
+  """
+  The dataset name when creating a new dataset.  Not required when updating an existing dataset.
+  """
+  dataSetName: String
+  """
+  dataSetType is required when importType is CREATE, otherwise dataSetType should not be supplied.
+  """
+  dataSetType: BulkImportDataSetType
+  """job name"""
+  jobName: String!
+  """The location of the uploaded file"""
+  fileLocation: BulkImportFileLocationInput!
+  """Attributes to update the dataset."""
+  attributes: ImportDataSetAttributeInput
+}
+input BulkImportAttributeMappingInput {
+  """The index number of the column in the import file"""
+  columnIndex: Int
+  """
+  The name of the attribute in the dataset that the column will be mapped to
+  """
+  attributeName: String!
+}
+input ConsentImportOptionsInput {
+  """Enable Override existing Opt Out fields"""
+  enableOverrideExistingOptOut: Boolean = false
+  """
+  Consent Channel import definition. Use 'channels' or 'consentGroups' not both.
+  """
+  channels: [ChannelConsentImportMappingInput!]
+  """
+  Consent Group import definition. Use 'consentGroups' or 'channels' not both.
+  """
+  consentGroups: [ConsentGroupImportMappingInput!]
+}
+"""
+Contains consent handling options for a consent channel. Supply one and only one of either status, columnHeader or columnIndex.
+"""
+input ChannelConsentImportMappingInput {
+  """Channel type"""
+  channel: ChannelType!
+  """
+  Specifies that the same status should be set to all contacts in the import. It cannot be used in conjunction with neither columnHeader, nor columnIndex
+  """
+  status: ConsentStatus
+  """
+  Specifies a column to contain the consent status to set to each contact by ordinal position starting with the leftmost column with counting starting from 1, and ending with the rightmost column. It cannot be used in conjunction with neither status, nor columnHeader. 
+  """
+  columnIndex: Int
+  """
+  Specifies the consent handling for each consentGroup. It cannot be used in conjunction with neither status, columnHeader, nor columnIndex.
+  """
+  consentGroups: [ChannelConsentGroupMappingInput!]
+}
+"""
+Contains consent group consentGroup handling options for channel. Supply one and only one of either status, columnHeader or columnIndex.
+"""
+input ChannelConsentGroupMappingInput {
+  """Consent Group Id"""
+  consentGroupId: ID!
+  """
+  Specifies that the same status should be set to all contacts in the import. It cannot be used in conjunction with neither columnHeader, nor columnIndex
+  """
+  status: ConsentStatus
+  """
+  Specifies a column to contain the consent status to set to each contact by ordinal position starting with the leftmost column with counting starting from 1, and ending with the rightmost column. It cannot be used in conjunction with neither status, nor columnHeader. 
+  """
+  columnIndex: Int
+}
+"""
+Contains consent handling options for a consent group. Supply one and only one of either status, columnHeader, columnIndex or channels.
+"""
+input ConsentGroupImportMappingInput {
+  """Consent Group Id"""
+  consentGroupId: ID!
+  """
+  Specifies that the same status should be set to all contacts in the import. It cannot be used in conjunction with neither columnHeader, columnIndex, nor channels
+  """
+  status: ConsentStatus
+  """
+  Specifies a column to contain the consent status to set to each contact by ordinal position starting with the leftmost column with counting starting from 1, and ending with the rightmost column. It cannot be used in conjunction with neither status, columnHeader, nor channels.
+  """
+  columnIndex: Int
+  """
+  Specifies the consent handling for each channel. It cannot be used in conjunction with neither status, columnHeader, nor columnIndex
+  """
+  channels: [ConsentGroupChannelConsentImportMappingInput!]
+}
+"""
+Contains consent group channel handling options for a consent consentGroup. Supply one and only one of either status, columnHeader or columnIndex.
+"""
+input ConsentGroupChannelConsentImportMappingInput {
+  """Channel type"""
+  channel: ChannelType!
+  """
+  Specifies that the same status should be set to all contacts in the import. It cannot be used in conjunction with neither columnHeader, nor columnIndex
+  """
+  status: ConsentStatus
+  """
+  Specifies a column to contain the consent status to set to each contact by ordinal position starting with the leftmost column with counting starting from 1, and ending with the rightmost column. It cannot be used in conjunction with neither status, nor columnHeader. 
+  """
+  columnIndex: Int
+}
+"""Bulk import date format"""
+enum BulkImportDateFormat {
+  YEAR_MONTH_DAY_DASH_SEPARATED_WITH_TIME
+  YEAR_MONTH_DAY_DASH_SEPARATED
+  MONTH_DAY_YEAR_SLASH_SEPARATED
+  DAY_MONTH_YEAR_SLASH_SEPARATED
+  YEAR_MONTH_DAY_SLASH_SEPARATED
+  DAY_MONTH_YEAR_DOT_SEPARATED
+}
+"""Bulk import supported data set types"""
+enum BulkImportDataSetType {
+  AUDIENCE
+  REFERENCE_SET
+}
+"""The location of a bulk import file"""
+input BulkImportFileLocationInput {
+  """The type of file location"""
+  type: BulkImportFileLocationType!
+  """For SFTP files, the full name of the folder which contains the file"""
+  folder: String
+  """For SFTP files, the filename of the file not including the folder"""
+  filename: String
+}
+input ImportDataSetAttributeInput {
+  """Insert attributes for selected data set"""
+  create: [ImportDataSetCreateAttributeInput!]
+}
+input ImportDataSetCreateAttributeInput {
+  """Attribute type. TEXT, NUMBER, BOOLEAN..."""
+  type: BulkImportAttributeType!
+  """Decimal precision for attributes of numeric type"""
+  decimalPrecision: Int
+  """Attribute name"""
+  name: String!
+  """Attribute category"""
+  category: String
+  """Maps the attribute"""
+  mapAs: MapAsType
+  """Identify the attribute as a channel or key"""
+  identifyAs: ImportDataSetCreateAttributeIdentityInput
+  """
+  The type of each element in the array. When sending data for this attribute, only properly formatted data according to this type will be accepted.
+  """
+  validateAs: ValidateAs
+}
+enum BulkImportAttributeType {
+  TEXT
+  NUMBER
+  BOOLEAN
+  DATE
+  GEOSPATIAL
+  JSON
+  ARRAY
+}
+input ImportDataSetCreateAttributeIdentityInput {
+  channels: [ChannelType!]
+  key: Boolean
+}
+input CreateRecurringImportConfigurationInput {
+  """Where to send notifications. Send no notifications if not provided"""
+  notifications: [NotificationInput!]
+  """File format type. Default to DELIMITED if not provided"""
+  fileFormat: FileFormatType! = DELIMITED
+  """Specifies the delimiter character when using fileFormat: DELIMITED"""
+  delimiter: String! = ","
+  """
+  When columnIndex is used for mapping, skipFirstRow determines whether the first row contains headers that should not be ingested as data
+  When columnHeader is used for mapping, skipFirstRow must either not be supplied, or set to true.
+  """
+  skipFirstRow: Boolean! = false
+  """
+  Maps the data from the import file to the audience.  Defaults to use the header row (1st row in the file) if not provided
+  """
+  mappings: [BulkImportAttributeMappingInput!]!
+  """Indicates whether a segment should be created after import completes"""
+  createSegment: Boolean! = false
+  """The name of the segment to create."""
+  segmentName: String
+  """Consent handling options"""
+  consent: ConsentImportOptionsInput
+  """Date format"""
+  dateFormat: BulkImportDateFormat
+}
+type ConnectUser {
+  userLogin: String!
+  userId: String!
+  publicKey: String!
+}
+"""Add Reference Set Association response"""
+type AddReferenceSetAssociationResponse {
+  """The dataset being mapped to"""
+  to: DataSet!
+  """The dataset being mapped from"""
+  from: DataSet!
+}
+"""Delete Reference Set Association response"""
+type DeleteReferenceSetAssociationResponse {
+  """The dataset being mapped to"""
+  to: DataSet!
+  """The dataset being mapped from"""
+  from: DataSet!
+}

@@ -1,0 +1,3 @@
+#schema: "connect-external.graphql",
+documents: "src/**/*.{graphql,js,ts,jsx,tsx}",
+url: "https://connect-api-us-1.goacoustic.com/api/graph"

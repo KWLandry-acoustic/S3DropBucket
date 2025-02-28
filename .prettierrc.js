@@ -1,17 +1,16 @@
-// prettier.config.js, .prettierrc.js, prettier.config.mjs, or .prettierrc.mjs
-
-/**
- * @see https://prettier.io/docs/en/configuration.html
- * @type {import("prettier").Config}
- */
+/** @type {import("prettier").Config} */
 const config = {
-  trailingComma: 'es5',
-  tabWidth: 4,
-  semi: false,
-  singleQuote: true,
-  parser: 'typescript',
-  requirePragma: true,
-  insertPragma: true,
+    trailingComma: 'es5',
+    tabWidth: 4,
+    semi: false,
+    singleQuote: true,
+    parser: 'typescript',
+    requirePragma: true,
+    insertPragma: true,
+    printWidth: 80, // Add line length limit
+    bracketSpacing: true, // Add consistent spacing
+    arrowParens: 'always', // Add consistent arrow function parentheses
+    endOfLine: 'lf', // Add consistent line endings
 }
 
-export default config
+module.exports = config

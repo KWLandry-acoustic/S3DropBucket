@@ -1,0 +1,7 @@
+{
+  "client": {
+    "service": {
+      "localSchemaFile": "connect-external.graphql"
+    }
+  }
+}

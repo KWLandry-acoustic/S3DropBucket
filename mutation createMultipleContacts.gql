@@ -1,0 +1,32 @@
+mutation createMultipleContacts {
+  createContacts(
+    contactsInput: [
+      {
+        attributes: [
+          { name: "firstName", value: "Jason" }
+          { name: "lastName", value: "Black" }
+          { name: "emailAddress", value: "jason.black@mail.com" }
+        ]
+      }
+      {
+        attributes: [
+          { name: "firstName", value: "Stewart" }
+          { name: "lastName", value: "Dulling" }
+          { name: "emailAddress", value: "stewart.dulling@mail.com" }
+        ]
+      }
+      {
+        attributes: [
+          { name: "firstName", value: "Anna" }
+          { name: "lastName", value: "Wallace" }
+          { name: "emailAddress", value: "anna.88.wallace@finemail.com" }
+        ]
+      }
+    ]
+    dataSetId: "data_set_id"
+  ) {
+    items {
+      contactKey
+    }
+  }
+}

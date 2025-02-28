@@ -176,10 +176,17 @@ interface CustomerConfig {
     schedule: string
   }
   transforms: {
-    audience: {[key: string]: string}
+    contactid: string
+    contactkey: string
+    addressablefields: {[key: string]: string}
+    consent: {[key: string]: string}
+    audienceupdate: {[key: string]: string}
     methods: {
-      daydate: string
-      method2: string
+      daydate: string       //ToDo: refactor as multiple properties config
+      date_iso1806_type: {[key: string]: string}
+      phone_number_type: {[key: string]: string}
+      string_to_number_type: {[key: string]: string}
+      method2:  {[key: string]: string}
     }
     jsonmap: {[key: string]: string}
     csvmap: {[key: string]: string}
@@ -208,7 +215,7 @@ let customersConfig: CustomerConfig = {
     datasetid: "",
     subscriptionid: "",
     x_api_key: "",
-  x_acoustic_region: "",
+    x_acoustic_region: "",
     selectivelogging: "",
     sftp: {
       user: "",
@@ -216,16 +223,23 @@ let customersConfig: CustomerConfig = {
       filepattern: "",
       schedule: ""
     },
-  transforms: {
-    audience: {},
-    methods: {
-      "daydate": "",
-      "method2": ""
-    }, 
-    jsonmap: {},
-    csvmap: {},
-    ignore: []   //always last
-    }
+    transforms: {
+      contactid: "",
+      contactkey: "",
+      addressablefields: {"":""},
+      consent: {"": ""},
+      audienceupdate: {"": ""},    
+      methods: {
+        "daydate": "",
+        "date_iso1806_type": {"": ""},
+        "phone_number_type": {"": ""},
+        "string_to_number_type": {"": ""},
+        "method2":  {"": ""}
+      }, 
+      jsonmap: {},
+      csvmap: {},
+      ignore: []   //always last
+      }
   } 
 
 export interface AccessRequest {
@@ -1265,7 +1279,7 @@ async function processS3ObjectContentStream(
 
             } catch (e)    //Overall Try/Catch for On-End processing
             {
-              debugger 
+              debugger //catch
               const sErr = `Exception - ReadStream OnEnd Processing - \n${e} `
               S3DB_Logging("exception", "", sErr)
               return {...streamResult, OnEndStreamResult: sErr}
@@ -1318,7 +1332,7 @@ async function processS3ObjectContentStream(
     })
 
     .catch((e) => {
-      debugger
+      debugger //catch
       //throw new Error( `Exception(throw) - ReadStream - For ${ key }.\nResults: ${ JSON.stringify( streamResult ) }.\n${ e } ` )
       
       streamResult = {
@@ -1387,10 +1401,17 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
         schedule: "",
       },
       transforms: {
-        audience: {},
+      contactid: "",
+      contactkey: "",
+      addressablefields: {"": ""},
+      consent: {"": ""},
+      audienceupdate: {"": ""},
         methods: {
           daydate: "",
-          method2: "",
+          date_iso1806_type: {"": ""},
+          phone_number_type: {"": ""},
+          string_to_number_type: {"":""},
+          method2: {"":""}
         },
         jsonmap: {},
         csvmap: {},
@@ -1578,18 +1599,16 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
         //      partially successful
         //      successfully posted
 
-        S3DB_Logging("info", "936", `POST Result for ${s3dbQM.workKey}: ${postResult} `)
+        S3DB_Logging("info", "509", `POST Result for ${s3dbQM.workKey}: ${postResult} `)
 
         let deleteWork = false
 
         if (postResult.indexOf("retry") > -1)
         {
-          S3DB_Logging("warn", "516", `Retry Marked for ${s3dbQM.workKey}. Returning Work Item ${q.messageId} to Process Queue (Total Retry Count: ${sqsBatchFail.batchItemFailures.length + 1}). \n${postResult} `)
-
           //Add to SQS BatchFail array to Retry processing the work
           sqsBatchFail.batchItemFailures.push({itemIdentifier: q.messageId})
 
-          S3DB_Logging("warn", "509", `${s3dbQM.workKey} added back to Queue for Retry (Queue MessageId: ${q.messageId}) \nRetry Queue:\n ${JSON.stringify(sqsBatchFail)} POST Result: ${postResult}`)
+          S3DB_Logging("warn", "516", `Retry Marked for ${s3dbQM.workKey}, added back to Queue for Retry (Queue MessageId: ${q.messageId}) \nRetry Queue Items:\n ${JSON.stringify(sqsBatchFail)} (Total Retry Count: ${sqsBatchFail.batchItemFailures.length + 1}) \nPOST Result requiring retry: ${postResult}`)
         }
         else if (postResult.toLowerCase().indexOf("unsuccessful post") > -1)
         {
@@ -1619,8 +1638,8 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
           )
           if (fd === "204")
           {
-            S3DB_Logging("info", "924", `Successful Deletion of Queued Work file: ${s3dbQM.workKey}  \nQueue MessageId: ${q.messageId}`)
-          } else S3DB_Logging("error", "924", `Failed to Delete ${s3dbQM.workKey}. Expected '204' but received ${fd} \nQueue MessageId: ${q.messageId}`)
+            S3DB_Logging("info", "924", `Processing Successful - Deletion of Queued Work file: ${s3dbQM.workKey}  \nQueue MessageId: ${q.messageId}`)
+          } else S3DB_Logging("error", "924", `Processing Successful but Failed to Delete Queued Work File ${s3dbQM.workKey}. Expected '204' but received ${fd} \nQueue MessageId: ${q.messageId}`)
         
             const qd = await sqsClient.send(
               new DeleteMessageCommand({
@@ -1630,8 +1649,8 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
             )
           if (qd.$metadata.httpStatusCode === 200)
           {
-            S3DB_Logging("info", "925", `Successful Deletion of Queue Message (Queue MessageId: ${q.messageId}) \nWorkfile ${s3dbQM.workKey}. \nDeletion Response: ${JSON.stringify(qd)}`)
-          } else S3DB_Logging("error", "925", `Failed to Delete Queue Message (Queue MessageId: ${q.messageId}) \nWorkfile ${s3dbQM.workKey}. \nExpected '200' but received ${qd.$metadata.httpStatusCode} \nDeletion Response: ${JSON.stringify(qd)}`)
+            S3DB_Logging("info", "925", `Processing Successful - Deletion of SQS Queue Message (Queue MessageId: ${q.messageId}) \nWorkfile ${s3dbQM.workKey}. \nDeletion Response: ${JSON.stringify(qd)}`)
+          } else S3DB_Logging("error", "925", `Processing Successful but Failed to Delete SQS Queue Message (Queue MessageId: ${q.messageId}) \nWorkfile ${s3dbQM.workKey}. \nExpected '200' but received ${qd.$metadata.httpStatusCode} \nDeletion Response: ${JSON.stringify(qd)}`)
 
         }
 
@@ -1693,7 +1712,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
   //        )
   //    }
   //  } catch (e) {
-  //    debugger
+  //    debugger //catch
   //  }
   //}
 
@@ -2091,14 +2110,12 @@ async function getValidateS3DropBucketConfig() {
     const sf = await fetchSchema() as string
     sf
 
-    //debugger
     
-    //ToDo Validaet Configs through Schema definition
+    //ToDo Validate Configs through Schema definition
     //const vs = validateBySchema.validate(sf, s3dbc)
 
     //S3DB_Logging("info", "",`Schema Validation returns: ${vs}`)
 
-    //debugger
 
     //  *Must* set EventEmitterMaxListeners in environment vars as this flags whether config is already parsed.
     if (!isNaN(s3dbc.s3dropbucket_eventemittermaxlisteners) && typeof s3dbc.s3dropbucket_eventemittermaxlisteners === "number") process.env["EventEmitterMaxListeners"] = s3dbc.s3dropbucket_eventemittermaxlisteners.toString()
@@ -2457,7 +2474,9 @@ async function getFormatCustomerConfig(filekey: string) {
           "utf8"
         )) as string
 
-        S3DB_Logging("info", "910", `Customer (${customer}) Config: \n ${cc} `)
+        S3DB_Logging("info", "910", `Customer (${customer}) Config: \n ${cc.trim()} `) 
+        
+        //S3DB_Logging("info", "910", `Customer (${customer}) Config: \n ${cc.replace(/\s/g, '')} `)
         
         //Remove Schema line to avoid parsing error
         cc = cc.replaceAll(new RegExp(/^.*?"\$schema.*?$/gm), "")
@@ -2492,7 +2511,7 @@ async function getFormatCustomerConfig(filekey: string) {
       })
 
   } catch (e) {
-    debugger
+    debugger //catch
     S3DB_Logging("exception", "", `Exception - On Try when Pulling Customer Config \n${ccr}. \n${e} `)
     throw new Error(`Exception - (Try) Pulling Customer Config \n${ccr} \n${e} `)
   }
@@ -2512,7 +2531,7 @@ async function getFormatCustomerConfig(filekey: string) {
 
       const lk = (key as string).toLowerCase()
 
-      if (container.match(new RegExp(/jsonmap|csvmap|ignore/))) continue
+      if (container.match(new RegExp(/contactid|contactkey|consent|audienceupdate|addressablefields|methods|jsonmap|csvmap|ignore/))) continue
 
       //if (typeof object[k] === "object") setPropsLowCase(object[k])
       if (Object.prototype.toString.call(object[k]) === "[object Object]") setPropsLowCase(object[k], lk)
@@ -2786,22 +2805,47 @@ async function validateCustomerConfig(config: CustomerConfig) {
 
   S3DB_Logging("info", "919", `Transforms configured: \n${JSON.stringify(config.transforms)}`)
   
-  if (!config.transforms.jsonmap)
+  if (config.transforms.jsonmap)
   {
     const tmpMap: { [key: string]: string } = {}
     const jm = config.transforms.jsonmap as {[key: string]: string}
     for (const m in jm) {
-      try {
-        const p = jm[m]
-        const v = jsonpath.parse(p)  //checking for parse exception highlighting invalid jsonpath
-        tmpMap[m] = jm[m]
-        S3DB_Logging("info", "930", `Validate Customer Config - transforms - JSONPath - ${JSON.stringify(v)}`)
-      } catch (e) {
-        S3DB_Logging("exception", "", `Invalid JSONPath defined in Customer config: ${m}: "${m}", \nInvalid JSONPath - ${e} `)
+  
+      const p = jm[m]
+      const p2 = p.substring(2, config.transforms.contactid.length)
+      
+      if (["contactid", "contactkey", "addressablefields", "consent", "audience"].includes(m.toLowerCase()) ||
+        ["contactid", "contactkey", "addressablefields", "consent", "audience"].includes(p2.toLowerCase())
+      )
+      {
+        S3DB_Logging("error", "999", `JSONMap config: Either part of the JSONMap statement, the Column to create or the JSONPath statement, cannot use a reserved word ("contactid", "contactkey", "addressablefields", "consent", or "audience") ${m}: ${p}`)
+        throw new Error(`JSONMap config: Either part of the JSONMap statement, the Column to create or the JSONPath statement, cannot reference a reserved word ("contactid", "contactkey", "addressablefields", "consent", or "audience") ${m}: ${p}`)
+      }
+      else
+      {
+        try
+        {
+          const v = jsonpath.parse(p)  //checking for parse exception highlighting invalid jsonpath
+          tmpMap[m] = jm[m]        
+        } catch (e)
+        {
+          S3DB_Logging("exception", "", `Invalid JSONPath defined in Customer config: ${m}: "${m}", \nInvalid JSONPath - ${e} `)
+        }
       }
     }
     config.transforms.jsonmap = tmpMap
   }
+
+
+  //Need CSVMap Validation
+  //Need CSVMap jsonpath validation - reserved words
+  
+
+  //Need Ignore Validation
+
+
+
+
 
   return config as CustomerConfig
 }
@@ -2832,7 +2876,7 @@ async function packageUpdates(workSet: object[], key: string, custConfig: Custom
       //if (fhi % 100 === 0)
       //{
       //  S3DB_Logging("info", "918", `Processing update ${fhi} of ${chunks.length} updates for ${custConfig.customer}`)
-      //  //debugger
+      // 
       //}
 
       firehoseResults = await putToFirehose(
@@ -2858,7 +2902,7 @@ async function packageUpdates(workSet: object[], key: string, custConfig: Custom
     } catch (e)    //Interior try/catch for firehose processing
     {
       S3DB_Logging("exception", "", `Exception - PutToFirehose (File Stream Iter: ${iter}) - \n${e} `)
-      debugger
+      debugger //catch
       sqwResult = {
         ...sqwResult,
         PutToFireHoseException: `Exception - PutToFirehose \n${e} `,
@@ -2914,7 +2958,7 @@ async function packageUpdates(workSet: object[], key: string, custConfig: Custom
     }
     } catch (e)
     {
-      debugger
+      debugger //catch
       S3DB_Logging("exception", "", `Exception - packageUpdates for ${key} (File Stream Iter: ${iter}) \n${e} `)
 
       sqwResult = {
@@ -2944,7 +2988,8 @@ async function storeAndQueueConnectWork(
   //Customers marked as "Singular" updates files are not transformed, but sent to Firehose prior to getting here.
   //  therefore if Aggregate file, or files config'd as "Multiple" updates, then need to perform Transforms before queuing up the work
   try
-  {
+  { 
+
     //Apply Transforms, if any, 
     updates = transforms(updates, custConfig)
   } catch (e)
@@ -2952,9 +2997,10 @@ async function storeAndQueueConnectWork(
     S3DB_Logging("exception", "", `Exception - Transforms - ${e}`)
     throw new Error(`Exception - Transforms - ${e}`)
   }
-
   
-  S3DB_Logging("info", "800", `${JSON.stringify(updates)}, ${updateCount} (File Stream Iter: ${iter})`)
+
+
+  S3DB_Logging("info", "800", `After Transform (Updates: ${updateCount}. File Stream Iter: ${iter}): \n${JSON.stringify(updates)}`)
 
   let mutations
   ////DBKeyed, DBNonKeyed, Relational, ReferenceSet, CreateContacts, UpdateContacts, CreateAttributes
@@ -2966,11 +3012,14 @@ async function storeAndQueueConnectWork(
   //const m = buildConnectMutation(JSON.parse(updates))
   
 
-  //ReferenceSet, CreateContacts, UpdateContacts, CreateAttributes
-  //UpdateContacts
-  //      -- If Contact not exist push to CreateContact, 
-  //      -- If Attribute not exist push to CreateAttribute
-  
+  // ReferenceSet   -    Need to establish SFTP and Job Creation for this
+  // CreateContacts   - Done
+  // UpdateContacts    - Done
+  // Audience - Done
+  // Consent - Done
+  // ContactKey - done
+  // ContactId - done 
+  // AddressableFields - done
 
 
   //For now will need to treat Reference Sets completely differently until an API shows up, hopefully similar to Contacts API
@@ -2982,7 +3031,8 @@ async function storeAndQueueConnectWork(
       })
   }
   
-  if (customersConfig.updatetype.toLowerCase() === "createcontacts" || customersConfig.updatetype.toLowerCase() === "updatecontacts")
+  if (customersConfig.updatetype.toLowerCase() === "createcontacts" ||
+    customersConfig.updatetype.toLowerCase() === "updatecontacts")
   {
     mutations = await buildMutationsConnect(updates, custConfig)
       .then((r) => {
@@ -2990,32 +3040,19 @@ async function storeAndQueueConnectWork(
       })
   }
 
-  //Returned from buildMutationCreateContacts
-  //query.....
-  //let cv: ContactsVars = {
-  //} as ContactsVars
-  //cv.dataSetId = config.datasetid
-  //cv.contactsInput = [ca]
-
-  //Defer this for now, indicated as not preferred to create attributes in this process. @Thomas Jan2025
-  //if (customersConfig.updatetype.toLowerCase() === "createattributes")
-  //{
-  //  mutations = await buildMutationCreateAttributes(updates, custConfig)
-  //    .then((r) => {
-  //      return r
-  //    })
-  //}
+  
 
   const mutationUpdates = JSON.stringify(mutations)
-  
-  S3DB_Logging("info", "855", `GraphQL Call (${S3DBConfig.connectapiurl}) Updates: \n${mutationUpdates}`)
 
-
-
-//  //  Testing - Call POST to Connect immediately
-  const c = await postToConnect(mutationUpdates, customersConfig, "6", s3Key)
+    //  Testing - Call POST to Connect immediately
+    S3DB_Logging("info", "855", `Testing - GraphQL Call (${S3DBConfig.connectapiurl}) Updates: \n${mutationUpdates}`)
+    const c = await postToConnect(mutationUpdates, customersConfig, "6", s3Key)
     
-  debugger
+    debugger
+
+
+
+  
 
 
   if (s3Key.indexOf("TestData") > -1)
@@ -3044,7 +3081,6 @@ async function storeAndQueueConnectWork(
 
   let addWorkToS3WorkBucketResult
   let addWorkToSQSWorkQueueResult
-  //const v = ""   //
 
   try
   {
@@ -3060,7 +3096,7 @@ async function storeAndQueueConnectWork(
     const sqwError = `Exception - StoreAndQueueWork Add work (file: ${key}) to S3 Work Bucket exception \n${e} `
     S3DB_Logging("exception", "", sqwError)
 
-    debugger
+    debugger //catch
 
     S3DB_Logging("info", "939", `Add Work File ${key} (from ${s3Key}) to S3 Work Bucket Result (\nBatch ${batchCount} of ${updateCount} records, File Stream Iter: ${iter}) \n\n${addWorkToS3WorkBucketResult}`)
 
@@ -3184,7 +3220,7 @@ async function storeAndQueueCampaignWork(
     const sqwError = `Exception - StoreAndQueueWork Add work (File Stream Iter: ${iter} (file: ${key})) to S3 Bucket exception \n${e} `
     S3DB_Logging("exception", "", sqwError)
     
-    debugger
+    debugger //catch
 
     S3DB_Logging("info", "939", `Add Work File ${key} (from ${s3Key}) to S3 Work Bucket Result (\nBatch ${batchCount} of ${updateCount} records, File Stream Iter: ${iter}) \n\n${addWorkToS3WorkBucketResult}`)
 
@@ -3316,7 +3352,7 @@ function convertJSONToXML_DBUpdates(updates: object[], config: CustomerConfig) {
         } catch (e)
         {
           S3DB_Logging("exception", "", `Building XML for DB Updates - ${e}`)
-          debugger
+          debugger //catch
         }
 
         xmlRows += `</SYNC_FIELDS>`
@@ -3454,8 +3490,9 @@ async function putToFirehose(chunks: object[], key: string, cust: string, iter: 
           x++
           if (x % 20 === 0)
           {
-            debugger
+            debugger //testing
           }
+
           if (firehosePutResult.PutToFireHoseAggregatorResultDetails.indexOf("ServiceUnavailableException: Slow down") > -1)
           {
             fhRetry = true
@@ -3623,7 +3660,7 @@ async function addWorkToSQSWorkQueue(
         return sqsSendResult
       })
       .catch((err) => {
-        debugger
+        debugger //catch
         const storeQueueWorkException = `Failed writing to SQS Process Queue (${err}). \nQueue URL: ${sqsParams.QueueUrl})\nWork to be Queued: ${
           sqsQMsgBody.workKey}\nSQS Params: ${JSON.stringify(sqsParams)}`
         
@@ -3646,28 +3683,43 @@ async function addWorkToSQSWorkQueue(
 
 function transforms(updates: object[], config: CustomerConfig) {
   //Apply Transforms
+  //Approach: => Process Entire Set of Updates in Each Transform step, NOT each Transform against each update.
+  //Sequence:  //Have to run transforms in the following sequence
+  // Daydate
+  // Date-to-ISO-8601
+  // String-To-Number
+  // jsonMap  --- Essentially Add Columns to Data (future: refactor as 'addcolumns')
+  // csvMap  --- Essentially Add Columns to Data (future: refactor as 'addcolumns')
+  //
+  // --- Have to run "Reference" transforms (transforms that reference values) After transforms that modify data
+  // ContactId
+  // ContactKey
+  // Addressable Fields
+  // Channel Consent
+  // Audience
+  //
+  // --- Have to Run Ignore (Remove Columns in data) last,
+  // Ignore
 
-  // Prep to add transform in Config file:
-  //Get Method to apply - const method = config.transforms.method (if "dateDay") )
-  //Get column to update - const column = config.transforms.methods[0].updColumn
-  //Get column to reference const refColumn = config.transforms.method.refColumn
+
+  
+  //Transform: DayDate
   //
   //ToDo: Provide a transform to break timestamps out into
-  //    Day - Done
+  //          Day - Done
   //    Hour - tbd
   //    Minute - tbd
   //
   //
-  try
-  {
-    if (typeof config.transforms.methods.daydate !== "undefined" &&
-      config.transforms.methods.daydate.length > 3 &&
-      config.transforms.methods.daydate !== " " &&
-      config.transforms.methods.daydate !== "")
-      {
-      const ddColumn: string = config.transforms.methods.daydate ?? 'datetime' 
-    
+
+try
+    {
+
+    if (Object.keys(config.transforms.methods.daydate).length > 0)
+    {            
       const t: typeof updates = []
+      let toDay: string = ""
+
       const days = [
         "Sunday",
         "Monday",
@@ -3676,43 +3728,227 @@ function transforms(updates: object[], config: CustomerConfig) {
         "Thursday",
         "Friday",
         "Saturday",
-      ]
-
-      let d: string = ""
-      for (const jo of updates)
+       ]
+      
+      for (const update of updates)
       {
-        //if ("datetime" in jo)
-
-        if (ddColumn in jo)
-        {
-        //Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{} '.
-        //No index signature with a parameter of type 'string' was found on type '{}'.ts(7053)
-          const jot: {[key: string]: string} = jo as {[key: string]: string}
-
-          d = jot[ddColumn] as string
-          if (d !== "")
+          Object.entries(config.transforms.methods.daydate).forEach(([key, val])  =>
           {
-            const dt = new Date(d)
-            const day = {dateday: days[dt.getDay()]}
-            Object.assign(jo, day)
-            t.push(jo)
-          }
-        }
-      }
-      if (t.length !== updates.length)
-      {
-        S3DB_Logging("error", "933", `Error - Transform - Applying DateDay Transform returns fewer records (${t.length}) than initial set ${updates.length}`)
-        throw new Error(
-          `Error - Transform - Applying DateDay Transform returns fewer records (${t.length}) than initial set ${updates.length}`
-        )
-      } else updates = t
+              //Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{} '.
+              //No index signature with a parameter of type 'string' was found on type '{}'.ts(7053)
+              const updateObj: {[key: string]: string} = update as {[key: string]: string}
 
+              toDay = updateObj[val] as string
+
+              if (typeof toDay !== "undefined" && toDay !== "")
+              {
+                const dt = new Date(toDay)
+                const day = {dateday: days[dt.getDay()]}
+                Object.assign(update, day)
+              }
+          })
+        
+        t.push(update)
+      }
+
+      if (t.length === updates.length)
+      {
+        updates = t
+      } else
+      {
+        S3DB_Logging("error", "933", `Error - Transform - Applying DayDate Transform returns fewer records (${t.length}) than initial set ${updates.length}`)
+        throw new Error(
+          `Error - Transform - Applying DayDate Transform returns fewer records (${t.length}) than initial set ${updates.length}`
+        )
+      } 
     }
   } catch (e)
   {
-    debugger
-    S3DB_Logging("exception", "934", `Exception - Applying DateDay Transform \n${e}`)
+    debugger //catch
+    S3DB_Logging("exception", "934", `Exception - Applying DayDate Transform \n${e}`)
   }
+
+
+  
+  //Transform - Date-to-ISO-8601
+  //
+
+  try
+    {
+
+    if (Object.keys(config.transforms.methods.date_iso1806_type).length > 0)
+    {    
+      //const iso1806Col = config.transforms.methods.date_iso1806 ?? 'iso1806Date' 
+        
+      const t: typeof updates = []
+      let toISO1806: string = ""
+
+      for (const update of updates)
+        {
+          Object.entries(config.transforms.methods.date_iso1806_type).forEach(([key, val])  =>
+          {
+              //Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{} '.
+              //No index signature with a parameter of type 'string' was found on type '{}'.ts(7053)
+              const updateObj: {[key: string]: string} = update as {[key: string]: string}
+
+              toISO1806 = updateObj[val] as string
+
+              if (typeof toISO1806 !== "undefined" && toISO1806 !== "")
+              {
+                const dt = new Date(toISO1806)
+                const isoString: string = dt.toISOString()
+                const tDate = {[key]: isoString}
+                Object.assign(update, tDate)
+              }
+
+          })
+        
+        t.push(update)
+      }
+      
+      if (t.length === updates.length)
+      {
+        updates = t
+      } else
+      {
+        S3DB_Logging("error", "933", `Error - Transform - Applying date_iso1806 Transform returns fewer records (${t.length}) than initial set ${updates.length}`)
+        throw new Error(
+          `Error - Transform - Applying date_iso1806 Transform returns fewer records (${t.length}) than initial set ${updates.length}`
+        )
+      } 
+    }
+  } catch (e)
+  {
+    debugger //catch
+    S3DB_Logging("exception", "934", `Exception - Applying date_iso1806 Transform \n${e}`)
+  }
+
+
+  //Transform - Phone Number 
+  //
+
+  try
+    {
+    
+    if (Object.keys(config.transforms.methods.phone_number_type).length > 0)
+    {    
+      //const iso1806Col = config.transforms.methods.date_iso1806 ?? 'iso1806Date' 
+        
+      const t: typeof updates = []
+      let pn: string = ""
+
+      for (const update of updates)
+        {
+          Object.entries(config.transforms.methods.phone_number_type).forEach(([key, val])  =>
+          {
+              //Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{} '.
+              //No index signature with a parameter of type 'string' was found on type '{}'.ts(7053)
+              const updateObj: {[key: string]: string} = update as {[key: string]: string}
+
+              pn = updateObj[val] as string
+
+              if (typeof pn !== "undefined" && pn !== "")
+              {
+                      
+                const npn = pn.replaceAll(new RegExp(/(\D)/gm), "")
+                
+                if (!/\d{7,}/.test(npn))
+                {
+                  S3DB_Logging("error", "933", `Error - Transform - Applying Phone_Number Transform returns non-numeric value.`)
+                }
+
+                const pnu = {[key]: npn}
+                Object.assign(update, pnu)
+
+              }
+              else
+              {
+                S3DB_Logging("error", "933", `Error - Transform - Applying Phone_Number Transform ${key}: ${val} returns empty value.`)
+            }
+          })
+          
+        t.push(update)
+        
+      }
+      if (t.length === updates.length)
+      {
+        updates = t
+      } else
+      {
+        S3DB_Logging("error", "933", `Error - Transform - Applying Phone_Number Transform returns fewer records (${t.length}) than initial set ${updates.length}`)
+        throw new Error(
+          `Error - Transform - Applying Phone_Number Transform returns fewer records (${t.length}) than initial set ${updates.length}`
+        )
+      } 
+    }
+  } catch (e)
+  {
+    debugger //catch
+    S3DB_Logging("exception", "934", `Exception - Applying PhoneNumber Transform \n${e}`)
+  }
+
+
+
+  
+  //Transform - String-To-Number
+  //
+
+try
+    {
+    if (Object.keys(config.transforms.methods.string_to_number_type).length > 0)
+    {            
+      const t: typeof updates = []
+      let strToNumber: string = ""
+
+      for (const update of updates)
+        {
+          Object.entries(config.transforms.methods.string_to_number_type).forEach(([key, val])  =>
+          {
+              //Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{} '.
+              //No index signature with a parameter of type 'string' was found on type '{}'.ts(7053)
+              const updateObj: {[key: string]: string} = update as {[key: string]: string}
+
+              strToNumber = updateObj[val] as string
+
+              if (typeof strToNumber !== "undefined" && strToNumber !== "")
+              {
+                const n = Number(strToNumber)
+                if (String(n) === 'NaN')
+                {
+                  S3DB_Logging("error", "933", `Error - Transform - String-To-Number transform failed as the string value for ${key} cannot be converted to a number: ${val}.`)
+                }
+                else
+                {
+                  const num = {[key]: n}
+                  Object.assign(update, num)
+                }
+              }
+          })
+        
+        t.push(update)
+      }
+      
+      if (t.length === updates.length)
+      {
+        updates = t
+      } else
+      {
+        S3DB_Logging("error", "933", `Error - Transform - Applying String-To-Number Transform returns fewer records (${t.length}) than initial set ${updates.length}`)
+        throw new Error(
+          `Error - Transform - Applying String-To-Number Transform returns fewer records (${t.length}) than initial set ${updates.length}`
+        )
+      } 
+    }
+  } catch (e)
+  {
+  debugger //catch
+    S3DB_Logging("exception", "934", `Exception - Applying String-To-Number Transform \n${e}`)
+  }
+
+
+
+
+  //Transform: JSONMap
 
   //Apply the JSONMap -
   //  JSONPath statements
@@ -3726,38 +3962,58 @@ function transforms(updates: object[], config: CustomerConfig) {
   {
     if (Object.keys(config.transforms.jsonmap).length > 0)
     {
-      const r: typeof updates = []
+      const t: typeof updates = []
       try
       {
-        let jmr
-        for (const jo of updates)
+        //let jmr
+        for (const update of updates)
         {
+          
+          Object.entries(config.transforms.jsonmap).forEach(([key, val]) => {
+       
           //const jo = JSON.parse( l )
-          jmr = applyJSONMap(jo, config.transforms.jsonmap)
-          r.push(jmr)
+            let j = applyJSONMap(update, { [key]: val })
+            if (typeof j === "undefined" || j === "") j = "Not Found"
+            Object.assign(update, {[key]: j})          
+          })
+          
+          t.push(update)
         }
+
+        
       } catch (e)
       {
+        debugger //catch
         S3DB_Logging("exception", "930", `Exception - Transform - Applying JSONMap \n${e}`)
-        debugger
+
       }
 
-      if (r.length !== updates.length)
+      if (t.length === updates.length)
       {
-        S3DB_Logging("error", "930", `Error - Transform - Applying JSONMap returns fewer records(${r.length}) than initial set ${updates.length}`)
-        debugger
-        throw new Error(
-          `Error - Transform - Applying JSONMap returns fewer records (${r.length}) than initial set ${updates.length}`
-        )
-      } else updates = r
+        updates = t
+      } else
+      {
+        debugger //catch
+        S3DB_Logging("error", "930", `Error - Transform - Applying JSONMap returns fewer records(${t.length}) than initial set ${updates.length}`)
 
-      S3DB_Logging("info", "919", `Transforms (JsonMap) applied: \n${JSON.stringify(r)}`)
+        throw new Error(
+          `Error - Transform - Applying JSONMap returns fewer records (${t.length}) than initial set ${updates.length}`
+        )
+      } 
+
+      S3DB_Logging("info", "919", `Transforms (JsonMap) applied: \n${JSON.stringify(t)}`)
     }
   } catch (e)
   {
-    debugger
+    debugger //catch
     S3DB_Logging("exception", "934", `Exception - Applying JSONMap Transform \n${e}`)
   }
+
+
+
+
+  //Transform: CSVMap
+
   //Apply CSVMap
   // "csvMap": { //Mapping when processing CSV files
   //       "Col_AA": "COL_XYZ", //Write Col_AA with data from Col_XYZ in the CSV file
@@ -3773,7 +4029,7 @@ function transforms(updates: object[], config: CustomerConfig) {
   {
     if (Object.keys(config.transforms.csvmap).length > 0)
     {
-      const c: typeof updates = []
+      const t: typeof updates = []
       try
       {
         for (const jo of updates)
@@ -3801,30 +4057,614 @@ function transforms(updates: object[], config: CustomerConfig) {
             //}
 
           })
-          c.push(jo)
+          
+          t.push(jo)
+        
         }
       } catch (e)
       {
+        debugger //catch
         S3DB_Logging("exception", "931", `Exception - Transforms - Applying CSVMap \n${e}`)
-        debugger
-      }
-      if (c.length !== updates.length)
-      {
-        S3DB_Logging("error", "931", `Error - Transform - Applying CSVMap returns fewer records(${c.length}) than initial set ${updates.length}`)
-        throw new Error(
-          `Error - Transform - Applying CSVMap returns fewer records (${c.length}) than initial set ${updates.length}`
-        )
-      } else updates = c
 
-      S3DB_Logging("info", "919", `Transforms (CSVMap) applied: \n${JSON.stringify(c)}`)
+      }
+
+      if (t.length === updates.length)
+      {
+        updates = t
+      } else
+      {
+        S3DB_Logging("error", "931", `Error - Transform - Applying CSVMap returns fewer records(${t.length}) than initial set ${updates.length}`)
+        throw new Error(
+          `Error - Transform - Applying CSVMap returns fewer records (${t.length}) than initial set ${updates.length}`
+        )
+      }  
+
+      S3DB_Logging("info", "919", `Transforms (CSVMap) applied: \n${JSON.stringify(t)}`)
     }
   } catch (e)
   {
-    debugger
+    debugger //catch
     S3DB_Logging("exception", "934", `Exception - Applying CSVMap Transform \n${e}`)
   }
 
+
+  if (config.transforms.contactid !== "" && config.transforms.contactid.length > 3) 
+  {
+    //Transform: ContactId
+    let s: string = ""
+    try
+    {
+      if (config.transforms.contactid.startsWith('$')) s = 'jsonpath'
+      else if (config.transforms.contactid.startsWith('@')) s = 'csvcolumn'
+      else if (s === "" && config.transforms.contactid.length > 3) s = 'static'
+      else S3DB_Logging("error", "999", `Error - Transform - ContactId invalid configuration.`)
+
+      const t: typeof updates = []
+      //Process All Updates for this Transform
+      for (const update of updates)
+      {
+        Object.assign(update, {"contactId": ""})
+
+        switch (s)
+        {
+          case 'static': {
+            Object.assign(update, {"contactId": config.transforms.contactid})
+            break
+          }
+          case 'jsonpath': {
+            let j = applyJSONMap(update, {contactId: config.transforms.contactid})
+            if (typeof j === "undefined" || j === "") j = "Not Found"
+            Object.assign(update, {"contactId": j})
+            break
+          }
+          case 'csvcolumn':
+            {
+              //strip preceding '@.'
+              let csvmapvalue = config.transforms.contactid.substring(2, config.transforms.contactid.length)
+              let colRef = csvmapvalue as keyof typeof update
+
+              let v = update[colRef] as string
+              if (typeof v === "undefined" || v === "") v = "Not Found"
+              Object.assign(update, {"contactId": v})
+              break
+            }
+        }
+
+        t.push(update)
+      }
+
+      //All Updates transformed from ContactId transform
+      if (t.length === updates.length)
+      {
+        updates = t
+      } else
+      {
+        S3DB_Logging("error", "933", `Error - Transform - Applying ContactId Transform returns fewer records (${t.length}) than initial set ${updates.length}`)
+        throw new Error(
+          `Error - Transform - Applying ContactId Transform returns fewer records (${t.length}) than initial set ${updates.length}`
+        )
+      }
+
+    } catch (e)
+    {
+      S3DB_Logging("exception", "934", `Exception - Applying ContactId Transform \n${e}`)
+    }
+  }
+  else if (config.transforms.contactkey !== "" && config.transforms.contactkey.length > 3)
+  {
+    //Transform: ContactKey
+
+    let s: string = ""
+    try
+    {
+      
+      if (config.transforms.contactkey.startsWith('$')) s = 'jsonpath'
+      else if (config.transforms.contactkey.startsWith('@')) s = 'csvcolumn'
+      else if (s === "" && config.transforms.contactkey.length > 3) s = 'static'
+      else S3DB_Logging("error", "999", `Error - Transform - ContactKey invalid configuration.`)
+
+      const t: typeof updates = []
+
+      //Process All Updates for this Transform
+      for (const update of updates)
+      {
+        Object.assign(update, {"contactKey": ""})
+
+        switch (s)
+        {
+          case 'static': {
+            if (config.transforms.contactkey === '....') Object.assign(update, {"contactKey": ""})
+            else Object.assign(update, {"contactKey": config.transforms.contactkey})
+            break
+          }
+          case 'jsonpath': {
+            let j = applyJSONMap(update, {contactKey: config.transforms.contactkey})
+            if (typeof j === "undefined" || j === "") j = "Not Found"
+            Object.assign(update, {"contactKey": j})
+            //Object.assign(u, {"contactKey": applyJSONMap(update, {contactkey: config.transforms.contactkey})})
+            break
+          }
+          case 'csvcolumn':
+            {
+
+              //strip preceding '@.'
+              let csvmapvalue = config.transforms.contactkey.substring(2, config.transforms.contactkey.length)
+              let colRef = csvmapvalue as keyof typeof update
+
+              let v = update[colRef] as string
+              if (typeof v === "undefined" || v === "") v = "Not Found"
+              Object.assign(update, {"contactKey": v})
+              break
+            }
+        }
+
+        t.push(update)
+      }
+
+      //All Updates now transformed from ContactKey transform
+      if (t.length === updates.length)
+      {
+        updates = t
+      } else
+      {
+        S3DB_Logging("error", "933", `Error - Transform - Applying ContactKey Transform returns fewer records (${t.length}) than initial set ${updates.length}`)
+        throw new Error(
+          `Error - Transform - Applying ContactKey Transform returns fewer records (${t.length}) than initial set ${updates.length}`
+        )
+      }
+
+    } catch (e)
+    {
+      S3DB_Logging("exception", "934", `Exception - Applying ContactKey Transform \n${e}`)
+    }
+
+  }
+  else if (Object.entries(config.transforms.addressablefields).length > 0)
+  {
+
+    //Transform: Addressable Fields
+    //S3DB_Logging("debug", "999", `Debug - Addressable Fields Transform Entered - ${config.targetupdate}`)
+
+    if (Object.keys(config.transforms.addressablefields).length > 0)
+    {
+
+      interface AddressableItem {
+        field: string
+        eq: string
+      }
+      interface AddressableStatement {
+        addressable: AddressableItem[]
+      }
+      interface AddressableFields {
+        [key: string]: string | AddressableStatement
+        statement: AddressableStatement
+      }
+
+      //let addressablefields: typeof config.transforms.addressablefields = config.transforms.addressablefields
+      const addressableFields = config.transforms.addressablefields as AddressableFields
+      const addressableStatement = addressableFields.statement as AddressableStatement
+      const fieldsArray = addressableStatement.addressable
+
+      let s: string = ""
+
+      try
+      {
+        const t: typeof updates = []
+
+        //Process All Updates for this Transform
+        for (const update of updates)
+        {
+
+          const addressableArray = [] as object[]
+
+          //If 'Statement' configured, takes precedence over all others
+          if (typeof config.transforms.addressablefields["statement"] !== undefined &&
+            config.transforms.addressablefields["statement"] !== "")
+          {
+            for (const fieldItem of fieldsArray)
+            {
+
+              //"statement": {    //Config example
+              //  "addressable": [
+              //    {"field": "Email", "eq": "$.Email"},
+              //    {"field": "SMS", "eq": "$.Mobile Number"}
+              //  ]
+              //}
+
+              let s: string = ""
+
+              const fieldVar = fieldItem.eq
+
+              if (fieldVar.startsWith('$')) s = 'jsonpath'
+              else if (fieldVar.startsWith('@')) s = 'csvcolumn'
+              else if (s === "" && fieldVar.length > 3) s = 'static'  //Should never see Static but there may be a use-case
+              else S3DB_Logging("error", "999", `Error - Transform - AddressableFields.Statement invalid configuration.`)
+
+              switch (s)
+              {
+                case 'static': {
+                  addressableArray.push({fieldItem})
+                  break
+                }
+                case 'jsonpath': {
+
+                  let j = applyJSONMap(update, {"AddressableFields": fieldVar})
+                  if (typeof j === 'undefined' || j === 'undefined' || j === "") j = "Not Found"
+
+                  const field = {
+                    field: fieldItem.field,
+                    eq: j
+                  }
+
+                  //addressable: [   //valid mutation example
+                  // { field: "email", eq: "john.doe1@acoustic.co" },
+                  // { field: "sms", eq: "+48555555555" }
+                  //]
+
+                  addressableArray.push(field)
+                  break
+                }
+                case 'csvcolumn':
+                  {
+                    //strip preceding '@.'
+                    let csvmapvalue = fieldVar.substring(2, fieldVar.length)
+                    let colRef = csvmapvalue as keyof typeof update
+
+                    let v = update[colRef] as string
+                    if (typeof v === "undefined" || v === "") v = "Not Found"
+
+                    const field = {
+                      field: fieldItem.field,
+                      eq: v
+                    }
+
+                    addressableArray.push({field})
+                    break
+                  }
+              }
+            }
+
+            Object.assign(update, {addressable: addressableArray})
+
+          }
+          else      //No 'Statement', so process individual Field definition(s)
+          {
+            for (const [key, fieldItem] of Object.entries(addressableFields))
+            {
+
+              const addressableValue = fieldItem as string
+
+              //"Email": "Email",
+              //"Mobile Number": "Mobile Number",
+              //"Example3": "999445599",
+              //"Example4": "$.jsonfileValue", //example
+              //"Example5": "@.csvfileColumn" //example
+
+              let s: string = ""
+
+              if (addressableValue.startsWith('$')) s = 'jsonpath'
+              else if (addressableValue.startsWith('@')) s = 'csvcolumn'
+              else if (s === "" && addressableValue.length > 3) s = 'static'
+              else S3DB_Logging("error", "999", `Error - Transform - AddressableFields invalid configuration.`)
+
+              switch (s)
+              {
+                case 'static': {
+                  addressableArray.push({addressable: addressableValue})
+                  break
+                }
+                case 'jsonpath': {
+                  let j = applyJSONMap(update, {addressable: addressableValue})
+                  if (typeof j === "undefined" || j === "") j = "Not Found"
+
+                  const field = {
+                    field: fieldItem,
+                    eq: j
+                  }
+
+                  addressableArray.push({addressable: field})
+                  break
+                }
+                case 'csvcolumn':
+                  {
+                    //strip preceding '@.'
+                    let csvmapvalue = addressableValue.substring(2, addressableValue.length)
+                    let colRef = csvmapvalue as keyof typeof update
+
+                    let v = update[colRef] as string
+                    if (typeof v === "undefined" || v === "") v = "Not Found"
+
+                    const field = {
+                      field: fieldItem,
+                      eq: v
+                    }
+
+                    addressableArray.push(field)
+
+                    break
+                  }
+              }
+            }
+            //})
+
+            Object.assign(update, {addressable: {addressable: addressableArray}})
+
+          }
+
+          t.push(update)
+
+        }
+
+        //All Updates now transformed from consent transform
+        if (t.length === updates.length)
+        {
+          updates = t
+        } else
+        {
+          S3DB_Logging("error", "933", `Error - Transform - Applying AddressableFields Transform returns fewer records (${t.length}) than initial set ${updates.length}`)
+          throw new Error(
+            `Error - Transform - Applying AddressableFields Transform returns fewer records (${t.length}) than initial set ${updates.length}`
+          )
+        }
+
+      } catch (e)
+      {
+        S3DB_Logging("exception", "934", `Exception - Applying AddressableFields Transform \n${e}`)
+      }
+
+    }
+
+  }
+  else
+  {
+    if (config.targetupdate.toLowerCase() === "connect")
+    {
+      S3DB_Logging("warn", "999", `Warning - No ContactId, ContactKey or Addressable Field provided for a Connect Create or Update ${config.targetupdate} Contact.`)
+    }
+  }
+
+
+  //Transform: Channel Consent
+
+  //need loop through Config consent and build consent object.
+  //consent: {
+  //  channels: [
+  //    { channel: EMAIL, status: OPT_IN_UNVERIFIED },
+  //    { channel: SMS, status: OPT_IN }
+  //    ]
+  //  }
+
+  //"Email": "OPT_IN_UNVERIFIED",
+  //"SMS": "OPT_OUT",
+  //"WhatsApp": "$.jsonfileValue",
+  //"Email2": "@.csvfileColumn"
+
+  if (Object.keys(config.transforms.consent).length > 0)
+  {
+    let s: string = ""
+    try
+    {
+      //const cc: typeof config.transforms.consent = config.transforms.consent
+      const t: typeof updates = []
+      const channelconsents: typeof config.transforms.consent = config.transforms.consent
+
+      //Process All Updates for this Transform
+      for (const update of updates)
+      {
+
+        const channelConsentsArray = [] as object[]
+
+        //Consent: Either Channels or consentGroups
+        //"consent": {   
+        //  "channels": [
+        //     { "channel": "EMAIL", "status": "OPT_IN" }
+        //     ]
+
+        //"consentGroups": [
+        //  {
+        //  "consentGroupId": "3a7134b8-dcb5-509a-b7ff-946b48333cc9",
+        //  "status": "OPT_IN"
+        //  }
+        //] 
+
+
+        //If 'Statement' configured, takes precedence over all others
+        if (typeof config.transforms.consent["statement"] !== undefined &&
+          config.transforms.consent["statement"] !== "")
+        {
+          Object.assign(update, {consent: config.transforms.consent["statement"]})
+        
+        }
+        else    //No 'Statement', so process individual Field definition(s)
+        {
+          //for (const [key, consentChannel] of Object.entries(consentChannel))
+          //{
+          Object.keys(channelconsents).forEach((consentChannel) => {
+
+            //"Email": "OPT_IN_UNVERIFIED",
+            //"SMS": "OPT_OUT",
+            //"WhatsApp": "$.jsonfileValue",
+            //"Email2": "@.csvfileColumn"
+            //"statement": {}
+
+            //forUpdateOnly????
+            //consent: {channels: {channel: EMAIL, status: OPT_IN} } 
+
+            //From Create mutation doc.  
+            //consent: {
+            //  channels: [
+            //    {channel: EMAIL, status: OPT_IN_UNVERIFIED}
+            //    {channel: SMS, status: OPT_IN}
+            //  ]
+            //}
+
+            let s: string = ""
+            const consentValue = channelconsents[consentChannel]
+
+            if (consentValue.startsWith('$')) s = 'jsonpath'
+            else if (consentValue.startsWith('@')) s = 'csvcolumn'
+            else if (s === "" && consentValue.length > 3) s = 'static'
+            else S3DB_Logging("error", "999", `Error - Transform - ContactKey invalid configuration.`)
+
+            switch (s)
+            {
+              case 'static': {
+                channelConsentsArray.push({channel: consentChannel, status: consentValue})
+                break
+              }
+              case 'jsonpath': {
+                let j = applyJSONMap(update, {consentChannel: consentValue})
+                if (typeof j === "undefined" || j === "") j = "Not Found"
+
+
+                channelConsentsArray.push({channel: consentChannel, status: j})
+                //Object.assign(u, {"consent": consentfromJPath})
+                break
+              }
+              case 'csvcolumn':
+                {
+                  //strip preceding '@.'
+                  let csvmapvalue = consentValue.substring(2, consentValue.length)
+                  let colRef = csvmapvalue as keyof typeof update
+
+                  let v = update[colRef] as string
+                  if (typeof v === "undefined" || v === "") v = "Not Found"
+
+                  channelConsentsArray.push({channel: consentChannel, status: v})
+                  break
+                }
+            }
+
+          })
+
+          //consent: {
+          //  channels: [
+          //    {channel: EMAIL, status: OPT_IN_UNVERIFIED}
+          //    {channel: SMS, status: OPT_IN}
+          //  ]
+          //}
+
+          Object.assign(update, {consent: {channels: channelConsentsArray}})
+
+        }
+
+        t.push(update)
+
+      }
+
+      //All Updates now transformed from consent transform
+      if (t.length === updates.length)
+      {
+        updates = t
+      } else
+      {
+        S3DB_Logging("error", "933", `Error - Transform - Applying Consent Transform returns fewer records (${t.length}) than initial set ${updates.length}`)
+        throw new Error(
+          `Error - Transform - Applying Consent Transform returns fewer records (${t.length}) than initial set ${updates.length}`
+        )
+      }
+
+    } catch (e)
+    {
+      S3DB_Logging("exception", "934", `Exception - Applying Consent Transform \n${e}`)
+    }
+
+  }
+
+  //Transform: Audience Update
+  //need loop through Config audienceupdate and build audience object.
+
+  if (Object.keys(config.transforms.audienceupdate).length > 0)
+  {
+    let s: string = ""
+
+    try
+    {
+      const t: typeof updates = []
+      const audienceUpdates: typeof config.transforms.audienceupdate = config.transforms.audienceupdate
+
+      //"audienceupdate": { //Static Values: Use When Audience status is not in the Data (use JSONMap/CSVMap when Consent is in data)
+      //"AudienceXYZ": "Exited",
+      //"AudienceABC": "Entered",
+      //"AudiencePQR": "$.jsonfileValue",
+      //"AudienceMNO": "@.csvfileColumn"
+
+      //Object.assign(update, {"Audience": []})
+
+      //Process All Updates for this Transform
+      for (const update of updates)
+      {
+        const audienceUpdatesArray = [] as object[]
+
+        Object.keys(audienceUpdates).forEach((audUpdate) => {
+
+          let s: string = ""
+          const audUpdateValue = audienceUpdates[audUpdate]
+
+          if (audUpdateValue.startsWith('$')) s = 'jsonpath'
+          else if (audUpdateValue.startsWith('@')) s = 'csvcolumn'
+          else if (s === "" && audUpdateValue.length > 3) s = 'static'
+          else S3DB_Logging("error", "999", `Error - Transform - AudienceUpdate invalid configuration.`)
+
+          switch (s)
+          {
+            case 'static': {
+              audienceUpdatesArray.push({"audience": audUpdate, "status": audUpdateValue})
+              //Object.assign(update, {"Audience": audienceValue})
+              break
+            }
+            case 'jsonpath': {
+
+              let j = applyJSONMap(update, {audUpdate: audUpdateValue})
+              if (typeof j === "undefined" || j === "") j = "Not Found"
+              audienceUpdatesArray.push({"audience": audUpdate, "status": j})
+              // const ajp = applyJSONMap(update, audienceValue)
+              // Object.assign(u, {"Audience": ajp})
+              break
+            }
+            case 'csvcolumn':
+              {
+                //strip preceding '@.'
+                let csvmapvalue = audUpdateValue.substring(2, audUpdateValue.length)
+                let colRef = csvmapvalue as keyof typeof update
+
+                let v = update[colRef] as string
+                if (typeof v === "undefined" || v === "") v = "Not Found"
+                audienceUpdatesArray.push({"audience": audUpdate, "status": v})
+                break
+              }
+          }
+
+          Object.assign(update, {audience: {audience: audienceUpdatesArray}})
+
+        })
+
+        t.push(update)
+
+      }
+
+      //All Updates now transformed from AudienceUpdates transform
+      if (t.length === updates.length)
+      {
+        updates = t
+      } else
+      {
+        S3DB_Logging("error", "933", `Error - Transform - Applying DateDay Transform returns fewer records (${t.length}) than initial set ${updates.length}`)
+        throw new Error(
+          `Error - Transform - Applying DateDay Transform returns fewer records (${t.length}) than initial set ${updates.length}`
+        )
+      }
+
+    } catch (e)
+    {
+      S3DB_Logging("exception", "934", `Exception - Applying Consent Transform \n${e}`)
+    }
+
+  }
+  
+  //Transform: Ignore
   // Ignore must be last to take advantage of cleaning up any extraneous columns after previous transforms
+  
   try
   {
 
@@ -3836,7 +4676,7 @@ function transforms(updates: object[], config: CustomerConfig) {
   
     if (igno.length > 0)
     {
-      const i: typeof updates = []  //start an 'ignore processed' update set
+      const t: typeof updates = []  //start an 'ignore processed' update set
       try
       {
         for (const jo of updates)
@@ -3848,75 +4688,82 @@ function transforms(updates: object[], config: CustomerConfig) {
             const k: dk = ig as dk
             delete jo[k]
           }
-          i.push(jo)
+          t.push(jo)
         }
       } catch (e)
       {
+        debugger //catch
         S3DB_Logging("exception", "932", `Exception - Transform - Applying Ignore - \n${e}`)
-        debugger
+        
       }
 
-      if (i.length !== updates.length)
+       if (t.length === updates.length)
       {
-        S3DB_Logging("error", "932", `Error - Transform - Applying Ignore returns fewer records ${i.length} than initial set ${updates.length}`)
-        debugger
-        throw new Error(
-          `Error - Transform - Applying Ignore returns fewer records ${i.length} than initial set ${updates.length}`
-        )
-      } else updates = i
+        updates = t
+      } else
+      {
+         debugger //catch
+        S3DB_Logging("error", "932", `Error - Transform - Applying Ignore returns fewer records ${t.length} than initial set ${updates.length}`)
 
-      S3DB_Logging("info", "919", `Transforms (Ignore) applied: \n${JSON.stringify(i)}`)
+        throw new Error(
+          `Error - Transform - Applying Ignore returns fewer records ${t.length} than initial set ${updates.length}`
+        )
+      } 
+
+      S3DB_Logging("info", "919", `Transforms (Ignore) applied: \n${JSON.stringify(t)}`)
     }
   } catch (e)
   {
-    debugger
+    debugger //catch
     S3DB_Logging("exception", "934", `Exception - Applying Ignore Transform \n${e}`)
   }
+
   return updates
 }
 
-function applyJSONMap(jsonObj: object, map: {[key: string]: string}) {
-  // j.forEach((o: object) => {
-  //     const a = applyJSONMap([o], config.transforms[0].jsonMap)
-  //     am.push(a)
-  //     chunks = am
-  // })
+function applyJSONMap(jsonObj: object, map: object) //map: {[key: string]: string}) {
+{
+  let j
+  Object.entries(map).forEach(([key, jpath]) => {
 
-  Object.entries(map).forEach(([k, v]) => {
+    //const p = jm[key]  
+    //const p2 = jpath.substring(2, jpath.length)
+    //if (["contactid", "contactkey", "addressablefields", "consent", "audience"].includes(key.toLowerCase()) ||
+    //  ["contactid", "contactkey", "addressablefields", "consent", "audience"].includes(p2.toLowerCase())
+    //)
+    //{
+    //  S3DB_Logging("error", "999", `JSONMap config: Either part of the JSONMap statement, the Column to create or the JSONPath statement, cannot use a reserved word ("contactid", "contactkey", "addressablefields", "consent", or "audience") ${key}: ${jpath}`)
+    //  throw new Error(`JSONMap config: Either part of the JSONMap statement, the Column to create or the JSONPath statement, cannot reference a reserved word ("contactid", "contactkey", "addressablefields", "consent", or "audience") ${key}: ${jpath}`)
+    //}
+
+
     try
     {
-      
-      const j = jsonpath.value(jsonObj, v)
-      //if (!j)
-      //{
-      //  S3DB_Logging("warn", "930", `Warning: Data not Found for JSONPath statement ${k}: ${v},  \nTarget Data: \n${JSON.stringify(jsonObj)} `)
-      //} else
-      //{
-        Object.assign(jsonObj, {[k]: j})
-      //}
+      j = jsonpath.value(jsonObj, jpath)
+      //Object.assign(jsonObj, {[k]: j})
+     
+      S3DB_Logging("info", "930", `JSONPath statement ${jpath} returns ${j} from: \nTarget Data: \n${JSON.stringify(jsonObj)} `)
     } catch (e)
     {
-      //if (e instanceof jsonpath.JsonPathError)
-      //{
-      //  S3DB_Logging("error","",`JSONPath error: e.message`)
-      //}
+      //if (e instanceof jsonpath.JsonPathError) { S3DB_Logging("error","",`JSONPath error: e.message`) }
 
-      S3DB_Logging("warning", "930", `Error parsing data for JSONPath statement ${k} ${v}, ${e} \nTarget Data: \n${JSON.stringify(jsonObj)} `)
+      S3DB_Logging("warning", "930", `Error parsing data for JSONPath statement ${key} ${jpath}, ${e} \nTarget Data: \n${JSON.stringify(jsonObj)} `)
     }
-
-    // const a1 = jsonpath.parse(value)
-    // const a2 = jsonpath.parent(s3Chunk, value)
-    // const a3 = jsonpath.paths(s3Chunk, value)
-    // const a4 = jsonpath.query(s3Chunk, value)
-    // const a6 = jsonpath.value(s3Chunk, value)
-
-    //Confirms Update was accomplished
-    // const j = jsonpath.query(s3Chunk, v)
-    // console.info(`${ j } `)
   })
-  return jsonObj
-}
+  // const a1 = jsonpath.parse(value)
+  // const a2 = jsonpath.parent(s3Chunk, value)
+  // const a3 = jsonpath.paths(s3Chunk, value)
+  // const a4 = jsonpath.query(s3Chunk, value)
+  // const a6 = jsonpath.value(s3Chunk, value)
 
+  //Confirms Update was accomplished
+  // const j = jsonpath.query(s3Chunk, v)
+  // console.info(`${ j } `)
+  //})
+  //return jsonObj
+  if (typeof j === "string") return j
+  return String(j)
+}
 
 async function getS3Work(s3Key: string, bucket: string) {
   S3DB_Logging("info", "517", `GetS3Work for Key: ${s3Key}`)
@@ -4058,151 +4905,283 @@ export async function getAccessToken(config: CustomerConfig) {
 }
 
 
-interface ContactAttribute {
-  name: string
-  value: string
-}
-interface ContactRecord {
-  attributes: ContactAttribute[] 
-}
-interface UpdateContactRecord {
-  contactId: string
-  to: ContactRecord[]
-}
-
-interface UpdateContact {
-  contactsInput: UpdateContactRecord[]
-}
-
-interface CreateContact {
-  datasetId: string
-  contactsInput: ContactRecord[]
-}
-
-
 async function buildMutationsConnect(updates: object[], config: CustomerConfig) {
 
-  const createQuery = `mutation createMultipleContacts (
-    $dataSetId: ID!,
-    $contactsInput: [ContactCreateInput!]!
-    ) {
-    createContacts(
-      dataSetId: $dataSetId
-      contactsInput: $contactsInput
-    ) {
-      items {
-        contactId
-      }
-    }
-  }`
-  
-  const updateQuery = `mutation updateMultipleContacts(
-     $contactsInput: [UpdateContactInput!]!
-     ) {
-    updateContacts(
-        updateContactInputs: $contactsInput
-        ) 
-    {
-    modifiedCount 
-    }
-}`
-
-  //  "query": "mutation {
-  //    updateContacts(
-  //        dataSetId: "df07969b-7126-47f2-812d-b7b5876627f7"
-  //        updateContactInputs: [
-  //            {
-  //                contactId: "123509" 
-  //                to: {
-  //                    attributes: [
-  //                        { name: "Unique ID", value: "123509" }
-  //                        { name: "Firstname", value: "Barney" }
-  //                        { name: "Lastname", value: "Rubble" }
-  //                        { name: "Email", value: "barney.rubble@quarry.com" }
-  //                    ]
-  //                }
-  //            }
-  //        ]
-  //    ) {
-  //        modifiedCount
-  //    }
-  //}
-
-
   let query
-  if (config.updatetype.toLowerCase() === "createcontacts") query = createQuery
-  if (config.updatetype.toLowerCase() === "updatecontacts") query = updateQuery
-  
-  let variables = {} as CreateContact | UpdateContact
-  if (config.updatetype.toLowerCase() === "createcontacts") variables = {datasetId: config.datasetid, contactsInput: []} as CreateContact
-  if (config.updatetype.toLowerCase() === "updatecontacts") variables = {contactsInput: []} as UpdateContact
+  let variables
 
-
-  for (const upd in updates)
+  try
   {
-    //Build Attribute Array from each row of inbound data
-    let cr: ContactRecord = {"attributes": []}
-    let ca: ContactAttribute = {"name": "", "value": ""}
-  
-    for (const [key, value] of Object.entries(updates[upd]))
+    if (config.updatetype.toLowerCase() === "createcontacts")
     {
-      let v
-      if (typeof value === "string") v = value as string
-      else v = String(value)
+      interface CreateContactInput {
+        attributes: ContactAttribute[]
+        audience?: {id: string}
+        consent?: {id: string}
+      }
+
+      interface ContactAttribute {
+        name: string
+        value: any
+      }
+
+      interface CreateContactRecord {
+        consent?: {}
+        attributes: Array<{
+          name: string
+          value: any
+        }>
+      }
+
+      interface CreateContactsVariables {
+        dataSetId: string
+        contactsInput: CreateContactRecord[]
+      }
+
+      
+      query = `mutation createMultipleContacts (
+        $dataSetId: ID!,
+        $contactsInput: [ContactCreateInput!]!
+        ) {
+        createContacts(
+          dataSetId: $dataSetId
+          contactsInput: $contactsInput
+        ) {
+           items {
+            contactKey
+            message
+            identifyingField {
+                value
+                attributeData {
+                    type
+                    decimalPrecision
+                    name
+                    category
+                    mapAs
+                    validateAs
+                    identifyAs {
+                        channels
+                        key
+                        index
+                    }
+                    tracking {
+                        lastModifiedBy
+                        lastModifiedAt
+                    }
+                }
+            }
+        }
+        }
+      }`
+
+      //let createVariables = {} as CreateContactsVariables
+      variables = {dataSetId: config.datasetid, contactsInput: [] } as CreateContactsVariables
+
+      for (const upd in updates)
+      {
+        //Audience is just a placeholder for now, so removing until it is valid in graphQL type
+        //let ccr: CreateContactsInput = {"to": {"audience":[], "consent":[], "attributes": []}}
+
+        let ca: ContactAttribute = {name: "", value: ""}
+        let ccr: CreateContactRecord = {attributes: []}
+        let cci: CreateContactInput = {attributes: []}
+
+        variables.contactsInput.push(cci)
+        
+        //Build ContactId, ContactKey, AddressableFields, Consent, Audience properties
+        const u = updates[upd] as Record<string, any>
+
+        //ToDo: Add logic CreateContact vs UpdateContact Key/Id/Addressable fields
+        //Create:
+        //No Key, No Addressable but UniqueId must be in the data
+        //if (typeof u.contactId !== "undefined") Object.assign(variables.contactsInput[upd], {contactId: u.contactId})
+        //else if (typeof u.contactKey !== "undefined") Object.assign(variables.contactsInput[upd], {key: u.contactKey})
+        //else if (typeof u.addressable !== "undefined") Object.assign(variables.contactsInput[upd], {addressable: u.addressable})
+
+        //if (typeof u.consent !== "undefined") Object.assign(variables.contactsInput, {consent: u.consent})
+        if (typeof u.consent !== "undefined") Object.assign(cci, {consent: u.consent})
+
+
+        //Audience is just a placeholder for now, so removing until it is valid in graphQL type
+        //if (typeof u.audience !== "undefined") Object.assign(variables.contactsInput, {audience: u.audience})
+
+        //Add S3DBConfirmation value as a means to quickly confirm Testing outcomes
+        const now: Date = new Date()
+        const date: string = now.toLocaleDateString()
+        const time: string = now.toLocaleTimeString()
+        cci.attributes.push({name: "S3DBConfirmation", value: date + " - " + time})
+        //variables.contactsInput[upd].attributes[upd] = {name: "S3DBConfirmation", value: date + " - " + time}
+
+
+        //Build Attribute Array from each row of inbound data
+        for (const [key, value] of Object.entries(u))
+        {
+          //let v
+          //if (typeof value === "string") v = value
+          //else v = String(value)
+
+          //Skip Payload Vars, Vars injected to carry Transformed Values and are already processed above,
+          // and are not valid for the actual Update
+          if( !["contactid","contactkey","addressable", "consent","audience"].includes(key.toLowerCase()))
+          {     
+          ca = {name: key, value: value}
+          cci.attributes.push(ca)
+          }
+
+        }
+        Object.assign(variables.contactsInput[upd], cci)
+        //variables.contactsInput.push(cci)
+      }
+
+      S3DB_Logging("info", "817", `Create Multiple Contacts Mutation: \n${query} and Vars: \n${JSON.stringify(variables)}`)
+      return {query, variables}
+      
+    }
+  } catch (e)
+  {
+    S3DB_Logging("exception","",`Exception - Build Mutations - CreateContacts - ${e}`)
+    debugger //catch
+  }
   
-      ca = {"name": key, "value": v}
-      cr.attributes.push(ca)
+
+
+try {
+    if (config.updatetype.toLowerCase() === "updatecontacts")
+    {
+
+      interface ContactAttribute {
+        name: string
+        value: any
+      }
+      interface UpdateContactRecord {
+        attributes: Array<{
+          name: string
+          value: string
+        }>
+        audience?: Array<{}>              //Audience is just a placeholder for now, so ignoring until it is valid in graphQL type
+        consent?: Array<{}>
+      }
+      interface UpdateContactsVariables {
+        contactsInput: UpdateContactsInput[]
+      }
+
+      interface UpdateContactsInput {
+        contactId?: string
+        key?: string
+        addressable?: Array<{
+          field: string
+          eq: string
+        }>
+        to: {
+          attributes: Array<{
+            name: string
+            value: string
+          }>
+        }
+        //to: UpdateContactRecord[]
+      }
+
+      query = `mutation updateContacts (
+        $contactsInput: [UpdateContactInput!]!
+        ) {
+        updateContacts(
+            updateContactInputs: $contactsInput
+            ) 
+        {
+        modifiedCount 
+        }
+    }`
+
+      
+
+//mutation {
+//  updateContacts(
+//    updateContactInputs: [
+//      {
+//        key: "contact_key_value"
+//        to: {
+//          attributes: [
+//            { name: "firstName", value: "John" }
+//            { name: "lastName", value: "Doe" }
+//            { name: "email", value: "john.doe@acoustic.co" }
+//          ]
+//          consent: { channels: [{ channel: EMAIL, status: OPT_IN }] }
+//        }
+//      }
+//      { key: "another_contact_key_value", to: { attributes: [{ name: "email", value: null }] } }
+//    ]
+//  ) {
+//    modifiedCount
+//  }
+//}
+
+      variables = {contactsInput: [] } as UpdateContactsVariables
+      
+      for (const upd in updates)
+      {
+        //Audience is just a placeholder for now, so removing until it is valid in graphQL type
+        //let uci: UpdateContactsInput = {"to": {"audience":[], "consent":[], "attributes": []}}
+        
+        let ca: ContactAttribute = {"name": "", "value": ""}
+        let ucr: UpdateContactRecord = {attributes: []} 
+        let uci: UpdateContactsInput = {to: { attributes: []}}
+
+        variables.contactsInput.push(uci)
+
+        //Build ContactId, ContactKey, AddressableFields, Consent, Audience properties
+        const u = updates[upd] as Record<string, any>
+
+        //ToDo: Add logic CreateContact vs UpdateContact Key/Id/Addressable fields
+        if (typeof u.contactId !== "undefined") Object.assign(variables.contactsInput[upd], {contactId: u.contactId})
+        else if (typeof u.contactKey !== "undefined") Object.assign(variables.contactsInput[upd], {key: u.contactKey})
+        else if (typeof u.addressable !== "undefined") Object.assign(variables.contactsInput[upd], {addressable: u.addressable})
+
+        if (typeof u.consent !== "undefined") Object.assign(uci.to, {consent: u.consent})
+
+        //Audience is just a placeholder for now, so removing until it is valid in graphQL type
+        //if (typeof u.audience !== "undefined") Object.assign(variables.contactsInput, {audience: u.audience})
+
+        //Add S3DBConfirmation value as a means to quickly confirm Testing outcomes
+        const now: Date = new Date()
+        const date: string = now.toLocaleDateString()
+        const time: string = now.toLocaleTimeString()
+        uci.to.attributes.push( {name: "S3DBConfirmation", value: date + " - " + time} )
+        
+        
+        //Build Attribute Array from each row of inbound data
+        for (const [key, value] of Object.entries(u))
+        {
+          //let v
+          //if (typeof value === "string") v = value as string
+          //else v = String(value)
+
+          //Skip Payload Vars, Vars injected to carry Transformed Values and are already processed above,
+          // and are not valid for the actual Update
+          if( !["contactid","contactkey", "addressable", "consent", "audience"].includes(key.toLowerCase()))
+          {
+            ca = {name: key, value: value}
+            uci.to.attributes.push(ca)
+          }
+
+        }
+
+        Object.assign(variables.contactsInput[upd], uci)
+        //variables.contactsInput.push(uci)
+
+      }
+
+      S3DB_Logging("info", "817", `Update Multiple Contacts Mutation: \n${query} and Vars: \n${JSON.stringify(variables)}`)
+      return {query, variables}
 
     }
-
-    
-    //here
-    //if (config.updatetype.toLowerCase() === "createcontacts") variables.contactsInput.push(cr)  //currently
-    //if (typeof variables === typeof UpdateContact)
-    //{
-    //  const uc: UpdateContactRecord = {contactId: "", to: [cr]}
-    //  variables.contactsInput.push(uc)  //currently
-    //}
-
-    //variables.to.push(co) as UpdateContact
-
-debugger
-  
-  }
-
-  S3DB_Logging("info", "817", `Create Multiple Contacts Mutation: \n${query} and Vars: \n${JSON.stringify(variables)}`)
-  
-  return {query, variables}
-
-//Example:
-//{
-//  "query": "mutation createMultipleContacts($dataSetId: ID!, $contactsInput: [ContactCreateInput!]!) {\n    createContacts(\n      dataSetId: $dataSetId\n      contactsInput: $contactsInput\n    ) {\n        items {\n          contactId\n        }\n    }\n}",
-//  "variables": {
-//    "dataSetId": "df07969b-7126-47f2-812d-b7b5876627f7",
-//    "contactsInput": [
-//      {
-//        "attributes": [
-//          { "name": "dateday", "value": "Wednesday" },
-//          { "name": "Email", "value": "shefali.bisht@sandmartin.com" },
-//          { "name": "PostalCode", "value": "undefined" },
-//          { "name": "Group", "value": "005Ho00000A10ApIAJ" },
-//          { "name": "Firstname", "value": "Shefali" },
-//          { "name": "Lastname", "value": "Bisht" },
-//          { "name": "Branding", "value": "null" },
-//          { "name": "AE_Name", "value": "null" },
-//          { "name": "Access_Phone", "value": "null" },
-//          { "name": "Employee", "value": "null" }
-//        ]
-//      },
-//      {
+    } catch (e)
+  {  
+  S3DB_Logging("exception", "", `Exception - Build Mutations - UpdateContacts - ${e}`)
+  debugger //catch
+}  
 
 
-
-
-
-
-
-}
+} //Function Close
 
 
 /*async function buildMutationUpdateContacts(updates: object[], config: CustomerConfig) {
@@ -4437,19 +5416,9 @@ async function postToConnect(mutations: string, custconfig: CustomerConfig, upda
   connectQueryResult = await fetch(host, requestOptions)
     .then((response) => response.json())  // .text())
     .then(async (result) => {
-      S3DB_Logging("info", "808", `Connect Query Response (${workFile}) : ${JSON.stringify(result)}`)
 
-      //const r2 = {
-      //  "data": null,
-      //  "errors": [
-      //    {
-      //      "message": "No defined Attribute with name: 'dateday'",
-      //      "locations": [{"line": 1, "column": 99}],
-      //      "path": ["createContacts"],
-      //      "extensions": {"code": "ATTRIBUTE_NOT_DEFINED"}
-      //    }
-      //  ]
-      //}
+      //ToDo: Create specific Messaging to line out this error as the Target DB does not have the attribute Defined
+      //{"errors": [{"message": "No defined Attribute with name: 'email'", "locations": [{"line": 1, "column": 38}], "path": ["updateContacts"], "extensions": {"code": "ATTRIBUTE_NOT_DEFINED"}}], "data": null} 
 
       //const r3 = {
       //      "data" : {
@@ -4478,6 +5447,17 @@ async function postToConnect(mutations: string, custconfig: CustomerConfig, upda
       //      }
       //    }
 
+      
+      //POST Result: {"message": "Endpoint request timed out"}
+      
+      S3DB_Logging("info", "808", `Connect Mutation POST - Response (${workFile}) : ${JSON.stringify(result)}`)
+
+      if (JSON.stringify(result).indexOf("Endpoint request timed out") > 0)
+      {
+        S3DB_Logging("warn", "827", `Connect Mutation POST - Temporary Error: Request Timed Out (${JSON.stringify(result)}). Work will be Sent back to Retry Queue. `)
+        return "retry"
+      }
+
       if (JSON.stringify(result).indexOf("errors") > 0)
       {
         //const resultMsg = JSON.parse(result) 
@@ -4486,11 +5466,11 @@ async function postToConnect(mutations: string, custconfig: CustomerConfig, upda
         //if (cr.errors.length > 0)      //need to check if there are Partial Success/Errors. 
           for (const e in cr.errors)
           {
-            S3DB_Logging("error", "827", `PostToConnect - Error: ${cr.errors[e].message}`)
-            throw new Error(`PostToConnect - Create Contact Error ${cr.errors[e].message}`)
+            S3DB_Logging("error", "827", `Connect Mutation POST - Error: ${cr.errors[e].message}`)
+            throw new Error(`Connect Mutation POST - Error: ${cr.errors[e].message}`)
           }
         
-        return "successfully posted"
+        return "unsuccessfully posted"
       }
         
       //S3DB_Logging("warn", "829", `Temporary Failure - POST Updates - Marked for Retry. \n${result}`)
@@ -4500,9 +5480,9 @@ async function postToConnect(mutations: string, custconfig: CustomerConfig, upda
       const cr = result as ConnectSuccessResult 
 
       //If we haven't returned before now then it's a successful post 
-      const nr = JSON.stringify(cr).replace("\n", " ")
+      const spr = JSON.stringify(cr).replace("\n", " ")
 
-      S3DB_Logging("info", "826", `Successful POST Result: ${nr}`)
+      S3DB_Logging("info", "826", `Successful POST Result: ${spr}`)
 
       //return `Successfully POSTed (${count}) Updates - Result: ${result}`
       return "successfully posted"
@@ -4788,7 +5768,7 @@ async function getAllCustomerConfigsList(bucket: string) {
 
     })
     .catch((e) => {
-      debugger
+      debugger //catch
       S3DB_Logging("exception", "", `Exception - Retrieving Customer Configs List from ${bucket}: ${e} `)
     })
   
@@ -4834,9 +5814,9 @@ async function getAllCustomerConfigsList(bucket: string) {
 //}
 
 //async function maintainS3DropBucket(cust: customerConfig) {
-  
+
 //  cust.LookupKeys //future
-  
+
 //  const bucket = S3DBConfig.S3DropBucket
 //  let limit = 0
 //  if (bucket.indexOf("-process") > -1)
@@ -5019,7 +5999,7 @@ async function getAllCustomerConfigsList(bucket: string) {
 //                )}`
 //              )
 //            } catch (e) {
-//              debugger
+//              debugger //catch
 //            }
 //          }
 //        }
@@ -5090,8 +6070,6 @@ async function getAllCustomerConfigsList(bucket: string) {
 //  //     .catch( ( e ) => {
 //  //         console.error( `Exception - On S3 List Command for Maintaining Objects on ${ bucket }: ${ e } ` )
 //  //     } )
-
-//  debugger
 
 //  const l = reQueue.length
 //  return [l, reQueue]
