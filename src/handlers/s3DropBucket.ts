@@ -146,7 +146,72 @@ let mutationRows = ""
 let batchCount = 0
 let recs = 0
 
-interface CustomerConfig {
+export interface MasterCustomerConfig {
+  $schema: string
+  selectivelogging: string
+  Customer: string
+  format: string
+  separator: string
+  updates: "Multiple" | "Singular"
+  updatemaxrows: number
+  pod: string
+  region: string
+  targetupdate: string
+  updatetype: string
+  listid: string
+  listname: string
+  clientid: string
+  clientsecret: string
+  refreshtoken: string
+  datasetid: string
+  subscriptionid: string
+  x_api_key: string
+  x_acoustic_region: string
+  transforms: {
+    contactid: string
+    contactkey: string
+    addressablefields: {
+      statement: {
+        addressable: Array<{
+          field: string
+          eq: string
+        }>
+      }
+    }
+    consent: {
+      statement: {
+        channels: Array<{
+          channel: string
+          status: string
+        }>
+      } | {[key: string]: string}
+    }
+    audienceupdate: {
+      [key: string]: string
+    }
+    methods: {
+      daydate: string
+      date_iso1806_type: {
+        [key: string]: string
+      }
+      phone_number_type: {
+        [key: string]: string
+      }
+      string_to_number_type: {
+        [key: string]: string
+      }
+    }
+    jsonmap: {
+      [key: string]: string
+    }
+    csvmap: {
+      [key: string]: string
+    }
+    ignore: string[]
+  }
+}
+
+export interface CustomerConfig {
   customer: string
   format: string      // CSV or JSON
   separator: string
@@ -294,6 +359,61 @@ export interface S3DBConfig {
   s3dropbucket_workqueuebucketpurge: string
   s3dropbucket_sftp: boolean
 }
+
+
+interface S3DropBucketConfig {
+  $schema: string
+  aws_region: string
+  xmlapiurl: string
+  restapiurl: string
+  authapiurl: string
+  connectapiurl: string
+
+  // Logging configuration
+  s3dropbucket_logbucket: string
+  s3dropbucket_log: 'CloudWatch' | 'S3'
+
+  // Bucket configurations
+  s3dropbucket: string
+  s3dropbucket_workbucket: string
+  s3dropbucket_configs: string
+
+  // Queue configuration
+  s3dropbucket_workqueue: string
+
+  // Firehose configuration
+  s3dropbucket_firehosestream: string
+
+  // Quiesce settings
+  s3dropbucket_quiesce: boolean
+  s3dropbucket_workqueuequiesce: boolean
+  s3dropbucket_queuebucketquiesce: boolean
+
+  // Maintenance settings for incoming files
+  s3dropbucket_mainthours: number
+  s3dropbucket_maintlimit: number
+  s3dropbucket_maintconcurrency: number
+
+  // Work queue maintenance settings
+  s3dropbucket_workqueuemainthours: number
+  s3dropbucket_workqueuemaintlimit: number
+  s3dropbucket_workqueuemaintconcurrency: number
+
+  // Optional properties that might be present in the config
+  s3dropbucket_selectivelogging?: string
+  s3dropbucket_loglevel?: 'ALL' | 'NONE' | 'NORMAL'
+  s3dropbucket_purgecount?: number
+  s3dropbucket_purge?: string
+  s3dropbucket_workqueuebucketpurgecount?: number
+  s3dropbucket_workqueuebucketpurge?: string
+  s3dropbucket_sftp?: boolean
+  s3dropbucket_jsonseparator?: string
+  s3dropbucket_eventemittermaxlisteners?: number
+  s3dropbucket_maxbatcheswarning?: number
+  s3dropbucket_prefixfocus?: string
+}
+
+
 
 let S3DBConfig = {} as S3DBConfig
 
@@ -450,8 +570,8 @@ const testdata = ""
 //testS3Key = "MasterCustomer_Sample1-json-update-1-6-c436dca1-6ec9-4c8b-bc78-6e1d774591ca.json"
 //testS3Key = "MasterCustomer_Sample1-json-update-1-6-0bb2f92e-3344-41e6-af95-90f5d32a73dc.json"
 
-//testS3Key = "TestData/KingsfordWeather_S3DropBucket_Aggregator-10-2025-01-09-19-29-39-da334f11-53a4-31cc-8c9f-8b417725560b.json"
-testS3Key = "TestData/Funding_Circle_Limited_CampaignDatabase1_2025_02_28T19_19_26_268Z.json"
+testS3Key = "TestData/KingsfordWeather_S3DropBucket_Aggregator-10-2025-01-09-19-29-39-da334f11-53a4-31cc-8c9f-8b417725560b.json"
+//testS3Key = "TestData/Funding_Circle_Limited_CampaignDatabase1_2025_02_28T19_19_26_268Z.json"
 
 
 /**
@@ -591,6 +711,8 @@ export const s3DropBucketHandler: Handler = async (
 
       } catch (e)
       {
+        debugger //catch
+
         S3DB_Logging("exception", "", `Exception - Awaiting Customer Config (${key}) \n${e} `)
         break
       }
@@ -719,6 +841,8 @@ export const s3DropBucketHandler: Handler = async (
                 //Once File successfully processed delete the original S3 Object
                 delResultCode = await deleteS3Object(key, bucket)
                   .catch((e) => {
+                    debugger //catch
+
                     S3DB_Logging("exception", "", `Exception - DeleteS3Object - ${e}`)
                   })
 
@@ -740,6 +864,8 @@ export const s3DropBucketHandler: Handler = async (
                 }
               } catch (e)
               {
+                debugger //catch
+
                 S3DB_Logging("exception", "", `Exception - Deleting S3 Object after successful processing of the Content Stream for ${key} \n${e} \n\n${JSON.stringify(streamRes)}`)
               }
             }
@@ -756,6 +882,8 @@ export const s3DropBucketHandler: Handler = async (
           })
           .catch((e) => {
 
+            debugger //catch
+
             const err = `Exception - Process S3 Object Stream Catch - \n${e} \nStack: \n${e.stack}`
 
             ProcessS3ObjectStreamResolutionInit = {
@@ -769,6 +897,8 @@ export const s3DropBucketHandler: Handler = async (
           })
       } catch (e)
       {
+        debugger //catch
+
         S3DB_Logging("exception", "", `Exception - Processing S3 Object Content Stream for ${key} \n${e}`)
       }
 
@@ -784,6 +914,8 @@ export const s3DropBucketHandler: Handler = async (
 
       } catch (e)
       {
+        debugger //catch
+
         S3DB_Logging("exception", "", `Exception refreshing S3DropBucket Config: ${e}`)
       }
 
@@ -835,6 +967,8 @@ export const s3DropBucketHandler: Handler = async (
     return objectStreamResolution   //Return the results logging object
   } catch (e)
   {
+    debugger //catch
+
     S3DB_Logging("exception", "", `Exception thrown in Handler: ${e}`)
   }
 
@@ -1178,13 +1312,17 @@ async function processS3ObjectContentStream (
               }
             } catch (e)
             {
-              S3DB_Logging("exception", "", `Exception - ReadStream-OnData - Chunk aggregation for ${key} \nBatch ${batchCount} of ${recs} Updates. \n${e}`)
+              debugger //catch
 
-              throw new Error(`Exception - ReadStream (OnData) Chunk aggregation for ${key} \nBatch ${batchCount} of ${recs} Updates.\n${e}`)
               streamResult = {
                 ...streamResult,
                 OnDataReadStreamException: `Exception - First Catch - ReadStream-OnData Processing for ${key} \nBatch ${batchCount} of ${recs} Updates. \n${e} `
               }
+
+              S3DB_Logging("exception", "", `Exception - ReadStream-OnData - Chunk aggregation for ${key} \nBatch ${batchCount} of ${recs} Updates. \n${e}`)
+
+              throw new Error(`Exception - ReadStream (OnData) Chunk aggregation for ${key} \nBatch ${batchCount} of ${recs} Updates.\n${e}`)
+
             }
             //OnEnd gets the bulk of the data when files are moderate in size, for Large files OnData processes through multiple Read Chunks 
             //At each 99 updates, package them up, if there are fewer than 99 then "OnEnd" will pick up the remainder. 
@@ -1213,6 +1351,8 @@ async function processS3ObjectContentStream (
               }
             } catch (e)
             {
+              debugger //catch
+
               S3DB_Logging("exception", "", `Exception - ReadStream-OnData - Batch Packaging for ${key} \nBatch ${batchCount} of ${recs} Updates. \n${e} `)
 
               streamResult = {
@@ -1281,6 +1421,7 @@ async function processS3ObjectContentStream (
             } catch (e)    //Overall Try/Catch for On-End processing
             {
               debugger //catch
+
               const sErr = `Exception - ReadStream OnEnd Processing - \n${e} `
               S3DB_Logging("exception", "", sErr)
               return {...streamResult, OnEndStreamResult: sErr}
@@ -1319,6 +1460,8 @@ async function processS3ObjectContentStream (
           }
         })
         .catch((e) => {       //Catch for Processing Promise 
+          debugger //catch
+
           const err = `Exception - ReadStream(catch) - Process S3 Object Content Stream for ${key}. \n${e} `
           //throw new Error( err )
           S3DB_Logging("exception", "", err)
@@ -1334,6 +1477,7 @@ async function processS3ObjectContentStream (
 
     .catch((e) => {
       debugger //catch
+
       //throw new Error( `Exception(throw) - ReadStream - For ${ key }.\nResults: ${ JSON.stringify( streamResult ) }.\n${ e } ` )
 
       streamResult = {
@@ -1673,6 +1817,8 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
         } else throw new Error(`Failed to retrieve work file(${s3dbQM.workKey}) `)
       } catch (e: any)
       {
+        debugger //catch
+
         S3DB_Logging("exception", "", `Exception - Processing Work File (${s3dbQM.workKey} off the Work Queue \nFor Queue MessageId: ${q.messageId} \n${e}} `)
 
         if (String(e).indexOf("Work Not Found") > -1)
@@ -1734,6 +1880,8 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
 
   } catch (e)
   {
+    debugger //catch
+
     S3DB_Logging("exception", "", `QueueProcessorHandler Exception processing Work Queue items ${JSON.stringify(s3dbQM)} \n${e}`)
   }
 
@@ -1813,6 +1961,8 @@ export const s3DropBucketSFTPHandler: Handler = async (
       return response
     })
     .catch((err) => {
+      debugger //catch
+
       S3DB_Logging("exception", "", `Error - Failed to retrieve SFTP Scheduler2 Events: ${err} `)
 
       return err
@@ -1959,6 +2109,8 @@ async function sftpConnect (options: {
     // await SFTPClient.connect(options)
   } catch (err)
   {
+    debugger //catch
+
     S3DB_Logging("exception", "", `Failed to connect: ${err}`)
   }
 }
@@ -1976,6 +2128,8 @@ async function sftpListFiles (remoteDir: string, fileGlob: ListFilterFunction) {
     fileObjects = await SFTPClient.list(remoteDir, fileGlob)
   } catch (err)
   {
+    debugger //catch
+
     S3DB_Logging("exception", "", `Listing failed: ${err}`)
   }
 
@@ -2004,6 +2158,8 @@ async function sftpUploadFile (localFile: string, remoteFile: string) {
     // await SFTPClient.put(localFile, remoteFile)
   } catch (err)
   {
+    debugger //catch
+
     S3DB_Logging("exception", "", `Uploading failed: ${err}`)
   }
 }
@@ -2015,6 +2171,9 @@ async function sftpDownloadFile (remoteFile: string, localFile: string) {
     // await SFTPClient.get(remoteFile, localFile)
   } catch (err)
   {
+
+    debugger //catch
+
     S3DB_Logging("exception", "", `Downloading failed: ${err}`)
   }
 }
@@ -2026,6 +2185,8 @@ async function sftpDeleteFile (remoteFile: string) {
     // await SFTPClient.delete(remoteFile)
   } catch (err)
   {
+    debugger //catch 
+
     S3DB_Logging("exception", "", `Deleting failed: ${err}`)
   }
 }
@@ -2096,6 +2257,9 @@ async function getValidateS3DropBucketConfig () {
       })
   } catch (e)
   {
+
+    debugger //catch
+
     S3DB_Logging("exception", "", `Exception - Pulling S3DropBucket Config File (bucket:${getObjectCmd.Bucket}  key:${getObjectCmd.Key}) \nResult: ${s3dbcr} \nException: \n${e} `)
     //return {} as s3DBConfig
 
@@ -2385,6 +2549,9 @@ async function getValidateS3DropBucketConfig () {
 
   } catch (e)
   {
+
+    debugger //catch
+
     S3DB_Logging("exception", "", `Exception - Parsing S3DropBucket Config File ${e} `)
     throw new Error(`Exception - Parsing S3DropBucket Config File ${e} `)
   }
@@ -2523,6 +2690,9 @@ async function getFormatCustomerConfig (filekey: string) {
         return cc
       })
       .catch((e) => {
+
+        debugger //catch
+
         const err: string = JSON.stringify(e)
 
         if (err.indexOf("specified key does not exist") > -1)
@@ -2543,6 +2713,7 @@ async function getFormatCustomerConfig (filekey: string) {
   } catch (e)
   {
     debugger //catch
+
     S3DB_Logging("exception", "", `Exception - On Try when Pulling Customer Config \n${ccr}. \n${e} `)
     throw new Error(`Exception - (Try) Pulling Customer Config \n${ccr} \n${e} `)
   }
@@ -2830,10 +3001,63 @@ async function validateCustomerConfig (config: CustomerConfig) {
       S3DB_Logging("info", "700", `SFTP Schedule: ${config.sftp.schedule}`)
     }
 
+
+    if (!config.transforms.consent)
+    {
+      Object.assign(config.transforms, {consent: {}})
+    }
+
+    if (!config.transforms.audienceupdate)
+    {
+      Object.assign(config.transforms, {audienceupdate: {}})
+    }
+
     if (!config.transforms)
     {
       Object.assign(config, {transforms: {}})
     }
+
+    if (!config.transforms.contactid)
+    {
+      Object.assign(config.transforms, {contactid: {}})
+    }
+
+    if (!config.transforms.contactkey)
+    {
+      Object.assign(config.transforms, {contactkey: {}})
+    }
+
+    if (!config.transforms.addressablefields)
+    {
+      Object.assign(config.transforms, {addressablefields: {}})
+    }
+
+    if (!config.transforms.methods)
+    {
+      Object.assign(config.transforms, {methods: {}})
+    }
+
+    if (!config.transforms.methods.daydate)
+    {
+      Object.assign(config.transforms.methods, {daydate: {}})
+    }
+
+    if (!config.transforms.methods.date_iso1806_type)
+    {
+      Object.assign(config.transforms.methods, {date_iso1806_type: {}})
+    }
+
+    if (!config.transforms.methods.phone_number_type)
+    {
+      Object.assign(config.transforms.methods, {phone_number_type: {}})
+    }
+
+    if (!config.transforms.methods.string_to_number_type)
+    {
+      Object.assign(config.transforms.methods, {string_to_number_type: {}})
+    }
+
+
     if (!config.transforms.jsonmap)
     {
       Object.assign(config.transforms, {jsonmap: {}})
@@ -2847,6 +3071,8 @@ async function validateCustomerConfig (config: CustomerConfig) {
       Object.assign(config.transforms, {ignore: []})
     }
 
+
+
     S3DB_Logging("info", "919", `Transforms configured: \n${JSON.stringify(config.transforms)}`)
 
     if (config.transforms.jsonmap)
@@ -2855,8 +3081,6 @@ async function validateCustomerConfig (config: CustomerConfig) {
       const jm = config.transforms.jsonmap as {[key: string]: string}
       for (const m in jm)
       {
-
-debugger ///
         const p = jm[m]
         const p2 = p.substring(2, p.length)
 
@@ -2865,7 +3089,7 @@ debugger ///
         )
         {
           S3DB_Logging("error", "999", `JSONMap config: Either part of the JSONMap statement, the Column to create or the JSONPath statement, cannot use a reserved word ("contactid", "contactkey", "addressablefields", "consent", or "audience") ${m}: ${p}`)
-          
+
           throw new Error(`JSONMap config: Either part of the JSONMap statement, the Column to create or the JSONPath statement, cannot reference a reserved word ("contactid", "contactkey", "addressablefields", "consent", or "audience") ${m}: ${p}`)
         }
         else
@@ -2876,6 +3100,8 @@ debugger ///
             tmpMap[m] = jm[m]
           } catch (e)
           {
+            debugger //catch
+
             S3DB_Logging("exception", "", `Invalid JSONPath defined in Customer config: ${m}: "${m}", \nInvalid JSONPath - ${e} `)
           }
         }
@@ -2886,6 +3112,7 @@ debugger ///
   } catch (e)
   {
     debugger //catch
+
     S3DB_Logging("error", "", `Exception - Validate Customer Config: \n${e}`)
   }
   //Need CSVMap Validation
@@ -2946,8 +3173,10 @@ async function packageUpdates (workSet: object[], key: string, custConfig: Custo
       })
     } catch (e)    //Interior try/catch for firehose processing
     {
-      S3DB_Logging("exception", "", `Exception - PutToFirehose (File Stream Iter: ${iter}) - \n${e} `)
       debugger //catch
+
+      S3DB_Logging("exception", "", `Exception - PutToFirehose (File Stream Iter: ${iter}) - \n${e} `)
+
       sqwResult = {
         ...sqwResult,
         PutToFireHoseException: `Exception - PutToFirehose \n${e} `,
@@ -2968,6 +3197,7 @@ async function packageUpdates (workSet: object[], key: string, custConfig: Custo
 
     try
     {
+
       //Process everything passed, especially if there are more than 100 passed at one time, or fewer than 100. 
       while (workSet.length > 0)
       {
@@ -3004,6 +3234,7 @@ async function packageUpdates (workSet: object[], key: string, custConfig: Custo
     } catch (e)
     {
       debugger //catch
+
       S3DB_Logging("exception", "", `Exception - packageUpdates for ${key} (File Stream Iter: ${iter}) \n${e} `)
 
       sqwResult = {
@@ -3039,6 +3270,8 @@ async function storeAndQueueConnectWork (
     updates = transforms(updates, custConfig)
   } catch (e)
   {
+    debugger //catch
+
     S3DB_Logging("exception", "", `Exception - Transforms - ${e}`)
     throw new Error(`Exception - Transforms - ${e}`)
   }
@@ -3128,14 +3361,16 @@ async function storeAndQueueConnectWork (
         return {"workfile": key, ...res} //{"AddWorktoS3Results": res}
       })
       .catch((err) => {
+        debugger //catch
+
         S3DB_Logging("exception", "", `Exception - AddWorkToS3WorkBucket (file: ${key}) ${err}`)
       })
   } catch (e)
   {
+    debugger //catch
+
     const sqwError = `Exception - StoreAndQueueWork Add work (file: ${key}) to S3 Work Bucket exception \n${e} `
     S3DB_Logging("exception", "", sqwError)
-
-    debugger //catch
 
     S3DB_Logging("info", "939", `Add Work File ${key} (from ${s3Key}) to S3 Work Bucket Result (\nBatch ${batchCount} of ${updateCount} records, File Stream Iter: ${iter}) \n\n${addWorkToS3WorkBucketResult}`)
 
@@ -3169,6 +3404,8 @@ async function storeAndQueueConnectWork (
     })
   } catch (e)
   {
+    debugger //catch
+
     const sqwError = `Exception - StoreAndQueueWork Add work to SQS Queue exception \n${e} `
     S3DB_Logging("exception", "", sqwError)
 
@@ -3207,6 +3444,8 @@ async function storeAndQueueCampaignWork (
     updates = transforms(updates, config)
   } catch (e)
   {
+    debugger //catch
+
     S3DB_Logging("exception", "", `Exception - Transforms - ${e}`)
     throw new Error(`Exception - Transforms - ${e}`)
   }
@@ -3258,14 +3497,17 @@ async function storeAndQueueCampaignWork (
         return {"workfile": key, ...res}  //return res 
       })
       .catch((err) => {
+        debugger //catch
+
         S3DB_Logging("exception", "", `Exception - AddWorkToS3WorkBucket ${err} (File Stream Iter: ${iter} file: ${key})`)
       })
   } catch (e)
   {
-    const sqwError = `Exception - StoreAndQueueWork Add work (File Stream Iter: ${iter} (file: ${key})) to S3 Bucket exception \n${e} `
-    S3DB_Logging("exception", "", sqwError)
-
     debugger //catch
+
+    const sqwError = `Exception - StoreAndQueueWork Add work (File Stream Iter: ${iter} (file: ${key})) to S3 Bucket exception \n${e} `
+
+    S3DB_Logging("exception", "", sqwError)
 
     S3DB_Logging("info", "939", `Add Work File ${key} (from ${s3Key}) to S3 Work Bucket Result (\nBatch ${batchCount} of ${updateCount} records, File Stream Iter: ${iter}) \n\n${addWorkToS3WorkBucketResult}`)
 
@@ -3298,6 +3540,8 @@ async function storeAndQueueCampaignWork (
     })
   } catch (e)
   {
+    debugger //catch
+
     const sqwError = `Exception - StoreAndQueueWork Add work to SQS Queue exception \n${e} `
     S3DB_Logging("exception", "", sqwError)
 
@@ -3404,8 +3648,9 @@ function convertJSONToXML_DBUpdates (updates: object[], config: CustomerConfig) 
           }
         } catch (e)
         {
-          S3DB_Logging("exception", "", `Building XML for DB Updates - ${e}`)
           debugger //catch
+
+          S3DB_Logging("exception", "", `Building XML for DB Updates - ${e}`)
         }
 
         xmlRows += `</SYNC_FIELDS>`
@@ -3445,6 +3690,8 @@ function convertJSONToXML_DBUpdates (updates: object[], config: CustomerConfig) 
     }
   } catch (e)
   {
+    debugger //catch
+
     S3DB_Logging("exception", "", `Exception - ConvertJSONtoXML_DBUpdates - \n${e}`)
   }
 
@@ -3529,6 +3776,8 @@ async function putToFirehose (chunks: object[], key: string, cust: string, iter:
             })
             .catch(async (e) => {
 
+              debugger //catch
+
               const fr = await fh_Client.config.region()
 
               S3DB_Logging("exception", "", `Exception - Put to Firehose Aggregator (promise catch) (File Stream Iter: ${iter}) for ${key} \n( FH Data Length: ${fp.Record?.Data?.length}. FH Delivery Stream: ${JSON.stringify(fp.DeliveryStreamName)} FH Client Region: ${fr})  \n${e} `)
@@ -3559,6 +3808,8 @@ async function putToFirehose (chunks: object[], key: string, cust: string, iter:
 
         } catch (e)
         {
+          debugger //catch
+
           S3DB_Logging("exception", "", `Exception - PutToFirehose (catch) (File Stream Iter: ${iter}) \n${e} `)
         }
 
@@ -3574,6 +3825,8 @@ async function putToFirehose (chunks: object[], key: string, cust: string, iter:
     return putFirehoseResp
   } catch (e)
   {
+    debugger //catch
+
     S3DB_Logging("exception", "", `Exception - Put to Firehose Aggregator (try-catch) for ${key} (File Stream Iter: ${iter}) \n${e} `)
   }
 
@@ -3616,6 +3869,8 @@ async function addWorkToS3WorkBucket (queueUpdates: string, key: string) {
         return s3PutResult
       })
       .catch((err) => {
+        debugger //catch
+
         S3DB_Logging("exception", "", `Exception - Put Object Command for writing work(${key} to S3 Processing bucket(${S3DBConfig.s3dropbucket_workbucket}): \n${err}`)
         throw new Error(
           `PutObjectCommand Results Failed for (${key} of ${queueUpdates.length} characters) to S3 Processing bucket (${S3DBConfig.s3dropbucket_workbucket}): \n${err}`
@@ -3624,6 +3879,8 @@ async function addWorkToS3WorkBucket (queueUpdates: string, key: string) {
       })
   } catch (e)
   {
+    debugger //catch
+
     S3DB_Logging("exception", "", `Exception - Put Object Command for writing work(${key} to S3 Processing bucket(${S3DBConfig.s3dropbucket_workbucket}): \n${e}`)
     throw new Error(
       `Exception - Put Object Command for writing work(${key} to S3 Processing bucket(${S3DBConfig.s3dropbucket_workbucket}): \n${e}`
@@ -3720,6 +3977,7 @@ async function addWorkToSQSWorkQueue (
       })
       .catch((err) => {
         debugger //catch
+
         const storeQueueWorkException = `Failed writing to SQS Process Queue (${err}). \nQueue URL: ${sqsParams.QueueUrl})\nWork to be Queued: ${sqsQMsgBody.workKey}\nSQS Params: ${JSON.stringify(sqsParams)}`
 
         S3DB_Logging("exception", "", `Failed to Write to SQS Process Queue. \n${storeQueueWorkException}`)
@@ -3728,6 +3986,8 @@ async function addWorkToSQSWorkQueue (
       })
   } catch (e)
   {
+    debugger //catch
+
     S3DB_Logging("exception", "", `Exception - Writing to SQS Process Queue - (queue URL${sqsParams.QueueUrl
       }), ${sqsQMsgBody.workKey}, SQS Params${JSON.stringify(sqsParams)}) - Error: ${e}`)
   }
@@ -3774,7 +4034,8 @@ function transforms (updates: object[], config: CustomerConfig) {
   try
   {
 
-    if (Object.keys(config.transforms.methods.daydate).length > 0)
+    if (typeof config.transforms.methods.daydate !== undefined &&
+      Object.keys(config.transforms.methods.daydate).length > 0)
     {
       const t: typeof updates = []
       let toDay: string = ""
@@ -3823,6 +4084,7 @@ function transforms (updates: object[], config: CustomerConfig) {
   } catch (e)
   {
     debugger //catch
+
     S3DB_Logging("exception", "934", `Exception - Applying DayDate Transform \n${e}`)
   }
 
@@ -3833,8 +4095,8 @@ function transforms (updates: object[], config: CustomerConfig) {
 
   try
   {
-
-    if (Object.keys(config.transforms.methods.date_iso1806_type).length > 0)
+    if (typeof config.transforms.methods?.date_iso1806_type !== undefined &&
+      Object.keys(config.transforms.methods.date_iso1806_type).length > 0) 
     {
       //const iso1806Col = config.transforms.methods.date_iso1806 ?? 'iso1806Date' 
 
@@ -3877,6 +4139,7 @@ function transforms (updates: object[], config: CustomerConfig) {
   } catch (e)
   {
     debugger //catch
+
     S3DB_Logging("exception", "934", `Exception - Applying date_iso1806 Transform \n${e}`)
   }
 
@@ -3887,7 +4150,8 @@ function transforms (updates: object[], config: CustomerConfig) {
   try
   {
 
-    if (Object.keys(config.transforms.methods.phone_number_type).length > 0)
+    if (typeof config.transforms.methods.phone_number_type !== undefined &&
+      Object.keys(config.transforms.methods.phone_number_type).length > 0)
     {
       //const iso1806Col = config.transforms.methods.date_iso1806 ?? 'iso1806Date' 
 
@@ -3940,6 +4204,7 @@ function transforms (updates: object[], config: CustomerConfig) {
   } catch (e)
   {
     debugger //catch
+
     S3DB_Logging("exception", "934", `Exception - Applying PhoneNumber Transform \n${e}`)
   }
 
@@ -3951,7 +4216,8 @@ function transforms (updates: object[], config: CustomerConfig) {
 
   try
   {
-    if (Object.keys(config.transforms.methods.string_to_number_type).length > 0)
+    if (typeof config.transforms.methods.string_to_number_type !== undefined &&
+      Object.keys(config.transforms.methods.string_to_number_type).length > 0)
     {
       const t: typeof updates = []
       let strToNumber: string = ""
@@ -3997,6 +4263,7 @@ function transforms (updates: object[], config: CustomerConfig) {
   } catch (e)
   {
     debugger //catch
+
     S3DB_Logging("exception", "934", `Exception - Applying String-To-Number Transform \n${e}`)
   }
 
@@ -4015,12 +4282,12 @@ function transforms (updates: object[], config: CustomerConfig) {
   //Need failsafe test of empty object jsonMap has no transforms. 
   try
   {
-    if (Object.keys(config.transforms.jsonmap).length > 0)
+    if (typeof config.transforms.jsonmap !== undefined &&
+      Object.keys(config.transforms.jsonmap).length > 0)
     {
       const t: typeof updates = []
       try
       {
-        //let jmr
         for (const update of updates)
         {
 
@@ -4039,6 +4306,7 @@ function transforms (updates: object[], config: CustomerConfig) {
       } catch (e)
       {
         debugger //catch
+
         S3DB_Logging("exception", "930", `Exception - Transform - Applying JSONMap \n${e}`)
 
       }
@@ -4049,6 +4317,7 @@ function transforms (updates: object[], config: CustomerConfig) {
       } else
       {
         debugger //catch
+
         S3DB_Logging("error", "930", `Error - Transform - Applying JSONMap returns fewer records(${t.length}) than initial set ${updates.length}`)
 
         throw new Error(
@@ -4061,6 +4330,7 @@ function transforms (updates: object[], config: CustomerConfig) {
   } catch (e)
   {
     debugger //catch
+
     S3DB_Logging("exception", "934", `Exception - Applying JSONMap Transform \n${e}`)
   }
 
@@ -4082,7 +4352,8 @@ function transforms (updates: object[], config: CustomerConfig) {
 
   try
   {
-    if (Object.keys(config.transforms.csvmap).length > 0)
+    if (typeof config.transforms.csvmap !== undefined &&
+      Object.keys(config.transforms.csvmap).length > 0)
     {
       const t: typeof updates = []
       try
@@ -4119,6 +4390,7 @@ function transforms (updates: object[], config: CustomerConfig) {
       } catch (e)
       {
         debugger //catch
+
         S3DB_Logging("exception", "931", `Exception - Transforms - Applying CSVMap \n${e}`)
 
       }
@@ -4139,22 +4411,28 @@ function transforms (updates: object[], config: CustomerConfig) {
   } catch (e)
   {
     debugger //catch
+
     S3DB_Logging("exception", "934", `Exception - Applying CSVMap Transform \n${e}`)
   }
 
 
-  if (config.transforms.contactid !== "" && config.transforms.contactid.length > 3) 
+
+  //Transform: ContactId
+  //
+  if (typeof config.transforms.contactid !== undefined &&
+    config.transforms.contactid.length > 3) 
   {
-    //Transform: ContactId
     let s: string = ""
     try
     {
+      const t: typeof updates = []
+
       if (config.transforms.contactid.startsWith('$')) s = 'jsonpath'
       else if (config.transforms.contactid.startsWith('@')) s = 'csvcolumn'
       else if (s === "" && config.transforms.contactid.length > 3) s = 'static'
       else S3DB_Logging("error", "999", `Error - Transform - ContactId invalid configuration.`)
 
-      const t: typeof updates = []
+
       //Process All Updates for this Transform
       for (const update of updates)
       {
@@ -4202,10 +4480,13 @@ function transforms (updates: object[], config: CustomerConfig) {
 
     } catch (e)
     {
+      debugger //catch
+
       S3DB_Logging("exception", "934", `Exception - Applying ContactId Transform \n${e}`)
     }
   }
-  else if (config.transforms.contactkey !== "" && config.transforms.contactkey.length > 3)
+  else if (typeof config.transforms.contactkey !== undefined &&
+    config.transforms.contactkey.length > 3)
   {
     //Transform: ContactKey
 
@@ -4213,49 +4494,52 @@ function transforms (updates: object[], config: CustomerConfig) {
     try
     {
 
-      if (config.transforms.contactkey.startsWith('$')) s = 'jsonpath'
-      else if (config.transforms.contactkey.startsWith('@')) s = 'csvcolumn'
-      else if (s === "" && config.transforms.contactkey.length > 3) s = 'static'
-      else S3DB_Logging("error", "999", `Error - Transform - ContactKey invalid configuration.`)
-
       const t: typeof updates = []
 
-      //Process All Updates for this Transform
-      for (const update of updates)
+      if (typeof config.transforms.contactkey !== undefined &&
+        config.transforms.contactkey.length > 3) 
       {
-        Object.assign(update, {"contactKey": ""})
+        if (config.transforms.contactkey.startsWith('$')) s = 'jsonpath'
+        else if (config.transforms.contactkey.startsWith('@')) s = 'csvcolumn'
+        else if (s === "" && config.transforms.contactkey.length > 3) s = 'static'
+        else S3DB_Logging("error", "999", `Error - Transform - ContactKey invalid configuration.`)
 
-        switch (s)
+        //Process All Updates for this Transform
+        for (const update of updates)
         {
-          case 'static': {
-            if (config.transforms.contactkey === '....') Object.assign(update, {"contactKey": ""})
-            else Object.assign(update, {"contactKey": config.transforms.contactkey})
-            break
-          }
-          case 'jsonpath': {
-            let j = applyJSONMap(update, {contactKey: config.transforms.contactkey})
-            if (typeof j === "undefined" || j === "") j = "Not Found"
-            Object.assign(update, {"contactKey": j})
-            //Object.assign(u, {"contactKey": applyJSONMap(update, {contactkey: config.transforms.contactkey})})
-            break
-          }
-          case 'csvcolumn':
-            {
+          Object.assign(update, {"contactKey": ""})
 
-              //strip preceding '@.'
-              let csvmapvalue = config.transforms.contactkey.substring(2, config.transforms.contactkey.length)
-              let colRef = csvmapvalue as keyof typeof update
-
-              let v = update[colRef] as string
-              if (typeof v === "undefined" || v === "") v = "Not Found"
-              Object.assign(update, {"contactKey": v})
+          switch (s)
+          {
+            case 'static': {
+              if (config.transforms.contactkey === '....') Object.assign(update, {"contactKey": ""})
+              else Object.assign(update, {"contactKey": config.transforms.contactkey})
               break
             }
+            case 'jsonpath': {
+              let j = applyJSONMap(update, {contactKey: config.transforms.contactkey})
+              if (typeof j === "undefined" || j === "") j = "Not Found"
+              Object.assign(update, {"contactKey": j})
+              //Object.assign(u, {"contactKey": applyJSONMap(update, {contactkey: config.transforms.contactkey})})
+              break
+            }
+            case 'csvcolumn':
+              {
+
+                //strip preceding '@.'
+                let csvmapvalue = config.transforms.contactkey.substring(2, config.transforms.contactkey.length)
+                let colRef = csvmapvalue as keyof typeof update
+
+                let v = update[colRef] as string
+                if (typeof v === "undefined" || v === "") v = "Not Found"
+                Object.assign(update, {"contactKey": v})
+                break
+              }
+          }
+
+          t.push(update)
         }
-
-        t.push(update)
       }
-
       //All Updates now transformed from ContactKey transform
       if (t.length === updates.length)
       {
@@ -4270,203 +4554,207 @@ function transforms (updates: object[], config: CustomerConfig) {
 
     } catch (e)
     {
+      debugger //catch
+
       S3DB_Logging("exception", "934", `Exception - Applying ContactKey Transform \n${e}`)
     }
 
   }
-  else if (Object.entries(config.transforms.addressablefields).length > 0)
+  else if (typeof config.transforms.addressablefields !== undefined &&
+    Object.entries(config.transforms.addressablefields).length > 0)
   {
 
     //Transform: Addressable Fields
     //S3DB_Logging("debug", "999", `Debug - Addressable Fields Transform Entered - ${config.targetupdate}`)
 
-    if (Object.keys(config.transforms.addressablefields).length > 0)
+    //if (typeof config.transforms.addressablefields !== "undefined" &&
+    //  Object.keys(config.transforms.addressablefields).length > 0)
+    //{
+
+    interface AddressableItem {
+      field: string
+      eq: string
+    }
+    interface AddressableStatement {
+      addressable: AddressableItem[]
+    }
+    interface AddressableFields {
+      [key: string]: string | AddressableStatement
+      statement: AddressableStatement
+    }
+
+    //let addressablefields: typeof config.transforms.addressablefields = config.transforms.addressablefields
+    const addressableFields = config.transforms.addressablefields as AddressableFields
+    const addressableStatement = addressableFields.statement as AddressableStatement
+    const fieldsArray = addressableStatement.addressable
+
+    let s: string = ""
+
+    try
     {
+      const t: typeof updates = []
 
-      interface AddressableItem {
-        field: string
-        eq: string
-      }
-      interface AddressableStatement {
-        addressable: AddressableItem[]
-      }
-      interface AddressableFields {
-        [key: string]: string | AddressableStatement
-        statement: AddressableStatement
-      }
-
-      //let addressablefields: typeof config.transforms.addressablefields = config.transforms.addressablefields
-      const addressableFields = config.transforms.addressablefields as AddressableFields
-      const addressableStatement = addressableFields.statement as AddressableStatement
-      const fieldsArray = addressableStatement.addressable
-
-      let s: string = ""
-
-      try
+      //Process All Updates for this Transform
+      for (const update of updates)
       {
-        const t: typeof updates = []
 
-        //Process All Updates for this Transform
-        for (const update of updates)
+        const addressableArray = [] as object[]
+
+        //If 'Statement' configured, takes precedence over all others
+        if (typeof config.transforms.addressablefields["statement"] !== undefined &&
+          config.transforms.addressablefields["statement"] !== "")
         {
-
-          const addressableArray = [] as object[]
-
-          //If 'Statement' configured, takes precedence over all others
-          if (typeof config.transforms.addressablefields["statement"] !== undefined &&
-            config.transforms.addressablefields["statement"] !== "")
+          for (const fieldItem of fieldsArray)
           {
-            for (const fieldItem of fieldsArray)
+
+            //"statement": {    //Config example
+            //  "addressable": [
+            //    {"field": "Email", "eq": "$.Email"},
+            //    {"field": "SMS", "eq": "$.Mobile Number"}
+            //  ]
+            //}
+
+            let s: string = ""
+
+            const fieldVar = fieldItem.eq
+
+            if (fieldVar.startsWith('$')) s = 'jsonpath'
+            else if (fieldVar.startsWith('@')) s = 'csvcolumn'
+            else if (s === "" && fieldVar.length > 3) s = 'static'  //Should never see Static but there may be a use-case
+            else S3DB_Logging("error", "999", `Error - Transform - AddressableFields.Statement invalid configuration.`)
+
+            switch (s)
             {
+              case 'static': {
+                addressableArray.push({fieldItem})
+                break
+              }
+              case 'jsonpath': {
 
-              //"statement": {    //Config example
-              //  "addressable": [
-              //    {"field": "Email", "eq": "$.Email"},
-              //    {"field": "SMS", "eq": "$.Mobile Number"}
-              //  ]
-              //}
+                let j = applyJSONMap(update, {"AddressableFields": fieldVar})
+                if (typeof j === 'undefined' || j === 'undefined' || j === "") j = "Not Found"
 
-              let s: string = ""
-
-              const fieldVar = fieldItem.eq
-
-              if (fieldVar.startsWith('$')) s = 'jsonpath'
-              else if (fieldVar.startsWith('@')) s = 'csvcolumn'
-              else if (s === "" && fieldVar.length > 3) s = 'static'  //Should never see Static but there may be a use-case
-              else S3DB_Logging("error", "999", `Error - Transform - AddressableFields.Statement invalid configuration.`)
-
-              switch (s)
-              {
-                case 'static': {
-                  addressableArray.push({fieldItem})
-                  break
+                const field = {
+                  field: fieldItem.field,
+                  eq: j
                 }
-                case 'jsonpath': {
 
-                  let j = applyJSONMap(update, {"AddressableFields": fieldVar})
-                  if (typeof j === 'undefined' || j === 'undefined' || j === "") j = "Not Found"
+                //addressable: [   //valid mutation example
+                // { field: "email", eq: "john.doe1@acoustic.co" },
+                // { field: "sms", eq: "+48555555555" }
+                //]
+
+                addressableArray.push(field)
+                break
+              }
+              case 'csvcolumn':
+                {
+                  //strip preceding '@.'
+                  let csvmapvalue = fieldVar.substring(2, fieldVar.length)
+                  let colRef = csvmapvalue as keyof typeof update
+
+                  let v = update[colRef] as string
+                  if (typeof v === "undefined" || v === "") v = "Not Found"
 
                   const field = {
                     field: fieldItem.field,
-                    eq: j
+                    eq: v
                   }
 
-                  //addressable: [   //valid mutation example
-                  // { field: "email", eq: "john.doe1@acoustic.co" },
-                  // { field: "sms", eq: "+48555555555" }
-                  //]
-
-                  addressableArray.push(field)
+                  addressableArray.push({field})
                   break
                 }
-                case 'csvcolumn':
-                  {
-                    //strip preceding '@.'
-                    let csvmapvalue = fieldVar.substring(2, fieldVar.length)
-                    let colRef = csvmapvalue as keyof typeof update
-
-                    let v = update[colRef] as string
-                    if (typeof v === "undefined" || v === "") v = "Not Found"
-
-                    const field = {
-                      field: fieldItem.field,
-                      eq: v
-                    }
-
-                    addressableArray.push({field})
-                    break
-                  }
-              }
             }
-
-            Object.assign(update, {addressable: addressableArray})
-
           }
-          else      //No 'Statement', so process individual Field definition(s)
+
+          Object.assign(update, {addressable: addressableArray})
+
+        }
+        else      //No 'Statement', so process individual Field definition(s)
+        {
+          for (const [key, fieldItem] of Object.entries(addressableFields))
           {
-            for (const [key, fieldItem] of Object.entries(addressableFields))
+
+            const addressableValue = fieldItem as string
+
+            //"Email": "Email",
+            //"Mobile Number": "Mobile Number",
+            //"Example3": "999445599",
+            //"Example4": "$.jsonfileValue", //example
+            //"Example5": "@.csvfileColumn" //example
+
+            let s: string = ""
+
+            if (addressableValue.startsWith('$')) s = 'jsonpath'
+            else if (addressableValue.startsWith('@')) s = 'csvcolumn'
+            else if (s === "" && addressableValue.length > 3) s = 'static'
+            else S3DB_Logging("error", "999", `Error - Transform - AddressableFields invalid configuration.`)
+
+            switch (s)
             {
+              case 'static': {
+                addressableArray.push({addressable: addressableValue})
+                break
+              }
+              case 'jsonpath': {
+                let j = applyJSONMap(update, {addressable: addressableValue})
+                if (typeof j === "undefined" || j === "") j = "Not Found"
 
-              const addressableValue = fieldItem as string
-
-              //"Email": "Email",
-              //"Mobile Number": "Mobile Number",
-              //"Example3": "999445599",
-              //"Example4": "$.jsonfileValue", //example
-              //"Example5": "@.csvfileColumn" //example
-
-              let s: string = ""
-
-              if (addressableValue.startsWith('$')) s = 'jsonpath'
-              else if (addressableValue.startsWith('@')) s = 'csvcolumn'
-              else if (s === "" && addressableValue.length > 3) s = 'static'
-              else S3DB_Logging("error", "999", `Error - Transform - AddressableFields invalid configuration.`)
-
-              switch (s)
-              {
-                case 'static': {
-                  addressableArray.push({addressable: addressableValue})
-                  break
+                const field = {
+                  field: fieldItem,
+                  eq: j
                 }
-                case 'jsonpath': {
-                  let j = applyJSONMap(update, {addressable: addressableValue})
-                  if (typeof j === "undefined" || j === "") j = "Not Found"
+
+                addressableArray.push({addressable: field})
+                break
+              }
+              case 'csvcolumn':
+                {
+                  //strip preceding '@.'
+                  let csvmapvalue = addressableValue.substring(2, addressableValue.length)
+                  let colRef = csvmapvalue as keyof typeof update
+
+                  let v = update[colRef] as string
+                  if (typeof v === "undefined" || v === "") v = "Not Found"
 
                   const field = {
                     field: fieldItem,
-                    eq: j
+                    eq: v
                   }
 
-                  addressableArray.push({addressable: field})
+                  addressableArray.push(field)
+
                   break
                 }
-                case 'csvcolumn':
-                  {
-                    //strip preceding '@.'
-                    let csvmapvalue = addressableValue.substring(2, addressableValue.length)
-                    let colRef = csvmapvalue as keyof typeof update
-
-                    let v = update[colRef] as string
-                    if (typeof v === "undefined" || v === "") v = "Not Found"
-
-                    const field = {
-                      field: fieldItem,
-                      eq: v
-                    }
-
-                    addressableArray.push(field)
-
-                    break
-                  }
-              }
             }
-            //})
-
-            Object.assign(update, {addressable: {addressable: addressableArray}})
-
           }
+          //})
 
-          t.push(update)
+          Object.assign(update, {addressable: {addressable: addressableArray}})
 
         }
 
-        //All Updates now transformed from consent transform
-        if (t.length === updates.length)
-        {
-          updates = t
-        } else
-        {
-          S3DB_Logging("error", "933", `Error - Transform - Applying AddressableFields Transform returns fewer records (${t.length}) than initial set ${updates.length}`)
-          throw new Error(
-            `Error - Transform - Applying AddressableFields Transform returns fewer records (${t.length}) than initial set ${updates.length}`
-          )
-        }
+        t.push(update)
 
-      } catch (e)
-      {
-        S3DB_Logging("exception", "934", `Exception - Applying AddressableFields Transform \n${e}`)
       }
 
+      //All Updates now transformed from consent transform
+      if (t.length === updates.length)
+      {
+        updates = t
+      } else
+      {
+        S3DB_Logging("error", "933", `Error - Transform - Applying AddressableFields Transform returns fewer records (${t.length}) than initial set ${updates.length}`)
+        throw new Error(
+          `Error - Transform - Applying AddressableFields Transform returns fewer records (${t.length}) than initial set ${updates.length}`
+        )
+      }
+
+    } catch (e)
+    {
+      debugger //catch
+
+      S3DB_Logging("exception", "934", `Exception - Applying AddressableFields Transform \n${e}`)
     }
 
   }
@@ -4494,12 +4782,14 @@ function transforms (updates: object[], config: CustomerConfig) {
   //"WhatsApp": "$.jsonfileValue",
   //"Email2": "@.csvfileColumn"
 
-  if (Object.keys(config.transforms.consent).length > 0)
+  if (typeof config.transforms.consent !== undefined &&
+    Object.keys(config.transforms.consent).length > 0)
   {
-    let s: string = ""
     try
     {
-      //const cc: typeof config.transforms.consent = config.transforms.consent
+
+      let s: string = ""
+
       const t: typeof updates = []
       const channelconsents: typeof config.transforms.consent = config.transforms.consent
 
@@ -4614,6 +4904,7 @@ function transforms (updates: object[], config: CustomerConfig) {
       } else
       {
         S3DB_Logging("error", "933", `Error - Transform - Applying Consent Transform returns fewer records (${t.length}) than initial set ${updates.length}`)
+
         throw new Error(
           `Error - Transform - Applying Consent Transform returns fewer records (${t.length}) than initial set ${updates.length}`
         )
@@ -4621,6 +4912,8 @@ function transforms (updates: object[], config: CustomerConfig) {
 
     } catch (e)
     {
+      debugger //catch
+
       S3DB_Logging("exception", "934", `Exception - Applying Consent Transform \n${e}`)
     }
 
@@ -4629,12 +4922,13 @@ function transforms (updates: object[], config: CustomerConfig) {
   //Transform: Audience Update
   //need loop through Config audienceupdate and build audience object.
 
-  if (Object.keys(config.transforms.audienceupdate).length > 0)
+  try
   {
-    let s: string = ""
-
-    try
+    if (typeof config.transforms.audienceupdate !== undefined &&
+      Object.keys(config.transforms.audienceupdate).length > 0)
     {
+      let s: string = ""
+
       const t: typeof updates = []
       const audienceUpdates: typeof config.transforms.audienceupdate = config.transforms.audienceupdate
 
@@ -4704,33 +4998,36 @@ function transforms (updates: object[], config: CustomerConfig) {
         updates = t
       } else
       {
-        S3DB_Logging("error", "933", `Error - Transform - Applying DateDay Transform returns fewer records (${t.length}) than initial set ${updates.length}`)
+        S3DB_Logging("error", "933", `Error - Transform - Applying AudienceUpdates Transform returns fewer records (${t.length}) than initial set ${updates.length}`)
+
         throw new Error(
-          `Error - Transform - Applying DateDay Transform returns fewer records (${t.length}) than initial set ${updates.length}`
+          `Error - Transform - Applying AudienceUpdates Transform returns fewer records (${t.length}) than initial set ${updates.length}`
         )
       }
-
-    } catch (e)
-    {
-      S3DB_Logging("exception", "934", `Exception - Applying Consent Transform \n${e}`)
     }
+  } catch (e)
+  {
+    debugger //catch
 
+    S3DB_Logging("exception", "934", `Exception - Applying AudienceUpdates Transform \n${e}`)
   }
+
 
   //Transform: Ignore
   // Ignore must be last to take advantage of cleaning up any extraneous columns after previous transforms
 
   try
   {
-
-    const igno = config.transforms.ignore as typeof config.transforms.ignore
-
-    //When processing an Aggregator file we need to remove "Customer" column that is added by the Aggregator. 
-    //Which, we will not reach here if not an Aggregator, as transforms are not applied before sending to Aggregator
+    const igno = config.transforms.ignore as typeof config.transforms.ignore ?? []
+    //When processing an Aggregator file we need to remove "Customer" column that is added by the 
+    // Aggregator. Which, we will not reach here if not an Aggregator, as transforms are not applied 
+    // before sending to Aggregator
     if (config.updates.toLowerCase() === "singular") igno.push("Customer")
 
-    if (igno.length > 0)
+    if (typeof config.transforms.ignore !== "undefined" &&
+      config.transforms.ignore.length > 0)
     {
+
       const t: typeof updates = []  //start an 'ignore processed' update set
       try
       {
@@ -4748,6 +5045,7 @@ function transforms (updates: object[], config: CustomerConfig) {
       } catch (e)
       {
         debugger //catch
+
         S3DB_Logging("exception", "932", `Exception - Transform - Applying Ignore - \n${e}`)
 
       }
@@ -4758,6 +5056,7 @@ function transforms (updates: object[], config: CustomerConfig) {
       } else
       {
         debugger //catch
+
         S3DB_Logging("error", "932", `Error - Transform - Applying Ignore returns fewer records ${t.length} than initial set ${updates.length}`)
 
         throw new Error(
@@ -4770,6 +5069,7 @@ function transforms (updates: object[], config: CustomerConfig) {
   } catch (e)
   {
     debugger //catch
+
     S3DB_Logging("exception", "934", `Exception - Applying Ignore Transform \n${e}`)
   }
 
@@ -4800,6 +5100,8 @@ function applyJSONMap (jsonObj: object, map: object) //map: {[key: string]: stri
       S3DB_Logging("info", "930", `JSONPath statement ${jpath} returns ${j} from: \nTarget Data: \n${JSON.stringify(jsonObj)} `)
     } catch (e)
     {
+      debugger //catch
+
       //if (e instanceof jsonpath.JsonPathError) { S3DB_Logging("error","",`JSONPath error: e.message`) }
 
       S3DB_Logging("warning", "930", `Error parsing data for JSONPath statement ${key} ${jpath}, ${e} \nTarget Data: \n${JSON.stringify(jsonObj)} `)
@@ -4842,6 +5144,8 @@ async function getS3Work (s3Key: string, bucket: string) {
       })
   } catch (e)
   {
+    debugger //catch
+
     const err: string = JSON.stringify(e)
     if (err.toLowerCase().indexOf("nosuchkey") > -1)
     {
@@ -4906,11 +5210,16 @@ async function deleteS3Object (s3ObjKey: string, bucket: string) {
         delRes = JSON.stringify(s3DelResult.$metadata.httpStatusCode, null, 2)
       })
       .catch((e) => {
+        debugger //catch
+
         S3DB_Logging("exception", "", `Exception - Attempting S3 Delete Command for ${s3ObjKey}: \n ${e} `)
+
         return delRes
       })
   } catch (e)
   {
+    debugger //catch
+
     S3DB_Logging("exception", "", `Exception - Attempting S3 Delete Command for ${s3ObjKey}: \n ${e} `)
   }
   return delRes
@@ -4958,7 +5267,10 @@ export async function getAccessToken (config: CustomerConfig) {
     return {accessToken}.accessToken
   } catch (e)
   {
+    debugger //catch
+
     S3DB_Logging("exception", "900", `Exception - On GetAccessToken: \n ${e}`)
+
     throw new Error(`Exception - On GetAccessToken: \n ${e}`)
   }
 }
@@ -5251,8 +5563,9 @@ async function buildMutationsConnect (updates: object[], config: CustomerConfig)
     }
   } catch (e)
   {
-    S3DB_Logging("exception", "", `Exception - Build Mutations - CreateContacts - ${e}`)
     debugger //catch
+
+    S3DB_Logging("exception", "", `Exception - Build Mutations - CreateContacts - ${e}`)
   }
 
 
@@ -5388,8 +5701,9 @@ async function buildMutationsConnect (updates: object[], config: CustomerConfig)
     }
   } catch (e)
   {
-    S3DB_Logging("exception", "", `Exception - Build Mutations - UpdateContacts - ${e}`)
     debugger //catch
+
+    S3DB_Logging("exception", "", `Exception - Build Mutations - UpdateContacts - ${e}`)
   }
 
 
@@ -5539,6 +5853,8 @@ async function postToConnect (mutations: string, custconfig: CustomerConfig, upd
       })
       .catch((e) => {
 
+        debugger //catch
+
         if (e.message.indexOf("econnreset") > -1)
         {
           S3DB_Logging("exception", "829", `PostToConnect Error (then.catch) - Temporary failure to POST the Updates - Marked for Retry. ${e}`)
@@ -5551,6 +5867,8 @@ async function postToConnect (mutations: string, custconfig: CustomerConfig, upd
       })
   } catch (e)
   {
+    debugger //catch
+
     S3DB_Logging("error", "829", `PostToConnect - Error (try-catch): ${e}`)
     return "unsuccessful post"
   }
@@ -5708,6 +6026,7 @@ export async function postToCampaign (
       return `Successfully POSTed (${count}) Updates - Result: ${result}`
     })
     .catch((e) => {
+      debugger //catch
 
       if (e.indexOf("econnreset") > -1)
       {
@@ -5784,6 +6103,8 @@ async function getAnS3ObjectforTesting (bucket: string) {
       return s3Key
     })
     .catch((e) => {
+      debugger //catch
+
       S3DB_Logging("exception", "", `Exception - On S3 List Command for Testing Objects from ${bucket}: ${e} `)
     })
 
