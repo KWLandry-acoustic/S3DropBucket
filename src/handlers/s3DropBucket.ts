@@ -560,7 +560,7 @@ const testdata = ""
 //testS3Key = "TestData/alerusrepsignature_advisors.json"
 //testS3Key = "TestData/alerusreassignrepsignature_advisors.json"
 //testS3Key = "TestData/KingsfordWeather_00210.csv"
-//testS3Key = "TestData/KingsfordWeather_00211.csv"
+testS3Key = "TestData/KingsfordWeather_00211.csv"
 
 //testS3Key = "TestData/MasterCustomer_Sample1.json"
 //testS3Key = "MasterCustomer_Sample1-json-update-1-6-c436dca1-6ec9-4c8b-bc78-6e1d774591ca.json"
@@ -568,8 +568,8 @@ const testdata = ""
 
 //testS3Key = "TestData/KingsfordWeather_S3DropBucket_Aggregator-10-2025-01-09-19-29-39-da334f11-53a4-31cc-8c9f-8b417725560b.json"
 //testS3Key = "TestData/Funding_Circle_Limited_CampaignDatabase1_2025_02_28T19_19_26_268Z.json"
-testS3Key = "TestData/alerusrepsignature_advisors-mar232025.json"
-                    //alerusrepsignature_advisors_mar232025.json
+//testS3Key = "TestData/alerusrepsignature_advisors-mar232025.json"
+
 
 /**
  * A Lambda function to process the Event payload received from S3.
@@ -1285,9 +1285,7 @@ async function processS3ObjectContentStream (
               //
               //Next, Build a consistent Object of an Array of Objects
               // [{},{},{},...]
-
-
-              debugger ///
+              
 
               //Debug a buried Undefined Exception in Handler
               if (typeof oa === "undefined") S3DB_Logging("exception", "", `OnData Array is Undefined`)
@@ -1398,7 +1396,6 @@ async function processS3ObjectContentStream (
                 //const updates = chunksGlobal
                 const updates = []
 
-                debugger ///
                 while (chunksGlobal.length > 0)
                 {
                   let chunk = []
@@ -1782,12 +1779,12 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
           }
           else if (postResult.toLowerCase().indexOf("partially successful") > -1)
           {
-            S3DB_Logging("warn", "508", `Work Partially Successful Post of Updates (work file (${s3dbQM.workKey}) \nQueue MessageId: ${q.messageId}, \nUpdated ${s3dbQM.custconfig.listname} from ${s3dbQM.workKey}, however there were some exceptions: \n${postResult} `)
+            S3DB_Logging("warn", "508", `Updates (Partially Successful) POSTed (work file (${s3dbQM.workKey}) \nQueue MessageId: ${q.messageId}, \nUpdated ${s3dbQM.custconfig.listname} from ${s3dbQM.workKey}, however there were some exceptions: \n${postResult} `)
             deleteWork = true
           }
           else if (postResult.toLowerCase().indexOf("successfully posted") > -1)
           {
-            S3DB_Logging("info", "508", `Work Successfully Posted (work file (${s3dbQM.workKey}). \nQueue MessageId: ${q.messageId} \nUpdated ${s3dbQM.custconfig.listname} from ${s3dbQM.workKey}, \n${postResult} \nThe Work will now be deleted from the S3 Process Queue`)
+            S3DB_Logging("info", "508", `Updates (Successfully) POSTed (work file (${s3dbQM.workKey}). \nQueue MessageId: ${q.messageId} \nUpdated ${s3dbQM.custconfig.listname} from ${s3dbQM.workKey}, \n${postResult} \nThe Work will now be deleted from the S3 Process Queue`)
             deleteWork = true
           }
           else
