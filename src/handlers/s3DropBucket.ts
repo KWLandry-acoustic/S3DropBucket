@@ -470,7 +470,7 @@ interface ProcessS3ObjectStreamResult {
   DeleteResult: string
 }
 
-let ProcessS3ObjectStreamResolutionInit: ProcessS3ObjectStreamResult = {
+let ProcessS3ObjectStreamOutcome: ProcessS3ObjectStreamResult = {
   Key: '',
   Processed: '',
   ReadStreamEndResult: '',
@@ -547,10 +547,6 @@ const testdata = ""
 //testS3Key = "TestData/cloroxweather_99706.csv"
 //testS3Key = "TestData/pura_S3DropBucket_Aggregator-8-2024-03-19-16-42-48-46e884aa-8c6a-3ff9-8d32-c329395cf311.json"
 //testS3Key = "TestData/pura_2024_02_26T05_53_26_084Z.json"
-//testS3Key = "TestData/alerusrepsignature_sample.json"
-//testS3Key = "TestData/alerusrepsignature_advisors.json"
-//testS3Key = "TestData/alerusrepsignature_sampleformatted.json"
-//testS3Key = "TestData/alerusrepsignature_sample - min.json"
 //testS3Key = "TestData/alerusreassignrepsignature_advisors.json"
 //testS3Key = "TestData/Funding_Circle_Limited_CampaignDatabase1_2024_11_12T11_20_56_317Z.json"
 //testS3Key = "TestData/Funding_Circle_Limited_CampaignDatabase1_2024_11_28T22_16_03_400Z_json-update-1-1-0a147575-2123-44ff-a7bf-d12b0a0d839f.xml"
@@ -570,9 +566,10 @@ const testdata = ""
 //testS3Key = "MasterCustomer_Sample1-json-update-1-6-c436dca1-6ec9-4c8b-bc78-6e1d774591ca.json"
 //testS3Key = "MasterCustomer_Sample1-json-update-1-6-0bb2f92e-3344-41e6-af95-90f5d32a73dc.json"
 
-testS3Key = "TestData/KingsfordWeather_S3DropBucket_Aggregator-10-2025-01-09-19-29-39-da334f11-53a4-31cc-8c9f-8b417725560b.json"
+//testS3Key = "TestData/KingsfordWeather_S3DropBucket_Aggregator-10-2025-01-09-19-29-39-da334f11-53a4-31cc-8c9f-8b417725560b.json"
 //testS3Key = "TestData/Funding_Circle_Limited_CampaignDatabase1_2025_02_28T19_19_26_268Z.json"
-
+testS3Key = "TestData/alerusrepsignature_advisors-mar232025.json"
+                    //alerusrepsignature_advisors_mar232025.json
 
 /**
  * A Lambda function to process the Event payload received from S3.
@@ -770,11 +767,10 @@ export const s3DropBucketHandler: Handler = async (
 
       batchCount = 0
       recs = 0
-      let streamRes = ProcessS3ObjectStreamResolutionInit
-
+      
       try
       {
-        ProcessS3ObjectStreamResolutionInit = await processS3ObjectContentStream(
+        ProcessS3ObjectStreamOutcome = await processS3ObjectContentStream(
           key,
           bucket,
           customersConfig
@@ -810,7 +806,7 @@ export const s3DropBucketHandler: Handler = async (
             //if (typeof streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult === "undefined")
             //{
             //  S3DB_Logging("info", "504", `Processing Complete for ${key}. Stream Result StoreAndQueueWorkResult Not Complete.  \n${JSON.stringify(streamRes)}`)
-            //  //streamRes.OnEndStreamEndResult =    //ProcessS3ObjectStreamResolutionInit.OnEndStreamEndResult
+            //  //streamRes.OnEndStreamEndResult =    //ProcessS3ObjectStreamOutcome.OnEndStreamEndResult
             //}
 
             //if (typeof streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToS3WorkBucketResults?.S3ProcessBucketResult === "undefined")
@@ -827,7 +823,8 @@ export const s3DropBucketHandler: Handler = async (
 
 
             if (
-              (typeof streamRes.OnEndStreamEndResult.StoreAndQueueWorkResult.PutToFireHoseAggregatorResult !== "undefined" && streamRes.OnEndStreamEndResult.StoreAndQueueWorkResult.PutToFireHoseAggregatorResult === "200") ||
+              (typeof streamRes.OnEndStreamEndResult.StoreAndQueueWorkResult.PutToFireHoseAggregatorResult !== "undefined" &&
+                streamRes.OnEndStreamEndResult.StoreAndQueueWorkResult.PutToFireHoseAggregatorResult === "200") ||
 
               (typeof streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToS3WorkBucketResults?.S3ProcessBucketResult !== "undefined" &&
                 streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToS3WorkBucketResults?.S3ProcessBucketResult === "200") &&
@@ -886,14 +883,14 @@ export const s3DropBucketHandler: Handler = async (
 
             const err = `Exception - Process S3 Object Stream Catch - \n${e} \nStack: \n${e.stack}`
 
-            ProcessS3ObjectStreamResolutionInit = {
-              ...ProcessS3ObjectStreamResolutionInit,
+            ProcessS3ObjectStreamOutcome = {
+              ...ProcessS3ObjectStreamOutcome,
               ProcessS3ObjectStreamCatch: err,
             }
 
-            S3DB_Logging("exception", "", JSON.stringify(ProcessS3ObjectStreamResolutionInit))
+            S3DB_Logging("exception", "", JSON.stringify(ProcessS3ObjectStreamOutcome))
 
-            return ProcessS3ObjectStreamResolutionInit
+            return ProcessS3ObjectStreamOutcome
           })
       } catch (e)
       {
@@ -904,7 +901,7 @@ export const s3DropBucketHandler: Handler = async (
 
 
 
-      S3DB_Logging("info", "903", `Returned from Processing S3 Object Content Stream for ${key}. Result: ${JSON.stringify(ProcessS3ObjectStreamResolutionInit)}`)
+      S3DB_Logging("info", "903", `Returned from Processing S3 Object Content Stream for ${key}. Result: ${JSON.stringify(ProcessS3ObjectStreamOutcome)}`)
 
       //Check for important Config updates (which caches the config in Lambdas long-running cache)
       try
@@ -942,7 +939,7 @@ export const s3DropBucketHandler: Handler = async (
     //Need to protect against the Result String becoming excessively long
 
     const n = new Date().toISOString()
-    let objectStreamResolution = n + "  -  " + JSON.stringify(ProcessS3ObjectStreamResolutionInit) + "\n\n"
+    let objectStreamResolution = n + "  -  " + JSON.stringify(ProcessS3ObjectStreamOutcome) + "\n\n"
     const osrl = objectStreamResolution.length
 
     if (osrl > 10000)
@@ -951,18 +948,18 @@ export const s3DropBucketHandler: Handler = async (
       objectStreamResolution = `Excessive Length of ProcessS3ObjectStreamResolution: ${osrl} Truncated: \n ${objectStreamResolution.substring(0, 5000
       )} ... ${objectStreamResolution.substring(osrl - 5000, osrl)}`
 
-      S3DB_Logging("warn", "920", `Final outcome (truncated to first and last 5,000 characters) of all processing for ${ProcessS3ObjectStreamResolutionInit.Key}: \n ${JSON.stringify(objectStreamResolution)}`)
+      S3DB_Logging("warn", "920", `Final outcome (truncated to first and last 5,000 characters) of all processing for ${ProcessS3ObjectStreamOutcome.Key}: \n ${JSON.stringify(objectStreamResolution)}`)
     }
 
 
-    const k = ProcessS3ObjectStreamResolutionInit.Key
-    const p = ProcessS3ObjectStreamResolutionInit.Processed
+    const k = ProcessS3ObjectStreamOutcome.Key
+    const p = ProcessS3ObjectStreamOutcome.Processed
 
     S3DB_Logging("info", "505", `Completing S3DropBucket Processing of Request Id ${event.Records[0].responseElements["x-amz-request-id"]} for ${k} \n${p}`)
-    S3DB_Logging("info", "920", `Final outcome of all processing for ${ProcessS3ObjectStreamResolutionInit.Key}: \n${JSON.stringify(objectStreamResolution)}`)
+    S3DB_Logging("info", "920", `Final outcome of all processing for ${ProcessS3ObjectStreamOutcome.Key}: \n${JSON.stringify(objectStreamResolution)}`)
 
     //Done with logging the results of this pass, empty the object for the next processing cycle
-    ProcessS3ObjectStreamResolutionInit = {} as ProcessS3ObjectStreamResult
+    ProcessS3ObjectStreamOutcome = {} as ProcessS3ObjectStreamResult
 
     return objectStreamResolution   //Return the results logging object
   } catch (e)
@@ -1061,7 +1058,7 @@ async function processS3ObjectContentStream (
 
   let streamResult: ProcessS3ObjectStreamResult  // = ProcessS3ObjectStreamResolution
 
-  ProcessS3ObjectStreamResolutionInit = await s3
+  ProcessS3ObjectStreamOutcome = await s3
     .send(new GetObjectCommand(s3C))
     .then(async (getS3StreamResult: GetObjectCommandOutput) => {
       if (getS3StreamResult.$metadata.httpStatusCode != 200)
@@ -1273,7 +1270,7 @@ async function processS3ObjectContentStream (
             {
               const oa = s3Chunk.value
 
-              //What is possible to come through here (Always JSON)
+              //What JSON is possible to come through here (at this point it's always JSON)
               //  {} a single Object - Pura
               //  [{},{},{}] An Array of Objects - Alerus
               //  An Array of Line Delimited Objects - (Firehose Aggregated files)
@@ -1289,9 +1286,13 @@ async function processS3ObjectContentStream (
               //Next, Build a consistent Object of an Array of Objects
               // [{},{},{},...]
 
-              //Debug buried undefined exception in Handler
-              if (typeof oa === "undefined") S3DB_Logging("exception", "", `OnData Array is Undefined`)
 
+              debugger ///
+
+              //Debug a buried Undefined Exception in Handler
+              if (typeof oa === "undefined") S3DB_Logging("exception", "", `OnData Array is Undefined`)
+              //
+              
               if (Array.isArray(oa))
               {
                 preserveArraySize = oa.length
@@ -1328,21 +1329,22 @@ async function processS3ObjectContentStream (
             //At each 99 updates, package them up, if there are fewer than 99 then "OnEnd" will pick up the remainder. 
             try 
             {
-              if (chunksGlobal.length > 99)
+              if (chunksGlobal.length > 99)  //ToDo: refactor for Connect Limits, for now, can use 100 and let arrive at Connect POST where it will be carved up as 25x4
               {
                 const updates = []
+                let limit = 100
 
                 while (chunksGlobal.length > 0)
                 {
-                  const chunk = chunksGlobal.splice(0, 100)
+                  const chunk = chunksGlobal.splice(0, limit)
                   updates.push(...chunk)
-                  S3DB_Logging("info", "938", `S3ContentStream OnData - A Batch (${batchCount}) of Updates from ${key} is now being sent to Packaging. \nPreviously processed ${recs} records of the size of the data read of ${preserveArraySize} records.`)
+                  S3DB_Logging("info", "938", `S3ContentStream OnData - A Batch (${batchCount}) of ${chunk.length} Updates from ${key} is now being sent to Packaging. \nPreviously processed ${recs} records of the size of the data read of ${preserveArraySize} records. \n${chunksGlobal.length} records are waiting to be processed.`)
                   recs += chunk.length
                   batchCount++
 
                   packageResult = await packageUpdates(updates, key, custConfig, iter) as StoreAndQueueWorkResults
 
-                  //ToDo: Refactor this status approach, need a way to preserve every Update status without storing volumes
+                  //ToDo: Refactor this status reporting approach, need a way to preserve every Update status without storing volumes
                   streamResult = {
                     ...streamResult,
                     OnDataResult: {StoreAndQueueWorkResult: packageResult}
@@ -1396,18 +1398,20 @@ async function processS3ObjectContentStream (
                 //const updates = chunksGlobal
                 const updates = []
 
+                debugger ///
                 while (chunksGlobal.length > 0)
                 {
                   let chunk = []
-                  let limit = 1
+                  let limit = 100
                   
-                  if (custConfig.updatetype.toLowerCase() === "campaign") limit = 100 
-                  if (custConfig.updatetype.toLowerCase() === "connect") limit = 25 
+                  //if (custConfig.updatetype.toLowerCase() === "campaign") limit = 100 
+                  //if (custConfig.updatetype.toLowerCase() === "connect") limit = 25 
                   
                   chunk = chunksGlobal.splice(0, limit)
       
                   updates.push(...chunk)
-                  S3DB_Logging("info", "938", `S3ContentStream OnEnd - A Batch (${batchCount}) of Updates from ${key} is now being sent to Packaging. \nPreviously processed ${recs} records of the size of the data read of ${preserveArraySize} records.`)
+                  
+                  S3DB_Logging("info", "938", `S3ContentStream OnEnd - A Batch (${batchCount}) of ${chunk.length} Updates from ${key} is now being sent to Packaging. \nPreviously processed ${recs} records of the size of the data read of ${preserveArraySize} records. \n${chunksGlobal.length} records are waiting to be processed.`)
 
                   recs += chunk.length
                   batchCount++
@@ -1502,7 +1506,7 @@ async function processS3ObjectContentStream (
     })
 
   // return processS3ObjectResults
-  return ProcessS3ObjectStreamResolutionInit
+  return ProcessS3ObjectStreamOutcome
   //return streamResult
 }
 
@@ -1722,6 +1726,8 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
           //Retrieve Contents of the Work File
           S3DB_Logging("info", "512", `S3 Retrieve results for Work file ${s3dbQM.workKey}: ${JSON.stringify(work)}`)
 
+          
+
           if ((custconfig.updatetype.toLowerCase() === "createcontacts") ||
             (custconfig.updatetype.toLowerCase() === "updatecontacts") ||
             (custconfig.updatetype.toLowerCase() === "createattributes")
@@ -1736,6 +1742,8 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
             )
           }
 
+          
+
           if (custconfig.updatetype.toLowerCase() === "relational" ||
             custconfig.updatetype.toLowerCase() === "dbkeyed" ||
             custconfig.updatetype.toLowerCase() === "dbnonkeyed")
@@ -1747,12 +1755,15 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
               s3dbQM.workKey
             )
           }
+
+
           //  postResult can contain:
           //      retry
           //      unsuccessful post
           //      partially successful
           //      successfully posted
 
+        
           S3DB_Logging("info", "509", `POST Result for ${s3dbQM.workKey}: ${postResult} `)
 
           let deleteWork = false
@@ -2572,8 +2583,7 @@ async function getFormatCustomerConfig (filekey: string) {
   if (process.env.S3DropBucketConfigBucket === "") process.env.S3DropBucketConfigBucket = "s3dropbucket-configs"
   const ccl = await getAllCustomerConfigsList(process.env.S3DropBucketConfigBucket ?? "s3dropbucket-configs")
   process.env.S3DropBucketCustomerConfigsList = JSON.stringify(ccl)
-
-
+  
   // Retrieve file's prefix as the Customer Name
   if (!filekey)
     throw new Error(
@@ -5760,7 +5770,7 @@ async function postToConnect (mutations: string, custconfig: CustomerConfig, upd
 
   S3DB_Logging("info", "805", `Updates to be POSTed (${workFile}) are: ${mutations}`)
 
-  let connectQueryResult: string = ""
+  let connectMutationResult: string = ""
 
   interface ConnectSuccessResult {
     "data": {
@@ -5788,7 +5798,7 @@ async function postToConnect (mutations: string, custconfig: CustomerConfig, upd
 
   try
   {
-    connectQueryResult = await fetch(host, requestOptions)
+    connectMutationResult = await fetch(host, requestOptions)
       .then((response) => response.json())  // .text())
       .then(async (result) => {
 
@@ -5889,7 +5899,7 @@ async function postToConnect (mutations: string, custconfig: CustomerConfig, upd
   //partially successful
   //successfully posted
 
-  return connectQueryResult
+  return connectMutationResult
 }
 
 
