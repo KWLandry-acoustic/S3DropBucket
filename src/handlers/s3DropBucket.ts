@@ -36,9 +36,12 @@ import {
   GetObjectCommandOutput,
   GetObjectCommandInput,
   DeleteObjectCommandOutput,
-  InventoryConfigurationFilterSensitiveLog,
-  //CopyObjectCommand,
+  InventoryConfigurationFilterSensitiveLog
 } from "@aws-sdk/client-s3"
+
+import {NodeHttpHandler} from "@smithy/node-http-handler"
+import https from "https";  
+
 
 import {
   DeleteMessageCommand,
@@ -77,6 +80,7 @@ import {
 //json-node = Stream compatible package
 //import {JSONParser, Tokenizer, TokenParser} from '@streamparser/json-node'
 import {JSONParser} from '@streamparser/json-node'
+
 //import {transform} from '@streamparser/json-node'
 import {transform} from "stream-transform"
 
@@ -86,7 +90,7 @@ import {parse} from "csv-parse"
 
 import jsonpath from "jsonpath"
 
-import {Ajv} from "ajv"
+import {Ajv} from "ajv"  //Ajv JSON schema validator
 
 import sftpClient, {ListFilterFunction} from "ssh2-sftp-client"
 
@@ -614,15 +618,51 @@ export const s3DropBucketHandler: Handler = async (
       testS3Bucket = ""
       localTesting = false
     }
-
+    
+    
     if (typeof process.env.AWS_REGION !== "undefined") 
     {
-      s3 = new S3Client({region: process.env.AWS_REGION})    //{region: 'us-east-1'})
+      s3 = new S3Client({
+        region: process.env.AWS_REGION,         //{region: 'us-east-1'})
+        requestHandler: new NodeHttpHandler({
+          requestTimeout: 3_000,
+          httpsAgent: new https.Agent({
+            keepAlive: true,
+            maxSockets: 100
+          })
+        })
+      })
+      
+      //const client = new SQSClient({
+      //  credentials: {accessKeyId, secretAccessKey},
+      //  endpoint,
+      //  region,
+      //  requestHandler: new NodeHttpHandler({
+      //    connectionTimeout,
+      //    socketTimeout,
+      //    httpAgent: new http.Agent({
+      //      keepAlive,
+      //      maxFreeSockets,
+      //      maxSockets,
+      //      timeout,
+      //    }),
+      //  }),
+      //});
     }
     else
       if (typeof process.env.S3DropBucketRegion !== "undefined" && process.env.S3DropBucketRegion?.length > 6)
-        s3 = new S3Client({region: process.env.S3DropBucketRegion})
-
+      {
+        s3 = new S3Client({
+          region: process.env.S3DropBucketRegion,         //{region: 'us-east-1'})
+          requestHandler: new NodeHttpHandler({
+            requestTimeout: 3_000,
+            httpsAgent: new https.Agent({
+              keepAlive: true,
+              maxSockets: 100
+            })
+          })
+        })
+      }
       else 
       {
         S3DB_Logging("warn", "96", `AWS Region can not be determined. Region returns as:${process.env.AWS_REGION}`)
@@ -1579,13 +1619,34 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
 
     if (typeof process.env.AWS_REGION !== "undefined") 
     {
-      s3 = new S3Client({region: process.env.AWS_REGION})    //{region: 'us-east-1'})
+      s3 = new S3Client({
+        region: process.env.AWS_REGION,         //{region: 'us-east-1'})
+        requestHandler: new NodeHttpHandler({
+          requestTimeout: 3_000,
+          httpsAgent: new https.Agent({
+            keepAlive: true,
+            maxSockets: 100
+          })
+        })
+      })
+
     }
     else
     {
       if (typeof process.env.S3DropBucketRegion !== "undefined" && process.env.S3DropBucketRegion?.length > 6)
-        s3 = new S3Client({region: process.env.S3DropBucketRegion})
-
+      {
+        
+        s3 = new S3Client({
+          region: process.env.S3DropBucketRegion,         //{region: 'us-east-1'})
+          requestHandler: new NodeHttpHandler({
+            requestTimeout: 3_000,
+            httpsAgent: new https.Agent({
+              keepAlive: true,
+              maxSockets: 100
+            })
+          })
+        })
+      }
       else 
       {
         S3DB_Logging("warn", "96", `AWS Region can not be determined. Region returns as:${process.env.AWS_REGION}`)
