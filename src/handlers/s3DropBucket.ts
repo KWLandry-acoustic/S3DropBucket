@@ -568,7 +568,8 @@ const testdata = ""
 
 //testS3Key = "TestData/KingsfordWeather_S3DropBucket_Aggregator-10-2025-01-09-19-29-39-da334f11-53a4-31cc-8c9f-8b417725560b.json"
 //testS3Key = "TestData/Funding_Circle_Limited_CampaignDatabase1_2025_02_28T19_19_26_268Z.json"
-testS3Key = "TestData/alerusrepsignature_advisors-mar232025.json"
+//testS3Key = "TestData/alerusrepsignature_advisors-mar232025.json"
+testS3Key = "TestData/MasterCustomer_Sample-mar232025.json"
 
 
 /**
@@ -1609,6 +1610,8 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
     S3DB_Logging("info", "98", `S3DropBucket Configuration: ${JSON.stringify(S3DBConfig)} `)
     S3DB_Logging("info", "99", `S3DropBucket Logging Options: ${process.env.S3DropBucketSelectiveLogging} `)
 
+    S3DB_Logging("info", "506", `Received a Batch of SQS Work Queue Events (${event.Records.length} Work Queue Records): \n${JSON.stringify(event)} \nContext: ${JSON.stringify(context)} \nRecords: \n${JSON.stringify(event.Records)}`)
+
     if (S3DBConfig.s3dropbucket_workqueuequiesce)
     {
       S3DB_Logging("warn", "923", `WorkQueue Quiesce is in effect, no New Work will be Queued up in the SQS Process Queue.`)
@@ -1643,8 +1646,6 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
     let custconfig: CustomerConfig = customersConfig
 
     let postResult: string = "false"
-
-    S3DB_Logging("info", "506", `Received a Batch of SQS Work Queue Events (${event.Records.length} Work Queue Records): \n${JSON.stringify(event)} \nContext: ${JSON.stringify(context)}`)
 
     //Empty the BatchFail array
     sqsBatchFail.batchItemFailures.forEach(() => {
@@ -1792,7 +1793,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
             S3DB_Logging("exception", "", `Results of Posting Work is not determined: ${JSON.stringify(postResult)} \n(work file (${s3dbQM.workKey}). \nQueue MessageId: ${q.messageId} \nUpdated ${s3dbQM.custconfig.listname} from ${s3dbQM.workKey}, \n${postResult}`)
           }
 
-          if (deleteWork)
+          if (!localTesting && deleteWork)
           {
             //Delete the Work file
             const fd = await deleteS3Object(
@@ -5769,6 +5770,13 @@ async function postToConnect (mutations: string, custconfig: CustomerConfig, upd
 
   let connectMutationResult: string = ""
 
+
+  //{       //graphQL Spec Doc
+  //  "data": { ...},
+  //  "errors": [... ],
+  //    "extensions": { ...}
+  //}
+
   interface ConnectSuccessResult {
     "data": {
       "createContacts": {
@@ -5793,10 +5801,27 @@ async function postToConnect (mutations: string, custconfig: CustomerConfig, upd
     ]
   }
 
+  debugger ///
+
   try
   {
+
+    //{         //graphQL Spec Doc
+    //  "query": "...",
+    //    "operationName": "...",
+    //      "variables": {"myVariable": "someValue", ...},
+    //  "extensions": {"myExtension": "someValue", ...}
+    //}
+
+
+
     connectMutationResult = await fetch(host, requestOptions)
-      .then((response) => response.json())  // .text())
+      .then(async (response) => {
+        //await response.json()  // .text())
+        const rj = await response.json()
+        S3DB_Logging("info", "808", `POST to Connect Raw Response: \n${JSON.stringify(rj)}`)
+        return rj
+  })
       .then(async (result) => {
 
         //ToDo: Create specific Messaging to line out this error as the Target DB does not have the attribute Defined
@@ -5832,7 +5857,7 @@ async function postToConnect (mutations: string, custconfig: CustomerConfig, upd
 
         //POST Result: {"message": "Endpoint request timed out"}
 
-        S3DB_Logging("info", "808", `Connect Mutation POST - Response (${workFile}) : ${JSON.stringify(result)}`)
+        S3DB_Logging("info", "809", `Connect Mutation POST - Response (${workFile}) : ${JSON.stringify(result)}`)
 
         if (JSON.stringify(result).indexOf("Endpoint request timed out") > 0)
         {
