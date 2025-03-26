@@ -122,6 +122,18 @@ import sftpClient, {ListFilterFunction} from "ssh2-sftp-client"
 const awsRegion = process.env.AWS_REGION
 const envRegion = process.env.S3DropBucketRegion
 
+
+let smithyReqHandler = new NodeHttpHandler({      //currently using only on S3 Client
+  socketAcquisitionWarningTimeout: 5_000,
+  requestTimeout: 3_000,
+  httpsAgent: new https.Agent({
+    keepAlive: true,
+    maxSockets: 100
+  })
+})
+
+
+
 let s3 = {} as S3Client
 
 const fh_Client = new FirehoseClient({region: process.env.S3DropBucketRegion})
@@ -624,13 +636,7 @@ export const s3DropBucketHandler: Handler = async (
     {
       s3 = new S3Client({
         region: process.env.AWS_REGION,         //{region: 'us-east-1'})
-        requestHandler: new NodeHttpHandler({
-          requestTimeout: 3_000,
-          httpsAgent: new https.Agent({
-            keepAlive: true,
-            maxSockets: 100
-          })
-        })
+        requestHandler: smithyReqHandler
       })
       
       //const client = new SQSClient({
@@ -654,13 +660,7 @@ export const s3DropBucketHandler: Handler = async (
       {
         s3 = new S3Client({
           region: process.env.S3DropBucketRegion,         //{region: 'us-east-1'})
-          requestHandler: new NodeHttpHandler({
-            requestTimeout: 3_000,
-            httpsAgent: new https.Agent({
-              keepAlive: true,
-              maxSockets: 100
-            })
-          })
+          requestHandler: smithyReqHandler
         })
       }
       else 
@@ -1621,13 +1621,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
     {
       s3 = new S3Client({
         region: process.env.AWS_REGION,         //{region: 'us-east-1'})
-        requestHandler: new NodeHttpHandler({
-          requestTimeout: 3_000,
-          httpsAgent: new https.Agent({
-            keepAlive: true,
-            maxSockets: 100
-          })
-        })
+        requestHandler: smithyReqHandler
       })
 
     }
@@ -1638,13 +1632,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
         
         s3 = new S3Client({
           region: process.env.S3DropBucketRegion,         //{region: 'us-east-1'})
-          requestHandler: new NodeHttpHandler({
-            requestTimeout: 3_000,
-            httpsAgent: new https.Agent({
-              keepAlive: true,
-              maxSockets: 100
-            })
-          })
+          requestHandler: smithyReqHandler
         })
       }
       else 
