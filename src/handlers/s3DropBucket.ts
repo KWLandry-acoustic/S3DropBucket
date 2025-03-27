@@ -6037,7 +6037,7 @@ export async function postToCampaign (
       if (
         result.toLowerCase().indexOf("max number of concurrent") > -1 ||
         result.toLowerCase().indexOf("access token has expired") > -1 ||
-        result.toLowerCase().indexOf("Error saving row") > -1
+        result.toLowerCase().indexOf("error saving row") > -1
       )
       {
         S3DB_Logging("warn", "929", `Temporary Failure - POST Updates - Marked for Retry. \n${result}`)
