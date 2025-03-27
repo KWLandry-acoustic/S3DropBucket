@@ -823,7 +823,14 @@ export const s3DropBucketHandler: Handler = async (
             streamRes.Key = key
             streamRes.Processed = streamRes.OnEndRecordStatus
 
-            S3DB_Logging("info", "503", `Completed processing all records of the S3 Object ${key} \neTag: ${et}. \nStatus: ${streamRes.OnEndRecordStatus}`)
+            const recordProcessingOutcome = `"Processing Outcome:" ${streamRes.OnEndRecordStatus}
+            \n"As: "
+            \n"Wrote Work To Work Bucket": ${streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToS3WorkBucketResults?.S3ProcessBucketResult}
+            \n"Queued Work To Work Queue" ${streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToSQSWorkQueueResults?.SQSWriteResult}
+            \n "Or: "
+            \n"Put To Firehose": ${streamRes.OnEndStreamEndResult.StoreAndQueueWorkResult.PutToFireHoseAggregatorResult}. `
+          
+            S3DB_Logging("info", "503", `Completed processing all records of the S3 Object ${key} \neTag: ${et}. \nStatus: ${recordProcessingOutcome}`)
 
 
             //Don't delete the test data
@@ -1659,7 +1666,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
     S3DB_Logging("info", "98", `S3DropBucket Configuration: ${JSON.stringify(S3DBConfig)} `)
     S3DB_Logging("info", "99", `S3DropBucket Logging Options: ${process.env.S3DropBucketSelectiveLogging} `)
 
-    S3DB_Logging("info", "506", `Received a Batch of SQS Work Queue Events (${event.Records.length} Work Queue Records): \n${JSON.stringify(event)} \nContext: ${JSON.stringify(context)} \nRecords: \n${JSON.stringify(event.Records)}`)
+    S3DB_Logging("info", "506", `Received a Batch of SQS Work Queue Events (${event.Records.length} Work Queue Records): \n${JSON.stringify(event)} \nContext: ${JSON.stringify(context)}`)
 
     if (S3DBConfig.s3dropbucket_workqueuequiesce)
     {
@@ -6036,8 +6043,7 @@ export async function postToCampaign (
 
       if (
         result.toLowerCase().indexOf("max number of concurrent") > -1 ||
-        result.toLowerCase().indexOf("access token has expired") > -1 ||
-        result.toLowerCase().indexOf("error saving row") > -1
+        result.toLowerCase().indexOf("access token has expired") > -1
       )
       {
         S3DB_Logging("warn", "929", `Temporary Failure - POST Updates - Marked for Retry. \n${result}`)
@@ -6077,22 +6083,18 @@ export async function postToCampaign (
 
         S3DB_Logging("warn", "928", `Partially Successful POST of the Updates (${f.length} FaultStrings on ${count} updates from ${workFile}) - \nResults\n ${JSON.stringify(faults)}`)
 
-        return `Partially Successful - (${f.length
-          } FaultStrings on ${count} updates) \n${JSON.stringify(faults)}`
+        return `Partially Successful - (${f.length} FaultStrings on ${count} updates) \n${JSON.stringify(faults)}`
       }
-
+      //<FAILURE failure_type="transient" description = "Error saving row" >
       else if (result.indexOf("<FAILURE failure_type") > -1)
       {
         let msg = ""
 
         //Add this Fail
-        //    //<SUCCESS> true < /SUCCESS>
-        //    //    < FAILURES >
-        //    //    <FAILURE failure_type="permanent" description = "There is no column registeredAdvisorTitle" >
-        //
-
-        //    const m = result.match( /<FAILURE failure_(.*)"/gm )
-
+          //<SUCCESS> true < /SUCCESS>
+          //    < FAILURES >
+          //    <FAILURE failure_type="permanent" description = "There is no column registeredAdvisorTitle" >
+      
         const m = result.match(/<FAILURE (.*)>$/g)
 
         if (m && m?.length > 0)
