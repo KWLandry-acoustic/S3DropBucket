@@ -1471,10 +1471,29 @@ async function processS3ObjectContentStream (
                     })
                 }
               }
-
-              streamResult = {
-                ...streamResult,
-                OnEndStreamEndResult: {StoreAndQueueWorkResult: packageResult}
+              else
+              {
+                S3DB_Logging("info", "938", `S3ContentStream OnEnd - No Remaining Updates to Process from ${key}. \nPreviously processed ${recs} records of the size of the data read of ${preserveArraySize} records.`)
+                            
+                streamResult = {
+                  ...streamResult,
+                  OnEndStreamEndResult: {
+                    StoreAndQueueWorkResult: {
+                      AddWorkToS3WorkBucketResults: {
+                        versionId: "",
+                        S3ProcessBucketResult: "All Work Packaged in OnData, No Work Left to Package",
+                        AddWorkToS3ProcessBucket: ""
+                      },
+                      AddWorkToSQSWorkQueueResults: {
+                        SQSWriteResult: "All Work Packaged in OnData, No Work Left to Package",
+                        AddToSQSQueue: ""
+                      },
+                      PutToFireHoseAggregatorResult: "",
+                      PutToFireHoseAggregatorResultDetails: "",
+                      PutToFireHoseException: ""
+                    }
+                  }
+                }
               }
 
             } catch (e)    //Overall Try/Catch for On-End processing
@@ -1493,9 +1512,10 @@ async function processS3ObjectContentStream (
 
             streamResult = {
               ...streamResult,
-              ReadStreamEndResult: streamEndResult,
-              OnEndRecordStatus: `Processed ${recs} records as ${batchCount} batches.`
-            }
+                ReadStreamEndResult: streamEndResult,
+                OnEndRecordStatus: `Processed ${recs} records as ${batchCount} batches.`
+              }
+            
 
             S3DB_Logging("info", "902", `Content Stream OnEnd for (${key}) - Store and Queue Work of ${batchCount} Batches of ${recs} records - Stream Result: \n${JSON.stringify(streamResult)} `)
 
