@@ -823,12 +823,14 @@ export const s3DropBucketHandler: Handler = async (
             streamRes.Key = key
             streamRes.Processed = streamRes.OnEndRecordStatus
 
-            const recordProcessingOutcome = `"Processing Outcome:" ${streamRes.OnEndRecordStatus}
-            \n"As: "
-            \n"Wrote Work To Work Bucket": ${streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToS3WorkBucketResults?.S3ProcessBucketResult}
-            \n"Queued Work To Work Queue" ${streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToSQSWorkQueueResults?.SQSWriteResult}
-            \n "Or: "
-            \n"Put To Firehose": ${streamRes.OnEndStreamEndResult.StoreAndQueueWorkResult.PutToFireHoseAggregatorResult}. `
+            const recordProcessingOutcome = `Processing Outcome: ${streamRes.OnEndRecordStatus}
+            \nAs:
+            \n${JSON.stringify(streamRes.OnEndStreamEndResult?.StoreAndQueueWorkResult)}
+            \nWrote Work To Work Bucket: ${streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToS3WorkBucketResults?.S3ProcessBucketResult}
+            \nQueued Work To Work Queue: ${streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToSQSWorkQueueResults?.SQSWriteResult}
+            \n  Or: 
+            \nPut To Firehose: ${streamRes.OnEndStreamEndResult.StoreAndQueueWorkResult.PutToFireHoseAggregatorResult}. 
+            `
           
             S3DB_Logging("info", "503", `Completed processing all records of the S3 Object ${key} \neTag: ${et}. \nStatus: ${recordProcessingOutcome}`)
 
