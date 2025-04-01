@@ -3465,13 +3465,11 @@ async function storeAndQueueConnectWork (
   {
     debugger //catch
 
-    const sqwError = `Exception - StoreAndQueueWork Add work (file: ${key}) to S3 Work Bucket exception \n${e} `
-    S3DB_Logging("exception", "", sqwError)
-
-    S3DB_Logging("info", "939", `Add Work File ${key} (from ${s3Key}) to S3 Work Bucket Result (\nBatch ${batchCount} of ${updateCount} records, File Stream Iter: ${iter}) \n\n${addWorkToS3WorkBucketResult}`)
+    const s3StoreError = `Exception - StoreAndQueueWork Add work (file: ${key}) to S3 Work Bucket exception \n${e} `
+    S3DB_Logging("exception", "", s3StoreError)
 
     return {
-      StoreS3WorkException: sqwError,
+      StoreS3WorkException: s3StoreError,
       StoreQueueWorkException: "",
       AddWorkToS3WorkBucketResults: JSON.stringify(addWorkToS3WorkBucketResult),
     }
@@ -3489,14 +3487,10 @@ async function storeAndQueueConnectWork (
       updates.length.toString(),
       marker
     ).then((res) => {
+      
+      //S3DB_Logging(rawresult logging)
+      
       return res
-      //     {
-      //         sqsWriteResult: "200",
-      //         workQueuedSuccess: true,
-      //         SQSSendResult: "{\"$metadata\":{\"httpStatusCode\":200,\"requestId\":\"e70fba06-94f2-5608-b104-e42dc9574636\",\"attempts\":1,
-      // \"totalRetryDelay\":0},\"MD5OfMessageAttributes\":\"0bca0dfda87c206313963daab8ef354a\",\"MD5OfMessageBody\":\"940f4ed5927275bc93fc945e63943820\",
-      // \"MessageId\":\"cf025cb3-dce3-4564-89a5-23dcae86dd42\"}",
-      // }
     })
   } catch (e)
   {
@@ -3505,11 +3499,11 @@ async function storeAndQueueConnectWork (
     const sqwError = `Exception - StoreAndQueueWork Add work to SQS Queue exception \n${e} `
     S3DB_Logging("exception", "", sqwError)
 
-    return {StoreQueueWorkException: sqwError, StoreS3WorkException: ""}
+    return {StoreQueueWorkException: sqwError}
   }
 
-  S3DB_Logging("info", "915", `Results of Storing and Queuing (Connect) Work ${key} to Work Queue: ${JSON.stringify(addWorkToSQSWorkQueueResult)} \n${JSON.stringify(
-    addWorkToS3WorkBucketResult)}`)
+  S3DB_Logging("info", "915", `Results of Storing and Queuing (Connect) Work ${key} to Work Queue: ${JSON.stringify(addWorkToSQSWorkQueueResult)} 
+  \n${JSON.stringify(addWorkToS3WorkBucketResult)}`)
 
   return {
     AddWorkToS3WorkBucketResults: addWorkToS3WorkBucketResult,
@@ -3601,18 +3595,18 @@ async function storeAndQueueCampaignWork (
   {
     debugger //catch
 
-    const sqwError = `Exception - StoreAndQueueWork Add work (File Stream Iter: ${iter} (file: ${key})) to S3 Bucket exception \n${e} `
+    const s3StoreError = `Exception - StoreAndQueueWork Add work (File Stream Iter: ${iter} (file: ${key})) to S3 Bucket exception \n${e} `
 
-    S3DB_Logging("exception", "", sqwError)
-
-    S3DB_Logging("info", "939", `Add Work File ${key} (from ${s3Key}) to S3 Work Bucket Result (\nBatch ${batchCount} of ${updateCount} records, File Stream Iter: ${iter}) \n\n${addWorkToS3WorkBucketResult}`)
+    S3DB_Logging("exception", "", s3StoreError)
 
     return {
-      StoreS3WorkException: sqwError,
+      StoreS3WorkException: s3StoreError,
       StoreQueueWorkException: "",
       AddWorkToS3WorkBucketResults: JSON.stringify(addWorkToS3WorkBucketResult),
     }
   }
+
+  //S3DB_Logging(oppty to message s3 store results)
 
   const marker = "Initially Queued on " + new Date()
 
@@ -3625,14 +3619,10 @@ async function storeAndQueueCampaignWork (
       updates.length.toString(),
       marker
     ).then((res) => {
+
+      //S3DB_Logging(oppty for rawresult logging)
+      
       return res
-      //     {
-      //         sqsWriteResult: "200",
-      //         workQueuedSuccess: true,
-      //         SQSSendResult: "{\"$metadata\":{\"httpStatusCode\":200,\"requestId\":\"e70fba06-94f2-5608-b104-e42dc9574636\",
-      // \"attempts\":1,\"totalRetryDelay\":0},\"MD5OfMessageAttributes\":\"0bca0dfda87c206313963daab8ef354a\",\"MD5OfMessageBody\":
-      // \"940f4ed5927275bc93fc945e63943820\",\"MessageId\":\"cf025cb3-dce3-4564-89a5-23dcae86dd42\"}",
-      // }
     })
   } catch (e)
   {
@@ -3641,9 +3631,11 @@ async function storeAndQueueCampaignWork (
     const sqwError = `Exception - StoreAndQueueWork Add work to SQS Queue exception \n${e} `
     S3DB_Logging("exception", "", sqwError)
 
-    return {StoreQueueWorkException: sqwError, StoreS3WorkException: ""}
+    return {StoreQueueWorkException: sqwError}
   }
 
+  
+  //If we made it this Far, all's good 
   S3DB_Logging("info", "915", `Results of Storing and Queuing (Campaign) Work ${key} to Work Queue: ${JSON.stringify(addWorkToSQSWorkQueueResult)} \n${JSON.stringify(
     addWorkToS3WorkBucketResult)}`)
 
