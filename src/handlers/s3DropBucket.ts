@@ -1466,6 +1466,7 @@ async function processS3ObjectContentStream (
                   //ToDo: Refactor this status approach, only getting the last, need a way to preserve every Update status without storing volumes
                   packageResult = await packageUpdates(updates, key, custConfig, iter)
                     .then((res) => {
+                      S3DB_Logging("info", "948", `S3ContentStream OnEnd - Packaging Outcome Raw Results: ${JSON.stringify(res)} \nFor (${batchCount}) of ${chunk.length} Updates \nfrom ${key} \nPreviously processed ${recs} records of the size of the data read of ${preserveArraySize} records. \n${chunksGlobal.length} records are waiting to be processed.`)
                       return res as StoreAndQueueWorkResults
                     })
                 }
