@@ -584,8 +584,9 @@ const testdata = ""
 
 //testS3Key = "TestData/KingsfordWeather_S3DropBucket_Aggregator-10-2025-01-09-19-29-39-da334f11-53a4-31cc-8c9f-8b417725560b.json"
 //testS3Key = "TestData/Funding_Circle_Limited_CampaignDatabase1_2025_02_28T19_19_26_268Z.json"
-testS3Key = "TestData/alerusrepsignature_advisors-mar232025.json"
+//testS3Key = "TestData/alerusrepsignature_advisors-mar232025.json"
 //testS3Key = "TestData/MasterCustomer_Sample-mar232025.json"
+testS3Key = "TestData/KingsfordWeather_S3DropBucket_Aggregator-10-2025-03-26-09-10-22-dab1ccdf-adbc-339d-8993-b41d27696a3d.json"
 
 
 /**
@@ -5548,6 +5549,64 @@ function transforms (updates: object[], config: CustomerConfig) {
 
     S3DB_Logging("exception", "934", `Exception - Applying AudienceUpdates Transform \n${e}`)
   }
+
+  
+
+  //When processing an Aggregator file we need to remove "Customer" column that is added by the 
+  // Aggregator. Which, we will not reach here if not an Aggregator, as transforms are not applied to
+  // incoming data before sending to Aggregator.
+  //Delete "Customer" column from data
+
+  debugger ///
+  
+try {
+  if (config.updates.toLowerCase() === "singular")  //
+  {
+
+    const t: typeof updates = []  //start a "Processed for Aggregator" update set
+    try
+    {
+      for (const jo of updates)
+      {
+        type dk = keyof typeof jo
+        const k: dk = "Customer" as dk
+        delete jo[k]
+
+        t.push(jo)
+      }
+    } catch (e)
+    {
+      debugger //catch
+
+      S3DB_Logging("exception", "932", `Exception - Transform - Removing Aggregator Surplus "Customer" Field \n${e}`)
+
+    }
+
+    if (t.length === updates.length)
+    {
+      updates = t
+    } else
+    {
+      debugger //catch
+
+      S3DB_Logging("error", "932", `Error - Transform for Aggregator Files - Removing Surplus Customer Field returns fewer records ${t.length} than initial set ${updates.length}`)
+
+      throw new Error(
+        `Error - Transform - Transform for Aggregator Files: Removing Surplus Customer Field returns fewer records ${t.length} than initial set ${updates.length}`
+      )
+    }
+
+    S3DB_Logging("info", "919", `Transforms (Transform for Aggregator Files - Removing Surplus Customer Field) applied: \n${JSON.stringify(t)}`)
+  }
+} catch (e)
+{
+  debugger //catch
+
+  S3DB_Logging("exception", "934", `Exception - Applying Transform for Aggregator Files - Removing Surplus Customer Field \n${e}`)
+}    
+
+  
+
 
 
   //Transform: Ignore
