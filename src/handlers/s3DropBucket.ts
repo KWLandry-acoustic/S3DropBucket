@@ -825,11 +825,11 @@ export const s3DropBucketHandler: Handler = async (
 
             const recordProcessingOutcome = `Processing Outcome: ${streamRes.OnEndRecordStatus}
             \nAs:
-            \n${JSON.stringify(streamRes.OnEndStreamEndResult?.StoreAndQueueWorkResult)}
-            \nWrote Work To Work Bucket: ${streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToS3WorkBucketResults?.S3ProcessBucketResult}
-            \nQueued Work To Work Queue: ${streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToSQSWorkQueueResults?.SQSWriteResult}
+            \n${JSON.stringify(streamRes.OnEndStreamEndResult?.StoreAndQueueWorkResult) ?? "Not Found"}
+            \nWrote Work To Work Bucket: ${streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToS3WorkBucketResults?.S3ProcessBucketResult ?? "Not Found"}
+            \nQueued Work To Work Queue: ${streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToSQSWorkQueueResults?.SQSWriteResult ?? "Not Found"} 
             \n  Or: 
-            \nPut To Firehose: ${streamRes.OnEndStreamEndResult.StoreAndQueueWorkResult.PutToFireHoseAggregatorResult}. 
+            \nPut To Firehose: ${streamRes.OnEndStreamEndResult.StoreAndQueueWorkResult?.PutToFireHoseAggregatorResult ?? "Not Found"}. 
             `
           
             S3DB_Logging("info", "503", `Completed processing all records of the S3 Object ${key} \neTag: ${et}. \nStatus: ${recordProcessingOutcome}`)
@@ -1016,7 +1016,7 @@ export const s3DropBucketHandler: Handler = async (
   {
     debugger //catch
 
-    S3DB_Logging("exception", "", `Exception thrown in Handler: ${e}`)
+    S3DB_Logging("exception", "", `S3DropBucket Handler - Exception thrown in Handler: ${e}`)
   }
 
 
@@ -1073,7 +1073,7 @@ export async function S3DB_Logging (level: string, index: string, msg: string) {
   /*
   if (S3DBConfig.S3DropBucketLog) {
      const logMsg: object[] = [{osr}]      //need to check this one, 
-     debugger
+     debugger ///
      const logKey = `S3DropBucket_Log_${new Date()
        .toISOString()
        .replace(/:/g, "_")}`
@@ -2281,7 +2281,7 @@ async function sftpDeleteFile (remoteFile: string) {
     // await SFTPClient.delete(remoteFile)
   } catch (err)
   {
-    debugger //catch 
+    debugger //catch
 
     S3DB_Logging("exception", "", `Deleting failed: ${err}`)
   }
@@ -2844,6 +2844,8 @@ async function getFormatCustomerConfig (filekey: string) {
 
   configJSON = await validateCustomerConfig(configJSON) as CustomerConfig
 
+  debugger ///
+
   return configJSON as CustomerConfig
 }
 
@@ -3210,9 +3212,7 @@ async function validateCustomerConfig (config: CustomerConfig) {
 
     S3DB_Logging("error", "", `Exception - Validate Customer Config: \n${e}`)
   }
-  //Need CSVMap Validation
-  //Need CSVMap jsonpath validation - reserved words
-  //Need Ignore Validation
+
 
   return config as CustomerConfig
 }
@@ -3416,12 +3416,7 @@ async function storeAndQueueConnectWork (
   S3DB_Logging("info", "855", `Testing - GraphQL Call (${S3DBConfig.connectapiurl}) Updates: \n${mutationUpdates}`)
   const c = await postToConnect(mutationUpdates, customersConfig, "6", s3Key)
 
-  debugger
-
-
-
-
-
+  debugger ///
 
   if (s3Key.indexOf("TestData") > -1)
   {
@@ -3527,7 +3522,7 @@ async function storeAndQueueCampaignWork (
   const updateCount = updates.length
 
   //Customers marked as "Singular" updates files are not transformed, but sent to Firehose prior to getting here.
-  //  therefore if Aggregate file, or files config'd as "Multiple" updates, then need to perform Transforms
+  // therefore if this is an Aggregate file, or is a file config'd to be "Multiple" updates, then need to perform Transforms now
   try
   {
     //Apply Transforms, if any, 
@@ -6541,7 +6536,7 @@ async function getAllCustomerConfigsList (bucket: string) {
 
 //  //                     const marker = "ReQueued on: " + new Date()
 
-//  //                     debugger
+//  //
 
 //  //                     //build SQS Entry
 //  //                     const qa = await addWorkToSQSWorkQueue( config, key, versionId, batch, updates, marker )
