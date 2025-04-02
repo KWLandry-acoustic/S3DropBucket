@@ -584,8 +584,8 @@ const testdata = ""
 
 //testS3Key = "TestData/KingsfordWeather_S3DropBucket_Aggregator-10-2025-01-09-19-29-39-da334f11-53a4-31cc-8c9f-8b417725560b.json"
 //testS3Key = "TestData/Funding_Circle_Limited_CampaignDatabase1_2025_02_28T19_19_26_268Z.json"
-//testS3Key = "TestData/alerusrepsignature_advisors-mar232025.json"
-testS3Key = "TestData/MasterCustomer_Sample-mar232025.json"
+testS3Key = "TestData/alerusrepsignature_advisors-mar232025.json"
+//testS3Key = "TestData/MasterCustomer_Sample-mar232025.json"
 
 
 /**
@@ -823,13 +823,16 @@ export const s3DropBucketHandler: Handler = async (
             streamRes.Key = key
             streamRes.Processed = streamRes.OnEndRecordStatus
 
+
+            debugger ///
+            
             const recordProcessingOutcome = `Processing Outcome: ${streamRes.OnEndRecordStatus}
-            \nAs:
-            \n${JSON.stringify(streamRes.OnEndStreamEndResult?.StoreAndQueueWorkResult) ?? "Not Found"}
-            \nWrote Work To Work Bucket: ${streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToS3WorkBucketResults?.S3ProcessBucketResult ?? "Not Found"}
-            \nQueued Work To Work Queue: ${streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToSQSWorkQueueResults?.SQSWriteResult ?? "Not Found"} 
-            \n  Or: 
-            \nPut To Firehose: ${streamRes.OnEndStreamEndResult.StoreAndQueueWorkResult?.PutToFireHoseAggregatorResult ?? "Not Found"}. 
+            As:
+            ${JSON.stringify(streamRes.OnEndStreamEndResult?.StoreAndQueueWorkResult) ?? "Not Found"}
+            Wrote Work To Work Bucket: ${streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToS3WorkBucketResults?.S3ProcessBucketResult ?? "Not Found"}
+            Queued Work To Work Queue: ${streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToSQSWorkQueueResults?.SQSWriteResult ?? "Not Found"} 
+              Or: 
+            Put To Firehose: ${streamRes.OnEndStreamEndResult.StoreAndQueueWorkResult?.PutToFireHoseAggregatorResult ?? "Not Found"}. 
             `
           
             S3DB_Logging("info", "503", `Completed processing all records of the S3 Object ${key} \neTag: ${et}. \nStatus: ${recordProcessingOutcome}`)
@@ -885,7 +888,7 @@ export const s3DropBucketHandler: Handler = async (
             {
               try
               {
-                //Once File successfully processed delete the original S3 Object
+                //Once File successfully processed, delete the original S3 Object
                 delResultCode = await deleteS3Object(key, bucket)
                   .catch((e) => {
                     debugger //catch
@@ -1031,7 +1034,7 @@ export default s3DropBucketHandler
 
 export async function S3DB_Logging (level: string, index: string, msg: string) {
 
-  let selectiveDebug = process.env.S3DropBucketSelectiveLogging ?? S3DBConfig.s3dropbucket_selectivelogging ?? "_97,_98,_99,_503,_504,_511,_901,_910,_924,"
+  let selectiveDebug = process.env.S3DropBucketSelectiveLogging ?? S3DBConfig.s3dropbucket_selectivelogging ?? "_97,_98,_99,_504,_511,_901,_910,_924,"
 
   if (typeof customersConfig.selectivelogging !== "undefined" &&
     customersConfig.selectivelogging.length > 0 &&
@@ -1470,6 +1473,16 @@ async function processS3ObjectContentStream (
                       return res as StoreAndQueueWorkResults
                     })
                 }
+        
+                //Best we can do is reflect the last packaging outcome, as we
+                // should Exception out if there are any issues, the last reflects success mostly
+                streamResult = {
+                  ...streamResult,
+                  OnEndStreamEndResult: {
+                    StoreAndQueueWorkResult: packageResult
+                  }
+                }
+              
               }
               else
               {
@@ -2843,8 +2856,6 @@ async function getFormatCustomerConfig (filekey: string) {
   configJSON = setPropsLowCase(configJSON, '') as CustomerConfig
 
   configJSON = await validateCustomerConfig(configJSON) as CustomerConfig
-
-  debugger ///
 
   return configJSON as CustomerConfig
 }
