@@ -1709,10 +1709,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
       ra.push({"messageId": r.messageId})
     })
       
-    debugger ///
-    
     S3DB_Logging("info", "506", `Received a Batch of SQS Work Queue Events (${event.Records.length}. \nWork Queue Record MessageIds: \n${JSON.stringify(ra)} \nContext: ${JSON.stringify(context)}`)
-
     S3DB_Logging("info", "907", `Received a Batch of SQS Work Queue Events (${event.Records.length} Work Queue Records): \n${JSON.stringify(event)} \nContext: ${JSON.stringify(context)}`)
 
     if (S3DBConfig.s3dropbucket_workqueuequiesce)
@@ -5559,10 +5556,6 @@ function transforms (updates: object[], config: CustomerConfig) {
   try
   {
     const igno = config.transforms.ignore as typeof config.transforms.ignore ?? []
-    //When processing an Aggregator file we need to remove "Customer" column that is added by the 
-    // Aggregator. Which, we will not reach here if not an Aggregator, as transforms are not applied 
-    // before sending to Aggregator
-    if (config.updates.toLowerCase() === "singular") igno.push("Customer")
 
     if (typeof config.transforms.ignore !== "undefined" &&
       config.transforms.ignore.length > 0)
