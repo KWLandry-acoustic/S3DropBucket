@@ -1389,10 +1389,12 @@ async function processS3ObjectContentStream (
                 {
                   const chunk = chunksGlobal.splice(0, limit)
                   updates.push(...chunk)
-                  S3DB_Logging("info", "938", `S3ContentStream OnData - A Batch (${batchCount}) of ${chunk.length} Updates from ${key} is now being sent to Packaging. \nPreviously processed ${recs} records of the size of the data read of ${preserveArraySize} records. \n${chunksGlobal.length} records are waiting to be processed.`)
                   recs += chunk.length
                   batchCount++
 
+                  S3DB_Logging("info", "938", `S3ContentStream OnData - A Batch (${batchCount}) of ${chunk.length} Updates from ${key} is now being sent to Packaging. \nPreviously processed ${recs} records of the size of the data read of ${preserveArraySize} records. \n${chunksGlobal.length} records are waiting to be processed.`)
+
+                  
                   packageResult = await packageUpdates(updates, key, custConfig, iter) as StoreAndQueueWorkResults
 
                   //ToDo: Refactor this status reporting approach, need a way to preserve every Update status without storing volumes
