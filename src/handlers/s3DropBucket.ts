@@ -1462,11 +1462,10 @@ async function processS3ObjectContentStream (
                   chunk = chunksGlobal.splice(0, limit)
       
                   updates.push(...chunk)
-                  
-                  S3DB_Logging("info", "938", `S3ContentStream OnEnd - A Batch (${batchCount}) of ${chunk.length} Updates from ${key} is now being sent to Packaging. \nPreviously processed ${recs} records of the size of the data read of ${preserveArraySize} records. \n${chunksGlobal.length} records are waiting to be processed.`)
-
                   recs += chunk.length
                   batchCount++
+
+                  S3DB_Logging("info", "938", `S3ContentStream OnEnd - A Batch (${batchCount}) of ${chunk.length} Updates from ${key} is now being sent to Packaging. \nPreviously processed ${recs} records of the size of the data read of ${preserveArraySize} records. \n${chunksGlobal.length} records are waiting to be processed.`)
 
                   //ToDo: Refactor this status approach, only getting the last, need a way to preserve every Update status without storing volumes
                   packageResult = await packageUpdates(updates, key, custConfig, iter)
@@ -1488,7 +1487,8 @@ async function processS3ObjectContentStream (
               }
               else
               {
-                S3DB_Logging("info", "938", `S3ContentStream OnEnd - No Remaining Updates to Process from ${key}. \nPreviously processed ${recs} records of the size of the data read of ${preserveArraySize} records.`)
+
+                S3DB_Logging("info", "938", `S3ContentStream OnEnd - With No Remaining Updates to Process from ${key}. Current Batch ${batchCount}. \nPreviously processed ${recs} records of the size of the data read of ${preserveArraySize} records.`)
                             
                 streamResult = {
                   ...streamResult,
@@ -1704,7 +1704,16 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
     S3DB_Logging("info", "98", `S3DropBucket Configuration: ${JSON.stringify(S3DBConfig)} `)
     S3DB_Logging("info", "99", `S3DropBucket Logging Options: ${process.env.S3DropBucketSelectiveLogging} `)
 
-    S3DB_Logging("info", "506", `Received a Batch of SQS Work Queue Events (${event.Records.length} Work Queue Records): \n${JSON.stringify(event)} \nContext: ${JSON.stringify(context)}`)
+    const ra: Array<Record<string, string>> = []
+    event.Records.forEach((r) => {
+      ra.push({"messageId": r.messageId})
+    })
+      
+    debugger ///
+    
+    S3DB_Logging("info", "506", `Received a Batch of SQS Work Queue Events (${event.Records.length}. \nWork Queue Record MessageIds: \n${JSON.stringify(ra)} \nContext: ${JSON.stringify(context)}`)
+
+    S3DB_Logging("info", "907", `Received a Batch of SQS Work Queue Events (${event.Records.length} Work Queue Records): \n${JSON.stringify(event)} \nContext: ${JSON.stringify(context)}`)
 
     if (S3DBConfig.s3dropbucket_workqueuequiesce)
     {
