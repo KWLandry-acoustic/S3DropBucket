@@ -443,12 +443,12 @@ export interface SQSBatchItemFails {
 
 interface AddWorkToS3Results {
   versionId: string
-  S3ProcessBucketResult: string
+  S3ProcessBucketResultStatus: string
   AddWorkToS3ProcessBucket: string
 }
 
 interface SQSResults {
-  SQSWriteResult: string
+  SQSWriteResultStatus: string
   AddToSQSQueue: string
 }
 
@@ -501,11 +501,11 @@ let ProcessS3ObjectStreamOutcome: ProcessS3ObjectStreamResult = {
     StoreAndQueueWorkResult: {
       AddWorkToS3WorkBucketResults: {
         versionId: '',
-        S3ProcessBucketResult: '',
+        S3ProcessBucketResultStatus: '',
         AddWorkToS3ProcessBucket: ''
       },
       AddWorkToSQSWorkQueueResults: {
-        SQSWriteResult: '',
+        SQSWriteResultStatus: '',
         AddToSQSQueue: ''
       }
     }
@@ -514,11 +514,11 @@ let ProcessS3ObjectStreamOutcome: ProcessS3ObjectStreamResult = {
     StoreAndQueueWorkResult: {
       AddWorkToS3WorkBucketResults: {
         versionId: '',
-        S3ProcessBucketResult: '',
+        S3ProcessBucketResultStatus: '',
         AddWorkToS3ProcessBucket: ''
       },
       AddWorkToSQSWorkQueueResults: {
-        SQSWriteResult: '',
+        SQSWriteResultStatus: '',
         AddToSQSQueue: ''
       },
       PutToFireHoseAggregatorResult: '',
@@ -583,10 +583,10 @@ const testdata = ""
 //testS3Key = "MasterCustomer_Sample1-json-update-1-6-0bb2f92e-3344-41e6-af95-90f5d32a73dc.json"
 
 //testS3Key = "TestData/KingsfordWeather_S3DropBucket_Aggregator-10-2025-01-09-19-29-39-da334f11-53a4-31cc-8c9f-8b417725560b.json"
-//testS3Key = "TestData/Funding_Circle_Limited_CampaignDatabase1_2025_02_28T19_19_26_268Z.json"
+testS3Key = "TestData/Funding_Circle_Limited_CampaignDatabase1_2025_02_28T19_19_26_268Z.json"
 //testS3Key = "TestData/alerusrepsignature_advisors-mar232025.json"
 //testS3Key = "TestData/MasterCustomer_Sample-mar232025.json"
-testS3Key = "TestData/KingsfordWeather_S3DropBucket_Aggregator-10-2025-03-26-09-10-22-dab1ccdf-adbc-339d-8993-b41d27696a3d.json"
+//testS3Key = "TestData/KingsfordWeather_S3DropBucket_Aggregator-10-2025-03-26-09-10-22-dab1ccdf-adbc-339d-8993-b41d27696a3d.json"
 
 
 /**
@@ -823,15 +823,12 @@ export const s3DropBucketHandler: Handler = async (
 
             streamRes.Key = key
             streamRes.Processed = streamRes.OnEndRecordStatus
-
-
-            debugger ///
             
             const recordProcessingOutcome = `Processing Outcome: ${streamRes.OnEndRecordStatus}
             As:
             ${JSON.stringify(streamRes.OnEndStreamEndResult?.StoreAndQueueWorkResult) ?? "Not Found"}
-            Wrote Work To Work Bucket: ${streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToS3WorkBucketResults?.S3ProcessBucketResult ?? "Not Found"}
-            Queued Work To Work Queue: ${streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToSQSWorkQueueResults?.SQSWriteResult ?? "Not Found"} 
+            Wrote Work To Work Bucket: ${streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToS3WorkBucketResults?.S3ProcessBucketResultStatus ?? "Not Found"}
+            Queued Work To Work Queue: ${streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToSQSWorkQueueResults?.SQSWriteResultStatus ?? "Not Found"} 
               Or: 
             Put To Firehose: ${streamRes.OnEndStreamEndResult.StoreAndQueueWorkResult?.PutToFireHoseAggregatorResult ?? "Not Found"}. 
             `
@@ -880,11 +877,11 @@ export const s3DropBucketHandler: Handler = async (
               (typeof streamRes.OnEndStreamEndResult.StoreAndQueueWorkResult.PutToFireHoseAggregatorResult !== "undefined" &&
                 streamRes.OnEndStreamEndResult.StoreAndQueueWorkResult.PutToFireHoseAggregatorResult === "200") ||
 
-              (typeof streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToS3WorkBucketResults?.S3ProcessBucketResult !== "undefined" &&
-                streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToS3WorkBucketResults?.S3ProcessBucketResult === "200") &&
+              (typeof streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToS3WorkBucketResults?.S3ProcessBucketResultStatus !== "undefined" &&
+                streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToS3WorkBucketResults?.S3ProcessBucketResultStatus === "200") &&
 
-              (typeof streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToSQSWorkQueueResults?.SQSWriteResult !== "undefined" &&
-                streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToSQSWorkQueueResults?.SQSWriteResult === "200")
+              (typeof streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToSQSWorkQueueResults?.SQSWriteResultStatus !== "undefined" &&
+                streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToSQSWorkQueueResults?.SQSWriteResultStatus === "200")
             )
             {
               try
@@ -1276,9 +1273,6 @@ async function processS3ObjectContentStream (
           .on("error", async function (err: string) {
             const errMessage = `An error has stopped Content Parsing at record ${recs} for s3 object ${key}.\n${err} \n${chunksGlobal}`
             S3DB_Logging("error", "909", errMessage)
-            //chunksGlobal = []
-            //batchCount = 0
-            //recs = 0
 
             streamResult = {
               ...streamResult,
@@ -1471,7 +1465,7 @@ async function processS3ObjectContentStream (
                   //ToDo: Refactor this status approach, only getting the last, need a way to preserve every Update status without storing volumes
                   packageResult = await packageUpdates(updates, key, custConfig, iter)
                     .then((res) => {
-                      S3DB_Logging("info", "948", `S3ContentStream OnEnd - Packaging Outcome Raw Results: ${JSON.stringify(res)} \nFor (${batchCount}) of ${chunk.length} Updates \nfrom ${key} \nPreviously processed ${recs} records of the size of the data read of ${preserveArraySize} records. \n${chunksGlobal.length} records are waiting to be processed.`)
+                      S3DB_Logging("info", "948", `S3ContentStream OnEnd - PackageUpdates Outcome - Raw Results: ${JSON.stringify(res)} \nFor (${batchCount}) of ${chunk.length} Updates \nfrom ${key} \nPreviously processed ${recs} records of the size of the data read of ${preserveArraySize} records. \n${chunksGlobal.length} records are waiting to be processed.`)
                       return res as StoreAndQueueWorkResults
                     })
                 }
@@ -1497,12 +1491,12 @@ async function processS3ObjectContentStream (
                     StoreAndQueueWorkResult: {
                       AddWorkToS3WorkBucketResults: {
                         versionId: "",
-                        S3ProcessBucketResult: "All Work Packaged in OnData, No Work Left to Package",
-                        AddWorkToS3ProcessBucket: ""
+                        S3ProcessBucketResultStatus: "200",       //Fake Status to drive cleanup/deletion logic, but true enough here
+                        AddWorkToS3ProcessBucket: "All Work Packaged in OnData, No Work Left to Package"
                       },
                       AddWorkToSQSWorkQueueResults: {
-                        SQSWriteResult: "All Work Packaged in OnData, No Work Left to Package",
-                        AddToSQSQueue: ""
+                        SQSWriteResultStatus: "200",              //Fake Status to drive cleanup/deletion logic, but true enough here
+                        AddToSQSQueue: "All Work Packaged in OnData, No Work Left to Package"
                       },
                       PutToFireHoseAggregatorResult: "",
                       PutToFireHoseAggregatorResultDetails: "",
@@ -4168,6 +4162,9 @@ function convertJSONToXML_DBUpdates (updates: object[], config: CustomerConfig) 
       //Only needed on non-keyed (In Campaign use DB -> Settings -> LookupKeys to find what fields are Lookup Keys)
       if (config.updatetype.toLowerCase() === "dbnonkeyed")
       {
+
+        debugger ///
+
         const lk = config.lookupkeys.split(",")
 
         xmlRows += `<SYNC_FIELDS>`
@@ -4379,7 +4376,7 @@ async function addWorkToS3WorkBucket (queueUpdates: string, key: string) {
 
     return {
       versionId: "",
-      S3ProcessBucketResult: "",
+      S3ProcessBucketResultStatus: "",
       AddWorkToS3ProcessBucket: "In Quiesce",
     }
   }
@@ -4390,7 +4387,7 @@ async function addWorkToS3WorkBucket (queueUpdates: string, key: string) {
     Key: key,
   }
 
-  let s3ProcessBucketResult = ""
+  let S3ProcessBucketResultStatus = ""
   let addWorkToS3ProcessBucket
 
   try
@@ -4426,7 +4423,7 @@ async function addWorkToS3WorkBucket (queueUpdates: string, key: string) {
     // return { StoreS3WorkException: e }
   }
 
-  s3ProcessBucketResult = JSON.stringify(addWorkToS3ProcessBucket.$metadata.httpStatusCode, null, 2)
+  S3ProcessBucketResultStatus = JSON.stringify(addWorkToS3ProcessBucket.$metadata.httpStatusCode, null, 2)
 
   const vidString = addWorkToS3ProcessBucket.VersionId ?? ""
 
@@ -4435,7 +4432,7 @@ async function addWorkToS3WorkBucket (queueUpdates: string, key: string) {
   const aw3pbr = {
     versionId: vidString,
     AddWorkToS3ProcessBucket: JSON.stringify(addWorkToS3ProcessBucket),
-    S3ProcessBucketResult: s3ProcessBucketResult,
+    S3ProcessBucketResultStatus: S3ProcessBucketResultStatus,
   }
 
   return aw3pbr
@@ -4455,7 +4452,7 @@ async function addWorkToSQSWorkQueue (
 
     return {
       //versionId: "",
-      S3ProcessBucketResult: "",
+      S3ProcessBucketResultStatus: "",
       AddWorkToS3ProcessBucket: "In Quiesce",
     }
   }
@@ -5558,7 +5555,7 @@ function transforms (updates: object[], config: CustomerConfig) {
   //Delete "Customer" column from data
 
   debugger ///
-  
+
 try {
   if (config.updates.toLowerCase() === "singular")  //
   {
