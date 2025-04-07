@@ -866,10 +866,10 @@ export const s3DropBucketHandler: Handler = async (
             //  //streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToS3WorkBucketResults?.S3ProcessBucketResult
             //}
 
-            //if (typeof streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToSQSWorkQueueResults?.SQSWriteResult === "undefined")
+            //if (typeof streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToSQSWorkQueueResults?.SQSWriteResultStatus === "undefined")
             //{
-            //  S3DB_Logging("info", "504", `Processing Complete for ${key}. Stream Result AddWorkToSQSWorkQueueResults?.SQSWriteResult Not Complete.  \n${JSON.stringify(streamRes)}`)
-            //  //streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToSQSWorkQueueResults?.SQSWriteResult 
+            //  S3DB_Logging("info", "504", `Processing Complete for ${key}. Stream Result AddWorkToSQSWorkQueueResults?.SQSWriteResultStatus Not Complete.  \n${JSON.stringify(streamRes)}`)
+            //  //streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToSQSWorkQueueResults?.SQSWriteResultStatus 
             //}
 
 
@@ -4487,7 +4487,7 @@ async function addWorkToSQSWorkQueue (
   }
 
   let sqsSendResult
-  let sqsWriteResult
+  let sqsWriteResultStatus
 
   try
   {
@@ -4495,17 +4495,17 @@ async function addWorkToSQSWorkQueue (
       .send(new SendMessageCommand(sqsParams))
       .then((sqsSendMessageResult: SendMessageCommandOutput) => {
 
-        sqsWriteResult = JSON.stringify(sqsSendMessageResult.$metadata.httpStatusCode, null, 2)
+        sqsWriteResultStatus = JSON.stringify(sqsSendMessageResult.$metadata.httpStatusCode, null, 2)
 
-        if (sqsWriteResult !== "200")
+        if (sqsWriteResultStatus !== "200")
         {
           const storeQueueWorkException = `Failed writing to SQS Process Queue (queue URL: ${sqsParams.QueueUrl}), ${sqsQMsgBody.workKey}, SQS Params${JSON.stringify(sqsParams)})`
           return {StoreQueueWorkException: storeQueueWorkException}
         }
         //sqsSendResult = sqsSendMessageResult
-        //S3DB_Logging("info", "946", `Queued Work to SQS Process Queue (${sqsQMsgBody.workKey}) \nResult: ${sqsWriteResult} \n${JSON.stringify(sqsSendMessageResult)} `)
+        //S3DB_Logging("info", "946", `Queued Work to SQS Process Queue (${sqsQMsgBody.workKey}) \nResult: ${sqsWriteResultStatus} \n${JSON.stringify(sqsSendMessageResult)} `)
 
-        S3DB_Logging("info", "946", `Queued Work (${sqsQMsgBody.workKey}} to SQS Process Queue (for ${recCount} updates). \nWork Queue (${S3DBConfig.s3dropbucket_workqueue}) \nSQS Params: ${JSON.stringify(sqsParams)}. \nresults: ${JSON.stringify(sqsSendMessageResult)} \nStatus: ${JSON.stringify({SQSWriteResult: sqsWriteResult, AddToSQSQueue: JSON.stringify(sqsSendResult)})}`)
+        S3DB_Logging("info", "946", `Queued Work (${sqsQMsgBody.workKey}} to SQS Process Queue (for ${recCount} updates). \nWork Queue (${S3DBConfig.s3dropbucket_workqueue}) \nSQS Params: ${JSON.stringify(sqsParams)}. \nresults: ${JSON.stringify(sqsSendMessageResult)} \nStatus: ${JSON.stringify({SQSWriteResultStatus: sqsWriteResultStatus, AddToSQSQueue: JSON.stringify(sqsSendResult)})}`)
 
         //return sqsSendMessageResult
         return sqsSendResult
@@ -4527,10 +4527,10 @@ async function addWorkToSQSWorkQueue (
       }), ${sqsQMsgBody.workKey}, SQS Params${JSON.stringify(sqsParams)}) - Error: ${e}`)
   }
 
-  S3DB_Logging("info", "940", `Work Queued (${key} for ${recCount} updates) to the SQS Work Queue (${S3DBConfig.s3dropbucket_workqueue}) \nresults: \n${JSON.stringify({SQSWriteResult: sqsWriteResult, AddToSQSQueue: JSON.stringify(sqsSendResult)})}`)
+  S3DB_Logging("info", "940", `Work Queued (${key} for ${recCount} updates) to the SQS Work Queue (${S3DBConfig.s3dropbucket_workqueue}) \nresults: \n${JSON.stringify({SQSWriteResultStatus: sqsWriteResultStatus, AddToSQSQueue: JSON.stringify(sqsSendResult)})}`)
 
   return {
-    SQSWriteResult: sqsWriteResult,
+    SQSWriteResultStatus: sqsWriteResultStatus,
     AddToSQSQueue: JSON.stringify(sqsSendResult),
   }
 }
