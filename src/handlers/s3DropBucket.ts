@@ -237,7 +237,7 @@ export interface CustomerConfig {
   listname: string
   updatetype: string
   dbkey: string
-  lookupkeys: string      //ToDo: Changeup to an Array-Strings per Customer Config Schema
+  lookupkeys: []      //ToDo: Changeup to an Array-Strings per Customer Config Schema
   updateKey: string
   pod: string             // 1,2,3,4,5,6,7,8,9,A,B
   region: string          // US, EU, AP
@@ -285,7 +285,7 @@ let customersConfig: CustomerConfig = {
   listname: "",
   updatetype: "",
   dbkey: "",
-  lookupkeys: "",
+  lookupkeys: [],
   updateKey: "",
   pod: "",
   region: "",
@@ -1615,7 +1615,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
       listname: "",
       updatetype: "",
       dbkey: "",
-      lookupkeys: "",
+      lookupkeys: [],
       updateKey: "",
       pod: "",
       region: "",
@@ -2923,7 +2923,7 @@ async function validateCustomerConfig (config: CustomerConfig) {
         )
       }
 
-      if (config.updatetype.toLowerCase() == "dbnonkeyed" && !config.lookupkeys)
+      if (config.updatetype.toLowerCase() == "dbnonkeyed" && config.lookupkeys.length <= 0)
       {
         throw new Error(
           "Invalid Customer Config - Update set as Database NonKeyed but LookupKeys is not defined. "
@@ -4163,7 +4163,8 @@ function convertJSONToXML_DBUpdates (updates: object[], config: CustomerConfig) 
 
         debugger ///
 
-        const lk = config.lookupkeys.split(",")
+        //const lk = config.lookupkeys.split(",")
+        const lk = config.lookupkeys as typeof config.lookupkeys
 
         xmlRows += `<SYNC_FIELDS>`
         try
