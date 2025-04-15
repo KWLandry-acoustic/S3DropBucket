@@ -1,6 +1,19 @@
 #!/bin/bash
 
 ###############################################################################
+# S3 Cleanup Script - Deletes files older than specified days
+# Compatible with Bash 3.2.57 on macOS
+# Usage: chmod +x deleteS3_OlderThanDays.sh
+# sudo bash ./deleteS3_OlderThanDays.sh --days 7 my-bucket
+# Example: 
+# sudo bash ./deleteS3_OlderThanDays.sh --days 2 --prefix Funding_Circle s3dropbucket-aggregator-fr Assume_Admin_Role_Frankfurt
+# Use DELETE_LIMIT to contain total deleted files in the run
+###############################################################################
+
+
+
+
+###############################################################################
 # function errecho
 # Outputs messages to STDERR
 ###############################################################################

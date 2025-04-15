@@ -3891,14 +3891,13 @@ async function buildMutationsConnect (updates: object[], config: CustomerConfig)
 
         variables.contactsInput.push(cci)
 
-        //Build ContactId, ContactKey, AddressableFields, Consent, Audience properties
+        //Build ContactId, AddressableFields, Consent, Audience properties
         const u = updates[upd] as Record<string, any>
 
         //ToDo: Add logic CreateContact vs UpdateContact Key/Id/Addressable fields
         //Create:
         //No Key, No Addressable but UniqueId must be in the data
         //if (typeof u.contactId !== "undefined") Object.assign(variables.contactsInput[upd], {contactId: u.contactId})
-        //else if (typeof u.contactKey !== "undefined") Object.assign(variables.contactsInput[upd], {key: u.contactKey})
         //else if (typeof u.addressable !== "undefined") Object.assign(variables.contactsInput[upd], {addressable: u.addressable})
 
         //if (typeof u.consent !== "undefined") Object.assign(variables.contactsInput, {consent: u.consent})
@@ -4032,12 +4031,11 @@ async function buildMutationsConnect (updates: object[], config: CustomerConfig)
 
         variables.contactsInput.push(uci)
 
-        //Build ContactId, ContactKey, AddressableFields, Consent, Audience properties
+        //Build ContactId, AddressableFields, Consent, Audience properties
         const u = updates[upd] as Record<string, any>
 
         //ToDo: Add logic CreateContact vs UpdateContact Key/Id/Addressable fields
         if (typeof u.contactId !== "undefined") Object.assign(variables.contactsInput[upd], {contactId: u.contactId})
-        else if (typeof u.contactKey !== "undefined") Object.assign(variables.contactsInput[upd], {key: u.contactKey})
         else if (typeof u.addressable !== "undefined") Object.assign(variables.contactsInput[upd], {addressable: u.addressable})
 
         if (typeof u.consent !== "undefined") Object.assign(uci.to, {consent: u.consent})
@@ -4547,7 +4545,6 @@ function transforms (updates: object[], config: CustomerConfig) {
   //
   // --- Have to run "Reference" transforms (transforms that reference values) After transforms that modify data
   // ContactId
-  // ContactKey
   // Addressable Fields
   // Channel Consent
   // Audience
@@ -5020,7 +5017,10 @@ function transforms (updates: object[], config: CustomerConfig) {
       S3DB_Logging("exception", "934", `Exception - Applying ContactId Transform \n${e}`)
     }
   }
-  else if (typeof config.transforms.contactkey !== undefined &&
+
+ /*
+ //ContactKey should not need to be manipulated - Use as Template for Processing  
+ else if (typeof config.transforms.contactkey !== undefined &&
     config.transforms.contactkey.length > 3)
   {
     //Transform: ContactKey
@@ -5093,8 +5093,9 @@ function transforms (updates: object[], config: CustomerConfig) {
 
       S3DB_Logging("exception", "934", `Exception - Applying ContactKey Transform \n${e}`)
     }
-
   }
+  */
+  
   else if (typeof config.transforms.addressablefields !== undefined &&
     Object.entries(config.transforms.addressablefields).length > 0)
   {
@@ -6203,14 +6204,14 @@ export async function postToCampaign (
     .catch((e) => {
       debugger //catch
 
-      if (e.indexOf("econnreset") > -1)
+      if (typeof e === "string" && e.toLowerCase().indexOf("econnreset") > -1)
       {
         S3DB_Logging("exception", "929", `Error - Temporary failure to POST the Updates - Marked for Retry. ${e}`)
 
         return "retry"
       } else
       {
-        S3DB_Logging("exception", "927", `Error - Unsuccessful POST of the Updates: ${e}`)
+        S3DB_Logging("exception", "927", `Error - Unsuccessful POST of the Updates: ${JSON.stringify(e)}`)
         //throw new Error( `Exception - Unsuccessful POST of the Updates \n${ e }` )
         return "Unsuccessful POST of the Updates"
       }
