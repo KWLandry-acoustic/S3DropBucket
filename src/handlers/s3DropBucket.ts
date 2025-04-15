@@ -715,7 +715,7 @@ export const s3DropBucketHandler: Handler = async (
         return
       }
     }
-    S3DB_Logging("info", "500", `Received S3DropBucket Event Batch. There are ${event.Records.length} S3DropBucket Event Records in this batch. (Event Id: ${event.Records[0].responseElements["x-amz-request-id"]}, \nContext: ${JSON.stringify(context)}).`
+    S3DB_Logging("info", "500", `Received S3DropBucket Event Batch. There are ${event.Records.length} S3DropBucket Event Records in this batch. (Event Id: ${event.Records[0].responseElements["x-amz-request-id"]}, \nContext: ${JSON.stringify(context)} \n${JSON.stringify(event.Records)}).`
     )
 
     //Future: Left this for possible switch of the Trigger from S3 being an SQS Trigger of an S3 Write,
