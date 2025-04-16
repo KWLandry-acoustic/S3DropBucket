@@ -93,6 +93,7 @@ import jsonpath from "jsonpath"
 import {Ajv} from "ajv"  //Ajv JSON schema validator
 
 import sftpClient, {ListFilterFunction} from "ssh2-sftp-client"
+import {config} from 'process'
 
 
 
@@ -583,9 +584,9 @@ const testdata = ""
 //testS3Key = "MasterCustomer_Sample1-json-update-1-6-0bb2f92e-3344-41e6-af95-90f5d32a73dc.json"
 
 //testS3Key = "TestData/KingsfordWeather_S3DropBucket_Aggregator-10-2025-01-09-19-29-39-da334f11-53a4-31cc-8c9f-8b417725560b.json"
-testS3Key = "TestData/Funding_Circle_Limited_CampaignDatabase1_2025_02_28T19_19_26_268Z.json"
+//testS3Key = "TestData/Funding_Circle_Limited_CampaignDatabase1_2025_02_28T19_19_26_268Z.json"
 //testS3Key = "TestData/alerusrepsignature_advisors-mar232025.json"
-//testS3Key = "TestData/MasterCustomer_Sample-mar232025.json"
+testS3Key = "TestData/MasterCustomer_Sample-mar232025.json"
 //testS3Key = "TestData/KingsfordWeather_S3DropBucket_Aggregator-10-2025-03-26-09-10-22-dab1ccdf-adbc-339d-8993-b41d27696a3d.json"
 
 
@@ -1265,6 +1266,8 @@ async function processS3ObjectContentStream (
       batchCount = 0
       recs = 0
       let iter = 0
+      let apiLimit = 100
+      if(custConfig.targetupdate.toLowerCase() === "connect") apiLimit = 25
 
       let packageResult = {} as StoreAndQueueWorkResults
 
@@ -1375,10 +1378,10 @@ async function processS3ObjectContentStream (
             //At each 99 updates, package them up, if there are fewer than 99 then "OnEnd" will pick up the remainder. 
             try 
             {
-              if (chunksGlobal.length > 99)  //ToDo: refactor for Connect Limits, for now, can use 100 and let arrive at Connect POST where it will be carved up as 25x4
+              if (chunksGlobal.length > apiLimit)  //ToDo: refactor for Connect Limits, for now, can use 100 and let arrive at Connect POST where it will be carved up as 25x4
               {
                 const updates = []
-                let limit = 100
+                let limit = apiLimit
 
                 while (chunksGlobal.length > 0)
                 {
@@ -1449,7 +1452,7 @@ async function processS3ObjectContentStream (
                 while (chunksGlobal.length > 0)
                 {
                   let chunk = []
-                  let limit = 100
+                  let limit = apiLimit
                   
                   //if (custConfig.updatetype.toLowerCase() === "campaign") limit = 100 
                   //if (custConfig.updatetype.toLowerCase() === "connect") limit = 25 
@@ -1677,7 +1680,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
       }
       else 
       {
-        S3DB_Logging("warn", "96", `AWS Region can not be determined. Region returns as:${process.env.AWS_REGION}`)
+        S3DB_Logging("warn", "96", `AWS Region can not be determined. Region returns as: ${process.env.AWS_REGION}`)
         throw new Error(`AWS Region can not be determined. Region returns as:${process.env.AWS_REGION}`)
       }
     }
@@ -2974,10 +2977,8 @@ async function validateCustomerConfig (config: CustomerConfig) {
     if (config.targetupdate.toLowerCase() === "connect")
     {
       //updatetype has valid Campaign values and Campaign dependent values
-      if (config.updatetype.toLowerCase().match(/^(?:referenceset|createcontacts|updatecontacts|createattributes)$/gim))
-      //DBKeyed, DBNonKeyed, Relational
+      if (config.updatetype.toLowerCase().match(/^(?:referenceset|createupdatecontacts|createattributes)$/gim))
       {
-
         if (!config.datasetid)
         {
           throw new Error("Invalid Customer Config - Target Update is Connect but DataSetId is not defined")
@@ -3412,8 +3413,7 @@ async function storeAndQueueConnectWork (
   //For now will need to treat Reference Sets completely differently until an API shows up, 
   // hopefully similar to Contacts API
 
-  if (customersConfig.updatetype.toLowerCase() === "createcontacts" ||
-    customersConfig.updatetype.toLowerCase() === "updatecontacts" ||
+  if (customersConfig.updatetype.toLowerCase() === "createupdatecontacts" ||
     customersConfig.updatetype.toLowerCase() === "referenceset")
   {
     mutations = await buildMutationsConnect(updates, custConfig)
@@ -3422,16 +3422,18 @@ async function storeAndQueueConnectWork (
       })
   }
 
-
-
   const mutationUpdates = JSON.stringify(mutations)
 
   //  Testing - Call POST to Connect immediately
-  S3DB_Logging("info", "855", `Testing - GraphQL Call (${S3DBConfig.connectapiurl}) Updates: \n${mutationUpdates}`)
-  const c = await postToConnect(mutationUpdates, customersConfig, "6", s3Key)
+  if (localTesting)
+  {
+    S3DB_Logging("info", "855", `Testing - GraphQL Call (${S3DBConfig.connectapiurl}) Updates: \n${mutationUpdates}`)
+    const c = await postToConnect(mutationUpdates, customersConfig, "6", s3Key)
+    debugger ///
+  }
+  
 
-  debugger ///
-
+  //Derive Key Name for Update File
   if (s3Key.indexOf("TestData") > -1)
   {
     //strip /testdata folder from key
@@ -3813,72 +3815,78 @@ async function buildMutationsConnect (updates: object[], config: CustomerConfig)
   */
 
 
+  interface CreateContactInput {
+    attributes: ContactAttribute[]
+    //audience?: {id: string}
+    consent?: {id: string}
+  }
+
+  interface ContactAttribute {
+    name: string
+    value: any
+  }
+
+  interface CreateContactRecord {
+    consent?: {}
+    attributes: Array<{
+      name: string
+      value: any
+    }>
+  }
+
+  interface CreateContactsVariables {
+    dataSetId: string
+    contactsData: CreateContactRecord[]
+  }
+
+
+  query = `mutation S3DropBucketCreateUpdateMutation (
+        $dataSetId: ID!,
+        $contactsData: [ContactCreateInput!]!
+        ) 
+        {
+            createContacts(
+            dataSetId: $dataSetId
+            contactsInput: $contactsData
+            ) {
+                  items {
+                        contactKey
+                        message
+                        identifyingField {
+                              value
+                              attributeData {
+                                    type
+                                    decimalPrecision
+                                    name
+                                    category
+                                    mapAs
+                                    validateAs
+                                    identifyAs {
+                                          channels
+                                          key
+                                          index
+                                    }
+                                    tracking {
+                                          createdBy
+                                          createdAt
+                                          lastModifiedBy
+                                          lastModifiedAt
+                                    }
+                              }
+                        }
+                  }
+            }
+        }`
+  
+
   try
   {
-    if (config.updatetype.toLowerCase() === "createcontacts")
+    if (config.updatetype.toLowerCase() === "createupdatecontacts")
     {
-      interface CreateContactInput {
-        attributes: ContactAttribute[]
-        audience?: {id: string}
-        consent?: {id: string}
-      }
-
-      interface ContactAttribute {
-        name: string
-        value: any
-      }
-
-      interface CreateContactRecord {
-        consent?: {}
-        attributes: Array<{
-          name: string
-          value: any
-        }>
-      }
-
-      interface CreateContactsVariables {
-        dataSetId: string
-        contactsInput: CreateContactRecord[]
-      }
-
-
-      query = `mutation createMultipleContacts (
-        $dataSetId: ID!,
-        $contactsInput: [ContactCreateInput!]!
-        ) {
-        createContacts(
-          dataSetId: $dataSetId
-          contactsInput: $contactsInput
-        ) {
-           items {
-            contactKey
-            message
-            identifyingField {
-                value
-                attributeData {
-                    type
-                    decimalPrecision
-                    name
-                    category
-                    mapAs
-                    validateAs
-                    identifyAs {
-                        channels
-                        key
-                        index
-                    }
-                    tracking {
-                        lastModifiedBy
-                        lastModifiedAt
-                    }
-                }
-            }
-        }
-        }
-      }`
+     
 
       //let createVariables = {} as CreateContactsVariables
-      variables = {dataSetId: config.datasetid, contactsInput: []} as CreateContactsVariables
+      variables = {dataSetId: config.datasetid, contactsData: []} as CreateContactsVariables
 
       for (const upd in updates)
       {
@@ -3889,16 +3897,10 @@ async function buildMutationsConnect (updates: object[], config: CustomerConfig)
         let ccr: CreateContactRecord = {attributes: []}
         let cci: CreateContactInput = {attributes: []}
 
-        variables.contactsInput.push(cci)
+        variables.contactsData.push(cci)
 
         //Build ContactId, AddressableFields, Consent, Audience properties
         const u = updates[upd] as Record<string, any>
-
-        //ToDo: Add logic CreateContact vs UpdateContact Key/Id/Addressable fields
-        //Create:
-        //No Key, No Addressable but UniqueId must be in the data
-        //if (typeof u.contactId !== "undefined") Object.assign(variables.contactsInput[upd], {contactId: u.contactId})
-        //else if (typeof u.addressable !== "undefined") Object.assign(variables.contactsInput[upd], {addressable: u.addressable})
 
         //if (typeof u.consent !== "undefined") Object.assign(variables.contactsInput, {consent: u.consent})
         if (typeof u.consent !== "undefined") Object.assign(cci, {consent: u.consent})
@@ -3931,16 +3933,20 @@ async function buildMutationsConnect (updates: object[], config: CustomerConfig)
           }
 
         }
-        Object.assign(variables.contactsInput[upd], cci)
+        
+        // ToDo: add validation logic for variables structure
+
+        Object.assign(variables.contactsData[upd], cci)
         //variables.contactsInput.push(cci)
       }
 
-      S3DB_Logging("info", "817", `Create Multiple Contacts Mutation: \n${query} and Vars: \n${JSON.stringify(variables)}`)
+      S3DB_Logging("info", "817", `CreateUpdate Multiple Contacts Mutation: \n${query} and Vars: \n${JSON.stringify(variables)}`)
       return {query, variables}
 
     }
   } catch (e)
   {
+
     debugger //catch
 
     S3DB_Logging("exception", "", `Exception - Build Mutations - CreateContacts - ${e}`)
@@ -4160,8 +4166,6 @@ function convertJSONToXML_DBUpdates (updates: object[], config: CustomerConfig) 
       //Only needed on non-keyed (In Campaign use DB -> Settings -> LookupKeys to find what fields are Lookup Keys)
       if (config.updatetype.toLowerCase() === "dbnonkeyed")
       {
-
-        debugger ///
 
         //const lk = config.lookupkeys.split(",")
         const lk = config.lookupkeys as typeof config.lookupkeys
@@ -5556,7 +5560,7 @@ function transforms (updates: object[], config: CustomerConfig) {
   // incoming data before sending to Aggregator.
   //Delete "Customer" column from data
 
-  debugger ///
+  debugger ///  Need to check that Customer column is getting deleted correctly - Apr 2025
 
 try {
   if (config.updates.toLowerCase() === "singular")  //
@@ -5940,8 +5944,6 @@ async function postToConnect (mutations: string, custconfig: CustomerConfig, upd
     ]
   }
 
-  debugger ///
-
   try
   {
 
@@ -5952,8 +5954,7 @@ async function postToConnect (mutations: string, custconfig: CustomerConfig, upd
     //  "extensions": {"myExtension": "someValue", ...}
     //}
 
-
-
+    
     connectMutationResult = await fetch(host, requestOptions)
       .then(async (response) => {
         //await response.json()  // .text())
@@ -5962,9 +5963,10 @@ async function postToConnect (mutations: string, custconfig: CustomerConfig, upd
         return rj
   })
       .then(async (result) => {
+        
 
         //ToDo: Create specific Messaging to line out this error as the Target DB does not have the attribute Defined
-        //{"errors": [{"message": "No defined Attribute with name: 'email'", "locations": [{"line": 1, "column": 38}], "path": ["updateContacts"], "extensions": {"code": "ATTRIBUTE_NOT_DEFINED"}}], "data": null} 
+        //{"errors": [{"message": "No defined Attribute with name: 'email'", "locations": [{"line": 1, "column": 38}], "path": ["updateContacts"], "extensions": {"code": "ATTRIBUTE_NOT_DEFINED"}}], "data": null}
 
         //const r3 = {
         //      "data" : {
@@ -5996,6 +5998,9 @@ async function postToConnect (mutations: string, custconfig: CustomerConfig, upd
 
         //POST Result: {"message": "Endpoint request timed out"}
 
+        debugger ///
+
+
         S3DB_Logging("info", "809", `Connect Mutation POST - Response (${workFile}) : ${JSON.stringify(result)}`)
 
         if (JSON.stringify(result).indexOf("Endpoint request timed out") > 0)
@@ -6013,7 +6018,7 @@ async function postToConnect (mutations: string, custconfig: CustomerConfig, upd
           for (const e in cr.errors)
           {
             S3DB_Logging("error", "827", `Connect Mutation POST - Error: ${cr.errors[e].message}`)
-            throw new Error(`Connect Mutation POST - Error: ${cr.errors[e].message}`)
+            //throw new Error(`Connect Mutation POST - Error: ${cr.errors[e].message}`)
           }
 
           return "unsuccessfully posted"
@@ -6037,6 +6042,11 @@ async function postToConnect (mutations: string, custconfig: CustomerConfig, upd
 
         debugger //catch
 
+        const h = host
+        const r = requestOptions
+        const m = mutations
+
+
         if (e.message.indexOf("econnreset") > -1)
         {
           S3DB_Logging("exception", "829", `PostToConnect Error (then.catch) - Temporary failure to POST the Updates - Marked for Retry. ${e}`)
@@ -6050,6 +6060,11 @@ async function postToConnect (mutations: string, custconfig: CustomerConfig, upd
   } catch (e)
   {
     debugger //catch
+    
+    const h = host
+    const r = requestOptions
+    const m = mutations
+
 
     S3DB_Logging("error", "829", `PostToConnect - Error (try-catch): ${e}`)
     return "unsuccessful post"
