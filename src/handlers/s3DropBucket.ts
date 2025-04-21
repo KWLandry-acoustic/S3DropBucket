@@ -1821,16 +1821,11 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
         {
           //Retrieve Contents of the Work File
           S3DB_Logging("info", "512", `S3 Retrieve results for Work file ${s3dbQM.workKey}: ${JSON.stringify(work)}`)
-
-          S3DB_Logging("error", "", `debug before if to call post to connect... UpdateType: ${custconfig.updatetype.toLowerCase()}`)
-
           
           if ((custconfig.updatetype.toLowerCase() === "createupdatecontacts") ||
             (custconfig.updatetype.toLowerCase() === "createattributes")
           )
           {
-
-            S3DB_Logging("error", "", `debug after if to call post to connect... UpdateType: ${custconfig.updatetype.toLowerCase()}`)
 
             postResult = await postToConnect(
               work,
@@ -5959,13 +5954,13 @@ async function postToConnect (mutations: string, custconfig: CustomerConfig, upd
     connectMutationResult = await fetch(host, requestOptions)
       //.then((response) => response.text())
       .then(async (response) => {
+        S3DB_Logging("info", "808", `POST to Connect - Raw Response: \n${JSON.stringify(response)}`)
         return await response.json()  // .text())
         //const rj = await response.json()
-        //S3DB_Logging("info", "808", `POST to Connect Raw Response: \n${JSON.stringify(rj)}`)
         //return rj
   })
       .then(async (result) => {
-        S3DB_Logging("info", "808", `POST to Connect Raw Response: \n${JSON.stringify(result)}`)
+        S3DB_Logging("info", "808", `POST to Connect - Raw Response: \n${JSON.stringify(result)}`)
 
         //ToDo: Create specific Messaging to line out this error as the Target DB does not have the attribute Defined
         //{"errors": [{"message": "No defined Attribute with name: 'email'", "locations": [{"line": 1, "column": 38}], "path": ["updateContacts"], "extensions": {"code": "ATTRIBUTE_NOT_DEFINED"}}], "data": null}
