@@ -1826,7 +1826,6 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
             (custconfig.updatetype.toLowerCase() === "createattributes")
           )
           {
-
             postResult = await postToConnect(
               work,
               custconfig as CustomerConfig,
@@ -1861,14 +1860,14 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
 
           let deleteWork = false
 
-          if (postResult.indexOf("retry") > -1)
+          if (postResult.toLowerCase().indexOf("retry ") > -1)
           {
             //Add to SQS BatchFail array to Retry processing the work
             sqsBatchFail.batchItemFailures.push({itemIdentifier: q.messageId})
 
             S3DB_Logging("warn", "516", `Retry Marked for ${s3dbQM.workKey}, added back to Queue for Retry (Queue MessageId: ${q.messageId}) \nRetry Queue Items:\n ${JSON.stringify(sqsBatchFail)} (Total Retry Count: ${sqsBatchFail.batchItemFailures.length + 1}) \nPOST Result requiring retry: ${postResult}`)
           }
-          else if (postResult.toLowerCase().indexOf("unsuccessful post") > -1)
+          else if (postResult.toLowerCase().indexOf("unsuccessful post ") > -1)
           {
             S3DB_Logging("error", "935", `Error - Unsuccessful POST (Hard Failure) for ${s3dbQM.workKey}: \n${postResult} \nQueue MessageId: ${q.messageId} \nCustomer: ${custconfig.customer} `)
             deleteWork = true
@@ -5868,7 +5867,7 @@ export async function getAccessToken (config: CustomerConfig) {
 
 
 
-async function postToConnect (mutations: string, custconfig: CustomerConfig, updateCount: string, workFile: string) {
+async function postToConnect (mutations: string, custconfig: CustomerConfig, count: string, workFile: string) {
   //ToDo: 
   //Transform Add Contacts to Mutation Create Contact
   //Transform Updates to Mutation Update Contact
@@ -5965,7 +5964,7 @@ async function postToConnect (mutations: string, custconfig: CustomerConfig, upd
         //ToDo: Create specific Messaging to line out this error as the Target DB does not have the attribute Defined
         //{"errors": [{"message": "No defined Attribute with name: 'email'", "locations": [{"line": 1, "column": 38}], "path": ["updateContacts"], "extensions": {"code": "ATTRIBUTE_NOT_DEFINED"}}], "data": null}
 
-        //const r3 = {
+        //const r3 = {          // as ConnectSuccessResult
         //      "data" : {
         //        "createContacts" : {
         //          "items" : [
@@ -5974,23 +5973,33 @@ async function postToConnect (mutations: string, custconfig: CustomerConfig, upd
         //            },
         //            {
         //              "contactId" : "5510fe0f-27b1-56ea-90a9-67a3bad9f364"
-        //            },
-        //            {
-        //              "contactId" : "c341af1a-968d-5d0b-8873-5a41d7d495e5"
-        //            },
-        //            {
-        //              "contactId" : "b357ad45-9396-5a24-ba56-1fb66289bd5f"
-        //            },
-        //            {
-        //              "contactId" : "e533ff9b-def4-5da5-9725-3edae92cab65"
-        //            },
-        //            {
-        //              "contactId" : "59a7dcfe-4db5-5db7-a789-3f0c39d23d71"
         //            }
         //          ]
         //        }
         //      }
         //    }
+
+        //{                   //  as  ConnectErrorResult
+        //  "errors": [
+        //    {
+        //      "message": "Field Mobile Number has invalid value: 211-411-5555. Category: PHONE_FORMAT. Message: Invalid phone number, only 0-9 allowed as phone number",
+        //      "locations": [
+        //        {
+        //          "line": 1,
+        //          "column": 47
+        //        }
+        //      ],
+        //      "path": [
+        //        "createContacts"
+        //      ],
+        //      "extensions": {
+        //        "code": "INVALID_ATTRIBUTE_VALUE",
+        //        "category": "PHONE_FORMAT"
+        //      }
+        //    }
+        //  ],
+        //    "data": null
+        //}
 
 
         //POST Result: {"message": "Endpoint request timed out"}
@@ -6000,7 +6009,7 @@ async function postToConnect (mutations: string, custconfig: CustomerConfig, upd
         if (JSON.stringify(result).indexOf("Endpoint request timed out") > 0)
         {
           S3DB_Logging("warn", "809", `Connect Mutation POST - Temporary Error: Request Timed Out (${JSON.stringify(result)}). Work will be Sent back to Retry Queue. `)
-          return "retry"
+          return `retry ${JSON.stringify(result)}`
         }
 
 
@@ -6016,10 +6025,8 @@ async function postToConnect (mutations: string, custconfig: CustomerConfig, upd
             errors.push(cer.errors[e].message)
           }
 
-          return `unsuccessfully posted \n ${JSON.stringify(errors)}`
+          return `Unsuccessful POST of the Updates \n ${JSON.stringify(errors)}`
         }
-
-        
 
 
         //S3DB_Logging("warn", "829", `Temporary Failure - POST Updates - Marked for Retry. \n${result}`)
@@ -6034,7 +6041,7 @@ async function postToConnect (mutations: string, custconfig: CustomerConfig, upd
         S3DB_Logging("info", "826", `Successful POST Result: ${spr}`)
 
         //return `Successfully POSTed (${count}) Updates - Result: ${result}`
-        return `successfully posted - ${spr}`
+        return `Successfully POSTed (${count}) Updates - Result: ${spr}`
       })
       .catch((e) => {
 
@@ -6044,15 +6051,14 @@ async function postToConnect (mutations: string, custconfig: CustomerConfig, upd
         const r = requestOptions
         const m = mutations
 
-
         if (e.message.indexOf("econnreset") > -1)
         {
-          S3DB_Logging("exception", "829", `PostToConnect Error (then.catch) - Temporary failure to POST the Updates - Marked for Retry. ${e}`)
-          return "retry"
+          S3DB_Logging("exception", "829", `PostToConnect Error (then.catch) - Temporary failure to POST the Updates - Marked for Retry. ${JSON.stringify(e)}`)
+          return `retry ${JSON.stringify(e)}`
         } else
         {
-          S3DB_Logging("exception", "", `Error - Unsuccessful POST of the Updates: ${e}`)
-          return "Unsuccessful POST of the Updates"
+          S3DB_Logging("exception", "", `Error - Unsuccessful POST of the Updates: ${JSON.stringify(e)}`)
+          return `Unsuccessful POST of the Updates \n${JSON.stringify(e)}`
         }
       })
   } catch (e)
@@ -6063,9 +6069,8 @@ async function postToConnect (mutations: string, custconfig: CustomerConfig, upd
     const r = requestOptions
     const m = mutations
 
-
-    S3DB_Logging("error", "829", `PostToConnect - Error (try-catch): ${e}`)
-    return "unsuccessful post"
+    S3DB_Logging("error", "829", `PostToConnect - Error (try-catch): ${JSON.stringify(e)}`)
+    return `unsuccessful post \n ${JSON.stringify(e)}`
   }
 
   //retry
@@ -6144,7 +6149,7 @@ export async function postToCampaign (
       {
         S3DB_Logging("warn", "929", `Temporary Failure - POST Updates - Marked for Retry. \n${result}`)
 
-        return "retry"
+        return `retry ${JSON.stringify(result)}`
 
       } else if (result.indexOf("<FaultString><![CDATA[") > -1)
       {
@@ -6211,9 +6216,9 @@ export async function postToCampaign (
 
 
       //If we haven't returned before now then it's a successful post 
-      result = result.replace("\n", " ")
-      S3DB_Logging("info", "926", `Successful POST Result: ${result}`)
-      return `Successfully POSTed (${count}) Updates - Result: ${result}`
+      const spr = JSON.stringify(result).replace("\n", " ")
+      S3DB_Logging("info", "926", `Successful POST Result: ${spr}`)
+      return `Successfully POSTed (${count}) Updates - Result: ${spr}`
     })
     .catch((e) => {
       debugger //catch
