@@ -3181,7 +3181,7 @@ async function validateCustomerConfig (config: CustomerConfig) {
 
 
 
-    S3DB_Logging("info", "919", `Transforms configured: \n${JSON.stringify(config.transforms)}`)
+    S3DB_Logging("info", "919", `Transforms configured in Customer Config: \n${JSON.stringify(config.transforms)}`)
 
     if (config.transforms.jsonmap)
     {
@@ -4612,6 +4612,9 @@ function transforms (updates: object[], config: CustomerConfig) {
           `Error - Transform - Applying DayDate Transform returns fewer records (${t.length}) than initial set ${updates.length}`
         )
       }
+
+      S3DB_Logging("info", "919", `Transforms (DayDate) applied: \n${JSON.stringify({"pending": "tbd"})}`)
+
     }
   } catch (e)
   {
@@ -4667,6 +4670,9 @@ function transforms (updates: object[], config: CustomerConfig) {
           `Error - Transform - Applying date_iso1806 Transform returns fewer records (${t.length}) than initial set ${updates.length}`
         )
       }
+
+      S3DB_Logging("info", "919", `Transforms (Date_ISO1806) applied: \n${JSON.stringify({"pending": "tbd"})}`)
+
     }
   } catch (e)
   {
@@ -4732,6 +4738,10 @@ function transforms (updates: object[], config: CustomerConfig) {
           `Error - Transform - Applying Phone_Number Transform returns fewer records (${t.length}) than initial set ${updates.length}`
         )
       }
+
+      S3DB_Logging("info", "919", `Transforms (Phone Number) applied: \n${JSON.stringify({"pending": "tbd"})}`)
+
+
     }
   } catch (e)
   {
@@ -4791,6 +4801,9 @@ function transforms (updates: object[], config: CustomerConfig) {
           `Error - Transform - Applying String-To-Number Transform returns fewer records (${t.length}) than initial set ${updates.length}`
         )
       }
+
+      S3DB_Logging("info", "919", `Transforms (StringToNumber) applied: \n${JSON.stringify({"pending": "tbd"})}`)
+
     }
   } catch (e)
   {
@@ -4839,7 +4852,7 @@ function transforms (updates: object[], config: CustomerConfig) {
       {
         debugger //catch
 
-        S3DB_Logging("exception", "930", `Exception - Transform - Applying JSONMap \n${e}`)
+        S3DB_Logging("exception", "934", `Exception - Transform - Applying JSONMap \n${e}`)
 
       }
 
@@ -4850,14 +4863,17 @@ function transforms (updates: object[], config: CustomerConfig) {
       {
         debugger //catch
 
-        S3DB_Logging("error", "930", `Error - Transform - Applying JSONMap returns fewer records(${t.length}) than initial set ${updates.length}`)
+        S3DB_Logging("error", "933", `Error - Transform - Applying JSONMap returns fewer records(${t.length}) than initial set ${updates.length}`)
 
         throw new Error(
           `Error - Transform - Applying JSONMap returns fewer records (${t.length}) than initial set ${updates.length}`
         )
       }
 
-      S3DB_Logging("info", "919", `Transforms (JsonMap) applied: \n${JSON.stringify(t)}`)
+      
+      //if no throw/exception yet then we are successful
+      S3DB_Logging("info", "919", `Transforms (JSONMap) applied: \n${JSON.stringify(t)}`)
+
     }
   } catch (e)
   {
@@ -4923,7 +4939,7 @@ function transforms (updates: object[], config: CustomerConfig) {
       {
         debugger //catch
 
-        S3DB_Logging("exception", "931", `Exception - Transforms - Applying CSVMap \n${e}`)
+        S3DB_Logging("exception", "934", `Exception - Transforms - Applying CSVMap \n${e}`)
 
       }
 
@@ -4932,12 +4948,13 @@ function transforms (updates: object[], config: CustomerConfig) {
         updates = t
       } else
       {
-        S3DB_Logging("error", "931", `Error - Transform - Applying CSVMap returns fewer records(${t.length}) than initial set ${updates.length}`)
+        S3DB_Logging("error", "933", `Error - Transform - Applying CSVMap returns fewer records(${t.length}) than initial set ${updates.length}`)
         throw new Error(
           `Error - Transform - Applying CSVMap returns fewer records (${t.length}) than initial set ${updates.length}`
         )
       }
 
+      //if no throw/exception yet then we are successful
       S3DB_Logging("info", "919", `Transforms (CSVMap) applied: \n${JSON.stringify(t)}`)
     }
   } catch (e)
@@ -5009,6 +5026,9 @@ function transforms (updates: object[], config: CustomerConfig) {
           `Error - Transform - Applying ContactId Transform returns fewer records (${t.length}) than initial set ${updates.length}`
         )
       }
+
+      S3DB_Logging("info", "919", `Transforms (ContactId) applied: \n${JSON.stringify({"pending": "tbd"})}`)
+
 
     } catch (e)
     {
@@ -5086,6 +5106,9 @@ function transforms (updates: object[], config: CustomerConfig) {
           `Error - Transform - Applying ContactKey Transform returns fewer records (${t.length}) than initial set ${updates.length}`
         )
       }
+
+          S3DB_Logging("info", "919", `Transforms (ContactKey) applied: \n${JSON.stringify({"pending": "tbd"})}`)
+
 
     } catch (e)
     {
@@ -5224,7 +5247,7 @@ function transforms (updates: object[], config: CustomerConfig) {
             if (addressableValue.startsWith('$')) s = 'jsonpath'
             else if (addressableValue.startsWith('@')) s = 'csvcolumn'
             else if (s === "" && addressableValue.length > 3) s = 'static'
-            else S3DB_Logging("error", "999", `Error - Transform - AddressableFields invalid configuration.`)
+            else S3DB_Logging("error", "933", `Error - Transform - AddressableFields invalid configuration.`)
 
             switch (s)
             {
@@ -5286,6 +5309,9 @@ function transforms (updates: object[], config: CustomerConfig) {
         )
       }
 
+      S3DB_Logging("info", "919", `Transforms (Addressable Fields) applied: \n${JSON.stringify({"pending": "tbd"})}`)
+
+
     } catch (e)
     {
       debugger //catch
@@ -5298,7 +5324,9 @@ function transforms (updates: object[], config: CustomerConfig) {
   {
     if (config.targetupdate.toLowerCase() === "connect")
     {
-      S3DB_Logging("warn", "999", `Warning - No ContactId, ContactKey or Addressable Field provided for a Connect Create or Update ${config.targetupdate} Contact.`)
+      S3DB_Logging("warn", "933", `Warning - No ContactKey or Addressable Field provided for a Connect Create or Update ${config.targetupdate} Contact.`)
+    //ToDo: Possible throw exception here for missing addressable, contactID or Addressable Field 
+
     }
   }
 
@@ -5385,7 +5413,7 @@ function transforms (updates: object[], config: CustomerConfig) {
             if (consentValue.startsWith('$')) s = 'jsonpath'
             else if (consentValue.startsWith('@')) s = 'csvcolumn'
             else if (s === "" && consentValue.length > 3) s = 'static'
-            else S3DB_Logging("error", "999", `Error - Transform - ContactKey invalid configuration.`)
+            else S3DB_Logging("error", "933", `Error - Transform - ContactKey transform has an invalid configuration.`)
 
             switch (s)
             {
@@ -5446,6 +5474,8 @@ function transforms (updates: object[], config: CustomerConfig) {
         )
       }
 
+      S3DB_Logging("info", "919", `Transforms (Channel Consent) applied: \n${JSON.stringify({"pending": "tbd"})}`)
+
     } catch (e)
     {
       debugger //catch
@@ -5489,7 +5519,7 @@ function transforms (updates: object[], config: CustomerConfig) {
           if (audUpdateValue.startsWith('$')) s = 'jsonpath'
           else if (audUpdateValue.startsWith('@')) s = 'csvcolumn'
           else if (s === "" && audUpdateValue.length > 3) s = 'static'
-          else S3DB_Logging("error", "999", `Error - Transform - AudienceUpdate invalid configuration.`)
+          else S3DB_Logging("error", "933", `Error - Transform - AudienceUpdate transform has an invalid configuration.`)
 
           switch (s)
           {
@@ -5540,7 +5570,12 @@ function transforms (updates: object[], config: CustomerConfig) {
           `Error - Transform - Applying AudienceUpdates Transform returns fewer records (${t.length}) than initial set ${updates.length}`
         )
       }
+
+
     }
+
+    S3DB_Logging("info", "919", `Transforms (Audience Update) applied: \n${JSON.stringify({"pending": "tbd"})}`)
+
   } catch (e)
   {
     debugger //catch
@@ -5576,7 +5611,7 @@ try {
     {
       debugger //catch
 
-      S3DB_Logging("exception", "932", `Exception - Transform - Removing Aggregator Surplus "Customer" Field \n${e}`)
+      S3DB_Logging("exception", "933", `Exception - Transform - Removing Aggregator Surplus "Customer" Field \n${e}`)
 
     }
 
@@ -5587,15 +5622,16 @@ try {
     {
       debugger //catch
 
-      S3DB_Logging("error", "932", `Error - Transform for Aggregator Files - Removing Surplus Customer Field returns fewer records ${t.length} than initial set ${updates.length}`)
+      S3DB_Logging("error", "933", `Error - Transform for Aggregator Files - Removing Surplus Customer Field returns fewer records ${t.length} than initial set ${updates.length}`)
 
       throw new Error(
         `Error - Transform - Transform for Aggregator Files: Removing Surplus Customer Field returns fewer records ${t.length} than initial set ${updates.length}`
       )
     }
 
-    S3DB_Logging("info", "919", `Transforms (Transform for Aggregator Files - Removing Surplus Customer Field) applied: \n${JSON.stringify(t)}`)
+    S3DB_Logging("info", "919", `Transform for Aggregator Files - Removing Surplus Customer Field applied: \n${JSON.stringify(t)}`)
   }
+
 } catch (e)
 {
   debugger //catch
@@ -5636,7 +5672,7 @@ try {
       {
         debugger //catch
 
-        S3DB_Logging("exception", "932", `Exception - Transform - Applying Ignore - \n${e}`)
+        S3DB_Logging("exception", "934", `Exception - Transform - Applying Ignore - \n${e}`)
 
       }
 
@@ -5647,7 +5683,7 @@ try {
       {
         debugger //catch
 
-        S3DB_Logging("error", "932", `Error - Transform - Applying Ignore returns fewer records ${t.length} than initial set ${updates.length}`)
+        S3DB_Logging("error", "933", `Error - Transform - Applying Ignore returns fewer records ${t.length} than initial set ${updates.length}`)
 
         throw new Error(
           `Error - Transform - Applying Ignore returns fewer records ${t.length} than initial set ${updates.length}`
