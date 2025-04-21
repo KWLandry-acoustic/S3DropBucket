@@ -1454,8 +1454,8 @@ async function processS3ObjectContentStream (
                   let chunk = []
                   let limit = apiLimit
                   
-                  //if (custConfig.updatetype.toLowerCase() === "campaign") limit = 100 
-                  //if (custConfig.updatetype.toLowerCase() === "connect") limit = 25 
+                  //if (custConfig.targetupdate.toLowerCase() === "campaign") limit = 100 
+                  //if (custConfig.targetupdate.toLowerCase() === "connect") limit = 25 
                   
                   chunk = chunksGlobal.splice(0, limit)
       
@@ -1822,13 +1822,16 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
           //Retrieve Contents of the Work File
           S3DB_Logging("info", "512", `S3 Retrieve results for Work file ${s3dbQM.workKey}: ${JSON.stringify(work)}`)
 
-          
+          S3DB_Logging("error", "", `debug before if to call post to connect... UpdateType: ${custconfig.updatetype.toLowerCase()}`)
 
+          
           if ((custconfig.updatetype.toLowerCase() === "createupdatecontacts") ||
             (custconfig.updatetype.toLowerCase() === "createattributes")
-            // || localTesting)
           )
           {
+
+            S3DB_Logging("error", "", `debug after if to call post to connect... UpdateType: ${custconfig.updatetype.toLowerCase()}`)
+
             postResult = await postToConnect(
               work,
               custconfig as CustomerConfig,
