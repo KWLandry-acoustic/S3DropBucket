@@ -5943,7 +5943,8 @@ async function postToConnect (mutations: string, custconfig: CustomerConfig, upd
   try
   {
 
-    //{         //graphQL Spec Doc
+    //{         
+    // //graphQL Spec Doc
     //  "query": "...",
     //    "operationName": "...",
     //      "variables": {"myVariable": "someValue", ...},
@@ -5954,7 +5955,6 @@ async function postToConnect (mutations: string, custconfig: CustomerConfig, upd
     connectMutationResult = await fetch(host, requestOptions)
       //.then((response) => response.text())
       .then(async (response) => {
-        S3DB_Logging("info", "808", `POST to Connect - Raw Response: \n${JSON.stringify(response)}`)
         return await response.json()  // .text())
         //const rj = await response.json()
         //return rj
@@ -5997,43 +5997,44 @@ async function postToConnect (mutations: string, custconfig: CustomerConfig, upd
 
         debugger ///
 
-
-        S3DB_Logging("info", "809", `Connect Mutation POST - Response (${workFile}) : ${JSON.stringify(result)}`)
-
         if (JSON.stringify(result).indexOf("Endpoint request timed out") > 0)
         {
-          S3DB_Logging("warn", "827", `Connect Mutation POST - Temporary Error: Request Timed Out (${JSON.stringify(result)}). Work will be Sent back to Retry Queue. `)
+          S3DB_Logging("warn", "809", `Connect Mutation POST - Temporary Error: Request Timed Out (${JSON.stringify(result)}). Work will be Sent back to Retry Queue. `)
           return "retry"
         }
 
-        if (JSON.stringify(result).indexOf("errors") > 0)
-        {
-          //const resultMsg = JSON.parse(result) 
-          const cr = result as ConnectErrorResult
 
-          //if (cr.errors.length > 0)      //need to check if there are Partial Success/Errors. 
-          for (const e in cr.errors)
+        let errors = []
+        const cer = result as ConnectErrorResult
+        
+        if (typeof cer.errors !== "undefined")
+        {
+          for (const e in cer.errors)
           {
-            S3DB_Logging("error", "827", `Connect Mutation POST - Error: ${cr.errors[e].message}`)
+            S3DB_Logging("error", "827", `Connect Mutation POST - Error: ${cer.errors[e].message}`)
             //throw new Error(`Connect Mutation POST - Error: ${cr.errors[e].message}`)
+            errors.push(cer.errors[e].message)
           }
 
-          return "unsuccessfully posted"
+          return `unsuccessfully posted \n ${JSON.stringify(errors)}`
         }
+
+        
+
 
         //S3DB_Logging("warn", "829", `Temporary Failure - POST Updates - Marked for Retry. \n${result}`)
         //S3DB_Logging("error", "827", `Unsuccessful POST of the Updates (${m.length} of ${count}) - \nFailure Msg: ${JSON.stringify(msg)}`)
 
 
-        const cr = result as ConnectSuccessResult
+        const csr = result as ConnectSuccessResult
 
         //If we haven't returned before now then it's a successful post 
-        const spr = JSON.stringify(cr).replace("\n", " ")
+        const spr = JSON.stringify(csr).replace("\n", " ")
 
         S3DB_Logging("info", "826", `Successful POST Result: ${spr}`)
 
         //return `Successfully POSTed (${count}) Updates - Result: ${result}`
-        return "successfully posted"
+        return `successfully posted - ${spr}`
       })
       .catch((e) => {
 
