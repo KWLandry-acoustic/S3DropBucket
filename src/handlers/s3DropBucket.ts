@@ -5957,14 +5957,15 @@ async function postToConnect (mutations: string, custconfig: CustomerConfig, upd
 
     
     connectMutationResult = await fetch(host, requestOptions)
+      //.then((response) => response.text())
       .then(async (response) => {
-        //await response.json()  // .text())
-        const rj = await response.json()
-        S3DB_Logging("info", "808", `POST to Connect Raw Response: \n${JSON.stringify(rj)}`)
-        return rj
+        return await response.json()  // .text())
+        //const rj = await response.json()
+        //S3DB_Logging("info", "808", `POST to Connect Raw Response: \n${JSON.stringify(rj)}`)
+        //return rj
   })
       .then(async (result) => {
-        
+        S3DB_Logging("info", "808", `POST to Connect Raw Response: \n${JSON.stringify(result)}`)
 
         //ToDo: Create specific Messaging to line out this error as the Target DB does not have the attribute Defined
         //{"errors": [{"message": "No defined Attribute with name: 'email'", "locations": [{"line": 1, "column": 38}], "path": ["updateContacts"], "extensions": {"code": "ATTRIBUTE_NOT_DEFINED"}}], "data": null}
