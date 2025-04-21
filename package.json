@@ -2,9 +2,9 @@
 	"name": "s3dropbucket",
 	"author": "KW Landry (kip.landry@acoustic.co)",
 	"license": "ISC",
-	"description": "S3DropBucket Build \"3.3.168\" - \"04-16-2025 18:04:13\"",
-	"version": "3.3.168",
-	"builddate": "04-16-2025 18:04:13",
+	"description": "S3DropBucket Build \"3.3.169\" - \"04-21-2025 10:54:50\"",
+	"version": "3.3.169",
+	"builddate": "04-21-2025 10:54:50",
 	"copyright": "ISC",
 	"private": true,
 	"package": {

@@ -1824,8 +1824,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
 
           
 
-          if ((custconfig.updatetype.toLowerCase() === "createcontacts") ||
-            (custconfig.updatetype.toLowerCase() === "updatecontacts") ||
+          if ((custconfig.updatetype.toLowerCase() === "createupdatecontacts") ||
             (custconfig.updatetype.toLowerCase() === "createattributes")
             // || localTesting)
           )
@@ -2899,12 +2898,12 @@ async function validateCustomerConfig (config: CustomerConfig) {
 
 
     ////Confirm updatetype has a valid value
-    //  if ( !config.updatetype.toLowerCase().match(/^(?:relational|dbkeyed|dbnonkeyed|referenceset|createcontacts|updatecontacts|createattributes)$/gim)
-    //    //DBKeyed, DBNonKeyed, Relational, ReferenceSet, CreateContacts, UpdateContacts, CreateAttributes
+    //  if ( !config.updatetype.toLowerCase().match(/^(?:relational|dbkeyed|dbnonkeyed|referenceset|createupdatecontacts|createattributes)$/gim)
+    //    //DBKeyed, DBNonKeyed, Relational, ReferenceSet, CreateUpdateContacts, CreateAttributes
     //  )
     //  {
     //    throw new Error(
-    //      "Invalid Customer Config - updatetype is required and must be either 'Relational', 'DBKeyed' or 'DBNonKeyed', ReferenceSet, CreateContacts, UpdateContacts, CreateAttributes. "
+    //      "Invalid Customer Config - updatetype is required and must be either 'Relational', 'DBKeyed' or 'DBNonKeyed', ReferenceSet, CreateUpdateContacts, CreateAttributes. "
     //    )
     //  }
 
@@ -3391,9 +3390,8 @@ async function storeAndQueueConnectWork (
   S3DB_Logging("info", "800", `After Transform (Updates: ${updateCount}. File Stream Iter: ${iter}): \n${JSON.stringify(updates)}`)
 
   let mutations
-  ////DBKeyed, DBNonKeyed, Relational, ReferenceSet, CreateContacts, UpdateContacts, CreateAttributes
-  //if (customersConfig.updatetype.toLowerCase() === "updatecontacts") res = ConnectUpdateContacts()
-  //if (customersConfig.updatetype.toLowerCase() === "createcontacts") res = ConnectCreateMultipleContacts()
+  ////DBKeyed, DBNonKeyed, Relational, ReferenceSet, CreateUpdateContacts, CreateAttributes
+  //if (customersConfig.updatetype.toLowerCase() === "createupdatecontacts") res = ConnectCreateMultipleContacts()
   //if (customersConfig.updatetype.toLowerCase() === "createattributes") res = ConnectCreateAttributes()
   ////if (true) res = ConnectReferenceSet().then((m) => {return m})
   //const mutationCall = JSON.stringify(res)
@@ -3401,13 +3399,13 @@ async function storeAndQueueConnectWork (
 
 
   // ReferenceSet   -    Need to establish SFTP and Job Creation for this
-  // CreateContacts   - Done
+  // CreateContacts   - Done - CreateUpdateContacts call as Create will also Update
   // UpdateContacts    - Done
-  // Audience - Done
-  // Consent - Done
-  // ContactKey - done
-  // ContactId - done 
-  // AddressableFields - done
+  // Audience - Done - Transform
+  // Consent - Done - Transform
+  // ContactKey - Done - Transform 
+  // ContactId - Done - Transform
+  // AddressableFields - Done - Transform
 
 
   //For now will need to treat Reference Sets completely differently until an API shows up, 
@@ -3808,7 +3806,7 @@ async function buildMutationsConnect (updates: object[], config: CustomerConfig)
       }
     } catch (e)
     {
-      S3DB_Logging("exception", "", `Exception - Build Mutations - CreateContacts - ${e}`)
+      S3DB_Logging("exception", "", `Exception - Build Mutations - CreateUpdateContacts - ${e}`)
       debugger //catch
     }
   
@@ -3834,7 +3832,7 @@ async function buildMutationsConnect (updates: object[], config: CustomerConfig)
     }>
   }
 
-  interface CreateContactsVariables {
+  interface CreateUpdateContactsVariables {
     dataSetId: string
     contactsData: CreateContactRecord[]
   }
@@ -3885,8 +3883,8 @@ async function buildMutationsConnect (updates: object[], config: CustomerConfig)
     {
      
 
-      //let createVariables = {} as CreateContactsVariables
-      variables = {dataSetId: config.datasetid, contactsData: []} as CreateContactsVariables
+      //let createVariables = {} as CreateUpdateContactsVariables
+      variables = {dataSetId: config.datasetid, contactsData: []} as CreateUpdateContactsVariables
 
       for (const upd in updates)
       {
@@ -3949,13 +3947,13 @@ async function buildMutationsConnect (updates: object[], config: CustomerConfig)
 
     debugger //catch
 
-    S3DB_Logging("exception", "", `Exception - Build Mutations - CreateContacts - ${e}`)
+    S3DB_Logging("exception", "", `Exception - Build Mutations - CreateUpdateContacts - ${e}`)
   }
 
 
   try
   {
-    if (config.updatetype.toLowerCase() === "updatecontacts")
+    if (config.updatetype.toLowerCase() === "updatecontacts") //Deprecated for now, until its known this is required aside from CreateUpdate
     {
 
       interface ContactAttribute {
@@ -5563,7 +5561,7 @@ function transforms (updates: object[], config: CustomerConfig) {
   debugger ///  Need to check that Customer column is getting deleted correctly - Apr 2025
 
 try {
-  if (config.updates.toLowerCase() === "singular")  //
+  if (config.updates.toLowerCase() === "singular")  //Denotes Aggregator is used, so remove Customer
   {
 
     const t: typeof updates = []  //start a "Processed for Aggregator" update set
