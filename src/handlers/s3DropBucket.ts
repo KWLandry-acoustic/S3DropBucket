@@ -3935,9 +3935,8 @@ async function buildMutationsConnect (updates: object[], config: CustomerConfig)
         //variables.contactsInput.push(cci)
       }
 
-      const q = JSON.stringify({query: mutation, variables: variables})
-      S3DB_Logging("info", "817", `CreateUpdate Multiple Contacts Mutation: ${q}`)
-      return q
+      S3DB_Logging("info", "817", `CreateUpdate Multiple Contacts Mutation: ${JSON.stringify({query: mutation, variables: variables})}`)
+      return {query: mutation, variables: variables}
 
     }
   } catch (e)
