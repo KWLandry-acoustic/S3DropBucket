@@ -588,7 +588,7 @@ const testdata = ""
 //testS3Key = "TestData/alerusrepsignature_advisors-mar232025.json"
 testS3Key = "TestData/MasterCustomer_Sample-mar232025.json"
 //testS3Key = "TestData/KingsfordWeather_S3DropBucket_Aggregator-10-2025-03-26-09-10-22-dab1ccdf-adbc-339d-8993-b41d27696a3d.json"
-
+//testS3Key = "TestData/MasterCustomer_Sample-mar232025-json-update-10-25-000d4919-2865-49fa-a5ac-32999a583f0a.json"
 
 /**
  * A Lambda function to process the Event payload received from S3.
@@ -1896,8 +1896,8 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
             )
             if (fd === "204")
             {
-              S3DB_Logging("info", "924", `Processing Successful - Deletion of Queued Work file: ${s3dbQM.workKey}  \nQueue MessageId: ${q.messageId}`)
-            } else S3DB_Logging("error", "924", `Processing Successful but Failed to Delete Queued Work File ${s3dbQM.workKey}. Expected '204' but received ${fd} \nQueue MessageId: ${q.messageId}`)
+              S3DB_Logging("info", "924", `Processing Complete - Deletion of Queued Work file: ${s3dbQM.workKey}  \nQueue MessageId: ${q.messageId}`)
+            } else S3DB_Logging("error", "924", `Processing Complete but Failed to Delete Queued Work File ${s3dbQM.workKey}. Expected '204' but received ${fd} \nQueue MessageId: ${q.messageId}`)
 
             const qd = await sqsClient.send(
               new DeleteMessageCommand({
@@ -1907,8 +1907,8 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
             )
             if (qd.$metadata.httpStatusCode === 200)
             {
-              S3DB_Logging("info", "925", `Processing Successful - Deletion of SQS Queue Message (Queue MessageId: ${q.messageId}) \nWorkfile ${s3dbQM.workKey}. \nDeletion Response: ${JSON.stringify(qd)}`)
-            } else S3DB_Logging("error", "925", `Processing Successful but Failed to Delete SQS Queue Message (Queue MessageId: ${q.messageId}) \nWorkfile ${s3dbQM.workKey}. \nExpected '200' but received ${qd.$metadata.httpStatusCode} \nDeletion Response: ${JSON.stringify(qd)}`)
+              S3DB_Logging("info", "925", `Processing Complete - Deletion of SQS Queue Message (Queue MessageId: ${q.messageId}) \nWorkfile ${s3dbQM.workKey}. \nDeletion Response: ${JSON.stringify(qd)}`)
+            } else S3DB_Logging("error", "925", `Processing Complete but Failed to Delete SQS Queue Message (Queue MessageId: ${q.messageId}) \nWorkfile ${s3dbQM.workKey}. \nExpected '200' but received ${qd.$metadata.httpStatusCode} \nDeletion Response: ${JSON.stringify(qd)}`)
 
           }
 
@@ -3419,13 +3419,13 @@ async function storeAndQueueConnectWork (
 
   const mutationUpdates = JSON.stringify(mutations)
 
-  //  Testing - Call POST to Connect immediately
-  if (localTesting)
-  {
-    S3DB_Logging("info", "855", `Testing - GraphQL Call (${S3DBConfig.connectapiurl}) Updates: \n${mutationUpdates}`)
-    const c = await postToConnect(mutationUpdates, customersConfig, "6", s3Key)
-    debugger ///
-  }
+  ////  Testing - Call POST to Connect immediately
+  //if (localTesting)
+  //{
+  //  S3DB_Logging("info", "855", `Testing - GraphQL Call (${S3DBConfig.connectapiurl}) Updates: \n${mutationUpdates}`)
+  //  const c = await postToConnect(mutationUpdates, customersConfig, "6", s3Key)
+  //  debugger ///
+  //}
   
 
   //Derive Key Name for Update File
@@ -3654,7 +3654,7 @@ async function storeAndQueueCampaignWork (
 
 async function buildMutationsConnect (updates: object[], config: CustomerConfig) {
 
-  let query
+  let mutation
   let variables
   /*
     try
@@ -3662,7 +3662,7 @@ async function buildMutationsConnect (updates: object[], config: CustomerConfig)
       if (config.updatetype.toLowerCase() === "referenceset")
       {
         
-    query = `mutation CreateImportJob {
+    mutation = `mutation CreateImportJob {
       createImportJob(
           importInput: {
               fileFormat: DELIMITED
@@ -3692,7 +3692,7 @@ async function buildMutationsConnect (updates: object[], config: CustomerConfig)
       }
   }`
   
-      query = {
+      mutation = {
           mutation: {
             createImportJob: {
               importInput: {
@@ -3734,7 +3734,7 @@ async function buildMutationsConnect (updates: object[], config: CustomerConfig)
           }
         }
   
-        query.mutation.createImportJob.importInput.
+        mutation.mutation.createImportJob.importInput.
   
         
   
@@ -3797,8 +3797,8 @@ async function buildMutationsConnect (updates: object[], config: CustomerConfig)
           //variables.contactsInput.push(cci)
         }
   
-        S3DB_Logging("info", "817", `Create Multiple Contacts Mutation: \n${query} and Vars: \n${JSON.stringify(variables)}`)
-        return {query, variables}
+        S3DB_Logging("info", "817", `Create Multiple Contacts Mutation: \n${mutation} and Vars: \n${JSON.stringify(variables)}`)
+        return {mutation, variables}
   
       }
     } catch (e)
@@ -3835,7 +3835,7 @@ async function buildMutationsConnect (updates: object[], config: CustomerConfig)
   }
 
 
-  query = `mutation S3DropBucketCreateUpdateMutation (
+  mutation = `mutation S3DropBucketCreateUpdateMutation (
         $dataSetId: ID!,
         $contactsData: [ContactCreateInput!]!
         ) 
@@ -3935,8 +3935,9 @@ async function buildMutationsConnect (updates: object[], config: CustomerConfig)
         //variables.contactsInput.push(cci)
       }
 
-      S3DB_Logging("info", "817", `CreateUpdate Multiple Contacts Mutation: \n${query} and Vars: \n${JSON.stringify(variables)}`)
-      return {query, variables}
+      const q = JSON.stringify({query: mutation, variables: variables})
+      S3DB_Logging("info", "817", `CreateUpdate Multiple Contacts Mutation: ${q}`)
+      return q
 
     }
   } catch (e)
@@ -3985,7 +3986,7 @@ async function buildMutationsConnect (updates: object[], config: CustomerConfig)
         //to: UpdateContactRecord[]
       }
 
-      query = `mutation updateContacts (
+      mutation = `mutation updateContacts (
         $contactsInput: [UpdateContactInput!]!
         ) {
         updateContacts(
@@ -4073,8 +4074,8 @@ async function buildMutationsConnect (updates: object[], config: CustomerConfig)
 
       }
 
-      S3DB_Logging("info", "817", `Update Multiple Contacts Mutation: \n${query} and Vars: \n${JSON.stringify(variables)}`)
-      return {query, variables}
+      S3DB_Logging("info", "817", `Update Multiple Contacts Mutation: \n${mutation} and Vars: \n${JSON.stringify(variables)}`)
+      return {query: mutation, variables}
 
     }
   } catch (e)
@@ -4628,6 +4629,8 @@ function transforms (updates: object[], config: CustomerConfig) {
   //Transform - Date-to-ISO-8601
   //
 
+  debugger ///
+
   try
   {
     if (typeof config.transforms.methods?.date_iso1806_type !== undefined &&
@@ -4684,6 +4687,8 @@ function transforms (updates: object[], config: CustomerConfig) {
 
   //Transform - Phone Number 
   //
+
+  debugger ///
 
   try
   {
@@ -5123,7 +5128,24 @@ function transforms (updates: object[], config: CustomerConfig) {
     Object.entries(config.transforms.addressablefields).length > 0)
   {
 
+    //Customer COnfig: 
     //Transform: Addressable Fields
+    //"addressablefields": {  // Only 3 allowed. 
+    //  // Can use either mapping or a "statement" definition, if defined, a 'statement' definition overrides any other config. 
+    //  //"Email": "$.email",
+    //  //"Mobile Number": "$['Mobile Number']",
+    //  //"Example3": "999445599",
+    //  //"Example4": "$.jsonfileValue", //example
+    //  //"Example5": "@.csvfileColumn" //example
+    //  "statement": {
+    //    "addressable": [
+    //      {"field": "Email", "eq": "$.email"} //, 
+    //      //{ "field": "SMS", "eq": "$['Mobile Number']" }     
+    //    ]
+    //  }
+    //},
+
+
     //S3DB_Logging("debug", "999", `Debug - Addressable Fields Transform Entered - ${config.targetupdate}`)
 
     //if (typeof config.transforms.addressablefields !== "undefined" &&
@@ -5142,12 +5164,11 @@ function transforms (updates: object[], config: CustomerConfig) {
       statement: AddressableStatement
     }
 
-    //let addressablefields: typeof config.transforms.addressablefields = config.transforms.addressablefields
     const addressableFields = config.transforms.addressablefields as AddressableFields
+    
     const addressableStatement = addressableFields.statement as AddressableStatement
+    
     const fieldsArray = addressableStatement.addressable
-
-    let s: string = ""
 
     try
     {
@@ -5166,12 +5187,11 @@ function transforms (updates: object[], config: CustomerConfig) {
           for (const fieldItem of fieldsArray)
           {
 
-            //"statement": {    //Config example
-            //  "addressable": [
-            //    {"field": "Email", "eq": "$.Email"},
-            //    {"field": "SMS", "eq": "$.Mobile Number"}
-            //  ]
-            //}
+            //  "statement": {
+            //    "addressable": [
+            //      {"field": "Email", "eq": "$.email"} //,
+            //      //{ "field": "SMS", "eq": "$['Mobile Number']" }
+            //    ]
 
             let s: string = ""
 
@@ -5180,7 +5200,7 @@ function transforms (updates: object[], config: CustomerConfig) {
             if (fieldVar.startsWith('$')) s = 'jsonpath'
             else if (fieldVar.startsWith('@')) s = 'csvcolumn'
             else if (s === "" && fieldVar.length > 3) s = 'static'  //Should never see Static but there may be a use-case
-            else S3DB_Logging("error", "999", `Error - Transform - AddressableFields.Statement invalid configuration.`)
+            else S3DB_Logging("error", "933", `Error - Transform - AddressableFields.Statement invalid configuration.`)
 
             switch (s)
             {
@@ -5334,17 +5354,25 @@ function transforms (updates: object[], config: CustomerConfig) {
   //Transform: Channel Consent
 
   //need loop through Config consent and build consent object.
-  //consent: {
+
+  //"consent": { //Can use either mapping or a "statement" definition, if defined, a 'statement' definition overrides any other Consent config. 
+  //  "Email": "OPT_IN_UNVERIFIED", //Static Values: Use When Consent status is not in the Data
+  //  "SMS": "OPT_OUT", //Static Values: Use When Consent status is not in the Data
+  //  "WhatsApp": "$.whatsappconsent", //Dynamic Values: Use when consent data can be mapped from the data (JSONPath in this case) .
+  //  "Email2": "@.csvfileColumn", //Dynamic Values: Use when consent data can be mapped from the data (CSV Column reference in this case).
+  //  "statement": { //Mutually Exclusive: Use to define a Consent update to be used with this dataflow, useful to define a compound Group Consent statement as in the example in the description. 
+  //    "channels": [
+  //      {"channel": "EMAIL", "status": "OPT_IN"},
+  //      {"channel": "SMS", "status": "OPT_IN"}
+  //    ]
+
+  // Mutation: 
+  // consent: {
   //  channels: [
   //    { channel: EMAIL, status: OPT_IN_UNVERIFIED },
   //    { channel: SMS, status: OPT_IN }
   //    ]
   //  }
-
-  //"Email": "OPT_IN_UNVERIFIED",
-  //"SMS": "OPT_OUT",
-  //"WhatsApp": "$.jsonfileValue",
-  //"Email2": "@.csvfileColumn"
 
   if (typeof config.transforms.consent !== undefined &&
     Object.keys(config.transforms.consent).length > 0)
@@ -5381,6 +5409,8 @@ function transforms (updates: object[], config: CustomerConfig) {
         if (typeof config.transforms.consent["statement"] !== undefined &&
           config.transforms.consent["statement"] !== "")
         {
+          //Consent Statement is not the same as AddressableFields, for Consent 'Statement" simply copy 
+          // what was provided in the Customer Config as the Consent Statement to provide for the operation. 
           Object.assign(update, {consent: config.transforms.consent["statement"]})
 
         }
