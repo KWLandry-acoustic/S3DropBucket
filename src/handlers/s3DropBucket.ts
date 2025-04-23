@@ -589,6 +589,11 @@ const testdata = ""
 testS3Key = "TestData/MasterCustomer_Sample-mar232025.json"
 //testS3Key = "TestData/KingsfordWeather_S3DropBucket_Aggregator-10-2025-03-26-09-10-22-dab1ccdf-adbc-339d-8993-b41d27696a3d.json"
 //testS3Key = "TestData/MasterCustomer_Sample-mar232025-json-update-10-25-000d4919-2865-49fa-a5ac-32999a583f0a.json"
+//testS3Key = "TestData/MasterCustomer_Sample-Queued-json-update-10-25-000d4919-2865-49fa-a5ac-32999a583f0a.json"
+
+
+
+
 
 /**
  * A Lambda function to process the Event payload received from S3.
@@ -1594,6 +1599,10 @@ async function processS3ObjectContentStream (
 
 /**
  * A Lambda function to process the Event payload received from SQS - AWS Queues.
+ * 
+ * Notes: Be sure that Lambda Reserved Concurrency is set greater than 1, ref: 
+ * https://data.solita.fi/lessons-learned-from-combining-sqs-and-lambda-in-a-data-project/
+ *
  */
 export const S3DropBucketQueueProcessorHandler: Handler = async (
   event: SQSEvent,
@@ -1856,7 +1865,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
           //      successfully posted
 
         
-          S3DB_Logging("info", "509", `POST Result for ${s3dbQM.workKey}: ${postResult} `)
+          S3DB_Logging("info", "508", `POST Result for ${s3dbQM.workKey}: ${postResult} `)
 
           let deleteWork = false
 
@@ -1869,21 +1878,22 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
           }
           else if (postResult.toLowerCase().indexOf("unsuccessful post ") > -1)
           {
-            S3DB_Logging("error", "935", `Error - Unsuccessful POST (Hard Failure) for ${s3dbQM.workKey}: \n${postResult} \nQueue MessageId: ${q.messageId} \nCustomer: ${custconfig.customer} `)
+            S3DB_Logging("error", "520", `Error - Unsuccessful POST (Hard Failure) for ${s3dbQM.workKey}: \n${postResult} \nQueue MessageId: ${q.messageId} \nCustomer: ${custconfig.customer} `)
             deleteWork = true
           }
           else if (postResult.toLowerCase().indexOf("partially successful") > -1)
           {
-            S3DB_Logging("warn", "508", `Updates (Partially Successful) POSTed (work file (${s3dbQM.workKey}) \nQueue MessageId: ${q.messageId}, \nUpdated ${s3dbQM.custconfig.listname} from ${s3dbQM.workKey}, however there were some exceptions: \n${postResult} `)
+            S3DB_Logging("warn", "518", `Updates (Partially Successful) POSTed (work file (${s3dbQM.workKey}) \nQueue MessageId: ${q.messageId}, \nUpdated ${s3dbQM.custconfig.listname} from ${s3dbQM.workKey}, however there were some exceptions: \n${postResult} `)
             deleteWork = true
           }
           else if (postResult.toLowerCase().indexOf("successfully posted") > -1)
           {
-            S3DB_Logging("info", "508", `Updates (Successfully) POSTed (work file (${s3dbQM.workKey}). \nQueue MessageId: ${q.messageId} \nUpdated ${s3dbQM.custconfig.listname} from ${s3dbQM.workKey}, \n${postResult} \nThe Work will now be deleted from the S3 Process Queue`)
+            S3DB_Logging("info", "519", `Updates (Successfully) POSTed (work file (${s3dbQM.workKey}). \nQueue MessageId: ${q.messageId} \nUpdated ${s3dbQM.custconfig.listname} from ${s3dbQM.workKey}, \n${postResult} \nThe Work will now be deleted from the S3 Process Queue`)
             deleteWork = true
           }
           else
           {
+            //we should not come across a result we did not expect.
             S3DB_Logging("exception", "", `Results of Posting Work is not determined: ${JSON.stringify(postResult)} \n(work file (${s3dbQM.workKey}). \nQueue MessageId: ${q.messageId} \nUpdated ${s3dbQM.custconfig.listname} from ${s3dbQM.workKey}, \n${postResult}`)
           }
 
@@ -1912,12 +1922,13 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
 
           }
 
-          S3DB_Logging("info", "511", `Processed ${s3dbQM.updateCount} Updates from ${s3dbQM.workKey}`)
-
-          S3DB_Logging("info", "510", `Processed ${event.Records.length} Work Queue Events. Posted: ${postResult}. 
-            \nItems Retry Count: ${sqsBatchFail.batchItemFailures.length} 
-            \nItems Retry List: ${JSON.stringify(sqsBatchFail)} `
+          S3DB_Logging("info", "510", `POSTed ${event.Records.length} Work Queue updates. Result: ${postResult}. 
+            \nUpdates to be Retried Count: ${sqsBatchFail.batchItemFailures.length} 
+            \nUpdates to Retried List: \n${JSON.stringify(sqsBatchFail)} `
           )
+          
+          S3DB_Logging("info", "511", `POSTed ${s3dbQM.updateCount} Updates from ${s3dbQM.workKey}`)
+
 
           //ToDo: need to add similar status object like S3ObjectStreamResolution to QueueProcessor reporting
           // S3DropBucketQueueProcessorResolution.postStatus = ....
@@ -3417,7 +3428,7 @@ async function storeAndQueueConnectWork (
       })
   }
 
-  const mutationUpdates = JSON.stringify(mutations)
+  const mutationWithUpdates = JSON.stringify(mutations)
 
   ////  Testing - Call POST to Connect immediately
   //if (localTesting)
@@ -3458,7 +3469,7 @@ async function storeAndQueueConnectWork (
 
   try
   {
-    addWorkToS3WorkBucketResult = await addWorkToS3WorkBucket(mutationUpdates, key)
+    addWorkToS3WorkBucketResult = await addWorkToS3WorkBucket(mutationWithUpdates, key)
       .then((res) => {
         return {"workfile": key, ...res} //{"AddWorktoS3Results": res}
       })
@@ -6103,7 +6114,7 @@ async function postToConnect (mutations: string, custconfig: CustomerConfig, cou
         //If we haven't returned before now then it's a successful post 
         const spr = JSON.stringify(csr).replace("\n", " ")
 
-        S3DB_Logging("info", "826", `Successful POST Result: ${spr}`)
+        S3DB_Logging("info", "826", `Successful POST Result (${workFile}): ${spr}`)
 
         //return `Successfully POSTed (${count}) Updates - Result: ${result}`
         return `Successfully POSTed (${count}) Updates - Result: ${spr}`
