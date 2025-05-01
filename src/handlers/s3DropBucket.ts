@@ -608,7 +608,10 @@ export const s3DropBucketHandler: Handler = async (
   {
 
     //Ignore Aggregation Error Files created by FireHose process
-    if (event.Records[0].s3.object.key.indexOf("AggregationError") > -1) return ""
+    if (event.Records[0].s3.object.key.toLowerCase().indexOf("aggregationerror") > -1) return ""
+    
+    //Ignore any Metadata Files created
+    if (event.Records[0].s3.object.key.toLowerCase().indexOf("metadata") > -1) return ""
 
     //If Local Testing - set up to pull an S3 Object and so avoid the not-found error
     if (
@@ -5978,7 +5981,7 @@ async function postToConnect (mutations: string, custconfig: CustomerConfig, cou
 
   const host = S3DBConfig.connectapiurl
 
-  S3DB_Logging("info", "805", `Updates about to be POSTed (${workFile}) are: ${mutations}`)
+  S3DB_Logging("info", "805", `Connect Mutation Updates about to be POSTed (${workFile}) are: ${mutations}`)
 
   let connectMutationResult: string = ""
 
