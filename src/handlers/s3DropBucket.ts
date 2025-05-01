@@ -4888,7 +4888,7 @@ function transforms (updates: object[], config: CustomerConfig) {
 
             if (!/\d{7,}/.test(npn))
             {
-              S3DB_Logging("error", "933", `Error - Transform - Applying Phone_Number Transform for ${val} returns non-numeric value: ${npn}`)
+              S3DB_Logging("error", "933", `Error - Transform - Applying Phone_Number Transform for ${val} (${pn}) returns non-numeric value: ${npn}`)
             }
 
             const pnu = {[key]: npn}
@@ -4915,7 +4915,7 @@ function transforms (updates: object[], config: CustomerConfig) {
         )
       }
 
-      S3DB_Logging("info", "919", `Transforms (Phone Number) applied: \n${JSON.stringify({"pending": "tbd"})}`)
+      S3DB_Logging("info", "919", `Transforms (Phone Number) applied: \n${JSON.stringify(updates)}`)
 
 
     }
@@ -4954,7 +4954,7 @@ function transforms (updates: object[], config: CustomerConfig) {
             const n = Number(strToNumber)
             if (String(n) === 'NaN')
             {
-              S3DB_Logging("error", "933", `Error - Transform - String-To-Number transform failed for ${val} as the string value for ${key} (${strToNumber}) cannot be converted to a number: ${val}.`)
+              S3DB_Logging("error", "933", `Error - Transform - String-To-Number transform failed for ${val} as the string value for ${key} (${strToNumber}) cannot be converted to a number.`)
             }
             else
             {
