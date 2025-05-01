@@ -3847,12 +3847,10 @@ async function buildMutationsConnect (updates: object[], config: CustomerConfig)
 
 
   mutation = `mutation S3DropBucketCreateUpdateMutation (
-        //$dataSetId: ID!,
         $contactsData: [ContactCreateInput!]!
         ) 
         {
             createContacts(
-            //dataSetId: $dataSetId
             contactsInput: $contactsData
             ) {
                   items {
