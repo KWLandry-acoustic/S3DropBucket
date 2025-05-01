@@ -3195,7 +3195,7 @@ async function validateCustomerConfig (config: CustomerConfig) {
 
 
 
-    S3DB_Logging("info", "919", `Transforms configured in Customer Config: \n${JSON.stringify(config.transforms)}`)
+    S3DB_Logging("info", "930", `Transforms configured in Customer Config: \n${JSON.stringify(config.transforms)}`)
 
     if (config.transforms.jsonmap)
     {
@@ -3210,7 +3210,7 @@ async function validateCustomerConfig (config: CustomerConfig) {
           ["contactid", "contactkey", "addressablefields", "consent", "audience"].includes(p2.toLowerCase())
         )
         {
-          S3DB_Logging("error", "999", `JSONMap config: Either part of the JSONMap statement, the Column to create or the JSONPath statement, cannot use a reserved word ("contactid", "contactkey", "addressablefields", "consent", or "audience") ${m}: ${p}`)
+          S3DB_Logging("error", "", `JSONMap config: Either part of the JSONMap statement, the Column to create or the JSONPath statement, cannot use a reserved word ("contactid", "contactkey", "addressablefields", "consent", or "audience") ${m}: ${p}`)
 
           throw new Error(`JSONMap config: Either part of the JSONMap statement, the Column to create or the JSONPath statement, cannot reference a reserved word ("contactid", "contactkey", "addressablefields", "consent", or "audience") ${m}: ${p}`)
         }
@@ -4631,7 +4631,7 @@ function transforms (updates: object[], config: CustomerConfig) {
 
 
       //if no throw/exception yet then we are successful
-      S3DB_Logging("info", "919", `Transforms (JSONMap) applied: \n${JSON.stringify(t)}`)
+      S3DB_Logging("info", "931", `Transforms (JSONMap) applied: \n${JSON.stringify(t)}`)
 
     }
   } catch (e)
@@ -4714,7 +4714,7 @@ function transforms (updates: object[], config: CustomerConfig) {
       }
 
       //if no throw/exception yet then we are successful
-      S3DB_Logging("info", "919", `Transforms (CSVMap) applied: \n${JSON.stringify(t)}`)
+      S3DB_Logging("info", "932", `Transforms (CSVMap) applied: \n${JSON.stringify(t)}`)
     }
   } catch (e)
   {
@@ -4786,7 +4786,7 @@ function transforms (updates: object[], config: CustomerConfig) {
         )
       }
 
-      S3DB_Logging("info", "919", `Transforms (DayDate) applied: \n${JSON.stringify({"pending": "tbd"})}`)
+      S3DB_Logging("info", "935", `Transforms (DayDate) applied: \n${JSON.stringify(updates)}`)
 
     }
   } catch (e)
@@ -4846,7 +4846,7 @@ function transforms (updates: object[], config: CustomerConfig) {
         )
       }
 
-      S3DB_Logging("info", "919", `Transforms (Date_ISO1806) applied: \n${JSON.stringify({"pending": "tbd"})}`)
+      S3DB_Logging("info", "935", `Transforms (Date_ISO1806) applied: \n${JSON.stringify(updates)}`)
 
     }
   } catch (e)
@@ -4915,7 +4915,7 @@ function transforms (updates: object[], config: CustomerConfig) {
         )
       }
 
-      S3DB_Logging("info", "919", `Transforms (Phone Number) applied: \n${JSON.stringify(updates)}`)
+      S3DB_Logging("info", "935", `Transforms (Phone Number) applied: \n${JSON.stringify(updates)}`)
 
 
     }
@@ -4978,7 +4978,7 @@ function transforms (updates: object[], config: CustomerConfig) {
         )
       }
 
-      S3DB_Logging("info", "919", `Transforms (StringToNumber) applied: \n${JSON.stringify({"pending": "tbd"})}`)
+      S3DB_Logging("info", "935", `Transforms (StringToNumber) applied: \n${JSON.stringify(updates)}`)
 
     }
   } catch (e)
@@ -5005,7 +5005,7 @@ function transforms (updates: object[], config: CustomerConfig) {
       if (config.transforms.contactid.startsWith('$')) s = 'jsonpath'
       else if (config.transforms.contactid.startsWith('@')) s = 'csvcolumn'
       else if (s === "" && config.transforms.contactid.length > 3) s = 'static'
-      else S3DB_Logging("error", "999", `Error - Transform - ContactId invalid configuration.`)
+      else S3DB_Logging("error", "933", `Error - Transform - ContactId invalid configuration.`)
 
 
       //Process All Updates for this Transform
@@ -5053,7 +5053,7 @@ function transforms (updates: object[], config: CustomerConfig) {
         )
       }
 
-      S3DB_Logging("info", "919", `Transforms (ContactId) applied: \n${JSON.stringify({"pending": "tbd"})}`)
+      S3DB_Logging("info", "950", `Transforms (ContactId) applied: \n${JSON.stringify(updates)}`)
 
 
     } catch (e)
@@ -5133,7 +5133,7 @@ function transforms (updates: object[], config: CustomerConfig) {
         )
       }
 
-          S3DB_Logging("info", "919", `Transforms (ContactKey) applied: \n${JSON.stringify({"pending": "tbd"})}`)
+          S3DB_Logging("info", "951", `Transforms (ContactKey) applied: \n${JSON.stringify(updates)}`)
 
 
     } catch (e)
@@ -5149,7 +5149,7 @@ function transforms (updates: object[], config: CustomerConfig) {
     Object.entries(config.transforms.addressablefields).length > 0)
   {
 
-    //Customer COnfig: 
+    //Customer Config: 
     //Transform: Addressable Fields
     //"addressablefields": {  // Only 3 allowed. 
     //  // Can use either mapping or a "statement" definition, if defined, a 'statement' definition overrides any other config. 
@@ -5350,7 +5350,7 @@ function transforms (updates: object[], config: CustomerConfig) {
         )
       }
 
-      S3DB_Logging("info", "919", `Transforms (Addressable Fields) applied: \n${JSON.stringify({"pending": "tbd"})}`)
+      S3DB_Logging("info", "952", `Transforms (Addressable Fields) applied: \n${JSON.stringify(updates)}`)
 
 
     } catch (e)
@@ -5464,7 +5464,7 @@ function transforms (updates: object[], config: CustomerConfig) {
             if (consentValue.startsWith('$')) s = 'jsonpath'
             else if (consentValue.startsWith('@')) s = 'csvcolumn'
             else if (s === "" && consentValue.length > 3) s = 'static'
-            else S3DB_Logging("error", "933", `Error - Transform - ContactKey transform has an invalid configuration.`)
+            else S3DB_Logging("error", "933", `Error - Transform - Consent transform has an invalid configuration.`)
 
             switch (s)
             {
@@ -5525,7 +5525,7 @@ function transforms (updates: object[], config: CustomerConfig) {
         )
       }
 
-      S3DB_Logging("info", "919", `Transforms (Channel Consent) applied: \n${JSON.stringify({"pending": "tbd"})}`)
+      S3DB_Logging("info", "953", `Transforms (Channel Consent) applied: \n${JSON.stringify(updates)}`)
 
     } catch (e)
     {
@@ -5625,7 +5625,7 @@ function transforms (updates: object[], config: CustomerConfig) {
 
     }
 
-    S3DB_Logging("info", "919", `Transforms (Audience Update) applied: \n${JSON.stringify({"pending": "tbd"})}`)
+    S3DB_Logging("info", "954", `Transforms (Audience Update) applied: \n${JSON.stringify(updates)}`)
 
   } catch (e)
   {
@@ -5678,7 +5678,7 @@ try {
       )
     }
 
-    S3DB_Logging("info", "919", `Transform for Aggregator Files - Removing Surplus Customer Field applied: \n${JSON.stringify(t)}`)
+    S3DB_Logging("info", "919", `Transform (Aggregator Files - Removing Surplus Customer Field) applied: \n${JSON.stringify(t)}`)
   }
 
 } catch (e)
@@ -5739,7 +5739,7 @@ try {
         )
       }
 
-      S3DB_Logging("info", "919", `Transforms (Ignore) applied: \n${JSON.stringify(t)}`)
+      S3DB_Logging("info", "936", `Transforms (Ignore) applied: \n${JSON.stringify(t)}`)
     }
   } catch (e)
   {
@@ -5772,14 +5772,14 @@ function applyJSONMap (jsonObj: object, map: object) //map: {[key: string]: stri
       j = jsonpath.value(jsonObj, jpath)
       //Object.assign(jsonObj, {[k]: j})
 
-      S3DB_Logging("info", "930", `JSONPath statement ${jpath} returns ${j} from: \nTarget Data: \n${JSON.stringify(jsonObj)} `)
+      S3DB_Logging("info", "949", `JSONPath statement ${jpath} returns ${j} from: \nTarget Data: \n${JSON.stringify(jsonObj)} `)
     } catch (e)
     {
       debugger //catch
 
       //if (e instanceof jsonpath.JsonPathError) { S3DB_Logging("error","",`JSONPath error: e.message`) }
 
-      S3DB_Logging("warning", "930", `Error parsing data for JSONPath statement ${key} ${jpath}, ${e} \nTarget Data: \n${JSON.stringify(jsonObj)} `)
+      S3DB_Logging("warning", "949", `Error parsing data for JSONPath statement ${key} ${jpath}, ${e} \nTarget Data: \n${JSON.stringify(jsonObj)} `)
     }
   })
   // const a1 = jsonpath.parse(value)
