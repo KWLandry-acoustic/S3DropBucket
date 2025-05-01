@@ -586,11 +586,11 @@ const testdata = ""
 //testS3Key = "TestData/KingsfordWeather_S3DropBucket_Aggregator-10-2025-01-09-19-29-39-da334f11-53a4-31cc-8c9f-8b417725560b.json"
 //testS3Key = "TestData/Funding_Circle_Limited_CampaignDatabase1_2025_02_28T19_19_26_268Z.json"
 //testS3Key = "TestData/alerusrepsignature_advisors-mar232025.json"
-testS3Key = "TestData/MasterCustomer_Sample-mar232025.json"
+//testS3Key = "TestData/MasterCustomer_Sample-mar232025.json"
 //testS3Key = "TestData/KingsfordWeather_S3DropBucket_Aggregator-10-2025-03-26-09-10-22-dab1ccdf-adbc-339d-8993-b41d27696a3d.json"
 //testS3Key = "TestData/MasterCustomer_Sample-mar232025-json-update-10-25-000d4919-2865-49fa-a5ac-32999a583f0a.json"
 //testS3Key = "TestData/MasterCustomer_Sample-Queued-json-update-10-25-000d4919-2865-49fa-a5ac-32999a583f0a.json"
-
+testS3Key = "TestData/SugarCRM_Leads_Leads.data.json.1746103736.13047"
 
 
 
@@ -4547,15 +4547,22 @@ async function addWorkToSQSWorkQueue (
 
 function transforms (updates: object[], config: CustomerConfig) {
   //Apply Transforms
-  //Approach: => Process Entire Set of Updates in Each Transform step, NOT each Transform against each update.
-  //Sequence:  //Have to run transforms in the following sequence
-  // Daydate
-  // Date-to-ISO-8601
-  // String-To-Number
-  // jsonMap  --- Essentially Add Columns to Data (future: refactor as 'addcolumns')
-  // csvMap  --- Essentially Add Columns to Data (future: refactor as 'addcolumns')
+  //Approach: => Process Entire Set of Updates in Each Transform call, NOT each and all Transform against each update at a time.
   //
-  // --- Have to run "Reference" transforms (transforms that reference values) After transforms that modify data
+  // Sequence:
+  //  Have to run transforms in the following sequence (creation then transformational methods then reference fields then ignore (always last))
+  //
+  // Create New Columns
+  //  jsonMap  --- Essentially Add Columns to Data (future: refactor as 'addcolumns')
+  //  csvMap  --- Essentially Add Columns to Data (future: refactor as 'addcolumns')
+  //
+  // Apply transformational Methods - Transform the values of the Columns
+  //  Daydate - add a column of the day of the week (Sun, Mon, Tue, Wed, Thus, Fri, Sat)
+  //  Connect Date-to-ISO-8601 format
+  //  Connect String-To-Number format
+  //  Connect Phone format
+  //
+  // Next, Have to run "Reference" transforms (transforms that create reference fields) After transforms that modify data
   // ContactId
   // Addressable Fields
   // Channel Consent
@@ -4566,13 +4573,167 @@ function transforms (updates: object[], config: CustomerConfig) {
 
 
 
-  //Transform: DayDate
+
+  //Transform: JSONMap
+
+  //Apply JSONMap -
+  //  JSONPath statements
+  //      "jsonMap": {
+  //          "email": "$.uniqueRecipient",   //create new Column email with the value from uniqueRecipient
+  //          "zipcode": "$.context.traits.address.postalCode"
+  //      },
+
+  //Need failsafe test of empty object, when jsonMap has no transforms. 
+  try
+  {
+    if (typeof config.transforms.jsonmap !== undefined &&
+      Object.keys(config.transforms.jsonmap).length > 0)
+    {
+      const t: typeof updates = []
+      try
+      {
+        for (const update of updates)
+        {
+
+          Object.entries(config.transforms.jsonmap).forEach(([key, val]) => {
+
+            //const jo = JSON.parse( l )
+            let j = applyJSONMap(update, {[key]: val})
+            if (typeof j === "undefined" || j === "") j = "Not Found"
+            Object.assign(update, {[key]: j})
+          })
+
+          t.push(update)
+        }
+
+
+      } catch (e)
+      {
+        debugger //catch
+
+        S3DB_Logging("exception", "934", `Exception - Transform - Applying JSONMap \n${e}`)
+
+      }
+
+      if (t.length === updates.length)
+      {
+        updates = t
+      } else
+      {
+        debugger //catch
+
+        S3DB_Logging("error", "933", `Error - Transform - Applying JSONMap returns fewer records(${t.length}) than initial set ${updates.length}`)
+
+        throw new Error(
+          `Error - Transform - Applying JSONMap returns fewer records (${t.length}) than initial set ${updates.length}`
+        )
+      }
+
+
+      //if no throw/exception yet then we are successful
+      S3DB_Logging("info", "919", `Transforms (JSONMap) applied: \n${JSON.stringify(t)}`)
+
+    }
+  } catch (e)
+  {
+    debugger //catch
+
+    S3DB_Logging("exception", "934", `Exception - Applying JSONMap Transform \n${e}`)
+  }
+
+
+
+
+  //Transform: CSVMap
+
+  //Apply CSVMap
+  // "csvMap": { //Mapping when processing CSV files
+  //       "Col_AA": "COL_XYZ", //Write Col_AA with data from Col_XYZ in the CSV file
+  //       "Col_BB": "COL_MNO",
+  //       "Col_CC": "COL_GHI",
+
+  //       "Col_DD": 1, //Write Col_DD with data from the 1st column of data in the CSV file.
+  //       "Col_DE": 2,
+  //       "Col_DF": 3
+  // },
+
+  try
+  {
+    if (typeof config.transforms.csvmap !== undefined &&
+      Object.keys(config.transforms.csvmap).length > 0)
+    {
+      const t: typeof updates = []
+      try
+      {
+        for (const jo of updates)
+        {
+          //const jo = JSON.parse( l )
+
+          const map = config.transforms.csvmap as {[key: string]: string}
+          Object.entries(map).forEach(([key, val]) => {
+
+            //type dk = keyof typeof jo
+            //const k: dk = ig as dk
+            //delete jo[k]
+            type kk = keyof typeof jo
+            const k: kk = key as kk
+            type vv = keyof typeof jo
+            const v: vv = val as vv
+            jo[k] = jo[v]
+
+            //if (typeof v !== "number") jo[k] = jo[v] ?? ""    //Number because looking to use Column Index (column 1) as reference instead of Column Name.
+            //else
+            //{
+            //  const vk = Object.keys(jo)[v]
+            //  // const vkk = vk[v]
+            //  jo[k] = jo[vk] ?? ""
+            //}
+
+          })
+
+          t.push(jo)
+
+        }
+      } catch (e)
+      {
+        debugger //catch
+
+        S3DB_Logging("exception", "934", `Exception - Transforms - Applying CSVMap \n${e}`)
+
+      }
+
+      if (t.length === updates.length)
+      {
+        updates = t
+      } else
+      {
+        S3DB_Logging("error", "933", `Error - Transform - Applying CSVMap returns fewer records(${t.length}) than initial set ${updates.length}`)
+        throw new Error(
+          `Error - Transform - Applying CSVMap returns fewer records (${t.length}) than initial set ${updates.length}`
+        )
+      }
+
+      //if no throw/exception yet then we are successful
+      S3DB_Logging("info", "919", `Transforms (CSVMap) applied: \n${JSON.stringify(t)}`)
+    }
+  } catch (e)
+  {
+    debugger //catch
+
+    S3DB_Logging("exception", "934", `Exception - Applying CSVMap Transform \n${e}`)
+  }
+
+
+  //Now, with all New Columns in place, apply Methods that modify values
+  //ToDo: Add JSONPath support, not critical as the object can only be JSON at this point, but helpful as consistency for value references
+
+  //Modify Column Values - to replace the value in the column simply specify the same column name for source and destination.
+  //Transform: DayDate     - Not strictly a modify existing Column Method, will create a new Column with day of week from a referenced date value.
   //
   //ToDo: Provide a transform to break timestamps out into
-  //          Day - Done
+  //    Day - Done
   //    Hour - tbd
   //    Minute - tbd
-  //
   //
 
   try
@@ -4707,7 +4868,6 @@ function transforms (updates: object[], config: CustomerConfig) {
     if (typeof config.transforms.methods.phone_number_type !== undefined &&
       Object.keys(config.transforms.methods.phone_number_type).length > 0)
     {
-      //const iso1806Col = config.transforms.methods.date_iso1806 ?? 'iso1806Date' 
 
       const t: typeof updates = []
       let pn: string = ""
@@ -4830,157 +4990,7 @@ function transforms (updates: object[], config: CustomerConfig) {
 
 
 
-
-  //Transform: JSONMap
-
-  //Apply the JSONMap -
-  //  JSONPath statements
-  //      "jsonMap": {
-  //          "email": "$.uniqueRecipient",
-  //              "zipcode": "$.context.traits.address.postalCode"
-  //      },
-
-  //Need failsafe test of empty object jsonMap has no transforms. 
-  try
-  {
-    if (typeof config.transforms.jsonmap !== undefined &&
-      Object.keys(config.transforms.jsonmap).length > 0)
-    {
-      const t: typeof updates = []
-      try
-      {
-        for (const update of updates)
-        {
-
-          Object.entries(config.transforms.jsonmap).forEach(([key, val]) => {
-
-            //const jo = JSON.parse( l )
-            let j = applyJSONMap(update, {[key]: val})
-            if (typeof j === "undefined" || j === "") j = "Not Found"
-            Object.assign(update, {[key]: j})
-          })
-
-          t.push(update)
-        }
-
-
-      } catch (e)
-      {
-        debugger //catch
-
-        S3DB_Logging("exception", "934", `Exception - Transform - Applying JSONMap \n${e}`)
-
-      }
-
-      if (t.length === updates.length)
-      {
-        updates = t
-      } else
-      {
-        debugger //catch
-
-        S3DB_Logging("error", "933", `Error - Transform - Applying JSONMap returns fewer records(${t.length}) than initial set ${updates.length}`)
-
-        throw new Error(
-          `Error - Transform - Applying JSONMap returns fewer records (${t.length}) than initial set ${updates.length}`
-        )
-      }
-
-      
-      //if no throw/exception yet then we are successful
-      S3DB_Logging("info", "919", `Transforms (JSONMap) applied: \n${JSON.stringify(t)}`)
-
-    }
-  } catch (e)
-  {
-    debugger //catch
-
-    S3DB_Logging("exception", "934", `Exception - Applying JSONMap Transform \n${e}`)
-  }
-
-
-
-
-  //Transform: CSVMap
-
-  //Apply CSVMap
-  // "csvMap": { //Mapping when processing CSV files
-  //       "Col_AA": "COL_XYZ", //Write Col_AA with data from Col_XYZ in the CSV file
-  //       "Col_BB": "COL_MNO",
-  //       "Col_CC": "COL_GHI",
-
-  //       "Col_DD": 1, //Write Col_DD with data from the 1st column of data in the CSV file.
-  //       "Col_DE": 2,
-  //       "Col_DF": 3
-  // },
-
-  try
-  {
-    if (typeof config.transforms.csvmap !== undefined &&
-      Object.keys(config.transforms.csvmap).length > 0)
-    {
-      const t: typeof updates = []
-      try
-      {
-        for (const jo of updates)
-        {
-          //const jo = JSON.parse( l )
-
-          const map = config.transforms.csvmap as {[key: string]: string}
-          Object.entries(map).forEach(([key, val]) => {
-
-            //type dk = keyof typeof jo
-            //const k: dk = ig as dk
-            //delete jo[k]
-            type kk = keyof typeof jo
-            const k: kk = key as kk
-            type vv = keyof typeof jo
-            const v: vv = val as vv
-            jo[k] = jo[v]
-
-            //if (typeof v !== "number") jo[k] = jo[v] ?? ""    //Number because looking to use Column Index (column 1) as reference instead of Column Name.
-            //else
-            //{
-            //  const vk = Object.keys(jo)[v]
-            //  // const vkk = vk[v]
-            //  jo[k] = jo[vk] ?? ""
-            //}
-
-          })
-
-          t.push(jo)
-
-        }
-      } catch (e)
-      {
-        debugger //catch
-
-        S3DB_Logging("exception", "934", `Exception - Transforms - Applying CSVMap \n${e}`)
-
-      }
-
-      if (t.length === updates.length)
-      {
-        updates = t
-      } else
-      {
-        S3DB_Logging("error", "933", `Error - Transform - Applying CSVMap returns fewer records(${t.length}) than initial set ${updates.length}`)
-        throw new Error(
-          `Error - Transform - Applying CSVMap returns fewer records (${t.length}) than initial set ${updates.length}`
-        )
-      }
-
-      //if no throw/exception yet then we are successful
-      S3DB_Logging("info", "919", `Transforms (CSVMap) applied: \n${JSON.stringify(t)}`)
-    }
-  } catch (e)
-  {
-    debugger //catch
-
-    S3DB_Logging("exception", "934", `Exception - Applying CSVMap Transform \n${e}`)
-  }
-
-
+  //Now create Reference Fields, data that is used in Connect to augment Updates/Mutations 
 
   //Transform: ContactId
   //
@@ -5260,7 +5270,7 @@ function transforms (updates: object[], config: CustomerConfig) {
           Object.assign(update, {addressable: addressableArray})
 
         }
-        else      //No 'Statement', so process individual Field definition(s)
+        else      //No 'Statement' that would override everything, so process individual Field definition(s)
         {
           for (const [key, fieldItem] of Object.entries(addressableFields))
           {
@@ -5630,8 +5640,6 @@ function transforms (updates: object[], config: CustomerConfig) {
   // Aggregator. Which, we will not reach here if not an Aggregator, as transforms are not applied to
   // incoming data before sending to Aggregator.
   //Delete "Customer" column from data
-
-  debugger ///  Need to check that Customer column is getting deleted correctly - Apr 2025
 
 try {
   if (config.updates.toLowerCase() === "singular")  //Denotes Aggregator is used, so remove Customer
