@@ -4888,7 +4888,7 @@ function transforms (updates: object[], config: CustomerConfig) {
 
             if (!/\d{7,}/.test(npn))
             {
-              S3DB_Logging("error", "933", `Error - Transform - Applying Phone_Number Transform for ${val} (${pn}) returns non-numeric value: ${npn}`)
+              S3DB_Logging("error", "933", `Error - Transform - Applying Phone_Number Transform for ${val} failed as the string value ${pn} returns non-numeric value: ${npn}`)
             }
 
             const pnu = {[key]: npn}
