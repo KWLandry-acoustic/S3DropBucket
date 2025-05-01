@@ -1832,7 +1832,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
         if (work.length > 0)
         {
           //Retrieve Contents of the Work File
-          S3DB_Logging("info", "512", `S3 Retrieve results for Work file ${s3dbQM.workKey}: ${JSON.stringify(work)}`)
+          S3DB_Logging("info", "512", `Work file ${s3dbQM.workKey} retrieved: Result:\n${JSON.stringify(work)}`)
           
           if ((custconfig.updatetype.toLowerCase() === "createupdatecontacts") ||
             (custconfig.updatetype.toLowerCase() === "createattributes")
@@ -4888,7 +4888,7 @@ function transforms (updates: object[], config: CustomerConfig) {
 
             if (!/\d{7,}/.test(npn))
             {
-              S3DB_Logging("error", "933", `Error - Transform - Applying Phone_Number Transform returns non-numeric value.`)
+              S3DB_Logging("error", "933", `Error - Transform - Applying Phone_Number Transform returns non-numeric value: ${npn}`)
             }
 
             const pnu = {[key]: npn}
