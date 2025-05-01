@@ -4954,7 +4954,7 @@ function transforms (updates: object[], config: CustomerConfig) {
             const n = Number(strToNumber)
             if (String(n) === 'NaN')
             {
-              S3DB_Logging("error", "933", `Error - Transform - String-To-Number transform failed for ${val} as the string value for ${key} (${strToNumber}) cannot be converted to a number.`)
+              S3DB_Logging("error", "933", `Error - Transform - String-To-Number transform failed for ${val} as the string value ${strToNumber} cannot be converted to a number.`)
             }
             else
             {
