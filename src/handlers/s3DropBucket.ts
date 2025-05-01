@@ -3847,12 +3847,12 @@ async function buildMutationsConnect (updates: object[], config: CustomerConfig)
 
 
   mutation = `mutation S3DropBucketCreateUpdateMutation (
-        $dataSetId: ID!,
+        //$dataSetId: ID!,
         $contactsData: [ContactCreateInput!]!
         ) 
         {
             createContacts(
-            dataSetId: $dataSetId
+            //dataSetId: $dataSetId
             contactsInput: $contactsData
             ) {
                   items {
@@ -5980,12 +5980,12 @@ async function postToConnect (mutations: string, custconfig: CustomerConfig, cou
 
   const host = S3DBConfig.connectapiurl
 
-  S3DB_Logging("info", "805", `Updates to be POSTed (${workFile}) are: ${mutations}`)
+  S3DB_Logging("info", "805", `Updates about to be POSTed (${workFile}) are: ${mutations}`)
 
   let connectMutationResult: string = ""
 
 
-  //{       //graphQL Spec Doc
+  //{                 //graphQL Spec Doc
   //  "data": { ...},
   //  "errors": [... ],
   //    "extensions": { ...}
