@@ -1067,13 +1067,13 @@ export async function S3DB_Logging (level: string, index: string, msg: string) {
   {
     if (process.env.S3DropBucketLogLevel?.toLowerCase() === "all") index = `(LOG ALL-${index})`
 
-    if (level.toLowerCase() === "info") console.info(`S3DBLog-Info ${index}: ${msg} \nRegion: ${r} Version: ${version} \nRef: ${slConfig} :CustConfig:${typeof customersConfig.selectivelogging}`)
-    if (level.toLowerCase() === "warn") console.warn(`S3DBLog-Warning ${index}: ${msg} \nRegion: ${r} Version: ${version} \nRef: ${slConfig} :CustConfig:${typeof customersConfig.selectivelogging}`)
-    if (level.toLowerCase() === "error") console.error(`S3DBLog-Error ${index}: ${msg} \nRegion: ${r} Version: ${version} \nRef: ${slConfig} :CustConfig:${typeof customersConfig.selectivelogging}`)
-    if (level.toLowerCase() === "debug") console.debug(`S3DBLog-Debug ${index}: ${msg} \nRegion: ${r} Version: ${version} \nRef: ${slConfig} :CustConfig:${typeof customersConfig.selectivelogging}`)
+    if (level.toLowerCase() === "info") console.info(`S3DBLog-Info ${index}: ${msg} \nRegion: ${r} Version: ${version} \nRef: ${slConfig} :CustConfig:${customersConfig.selectivelogging}`)
+    if (level.toLowerCase() === "warn") console.warn(`S3DBLog-Warning ${index}: ${msg} \nRegion: ${r} Version: ${version} \nRef: ${slConfig} :CustConfig:${customersConfig.selectivelogging}`)
+    if (level.toLowerCase() === "error") console.error(`S3DBLog-Error ${index}: ${msg} \nRegion: ${r} Version: ${version} \nRef: ${slConfig} :CustConfig:${customersConfig.selectivelogging}`)
+    if (level.toLowerCase() === "debug") console.debug(`S3DBLog-Debug ${index}: ${msg} \nRegion: ${r} Version: ${version} \nRef: ${slConfig} :CustConfig:${customersConfig.selectivelogging}`)
   }
 
-  if (level.toLowerCase() === "exception") console.error(`S3DBLog-Exception ${index}: ${msg}  \nRegion: ${r} Version: ${version} \nRef: ${slConfig} :CustConfig:${typeof customersConfig.selectivelogging}`)
+  if (level.toLowerCase() === "exception") console.error(`S3DBLog-Exception ${index}: ${msg}  \nRegion: ${r} Version: ${version} \nRef: ${slConfig} :CustConfig:${customersConfig.selectivelogging}`)
 
   //ToDo: Send Logging to Firehose Aggregator 
   // Send All debug messaging regardless of S3DropBucket Config??
