@@ -1925,12 +1925,14 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
 
           }
 
-          S3DB_Logging("info", "510", `POSTed ${event.Records.length} Work Queue updates. Result: ${postResult}. 
+          S3DB_Logging("info", "510", `Finished ${event.Records.length} Work Queue Events.
             \nUpdates to be Retried Count: ${sqsBatchFail.batchItemFailures.length} 
             \nUpdates to Retried List: \n${JSON.stringify(sqsBatchFail)} `
+            //Last Result: \n${postResult}. `
           )
           
-          S3DB_Logging("info", "511", `POSTed ${s3dbQM.updateCount} Updates from ${s3dbQM.workKey}`)
+          //ToDo: verify count is correct for the work files being processed, 
+          S3DB_Logging("info", "511", `Finished ${s3dbQM.updateCount} Updates from ${s3dbQM.workKey}`)
 
 
           //ToDo: need to add similar status object like S3ObjectStreamResolution to QueueProcessor reporting
@@ -4572,7 +4574,7 @@ function transforms (updates: object[], config: CustomerConfig) {
   // Ignore
 
 
-
+//ToDo: on outcomes messaging return only the affected lines not the entire JSON.stringify(updates)
 
   //Transform: JSONMap
 
@@ -4764,10 +4766,16 @@ function transforms (updates: object[], config: CustomerConfig) {
 
           toDay = updateObj[val] as string
 
-          if (typeof toDay !== "undefined" && toDay !== "")
+          if (typeof toDay !== "undefined" && toDay.length > 0)
           {
             const dt = new Date(toDay)
             const day = {dateday: days[dt.getDay()]}
+            Object.assign(update, day)
+          }
+          else
+          {
+            S3DB_Logging("error", "933", `Error - Transform - DayDate Transform failed for ${val} as the string value '${toDay}' returns invalid date value`)
+            const day = {dateday: 'na'}
             Object.assign(update, day)
           }
         })
@@ -4822,11 +4830,17 @@ function transforms (updates: object[], config: CustomerConfig) {
 
           toISO1806 = updateObj[val] as string
 
-          if (typeof toISO1806 !== "undefined" && toISO1806 !== "")
+          if (typeof toISO1806 !== "undefined" && toISO1806.length > 0)
           {
             const dt = new Date(toISO1806)
             const isoString: string = dt.toISOString()
             const tDate = {[key]: isoString}
+            Object.assign(update, tDate)
+          }
+          else
+          {
+            S3DB_Logging("error", "933", `Error - Transform - date_iso1806 Transform failed for ${val} as the string value '${toISO1806}' returns invalid date value`)
+            const tDate = {[key]: 'na'}
             Object.assign(update, tDate)
           }
 
@@ -4880,15 +4894,19 @@ function transforms (updates: object[], config: CustomerConfig) {
           const updateObj: {[key: string]: string} = update as {[key: string]: string}
 
           pn = updateObj[val] as string
+          //undefined
+          //null
+          //value gt 0 in length
 
-          if (typeof pn !== "undefined" && pn !== "")
+
+          if (typeof pn !== "undefined" && pn.length > 0)
           {
 
             const npn = pn.replaceAll(new RegExp(/(\D)/gm), "")
 
-            if (!/\d{7,}/.test(npn))
+            if (!/\d{7,}/.test(npn))     //Phone number should be all numeric and minimum 7 digits
             {
-              S3DB_Logging("error", "933", `Error - Transform - Applying Phone_Number Transform for ${val} failed as the string value ${pn} returns non-numeric value: ${npn}`)
+              S3DB_Logging("error", "933", `Error - Transform - Phone_Number transform failed for ${val} as the string value '${pn}' returns invalid phone number value: ${npn}`)
             }
 
             const pnu = {[key]: npn}
@@ -4897,7 +4915,10 @@ function transforms (updates: object[], config: CustomerConfig) {
           }
           else
           {
-            S3DB_Logging("error", "933", `Error - Transform - Applying Phone_Number Transform ${key}: ${val} returns empty value.`)
+            S3DB_Logging("error", "933", `Error - Transform - Phone_Number transform for ${key}: ${val} returns empty value.`)
+            const pnu = {[key]: 'na'}
+            Object.assign(update, pnu)
+          
           }
         })
 
@@ -4909,7 +4930,7 @@ function transforms (updates: object[], config: CustomerConfig) {
         updates = t
       } else
       {
-        S3DB_Logging("error", "933", `Error - Transform - Applying Phone_Number Transform returns fewer records (${t.length}) than initial set ${updates.length}`)
+        S3DB_Logging("error", "933", `Error - Transform - Phone_Number Transform returns fewer records (${t.length}) than initial set ${updates.length}`)
         throw new Error(
           `Error - Transform - Applying Phone_Number Transform returns fewer records (${t.length}) than initial set ${updates.length}`
         )
@@ -4949,18 +4970,24 @@ function transforms (updates: object[], config: CustomerConfig) {
 
           strToNumber = updateObj[val] as string
 
-          if (typeof strToNumber !== "undefined" && strToNumber !== "")
+          if (typeof strToNumber !== "undefined" && strToNumber.length > 0)
           {
             const n = Number(strToNumber)
             if (String(n) === 'NaN')
             {
-              S3DB_Logging("error", "933", `Error - Transform - String-To-Number transform failed for ${val} as the string value ${strToNumber} cannot be converted to a number.`)
+              S3DB_Logging("error", "933", `Error - Transform - String-To-Number transform failed for ${val} as the string value '${strToNumber}' cannot be converted to a number.`)
             }
             else
             {
               const num = {[key]: n}
               Object.assign(update, num)
             }
+          }
+          else
+          {
+            S3DB_Logging("error", "933", `Error - Transform - String To Number transform for ${key}: ${val} returns empty value.`)
+            const num = {[key]: '0'}
+            Object.assign(update, num)
           }
         })
 
