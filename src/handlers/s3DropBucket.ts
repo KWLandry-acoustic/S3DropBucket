@@ -5043,7 +5043,7 @@ function transforms (updates: object[], config: CustomerConfig) {
           else
           {
             S3DB_Logging("error", "933", `Error - Transform - String To Number transform for ${key}: ${val} returns empty value.`)
-            const num = {[key]: '0'}
+            const num = {[key]: 0}
             Object.assign(update, num)
           }
         })
