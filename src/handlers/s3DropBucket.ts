@@ -1758,7 +1758,53 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
     // concurrency allocated to your Amazon SQS event source mapping.Lambda continues to retry the message until
     // the message's timestamp exceeds your queue's visibility timeout, at which point Lambda drops the message.
 
-    let custconfig: CustomerConfig = customersConfig
+    //let custconfig: CustomerConfig = customersConfig
+
+
+    //try
+    //{
+    //  //if (key.indexOf("S3DropBucket_Aggregator") > -1)
+    //  //{
+    //  //  key = key.replace("S3DropBucket_Aggregator-", "S3DropBucketAggregator-")
+    //  //  S3DB_Logging("info", "", `Aggregator File key reformed: ${key}`)
+    //  //}      
+
+    //  customersConfig = await getFormatCustomerConfig(key) as CustomerConfig
+
+    //} catch (e)
+    //{
+    //  debugger //catch
+
+    //  S3DB_Logging("exception", "", `Exception - Awaiting Customer Config (${key}) \n${e} `)
+    //  break
+    //}
+
+    //Initial work out for writing logs to S3 Bucket
+    /*
+    try {
+      if (key.indexOf("S3DropBucket-LogsS3DropBucket_Aggregator") > -1)
+        console.warn(`Warning -- Found Invalid Aggregator File Name - ${key} \nVersionID: ${vid}, \neTag: ${et}`)
+      if (S3DBConfig.SelectiveLogging.indexOf("_101,") > -1)
+        console.info(
+          `(101) Processing inbound data for ${customersConfig.Customer} - ${key}`
+        )
+    } catch (e) {
+      throw new Error(
+        `Exception - Retrieving Customer Config for ${key} \n${e}`
+      )
+    }
+    */
+
+
+
+
+
+
+
+
+
+
+
 
     let postResult: string = "false"
 
@@ -1830,7 +1876,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
       try
       {
 
-        custconfig = await getFormatCustomerConfig(s3dbQM.custconfig.customer) as CustomerConfig
+        customersConfig = await getFormatCustomerConfig(s3dbQM.custconfig.customer) as CustomerConfig
 
         const work = await getS3Work(s3dbQM.workKey, S3DBConfig.s3dropbucket_workbucket)
 
@@ -1839,13 +1885,13 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
           //Retrieve Contents of the Work File
           S3DB_Logging("info", "512", `Work file ${s3dbQM.workKey} retrieved: Result:\n${JSON.stringify(work)}`)
           
-          if ((custconfig.updatetype.toLowerCase() === "createupdatecontacts") ||
-            (custconfig.updatetype.toLowerCase() === "createattributes")
+          if ((customersConfig.updatetype.toLowerCase() === "createupdatecontacts") ||
+            (customersConfig.updatetype.toLowerCase() === "createattributes")
           )
           {
             postResult = await postToConnect(
               work,
-              custconfig as CustomerConfig,
+              customersConfig as CustomerConfig,
               s3dbQM.updateCount,
               s3dbQM.workKey
             )
@@ -1853,13 +1899,13 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
 
           
 
-          if (custconfig.updatetype.toLowerCase() === "relational" ||
-            custconfig.updatetype.toLowerCase() === "dbkeyed" ||
-            custconfig.updatetype.toLowerCase() === "dbnonkeyed")
+          if (customersConfig.updatetype.toLowerCase() === "relational" ||
+            customersConfig.updatetype.toLowerCase() === "dbkeyed" ||
+            customersConfig.updatetype.toLowerCase() === "dbnonkeyed")
           {
             postResult = await postToCampaign(
               work,
-              custconfig as CustomerConfig,
+              customersConfig as CustomerConfig,
               s3dbQM.updateCount,
               s3dbQM.workKey
             )
@@ -1886,7 +1932,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
           }
           else if (postResult.toLowerCase().indexOf("unsuccessful post ") > -1)
           {
-            S3DB_Logging("error", "520", `Error - Unsuccessful POST (Hard Failure) for ${s3dbQM.workKey}: \n${postResult} \nQueue MessageId: ${q.messageId} \nCustomer: ${custconfig.customer} `)
+            S3DB_Logging("error", "520", `Error - Unsuccessful POST (Hard Failure) for ${s3dbQM.workKey}: \n${postResult} \nQueue MessageId: ${q.messageId} \nCustomer: ${s3dbQM.custconfig.customer} `)
             deleteWork = true
           }
           else if (postResult.toLowerCase().indexOf("partially successful") > -1)
@@ -6180,7 +6226,7 @@ async function postToConnect (mutations: string, custconfig: CustomerConfig, cou
           return `retry ${JSON.stringify(e)}`
         } else
         {
-          S3DB_Logging("exception", "", `Error - Unsuccessful POST of the Updates: ${JSON.stringify(e)}`)
+          S3DB_Logging("exception", "", `Error - PostToConnect - Unsuccessful POST of the Updates: ${JSON.stringify(e)}`)
           return `Unsuccessful POST of the Updates \n${JSON.stringify(e)}`
         }
       })
@@ -6192,7 +6238,7 @@ async function postToConnect (mutations: string, custconfig: CustomerConfig, cou
     const r = requestOptions
     const m = mutations
 
-    S3DB_Logging("error", "829", `PostToConnect - Error (try-catch): ${JSON.stringify(e)}`)
+    S3DB_Logging("exception", "", `Error - PostToConnect - Hard Error (try-catch): ${JSON.stringify(e)}`)
     return `unsuccessful post \n ${JSON.stringify(e)}`
   }
 
