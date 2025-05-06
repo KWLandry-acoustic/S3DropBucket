@@ -1041,12 +1041,17 @@ export default s3DropBucketHandler
 
 export async function S3DB_Logging (level: string, index: string, msg: string) {
 
+  let slConfig = "S3DropBucketConfig"
   let selectiveDebug = process.env.S3DropBucketSelectiveLogging ?? S3DBConfig.s3dropbucket_selectivelogging ?? "_97,_98,_99,_504,_511,_901,_910,_924,"
 
   if (typeof customersConfig.selectivelogging !== "undefined" &&
     customersConfig.selectivelogging.length > 0 &&
-    customersConfig.selectivelogging !== "") selectiveDebug = customersConfig.selectivelogging
-
+    customersConfig.selectivelogging !== "")
+  {
+    selectiveDebug = customersConfig.selectivelogging
+    slConfig = `CustomersConfig:${customersConfig.customer}`
+  }
+    
   if (localTesting) process.env.S3DropBucketLogLevel = "ALL"
 
   const r = await s3.config.region() ?? "Unknown"   //Authoritative
@@ -1062,13 +1067,13 @@ export async function S3DB_Logging (level: string, index: string, msg: string) {
   {
     if (process.env.S3DropBucketLogLevel?.toLowerCase() === "all") index = `(LOG ALL-${index})`
 
-    if (level.toLowerCase() === "info") console.info(`S3DBLog-Info ${index}: ${msg} \nRegion: ${r} Version: ${version}`)
-    if (level.toLowerCase() === "warn") console.warn(`S3DBLog-Warning ${index}: ${msg} \nRegion: ${r} Version: ${version}`)
-    if (level.toLowerCase() === "error") console.error(`S3DBLog-Error ${index}: ${msg} \nRegion: ${r} Version: ${version}`)
-    if (level.toLowerCase() === "debug") console.debug(`S3DBLog-Debug ${index}: ${msg} \nRegion: ${r} Version: ${version}`)
+    if (level.toLowerCase() === "info") console.info(`S3DBLog-Info ${index}: ${msg} \nRegion: ${r} Version: ${version} \nRef: ${slConfig}`)
+    if (level.toLowerCase() === "warn") console.warn(`S3DBLog-Warning ${index}: ${msg} \nRegion: ${r} Version: ${version} \nRef: ${slConfig}`)
+    if (level.toLowerCase() === "error") console.error(`S3DBLog-Error ${index}: ${msg} \nRegion: ${r} Version: ${version} \nRef: ${slConfig}`)
+    if (level.toLowerCase() === "debug") console.debug(`S3DBLog-Debug ${index}: ${msg} \nRegion: ${r} Version: ${version} \nRef: ${slConfig}`)
   }
 
-  if (level.toLowerCase() === "exception") console.error(`S3DBLog-Exception ${index}: ${msg}  \nRegion: ${r} Version: ${version}`)
+  if (level.toLowerCase() === "exception") console.error(`S3DBLog-Exception ${index}: ${msg}  \nRegion: ${r} Version: ${version} \nRef: ${slConfig}`)
 
   //ToDo: Send Logging to Firehose Aggregator 
   // Send All debug messaging regardless of S3DropBucket Config??
