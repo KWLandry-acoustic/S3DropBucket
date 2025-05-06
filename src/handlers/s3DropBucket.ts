@@ -4763,7 +4763,7 @@ function transforms (updates: object[], config: CustomerConfig) {
       ]
 
       for (const update of updates)
-      {
+      {                                                   // "daydate": "SugarCRM_date_modified",
         Object.entries(config.transforms.methods.daydate).forEach(([key, val]) => {
           //Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{} '.
           //No index signature with a parameter of type 'string' was found on type '{}'.ts(7053)
@@ -4774,13 +4774,13 @@ function transforms (updates: object[], config: CustomerConfig) {
           if (typeof toDay !== "undefined" && toDay.length > 0)
           {
             const dt = new Date(toDay)
-            const day = {dateday: days[dt.getDay()]}
+            const day = {daydate: days[dt.getDay()]}
             Object.assign(update, day)
           }
           else
           {
             S3DB_Logging("error", "933", `Error - Transform - DayDate Transform failed for ${val} as the string value '${toDay}' returns invalid date value`)
-            const day = {dateday: 'na'}
+            const day = {daydate: 'na'}
             Object.assign(update, day)
           }
         })
