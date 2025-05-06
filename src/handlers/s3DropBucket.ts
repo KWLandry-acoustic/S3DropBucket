@@ -1067,13 +1067,13 @@ export async function S3DB_Logging (level: string, index: string, msg: string) {
   {
     if (process.env.S3DropBucketLogLevel?.toLowerCase() === "all") index = `(LOG ALL-${index})`
 
-    if (level.toLowerCase() === "info") console.info(`S3DBLog-Info ${index}: ${msg} \nRegion: ${r} Version: ${version} \nRef: ${slConfig}`)
-    if (level.toLowerCase() === "warn") console.warn(`S3DBLog-Warning ${index}: ${msg} \nRegion: ${r} Version: ${version} \nRef: ${slConfig}`)
-    if (level.toLowerCase() === "error") console.error(`S3DBLog-Error ${index}: ${msg} \nRegion: ${r} Version: ${version} \nRef: ${slConfig}`)
-    if (level.toLowerCase() === "debug") console.debug(`S3DBLog-Debug ${index}: ${msg} \nRegion: ${r} Version: ${version} \nRef: ${slConfig}`)
+    if (level.toLowerCase() === "info") console.info(`S3DBLog-Info ${index}: ${msg} \nRegion: ${r} Version: ${version} \nRef: ${slConfig} :CustConfig:${typeof customersConfig.selectivelogging}`)
+    if (level.toLowerCase() === "warn") console.warn(`S3DBLog-Warning ${index}: ${msg} \nRegion: ${r} Version: ${version} \nRef: ${slConfig} :CustConfig:${typeof customersConfig.selectivelogging}`)
+    if (level.toLowerCase() === "error") console.error(`S3DBLog-Error ${index}: ${msg} \nRegion: ${r} Version: ${version} \nRef: ${slConfig} :CustConfig:${typeof customersConfig.selectivelogging}`)
+    if (level.toLowerCase() === "debug") console.debug(`S3DBLog-Debug ${index}: ${msg} \nRegion: ${r} Version: ${version} \nRef: ${slConfig} :CustConfig:${typeof customersConfig.selectivelogging}`)
   }
 
-  if (level.toLowerCase() === "exception") console.error(`S3DBLog-Exception ${index}: ${msg}  \nRegion: ${r} Version: ${version} \nRef: ${slConfig}`)
+  if (level.toLowerCase() === "exception") console.error(`S3DBLog-Exception ${index}: ${msg}  \nRegion: ${r} Version: ${version} \nRef: ${slConfig} :CustConfig:${typeof customersConfig.selectivelogging}`)
 
   //ToDo: Send Logging to Firehose Aggregator 
   // Send All debug messaging regardless of S3DropBucket Config??
@@ -4762,8 +4762,14 @@ function transforms (updates: object[], config: CustomerConfig) {
         "Saturday",
       ]
 
+      
+      //"daydate": "date_modified",   - Current config 
+      //ToDo: modify to support key:value config as in other Transform configs
+      // "daydate": {"key": "value"}
+        
+        
       for (const update of updates)
-      {                                                   // "daydate": "SugarCRM_date_modified",
+      {                                                   
         Object.entries(config.transforms.methods.daydate).forEach(([key, val]) => {
           //Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{} '.
           //No index signature with a parameter of type 'string' was found on type '{}'.ts(7053)
