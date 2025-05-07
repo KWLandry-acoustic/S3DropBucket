@@ -4837,7 +4837,7 @@ function transforms (updates: object[], config: CustomerConfig) {
           }
           else
           {
-            S3DB_Logging("error", "933", `Error - Transform - DayDate Transform failed for ${val} as the string value '${toDay}' returns invalid date value`)
+            //S3DB_Logging("error", "933", `Error - Transform - DayDate Transform failed for ${val} as the string value '${toDay}' returns invalid date value`)
             const day = {daydate: 'na'}
             Object.assign(update, day)
           }
@@ -4902,7 +4902,7 @@ function transforms (updates: object[], config: CustomerConfig) {
           }
           else
           {
-            S3DB_Logging("error", "933", `Error - Transform - date_iso1806 Transform failed for ${val} as the string value '${toISO1806}' returns invalid date value`)
+            //S3DB_Logging("error", "933", `Error - Transform - date_iso1806 Transform failed for ${val} as the string value '${toISO1806}' returns invalid date value`)
             const tDate = {[key]: 'na'}
             Object.assign(update, tDate)
           }
