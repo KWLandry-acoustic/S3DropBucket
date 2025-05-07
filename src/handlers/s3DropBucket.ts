@@ -642,7 +642,7 @@ export const s3DropBucketHandler: Handler = async (
     }
     
     
-    if (typeof process.env.AWS_REGION !== "undefined") 
+    if (typeof process.env.AWS_REGION !== "undefined" && process.env.AWS_REGION !== "undefined" && process.env.AWS_REGION.length > 0) 
     {
       s3 = new S3Client({
         region: process.env.AWS_REGION,         //{region: 'us-east-1'})
@@ -1045,6 +1045,7 @@ export async function S3DB_Logging (level: string, index: string, msg: string) {
   let selectiveDebug = process.env.S3DropBucketSelectiveLogging ?? S3DBConfig.s3dropbucket_selectivelogging ?? "_97,_98,_99,_504,_511,_901,_910,_924,"
 
   if (typeof customersConfig.selectivelogging !== "undefined" &&
+    customersConfig.selectivelogging !== "undefined" &&
     customersConfig.selectivelogging.length > 0 &&
     customersConfig.selectivelogging !== "")
   {
@@ -1677,7 +1678,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
   try
   {
 
-    if (typeof process.env.AWS_REGION !== "undefined") 
+    if (typeof process.env.AWS_REGION !== "undefined" && process.env.AWS_REGION !== "undefined" && process.env.AWS_REGION.length > 0) 
     {
       s3 = new S3Client({
         region: process.env.AWS_REGION,         //{region: 'us-east-1'})
@@ -4828,7 +4829,7 @@ function transforms (updates: object[], config: CustomerConfig) {
 
           toDay = updateObj[val] as string
 
-          if (typeof toDay !== "undefined" && toDay.length > 0)
+          if (typeof toDay !== "undefined" && toDay !== "undefined" && toDay.length > 0)
           {
             const dt = new Date(toDay)
             const day = {daydate: days[dt.getDay()]}
@@ -4892,7 +4893,7 @@ function transforms (updates: object[], config: CustomerConfig) {
 
           toISO1806 = updateObj[val] as string
 
-          if (typeof toISO1806 !== "undefined" && toISO1806.length > 0)
+          if (typeof toISO1806 !== "undefined" && toISO1806 !== "undefined" && toISO1806.length > 0)
           {
             const dt = new Date(toISO1806)
             const isoString: string = dt.toISOString()
@@ -4961,14 +4962,14 @@ function transforms (updates: object[], config: CustomerConfig) {
           //value gt 0 in length
 
 
-          if (typeof pn !== "undefined" && pn.length > 0)
+          if (typeof pn !== "undefined" && pn !== "undefined" && pn.length > 0)
           {
 
             const npn = pn.replaceAll(new RegExp(/(\D)/gm), "")
 
             if (!/\d{7,}/.test(npn))     //Phone number should be all numeric and minimum 7 digits
             {
-              S3DB_Logging("error", "933", `Error - Transform - Phone_Number transform failed for ${val} as the string value '${pn}' returns invalid phone number value: ${npn}`)
+              S3DB_Logging("error", "933", `Error - Transform - Phone_Number transform failed for ${val} as the string value '${pn}' (${updateObj[val]}) returns invalid phone number value: ${npn}`)
             }
 
             const pnu = {[key]: npn}
@@ -5031,7 +5032,7 @@ function transforms (updates: object[], config: CustomerConfig) {
 
           strToNumber = updateObj[val] as string
 
-          if (typeof strToNumber !== "undefined" && strToNumber.length > 0)
+          if (typeof strToNumber !== "undefined" && strToNumber !== "undefined" && strToNumber.length > 0)
           {
             const n = Number(strToNumber)
             if (String(n) === 'NaN')
@@ -6189,7 +6190,7 @@ async function postToConnect (mutations: string, custconfig: CustomerConfig, cou
         let errors = []
         const cer = result as ConnectErrorResult
         
-        if (typeof cer.errors !== "undefined")
+        if (typeof cer.errors !== "undefined" && cer.errors.length > 0)
         {
           for (const e in cer.errors)
           {
