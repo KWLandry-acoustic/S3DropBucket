@@ -3966,6 +3966,11 @@ async function buildMutationsConnect (updates: object[], config: CustomerConfig)
         if (typeof u.consent !== "undefined") Object.assign(cci, {consent: u.consent})
 
 
+        if (typeof u.addressable !== "undefined") Object.assign(cci, {addressable: u.addressable})
+
+
+        
+
         //Audience is just a placeholder for now, so removing until it is valid in graphQL type
         //if (typeof u.audience !== "undefined") Object.assign(variables.contactsInput, {audience: u.audience})
 
