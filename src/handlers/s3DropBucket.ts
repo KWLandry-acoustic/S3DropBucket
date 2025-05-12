@@ -3193,7 +3193,7 @@ async function validateCustomerConfig (config: CustomerConfig) {
       Object.assign(config, {transforms: {}})
     }
 
-    if (!config.transforms.contactid)
+    if (!config.transforms.contactid)  //should never use this config, here for future reference 
     {
       Object.assign(config.transforms, {contactid: {}})
     }
@@ -3207,6 +3207,11 @@ async function validateCustomerConfig (config: CustomerConfig) {
     {
       Object.assign(config.transforms, {addressablefields: {}})
     }
+
+
+
+
+
 
     if (!config.transforms.methods)
     {
@@ -3264,9 +3269,9 @@ async function validateCustomerConfig (config: CustomerConfig) {
           ["contactid", "contactkey", "addressablefields", "consent", "audience"].includes(p2.toLowerCase())
         )
         {
-          S3DB_Logging("error", "", `JSONMap config: Either part of the JSONMap statement, the Column to create or the JSONPath statement, cannot use a reserved word ("contactid", "contactkey", "addressablefields", "consent", or "audience") ${m}: ${p}`)
+          S3DB_Logging("error", "", `JSONMap config: The JSONMap statement, either the Column to create or the JSONPath statement reference, cannot use a reserved word ("contactid", "contactkey", "addressablefields", "consent", or "audience") ${m}: ${p}`)
 
-          throw new Error(`JSONMap config: Either part of the JSONMap statement, the Column to create or the JSONPath statement, cannot reference a reserved word ("contactid", "contactkey", "addressablefields", "consent", or "audience") ${m}: ${p}`)
+          throw new Error(`JSONMap config: The JSONMap statement, either the Column to create or the JSONPath statement reference, cannot use a reserved word ("contactid", "contactkey", "addressablefields", "consent", or "audience") ${m}: ${p}`)
         }
         else
         {
@@ -3722,8 +3727,10 @@ async function storeAndQueueCampaignWork (
 
 async function buildMutationsConnect (updates: object[], config: CustomerConfig) {
 
-  let mutation
+  let create_mutation
+  let update_mutation
   let variables
+
   /*
     try
     {
@@ -3878,7 +3885,7 @@ async function buildMutationsConnect (updates: object[], config: CustomerConfig)
   */
 
 
-  interface CreateContactInput {
+  interface ContactInput {
     attributes: ContactAttribute[]
     //audience?: {id: string}
     consent?: {id: string}
@@ -3897,13 +3904,18 @@ async function buildMutationsConnect (updates: object[], config: CustomerConfig)
     }>
   }
 
-  interface CreateUpdateContactsVariables {
+  interface CreateContactsVariables {
+    dataSetId: string
+    contactsData: CreateContactRecord[]
+  }
+
+  interface UpdateContactsVariables {
     dataSetId: string
     contactsData: CreateContactRecord[]
   }
 
 
-  mutation = `mutation S3DropBucketCreateUpdateMutation (
+  create_mutation = `mutation S3DropBucketCreateMutation (
         $contactsData: [ContactCreateInput!]!
         ) 
         {
@@ -3939,15 +3951,48 @@ async function buildMutationsConnect (updates: object[], config: CustomerConfig)
             }
         }`
   
+  update_mutation = `mutation S3DropBucketCreateMutation (
+        $contactsData: [ContactCreateInput!]!
+        ) 
+        {
+            createContacts(
+            contactsInput: $contactsData
+            ) {
+                  items {
+                        contactKey
+                        message
+                        identifyingField {
+                              value
+                              attributeData {
+                                    type
+                                    decimalPrecision
+                                    name
+                                    category
+                                    mapAs
+                                    validateAs
+                                    identifyAs {
+                                          channels
+                                          key
+                                          index
+                                    }
+                                    tracking {
+                                          createdBy
+                                          createdAt
+                                          lastModifiedBy
+                                          lastModifiedAt
+                                    }
+                              }
+                        }
+                  }
+            }
+        }`
 
   try
   {
     if (config.updatetype.toLowerCase() === "createupdatecontacts")
     {
      
-
-      //let createVariables = {} as CreateUpdateContactsVariables
-      variables = {dataSetId: config.datasetid, contactsData: []} as CreateUpdateContactsVariables
+      variables = {dataSetId: config.datasetid, contactsData: []} as CreateContactsVariables
 
       for (const upd in updates)
       {
@@ -3956,7 +4001,7 @@ async function buildMutationsConnect (updates: object[], config: CustomerConfig)
 
         let ca: ContactAttribute = {name: "", value: ""}
         let ccr: CreateContactRecord = {attributes: []}
-        let cci: CreateContactInput = {attributes: []}
+        let cci: ContactInput = {attributes: []}
 
         variables.contactsData.push(cci)
 
@@ -3967,7 +4012,8 @@ async function buildMutationsConnect (updates: object[], config: CustomerConfig)
         if (typeof u.consent !== "undefined") Object.assign(cci, {consent: u.consent})
 
 
-        if (typeof u.addressable !== "undefined") Object.assign(cci, {addressable: u.addressable})
+        if (typeof u.addressable !== "undefined" &&
+          config.updatetype.toLowerCase() !== "createupdatecontacts") Object.assign(cci, {addressable: u.addressable})
 
 
         
@@ -4006,8 +4052,8 @@ async function buildMutationsConnect (updates: object[], config: CustomerConfig)
         //variables.contactsInput.push(cci)
       }
 
-      S3DB_Logging("info", "817", `CreateUpdate Multiple Contacts Mutation: ${JSON.stringify({query: mutation, variables: variables})}`)
-      return {query: mutation, variables: variables}
+      S3DB_Logging("info", "817", `CreateUpdate Multiple Contacts Mutation: ${JSON.stringify({query: create_mutation, variables: variables})}`)
+      return {query: create_mutation, variables: variables}
 
     }
   } catch (e)
@@ -4056,7 +4102,7 @@ async function buildMutationsConnect (updates: object[], config: CustomerConfig)
         //to: UpdateContactRecord[]
       }
 
-      mutation = `mutation updateContacts (
+      create_mutation = `mutation updateContacts (
         $contactsInput: [UpdateContactInput!]!
         ) {
         updateContacts(
@@ -4144,8 +4190,8 @@ async function buildMutationsConnect (updates: object[], config: CustomerConfig)
 
       }
 
-      S3DB_Logging("info", "817", `Update Multiple Contacts Mutation: \n${mutation} and Vars: \n${JSON.stringify(variables)}`)
-      return {query: mutation, variables}
+      S3DB_Logging("info", "817", `Update Multiple Contacts Mutation: \n${create_mutation} and Vars: \n${JSON.stringify(variables)}`)
+      return {query: create_mutation, variables}
 
     }
   } catch (e)
@@ -4829,7 +4875,7 @@ function transforms (updates: object[], config: CustomerConfig) {
 
           toDay = updateObj[val] as string
 
-          if (typeof toDay !== "undefined" && toDay !== "undefined" && toDay.length > 0)
+          if (typeof toDay !== "undefined" && toDay !== "undefined" && toDay !== null && toDay.length > 0)
           {
             const dt = new Date(toDay)
             const day = {daydate: days[dt.getDay()]}
@@ -4893,7 +4939,7 @@ function transforms (updates: object[], config: CustomerConfig) {
 
           toISO1806 = updateObj[val] as string
 
-          if (typeof toISO1806 !== "undefined" && toISO1806 !== "undefined" && toISO1806.length > 0)
+          if (typeof toISO1806 !== "undefined" && toISO1806 !== "undefined" &&  toISO1806 !== null && toISO1806.length > 0)
           {
             const dt = new Date(toISO1806)
             const isoString: string = dt.toISOString()
@@ -4962,7 +5008,7 @@ function transforms (updates: object[], config: CustomerConfig) {
           //value gt 0 in length
 
 
-          if (typeof pn !== "undefined" && pn !== "undefined" && pn.length > 0)
+          if (typeof pn !== "undefined" && pn !== "undefined" && pn !== null && pn.length > 0)
           {
 
             const npn = pn.replaceAll(new RegExp(/(\D)/gm), "")
@@ -5032,7 +5078,7 @@ function transforms (updates: object[], config: CustomerConfig) {
 
           strToNumber = updateObj[val] as string
 
-          if (typeof strToNumber !== "undefined" && strToNumber !== "undefined" && strToNumber.length > 0)
+          if (typeof strToNumber !== "undefined" && strToNumber !== "undefined" &&  strToNumber !== null && strToNumber.length > 0)
           {
             const n = Number(strToNumber)
             if (String(n) === 'NaN')
@@ -5045,12 +5091,12 @@ function transforms (updates: object[], config: CustomerConfig) {
               Object.assign(update, num)
             }
           }
-          //else
-          //{
+          else
+          {
           //  //S3DB_Logging("error", "933", `Error - Transform - String To Number transform for ${key}: ${val} returns empty value.`)
-          //  //const num = {[key]: -1}
-          //  //Object.assign(update, num)
-          //}
+            const num = {[key]: null}
+            Object.assign(update, num)
+          }
         })
 
         t.push(update)
