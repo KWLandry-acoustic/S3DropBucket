@@ -3043,10 +3043,12 @@ async function validateCustomerConfig (config: CustomerConfig) {
       //updatetype has valid Campaign values and Campaign dependent values
       if (config.updatetype.toLowerCase().match(/^(?:referenceset|createupdatecontacts|createattributes)$/gim))
       {
-        if (!config.datasetid)
-        {
-          throw new Error("Invalid Customer Config - Target Update is Connect but DataSetId is not defined")
-        } if (!config.subscriptionid)
+        //if (!config.datasetid)
+        //{
+        //  throw new Error("Invalid Customer Config - Target Update is Connect but DataSetId is not defined")
+        //}
+        
+        if (!config.subscriptionid)
         {
           throw new Error("Invalid Customer Config - Target Update is Connect but SubscriptionId is not defined")
         }
@@ -3905,12 +3907,12 @@ async function buildMutationsConnect (updates: object[], config: CustomerConfig)
   }
 
   interface CreateContactsVariables {
-    dataSetId: string
+    //dataSetId: string
     contactsData: CreateContactRecord[]
   }
 
   interface UpdateContactsVariables {
-    dataSetId: string
+    //dataSetId: string
     contactsData: CreateContactRecord[]
   }
 
@@ -3992,7 +3994,8 @@ async function buildMutationsConnect (updates: object[], config: CustomerConfig)
     if (config.updatetype.toLowerCase() === "createupdatecontacts")
     {
      
-      variables = {dataSetId: config.datasetid, contactsData: []} as CreateContactsVariables
+      //variables = {dataSetId: config.datasetid, contactsData: []} as CreateContactsVariables
+      variables = {contactsData: []} as CreateContactsVariables
 
       for (const upd in updates)
       {
