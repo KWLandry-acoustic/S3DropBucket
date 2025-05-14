@@ -5128,7 +5128,7 @@ function transforms (updates: object[], config: CustomerConfig) {
 
 
   //Now create Reference Fields, data that is used in Connect to augment Updates/Mutations 
-
+/*
   //Transform: ContactId
   //    
 
@@ -5200,7 +5200,7 @@ function transforms (updates: object[], config: CustomerConfig) {
     debugger //catch
 
     S3DB_Logging("exception", "934", `Exception - Applying ContactId Transform \n${e}`)
-  }
+  }*/
 
 
   /*
@@ -5680,7 +5680,7 @@ function transforms (updates: object[], config: CustomerConfig) {
       S3DB_Logging("exception", "934", `Exception - Applying Consent Transform \n${e}`)
     }
 
-
+/*
   //Transform: Audience Update
   //need loop through Config audienceupdate and build audience object.
 
@@ -5778,7 +5778,7 @@ function transforms (updates: object[], config: CustomerConfig) {
 
     S3DB_Logging("exception", "934", `Exception - Applying AudienceUpdates Transform \n${e}`)
   }
-
+*/
   
 
   //When processing an Aggregator file we need to remove "Customer" column that is added by the 
