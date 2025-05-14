@@ -3446,7 +3446,6 @@ async function storeAndQueueConnectWork (
   //  therefore if Aggregate file, or files config'd as "Multiple" updates, then need to perform Transforms before queuing up the work
   try
   {
-
     //Apply Transforms, if any, 
     updates = transforms(updates, custConfig)
   } catch (e)
@@ -4680,7 +4679,7 @@ function transforms (updates: object[], config: CustomerConfig) {
   // Ignore
 
 
-//ToDo: on outcomes messaging return only the affected lines not the entire JSON.stringify(updates)
+  //ToDo: on outcomes messaging return only the affected lines not the entire JSON.stringify(updates)
 
   //Transform: JSONMap
 
@@ -4870,7 +4869,7 @@ function transforms (updates: object[], config: CustomerConfig) {
         
         
       for (const update of updates)
-      {                                                   
+      {
         Object.entries(config.transforms.methods.daydate).forEach(([key, val]) => {
           //Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{} '.
           //No index signature with a parameter of type 'string' was found on type '{}'.ts(7053)
@@ -4942,7 +4941,7 @@ function transforms (updates: object[], config: CustomerConfig) {
 
           toISO1806 = updateObj[val] as string
 
-          if (typeof toISO1806 !== "undefined" && toISO1806 !== "undefined" &&  toISO1806 !== null && toISO1806.length > 0)
+          if (typeof toISO1806 !== "undefined" && toISO1806 !== "undefined" && toISO1806 !== null && toISO1806.length > 0)
           {
             const dt = new Date(toISO1806)
             const isoString: string = dt.toISOString()
@@ -5081,7 +5080,7 @@ function transforms (updates: object[], config: CustomerConfig) {
 
           strToNumber = updateObj[val] as string
 
-          if (typeof strToNumber !== "undefined" && strToNumber !== "undefined" &&  strToNumber !== null && strToNumber.length > 0)
+          if (typeof strToNumber !== "undefined" && strToNumber !== "undefined" && strToNumber !== null && strToNumber.length > 0)
           {
             const n = Number(strToNumber)
             if (String(n) === 'NaN')
@@ -5096,7 +5095,7 @@ function transforms (updates: object[], config: CustomerConfig) {
           }
           else
           {
-          //  //S3DB_Logging("error", "933", `Error - Transform - String To Number transform for ${key}: ${val} returns empty value.`)
+            //  //S3DB_Logging("error", "933", `Error - Transform - String To Number transform for ${key}: ${val} returns empty value.`)
             const num = {[key]: null}
             Object.assign(update, num)
           }
@@ -5131,13 +5130,15 @@ function transforms (updates: object[], config: CustomerConfig) {
   //Now create Reference Fields, data that is used in Connect to augment Updates/Mutations 
 
   //Transform: ContactId
-  //
-  if (typeof config.transforms.contactid !== undefined &&
-    config.transforms.contactid.length > 3) 
+  //    
+
+  try
   {
-    let s: string = ""
-    try
+    if (typeof config.transforms.contactid !== undefined &&
+      config.transforms.contactid.length > 3) 
     {
+      let s: string = ""
+
       const t: typeof updates = []
 
       if (config.transforms.contactid.startsWith('$')) s = 'jsonpath'
@@ -5193,144 +5194,148 @@ function transforms (updates: object[], config: CustomerConfig) {
 
       S3DB_Logging("info", "950", `Transforms (ContactId) applied: \n${JSON.stringify(updates)}`)
 
-
-    } catch (e)
-    {
-      debugger //catch
-
-      S3DB_Logging("exception", "934", `Exception - Applying ContactId Transform \n${e}`)
     }
-  }
-
- /*
- //ContactKey should not need to be manipulated - Use as Template for Processing  
- else if (typeof config.transforms.contactkey !== undefined &&
-    config.transforms.contactkey.length > 3)
+  } catch (e)
   {
-    //Transform: ContactKey
+    debugger //catch
 
-    let s: string = ""
-    try
-    {
-
-      const t: typeof updates = []
-
-      if (typeof config.transforms.contactkey !== undefined &&
-        config.transforms.contactkey.length > 3) 
-      {
-        if (config.transforms.contactkey.startsWith('$')) s = 'jsonpath'
-        else if (config.transforms.contactkey.startsWith('@')) s = 'csvcolumn'
-        else if (s === "" && config.transforms.contactkey.length > 3) s = 'static'
-        else S3DB_Logging("error", "999", `Error - Transform - ContactKey invalid configuration.`)
-
-        //Process All Updates for this Transform
-        for (const update of updates)
-        {
-          Object.assign(update, {"contactKey": ""})
-
-          switch (s)
-          {
-            case 'static': {
-              if (config.transforms.contactkey === '....') Object.assign(update, {"contactKey": ""})
-              else Object.assign(update, {"contactKey": config.transforms.contactkey})
-              break
-            }
-            case 'jsonpath': {
-              let j = applyJSONMap(update, {contactKey: config.transforms.contactkey})
-              if (typeof j === "undefined" || j === "") j = "Not Found"
-              Object.assign(update, {"contactKey": j})
-              //Object.assign(u, {"contactKey": applyJSONMap(update, {contactkey: config.transforms.contactkey})})
-              break
-            }
-            case 'csvcolumn':
-              {
-
-                //strip preceding '@.'
-                let csvmapvalue = config.transforms.contactkey.substring(2, config.transforms.contactkey.length)
-                let colRef = csvmapvalue as keyof typeof update
-
-                let v = update[colRef] as string
-                if (typeof v === "undefined" || v === "") v = "Not Found"
-                Object.assign(update, {"contactKey": v})
-                break
-              }
-          }
-
-          t.push(update)
-        }
-      }
-      //All Updates now transformed from ContactKey transform
-      if (t.length === updates.length)
-      {
-        updates = t
-      } else
-      {
-        S3DB_Logging("error", "933", `Error - Transform - Applying ContactKey Transform returns fewer records (${t.length}) than initial set ${updates.length}`)
-        throw new Error(
-          `Error - Transform - Applying ContactKey Transform returns fewer records (${t.length}) than initial set ${updates.length}`
-        )
-      }
-
-          S3DB_Logging("info", "951", `Transforms (ContactKey) applied: \n${JSON.stringify(updates)}`)
-
-
-    } catch (e)
-    {
-      debugger //catch
-
-      S3DB_Logging("exception", "934", `Exception - Applying ContactKey Transform \n${e}`)
-    }
+    S3DB_Logging("exception", "934", `Exception - Applying ContactId Transform \n${e}`)
   }
-  */
+
+
+  /*
+  //ContactKey should not need to be manipulated - Use as Template for Processing  
+  else if (typeof config.transforms.contactkey !== undefined &&
+     config.transforms.contactkey.length > 3)
+   {
+     //Transform: ContactKey
+ 
+     let s: string = ""
+     try
+     {
+ 
+       const t: typeof updates = []
+ 
+       if (typeof config.transforms.contactkey !== undefined &&
+         config.transforms.contactkey.length > 3) 
+       {
+         if (config.transforms.contactkey.startsWith('$')) s = 'jsonpath'
+         else if (config.transforms.contactkey.startsWith('@')) s = 'csvcolumn'
+         else if (s === "" && config.transforms.contactkey.length > 3) s = 'static'
+         else S3DB_Logging("error", "999", `Error - Transform - ContactKey invalid configuration.`)
+ 
+         //Process All Updates for this Transform
+         for (const update of updates)
+         {
+           Object.assign(update, {"contactKey": ""})
+ 
+           switch (s)
+           {
+             case 'static': {
+               if (config.transforms.contactkey === '....') Object.assign(update, {"contactKey": ""})
+               else Object.assign(update, {"contactKey": config.transforms.contactkey})
+               break
+             }
+             case 'jsonpath': {
+               let j = applyJSONMap(update, {contactKey: config.transforms.contactkey})
+               if (typeof j === "undefined" || j === "") j = "Not Found"
+               Object.assign(update, {"contactKey": j})
+               //Object.assign(u, {"contactKey": applyJSONMap(update, {contactkey: config.transforms.contactkey})})
+               break
+             }
+             case 'csvcolumn':
+               {
+ 
+                 //strip preceding '@.'
+                 let csvmapvalue = config.transforms.contactkey.substring(2, config.transforms.contactkey.length)
+                 let colRef = csvmapvalue as keyof typeof update
+ 
+                 let v = update[colRef] as string
+                 if (typeof v === "undefined" || v === "") v = "Not Found"
+                 Object.assign(update, {"contactKey": v})
+                 break
+               }
+           }
+ 
+           t.push(update)
+         }
+       }
+       //All Updates now transformed from ContactKey transform
+       if (t.length === updates.length)
+       {
+         updates = t
+       } else
+       {
+         S3DB_Logging("error", "933", `Error - Transform - Applying ContactKey Transform returns fewer records (${t.length}) than initial set ${updates.length}`)
+         throw new Error(
+           `Error - Transform - Applying ContactKey Transform returns fewer records (${t.length}) than initial set ${updates.length}`
+         )
+       }
+ 
+           S3DB_Logging("info", "951", `Transforms (ContactKey) applied: \n${JSON.stringify(updates)}`)
+ 
+ 
+     } catch (e)
+     {
+       debugger //catch
+ 
+       S3DB_Logging("exception", "934", `Exception - Applying ContactKey Transform \n${e}`)
+     }
+   }
+   */
   
-  else if (typeof config.transforms.addressablefields !== undefined &&
-    Object.entries(config.transforms.addressablefields).length > 0)
+  try
   {
-
-    //Customer Config: 
-    //Transform: Addressable Fields
-    //"addressablefields": {  // Only 3 allowed. 
-    //  // Can use either mapping or a "statement" definition, if defined, a 'statement' definition overrides any other config. 
-    //  //"Email": "$.email",
-    //  //"Mobile Number": "$['Mobile Number']",
-    //  //"Example3": "999445599",
-    //  //"Example4": "$.jsonfileValue", //example
-    //  //"Example5": "@.csvfileColumn" //example
-    //  "statement": {
-    //    "addressable": [
-    //      {"field": "Email", "eq": "$.email"} //, 
-    //      //{ "field": "SMS", "eq": "$['Mobile Number']" }     
-    //    ]
-    //  }
-    //},
-
-
-    //S3DB_Logging("debug", "999", `Debug - Addressable Fields Transform Entered - ${config.targetupdate}`)
-
-    //if (typeof config.transforms.addressablefields !== "undefined" &&
-    //  Object.keys(config.transforms.addressablefields).length > 0)
-    //{
-
-    interface AddressableItem {
-      field: string
-      eq: string
-    }
-    interface AddressableStatement {
-      addressable: AddressableItem[]
-    }
-    interface AddressableFields {
-      [key: string]: string | AddressableStatement
-      statement: AddressableStatement
-    }
-
-    const addressableFields = config.transforms.addressablefields as AddressableFields
-    
-    const addressableStatement = addressableFields.statement as AddressableStatement
-    
-    const fieldsArray = addressableStatement.addressable
-
-    try
+  
+    //else if
+  
+    if (typeof config.transforms.addressablefields !== undefined &&
+      Object.entries(config.transforms.addressablefields).length > 0)
     {
+
+      //Customer Config: 
+      //Transform: Addressable Fields
+      //"addressablefields": {  // Only 3 allowed. 
+      //  // Can use either mapping or a "statement" definition, if defined, a 'statement' definition overrides any other config. 
+      //  //"Email": "$.email",
+      //  //"Mobile Number": "$['Mobile Number']",
+      //  //"Example3": "999445599",
+      //  //"Example4": "$.jsonfileValue", //example
+      //  //"Example5": "@.csvfileColumn" //example
+      //  "statement": {
+      //    "addressable": [
+      //      {"field": "Email", "eq": "$.email"} //, 
+      //      //{ "field": "SMS", "eq": "$['Mobile Number']" }     
+      //    ]
+      //  }
+      //},
+
+
+      //S3DB_Logging("debug", "999", `Debug - Addressable Fields Transform Entered - ${config.targetupdate}`)
+
+      //if (typeof config.transforms.addressablefields !== "undefined" &&
+      //  Object.keys(config.transforms.addressablefields).length > 0)
+      //{
+
+      interface AddressableItem {
+        field: string
+        eq: string
+      }
+      interface AddressableStatement {
+        addressable: AddressableItem[]
+      }
+      interface AddressableFields {
+        [key: string]: string | AddressableStatement
+        statement: AddressableStatement
+      }
+
+      const addressableFields = config.transforms.addressablefields as AddressableFields
+    
+      const addressableStatement = addressableFields.statement as AddressableStatement
+    
+      const fieldsArray = addressableStatement.addressable
+
+ 
       const t: typeof updates = []
 
       //Process All Updates for this Transform
@@ -5490,105 +5495,154 @@ function transforms (updates: object[], config: CustomerConfig) {
 
       S3DB_Logging("info", "952", `Transforms (Addressable Fields) applied: \n${JSON.stringify(updates)}`)
 
-
-    } catch (e)
-    {
-      debugger //catch
-
-      S3DB_Logging("exception", "934", `Exception - Applying AddressableFields Transform \n${e}`)
     }
-
-  }
-  else
+  } catch (e)
   {
-    if (config.targetupdate.toLowerCase() === "connect")
-    {
-      S3DB_Logging("warn", "933", `Warning - No ContactKey or Addressable Field provided for a Connect Create or Update ${config.targetupdate} Contact.`)
-    //ToDo: Possible throw exception here for missing addressable, contactID or Addressable Field 
+    debugger //catch
 
-    }
+    S3DB_Logging("exception", "934", `Exception - Applying AddressableFields Transform \n${e}`)
   }
+  
+  
+//  //else
+//  //{
+//  if (config.targetupdate.toLowerCase() === "connect")
+//  {
+//    S3DB_Logging("warn", "933", `Warning - No ContactKey or Addressable Field provided for a Connect Create or Update ${config.targetupdate} Contact.`)
+//    //ToDo: Possible throw exception here for missing addressable, contactID or Addressable Field 
+
+//  }
+////}
 
 
   //Transform: Channel Consent
 
   //need loop through Config consent and build consent object.
 
-  //"consent": { //Can use either mapping or a "statement" definition, if defined, a 'statement' definition overrides any other Consent config. 
+  //"consent": { //Can use either mapping or a "statement" definition, if defined, a 'statement' definition overrides any other Consent config.
   //  "Email": "OPT_IN_UNVERIFIED", //Static Values: Use When Consent status is not in the Data
   //  "SMS": "OPT_OUT", //Static Values: Use When Consent status is not in the Data
   //  "WhatsApp": "$.whatsappconsent", //Dynamic Values: Use when consent data can be mapped from the data (JSONPath in this case) .
   //  "Email2": "@.csvfileColumn", //Dynamic Values: Use when consent data can be mapped from the data (CSV Column reference in this case).
-  //  "statement": { //Mutually Exclusive: Use to define a Consent update to be used with this dataflow, useful to define a compound Group Consent statement as in the example in the description. 
+  //  "statement": { //Mutually Exclusive: Use to define a Consent update to be used with this dataflow, useful to define a compound Group Consent statement as in the example in the description.
   //    "channels": [
   //      {"channel": "EMAIL", "status": "OPT_IN"},
   //      {"channel": "SMS", "status": "OPT_IN"}
   //    ]
 
-  // Mutation: 
+  // Mutation:
   // consent: {
   //  channels: [
   //    { channel: EMAIL, status: OPT_IN_UNVERIFIED },
   //    { channel: SMS, status: OPT_IN }
   //    ]
   //  }
+  
 
-  if (typeof config.transforms.consent !== undefined &&
-    Object.keys(config.transforms.consent).length > 0)
-  {
+
     try
     {
 
-      let s: string = ""
-
-      const t: typeof updates = []
-      const channelconsents: typeof config.transforms.consent = config.transforms.consent
-
-      //Process All Updates for this Transform
-      for (const update of updates)
+      if (typeof config.transforms.consent !== undefined &&
+        Object.keys(config.transforms.consent).length > 0)
       {
 
-        const channelConsentsArray = [] as object[]
+        let s: string = ""
 
-        //Consent: Either Channels or consentGroups
-        //"consent": {   
-        //  "channels": [
-        //     { "channel": "EMAIL", "status": "OPT_IN" }
-        //     ]
+        const t: typeof updates = []
+        const channelconsents: typeof config.transforms.consent = config.transforms.consent
 
-        //"consentGroups": [
-        //  {
-        //  "consentGroupId": "3a7134b8-dcb5-509a-b7ff-946b48333cc9",
-        //  "status": "OPT_IN"
-        //  }
-        //] 
-
-
-        //If 'Statement' configured, takes precedence over all others
-        if (typeof config.transforms.consent["statement"] !== undefined &&
-          config.transforms.consent["statement"] !== "")
+        //Process All Updates for this Transform
+        for (const update of updates)
         {
-          //Consent Statement is not the same as AddressableFields, for Consent 'Statement" simply copy 
-          // what was provided in the Customer Config as the Consent Statement to provide for the operation. 
-          Object.assign(update, {consent: config.transforms.consent["statement"]})
 
-        }
-        else    //No 'Statement', so process individual Field definition(s)
-        {
-          //for (const [key, consentChannel] of Object.entries(consentChannel))
-          //{
-          Object.keys(channelconsents).forEach((consentChannel) => {
+          const channelConsentsArray = [] as object[]
 
-            //"Email": "OPT_IN_UNVERIFIED",
-            //"SMS": "OPT_OUT",
-            //"WhatsApp": "$.jsonfileValue",
-            //"Email2": "@.csvfileColumn"
-            //"statement": {}
+          //Consent: Either Channels or consentGroups
+          //"consent": {   
+          //  "channels": [
+          //     { "channel": "EMAIL", "status": "OPT_IN" }
+          //     ]
 
-            //forUpdateOnly????
-            //consent: {channels: {channel: EMAIL, status: OPT_IN} } 
+          //"consentGroups": [
+          //  {
+          //  "consentGroupId": "3a7134b8-dcb5-509a-b7ff-946b48333cc9",
+          //  "status": "OPT_IN"
+          //  }
+          //] 
 
-            //From Create mutation doc.  
+
+          //If 'Statement' configured, takes precedence over all others
+          if (typeof config.transforms.consent["statement"] !== undefined &&
+            config.transforms.consent["statement"] !== "")
+          {
+            //Consent Statement is not the same as AddressableFields, for Consent 'Statement" simply copy 
+            // what was provided in the Customer Config as the Consent Statement to provide for the operation. 
+            Object.assign(update, {consent: config.transforms.consent["statement"]})
+
+          }
+          else    //No 'Statement', so process individual Field definition(s)
+          {
+            //for (const [key, consentChannel] of Object.entries(consentChannel))
+            //{
+            Object.keys(channelconsents).forEach((consentChannel) => {
+
+              //"Email": "OPT_IN_UNVERIFIED",
+              //"SMS": "OPT_OUT",
+              //"WhatsApp": "$.jsonfileValue",
+              //"Email2": "@.csvfileColumn"
+              //"statement": {}
+
+              //forUpdateOnly????
+              //consent: {channels: {channel: EMAIL, status: OPT_IN} } 
+
+              //From Create mutation doc.  
+              //consent: {
+              //  channels: [
+              //    {channel: EMAIL, status: OPT_IN_UNVERIFIED}
+              //    {channel: SMS, status: OPT_IN}
+              //  ]
+              //}
+
+              let s: string = ""
+              const consentValue = channelconsents[consentChannel]
+
+              if (consentValue.startsWith('$')) s = 'jsonpath'
+              else if (consentValue.startsWith('@')) s = 'csvcolumn'
+              else if (s === "" && consentValue.length > 3) s = 'static'
+              else S3DB_Logging("error", "933", `Error - Transform - Consent transform has an invalid configuration.`)
+
+              switch (s)
+              {
+                case 'static': {
+                  channelConsentsArray.push({channel: consentChannel, status: consentValue})
+                  break
+                }
+                case 'jsonpath': {
+                  let j = applyJSONMap(update, {consentChannel: consentValue})
+                  if (typeof j === "undefined" || j === "") j = "Not Found"
+
+
+                  channelConsentsArray.push({channel: consentChannel, status: j})
+                  //Object.assign(u, {"consent": consentfromJPath})
+                  break
+                }
+                case 'csvcolumn':
+                  {
+                    //strip preceding '@.'
+                    let csvmapvalue = consentValue.substring(2, consentValue.length)
+                    let colRef = csvmapvalue as keyof typeof update
+
+                    let v = update[colRef] as string
+                    if (typeof v === "undefined" || v === "") v = "Not Found"
+
+                    channelConsentsArray.push({channel: consentChannel, status: v})
+                    break
+                  }
+              }
+
+            })
+
             //consent: {
             //  channels: [
             //    {channel: EMAIL, status: OPT_IN_UNVERIFIED}
@@ -5596,75 +5650,29 @@ function transforms (updates: object[], config: CustomerConfig) {
             //  ]
             //}
 
-            let s: string = ""
-            const consentValue = channelconsents[consentChannel]
+            Object.assign(update, {consent: {channels: channelConsentsArray}})
 
-            if (consentValue.startsWith('$')) s = 'jsonpath'
-            else if (consentValue.startsWith('@')) s = 'csvcolumn'
-            else if (s === "" && consentValue.length > 3) s = 'static'
-            else S3DB_Logging("error", "933", `Error - Transform - Consent transform has an invalid configuration.`)
+          }
 
-            switch (s)
-            {
-              case 'static': {
-                channelConsentsArray.push({channel: consentChannel, status: consentValue})
-                break
-              }
-              case 'jsonpath': {
-                let j = applyJSONMap(update, {consentChannel: consentValue})
-                if (typeof j === "undefined" || j === "") j = "Not Found"
-
-
-                channelConsentsArray.push({channel: consentChannel, status: j})
-                //Object.assign(u, {"consent": consentfromJPath})
-                break
-              }
-              case 'csvcolumn':
-                {
-                  //strip preceding '@.'
-                  let csvmapvalue = consentValue.substring(2, consentValue.length)
-                  let colRef = csvmapvalue as keyof typeof update
-
-                  let v = update[colRef] as string
-                  if (typeof v === "undefined" || v === "") v = "Not Found"
-
-                  channelConsentsArray.push({channel: consentChannel, status: v})
-                  break
-                }
-            }
-
-          })
-
-          //consent: {
-          //  channels: [
-          //    {channel: EMAIL, status: OPT_IN_UNVERIFIED}
-          //    {channel: SMS, status: OPT_IN}
-          //  ]
-          //}
-
-          Object.assign(update, {consent: {channels: channelConsentsArray}})
+          t.push(update)
 
         }
 
-        t.push(update)
+        //All Updates now transformed from consent transform
+        if (t.length === updates.length)
+        {
+          updates = t
+        } else
+        {
+          S3DB_Logging("error", "933", `Error - Transform - Applying Consent Transform returns fewer records (${t.length}) than initial set ${updates.length}`)
 
+          throw new Error(
+            `Error - Transform - Applying Consent Transform returns fewer records (${t.length}) than initial set ${updates.length}`
+          )
+        }
+
+        S3DB_Logging("info", "953", `Transforms (Channel Consent) applied: \n${JSON.stringify(updates)}`)
       }
-
-      //All Updates now transformed from consent transform
-      if (t.length === updates.length)
-      {
-        updates = t
-      } else
-      {
-        S3DB_Logging("error", "933", `Error - Transform - Applying Consent Transform returns fewer records (${t.length}) than initial set ${updates.length}`)
-
-        throw new Error(
-          `Error - Transform - Applying Consent Transform returns fewer records (${t.length}) than initial set ${updates.length}`
-        )
-      }
-
-      S3DB_Logging("info", "953", `Transforms (Channel Consent) applied: \n${JSON.stringify(updates)}`)
-
     } catch (e)
     {
       debugger //catch
@@ -5672,7 +5680,6 @@ function transforms (updates: object[], config: CustomerConfig) {
       S3DB_Logging("exception", "934", `Exception - Applying Consent Transform \n${e}`)
     }
 
-  }
 
   //Transform: Audience Update
   //need loop through Config audienceupdate and build audience object.
@@ -5827,9 +5834,6 @@ try {
 }    
 
   
-
-
-
   //Transform: Ignore
   // Ignore must be last to take advantage of cleaning up any extraneous columns after previous transforms
 
