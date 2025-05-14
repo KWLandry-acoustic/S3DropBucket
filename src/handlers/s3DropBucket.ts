@@ -3185,20 +3185,20 @@ async function validateCustomerConfig (config: CustomerConfig) {
       Object.assign(config.transforms, {consent: {}})
     }
 
-    if (!config.transforms.audienceupdate)
-    {
-      Object.assign(config.transforms, {audienceupdate: {}})
-    }
+    //if (!config.transforms.audienceupdate)
+    //{
+    //  Object.assign(config.transforms, {audienceupdate: {}})
+    //}
 
     if (!config.transforms)
     {
       Object.assign(config, {transforms: {}})
     }
 
-    if (!config.transforms.contactid)  //should never use this config, here for future reference 
-    {
-      Object.assign(config.transforms, {contactid: {}})
-    }
+    //if (!config.transforms.contactid)  //should never use this config, here for future reference 
+    //{
+    //  Object.assign(config.transforms, {contactid: {}})
+    //}
 
     if (!config.transforms.contactkey)
     {
@@ -3209,11 +3209,6 @@ async function validateCustomerConfig (config: CustomerConfig) {
     {
       Object.assign(config.transforms, {addressablefields: {}})
     }
-
-
-
-
-
 
     if (!config.transforms.methods)
     {
@@ -3240,7 +3235,6 @@ async function validateCustomerConfig (config: CustomerConfig) {
       Object.assign(config.transforms.methods, {string_to_number_type: {}})
     }
 
-
     if (!config.transforms.jsonmap)
     {
       Object.assign(config.transforms, {jsonmap: {}})
@@ -3258,7 +3252,9 @@ async function validateCustomerConfig (config: CustomerConfig) {
 
     S3DB_Logging("info", "930", `Transforms configured in Customer Config: \n${JSON.stringify(config.transforms)}`)
 
-    if (config.transforms.jsonmap)
+    if (typeof config.transforms.jsonmap !== "undefined" &&
+      config.transforms.jsonmap !== null &&
+      Object.entries(config.transforms.jsonmap).length > 0)
     {
       const tmpMap: {[key: string]: string} = {}
       const jm = config.transforms.jsonmap as {[key: string]: string}
