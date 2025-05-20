@@ -590,7 +590,9 @@ const testdata = ""
 //testS3Key = "TestData/KingsfordWeather_S3DropBucket_Aggregator-10-2025-03-26-09-10-22-dab1ccdf-adbc-339d-8993-b41d27696a3d.json"
 //testS3Key = "TestData/MasterCustomer_Sample-mar232025-json-update-10-25-000d4919-2865-49fa-a5ac-32999a583f0a.json"
 //testS3Key = "TestData/MasterCustomer_Sample-Queued-json-update-10-25-000d4919-2865-49fa-a5ac-32999a583f0a.json"
-testS3Key = "TestData/SugarCRM_Leads_Leads.data.json.1746103736.13047"
+//testS3Key = "TestData/SugarCRM_Leads_Leads.data.json.1746103736.13047"
+testS3Key = "TestData/Clorox_UpdateMaster_SUR-WEB-CLX-FTR1.csv"
+
 
 
 
@@ -1089,7 +1091,6 @@ export async function S3DB_Logging (level: string, index: string, msg: string) {
   /*
   if (S3DBConfig.S3DropBucketLog) {
      const logMsg: object[] = [{osr}]      //need to check this one, 
-     debugger ///
      const logKey = `S3DropBucket_Log_${new Date()
        .toISOString()
        .replace(/:/g, "_")}`
@@ -2939,11 +2940,14 @@ async function validateCustomerConfig (config: CustomerConfig) {
       throw new Error("Invalid  CustomerConfig - empty or null config")
     }
 
+    const cust = config.customer
+
+
     if (!config.targetupdate)
     {
       {
         throw new Error(
-          "Invalid Customer Config - TargetUpdate is required and must be either 'Connect' or 'Campaign'  "
+          `Invalid Customer Config (${cust}) - TargetUpdate is required and must be either 'Connect' or 'Campaign'  `
         )
       }
     }
@@ -2951,14 +2955,14 @@ async function validateCustomerConfig (config: CustomerConfig) {
     if (!config.targetupdate.toLowerCase().match(/^(?:connect|campaign)$/gim))
     {
       throw new Error(
-        "Invalid Customer Config - TargetUpdate is required and must be either 'Connect' or 'Campaign'  "
+        `Invalid Customer Config (${cust})  - TargetUpdate is required and must be either 'Connect' or 'Campaign'  `
       )
     }
 
 
     if (!config.updatetype)
     {
-      throw new Error("Invalid Customer Config - updatetype is not defined")
+      throw new Error(`Invalid Customer Config (${cust}) - updatetype is not defined`)
     }
 
 
@@ -2979,21 +2983,23 @@ async function validateCustomerConfig (config: CustomerConfig) {
       //DBKeyed, DBNonKeyed, Relational
       {
         throw new Error(
-          "Invalid Customer Config - Update set to be Campaign, however updatetype is not Relational, DBKeyed, or DBNonKeyed. "
+          `Invalid Customer Config (${cust}) - Update set to be Campaign, however updatetype is not Relational, DBKeyed, or DBNonKeyed. `
         )
       }
 
       if (config.updatetype.toLowerCase() == "dbkeyed" && !config.dbkey)
       {
         throw new Error(
-          "Invalid Customer Config - Update set as Database Keyed but DBKey is not defined. "
+          `Invalid Customer Config (${cust}) - Update set as Database Keyed but DBKey is not defined. `
         )
       }
-
-      if (config.updatetype.toLowerCase() == "dbnonkeyed" && config.lookupkeys.length <= 0)
+      
+      if (            //typeof config.updatetype !== "undefined" &&
+        config.updatetype.toLowerCase() == "dbnonkeyed" &&
+        (typeof config.lookupkeys === "undefined" || config.lookupkeys.length <= 0) )
       {
         throw new Error(
-          "Invalid Customer Config - Update set as Database NonKeyed but LookupKeys is not defined. "
+          `Invalid Customer Config (${cust}) - Update set as Database NonKeyed but LookupKeys is not defined. `
         )
       }
 
@@ -3003,36 +3009,36 @@ async function validateCustomerConfig (config: CustomerConfig) {
       }
       if (!config.clientsecret)
       {
-        throw new Error("Invalid Customer Config - Target Update is Campaign but ClientSecret is not defined")
+        throw new Error(`Invalid Customer Config (${cust}) - Target Update is Campaign but ClientSecret is not defined`)
       }
       if (!config.refreshtoken)
       {
-        throw new Error("Invalid Customer Config - Target Update is Campaign but RefreshToken is not defined")
+        throw new Error(`Invalid Customer Config  (${cust}) - Target Update is Campaign but RefreshToken is not defined`)
       }
 
 
       if (!config.listid)
       {
-        throw new Error("Invalid Customer Config - ListId is not defined")
+        throw new Error(`Invalid Customer Config (${cust}) - ListId is not defined`)
       }
       if (!config.listname)
       {
-        throw new Error("Invalid Customer Config - Target Update is Campaign but ListName is not defined")
+        throw new Error(`Invalid Customer Config (${cust}) - Target Update is Campaign but ListName is not defined`)
       }
       if (!config.pod)
       {
-        throw new Error("Invalid Customer Config - Target Update is Campaign but Pod is not defined")
+        throw new Error(`Invalid Customer Config (${cust}) - Target Update is Campaign but Pod is not defined`)
       }
       if (!config.region)
       {
         //Campaign POD Region
-        throw new Error("Invalid Customer Config - Target Update is Campaign but Region is not defined")
+        throw new Error(`Invalid Customer Config (${cust}) - Target Update is Campaign but Region is not defined`)
       }
 
       if (!config.region.toLowerCase().match(/^(?:us|eu|ap|ca)$/gim))
       {
         throw new Error(
-          "Invalid Customer Config - Region is not 'US', 'EU', CA' or 'AP'. "
+          `Invalid Customer Config (${cust}) - Region is not 'US', 'EU', CA' or 'AP'. `
         )
       }
 
@@ -3050,20 +3056,20 @@ async function validateCustomerConfig (config: CustomerConfig) {
         
         if (!config.subscriptionid)
         {
-          throw new Error("Invalid Customer Config - Target Update is Connect but SubscriptionId is not defined")
+          throw new Error(`Invalid Customer Config (${cust}) - Target Update is Connect but SubscriptionId is not defined`)
         }
         if (!config.x_api_key)
         {
-          throw new Error("Invalid Customer Config - Target Update is Connect but X-Api-Key is not defined")
+          throw new Error(`Invalid Customer Config (${cust}) - Target Update is Connect but X-Api-Key is not defined`)
         }
         if (!config.x_acoustic_region)
         {
-          throw new Error("Invalid Customer Config - Target Update is Connect but X-Acoustic-Region is not defined")
+          throw new Error(`Invalid Customer Config (${cust}) - Target Update is Connect but X-Acoustic-Region is not defined`)
         }
 
         if (config.x_acoustic_region.toLowerCase().match(/^(?:"us-east-1"| "us-east-2"| "us-west-1"| "us-west-2"| "af-south-1"| "ap-east-1"| "ap-south-1"| "ap-south-2"| "ap-southeast-1"| "ap-southeast-2"| "ap-southeast-3"| "ap-southeast-4"| "ap-northeast-1"| "ap-northeast-2"| "ap-northeast-3"| "ca-central-1"| "eu-central-1"| "eu-central-2"| "eu-north-1"| "eu-south-1"| "eu-south-2"| "eu-west-1"| "eu-west-2"| "eu-west-3"| "il-central-1"| "me-central-1"| "me-south-1"| "sa-east-1" )$/gim))
         {
-          throw new Error("Invalid Customer Config - Target Update is Connect but Region is incorrect or undefined")
+          throw new Error(`Invalid Customer Config (${cust}) - Target Update is Connect but Region is incorrect or undefined`)
         }
 
       }
@@ -3078,7 +3084,7 @@ async function validateCustomerConfig (config: CustomerConfig) {
     if (!config.updates.toLowerCase().match(/^(?:singular|multiple|bulk)$/gim))
     {
       throw new Error(
-        "Invalid Customer Config - Updates is not 'Singular' or 'Multiple' "
+        `Invalid Customer Config (${cust}) - Updates is not 'Singular' or 'Multiple' `
       )
     }
 
@@ -3088,11 +3094,11 @@ async function validateCustomerConfig (config: CustomerConfig) {
 
     if (!config.format)
     {
-      throw new Error("Invalid Customer Config - Format is not defined")
+      throw new Error(`Invalid Customer Config (${cust}) - Format is not defined`)
     }
     if (!config.format.toLowerCase().match(/^(?:csv|json)$/gim))
     {
-      throw new Error("Invalid Customer Config - Format is not 'CSV' or 'JSON' ")
+      throw new Error(`Invalid Customer Config (${cust}) - Format is not 'CSV' or 'JSON' `)
     }
 
     if (!config.separator)
@@ -3111,7 +3117,7 @@ async function validateCustomerConfig (config: CustomerConfig) {
     if (!config.pod.match(/^(?:0|1|2|3|4|5|6|7|8|9|a|b)$/gim))
     {
       throw new Error(
-        "Invalid Customer Config - Pod is not 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, A, or B. "
+        `Invalid Customer Config (${cust}) - Pod is not 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, A, or B. `
       )
     }
 
@@ -3260,6 +3266,7 @@ async function validateCustomerConfig (config: CustomerConfig) {
       const jm = config.transforms.jsonmap as {[key: string]: string}
       for (const m in jm)
       {
+
         const p = jm[m]
         const p2 = p.substring(2, p.length)
 
@@ -3269,7 +3276,7 @@ async function validateCustomerConfig (config: CustomerConfig) {
         {
           S3DB_Logging("error", "", `JSONMap config: The JSONMap statement, either the Column to create or the JSONPath statement reference, cannot use a reserved word ("contactid", "contactkey", "addressablefields", "consent", or "audience") ${m}: ${p}`)
 
-          throw new Error(`JSONMap config: The JSONMap statement, either the Column to create or the JSONPath statement reference, cannot use a reserved word ("contactid", "contactkey", "addressablefields", "consent", or "audience") ${m}: ${p}`)
+          throw new Error(`JSONMap config (${cust}): The JSONMap statement, either the Column to create or the JSONPath statement reference, cannot use a reserved word ("contactid", "contactkey", "addressablefields", "consent", or "audience") ${m}: ${p}`)
         }
         else
         {
@@ -3281,7 +3288,7 @@ async function validateCustomerConfig (config: CustomerConfig) {
           {
             debugger //catch
 
-            S3DB_Logging("exception", "", `Invalid JSONPath defined in Customer config: ${m}: "${m}", \nInvalid JSONPath - ${e} `)
+            S3DB_Logging("exception", "", `Invalid JSONPath defined in Customer config (${cust}): ${m}: "${m}", \nInvalid JSONPath - ${e} `)
           }
         }
       }
@@ -3292,7 +3299,7 @@ async function validateCustomerConfig (config: CustomerConfig) {
   {
     debugger //catch
 
-    S3DB_Logging("error", "", `Exception - Validate Customer Config: \n${e}`)
+    S3DB_Logging("error", "", `Exception - Validate Customer Config exception: \n${e}`)
   }
 
 
@@ -4760,6 +4767,8 @@ function transforms (updates: object[], config: CustomerConfig) {
   //       "Col_DF": 3
   // },
 
+  debugger ///
+  
   try
   {
     if (typeof config.transforms.csvmap !== undefined &&
@@ -4915,8 +4924,13 @@ function transforms (updates: object[], config: CustomerConfig) {
 
   //Transform - Date-to-ISO-8601
   //
-
-  debugger ///
+  //Ensure only the following date formats, including separators, are used in the uploaded file to prevent potential errors:
+  //YYYY - MM - DD
+  //YYYY - MM - DDThh: mm: ssTZD
+  //YYYY / MM / DD
+  //MM / DD / YYYY
+  //DD / MM / YYYY
+  //DD.MM.YYYY
 
   try
   {
@@ -4980,8 +4994,6 @@ function transforms (updates: object[], config: CustomerConfig) {
 
   //Transform - Phone Number 
   //
-
-  debugger ///
 
   try
   {
@@ -6226,8 +6238,6 @@ async function postToConnect (mutations: string, custconfig: CustomerConfig, cou
 
 
         //POST Result: {"message": "Endpoint request timed out"}
-
-        debugger ///
 
         if (JSON.stringify(result).indexOf("Endpoint request timed out") > 0)
         {
