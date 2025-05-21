@@ -4972,7 +4972,7 @@ function transforms (updates: object[], config: CustomerConfig) {
           else
           {
             //S3DB_Logging("error", "933", `Error - Transform - date_iso1806 Transform failed for ${val} as the string value '${toISO1806}' returns invalid date value`)
-            const tDate = {[key]: 'na'}
+            const tDate = {[key]: null}
             Object.assign(update, tDate)
           }
 
@@ -5046,7 +5046,7 @@ function transforms (updates: object[], config: CustomerConfig) {
           else
           {
             //S3DB_Logging("error", "933", `Error - Transform - Phone_Number transform for ${key}: ${val} returns empty value.`)
-            const pnu = {[key]: 'na'}
+            const pnu = {[key]: null}
             Object.assign(update, pnu)
           }
         })
