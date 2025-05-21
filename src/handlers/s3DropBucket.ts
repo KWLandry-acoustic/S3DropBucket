@@ -3277,7 +3277,6 @@ async function validateCustomerConfig (config: CustomerConfig) {
         {
           p2 = p.substring(2, p.length)
         }
-
           
         if (["contactid", "contactkey", "addressablefields", "consent", "audience"].includes(m.toLowerCase()) ||
           ["contactid", "contactkey", "addressablefields", "consent", "audience"].includes(p2.toLowerCase())
@@ -3289,15 +3288,18 @@ async function validateCustomerConfig (config: CustomerConfig) {
         }
         else
         {
-          try
+          if (p.startsWith("$"))
           {
-            const v = jsonpath.parse(p)  //checking for parse exception highlighting invalid jsonpath
-            tmpMap[m] = jm[m]
-          } catch (e)
-          {
-            debugger //catch
+            try
+            {
+              const v = jsonpath.parse(p)  //checking for parse exception highlighting invalid jsonpath
+              tmpMap[m] = jm[m]
+            } catch (e)
+            {
+              debugger //catch
 
-            S3DB_Logging("exception", "", `Invalid JSONPath defined in Customer config (${cust}): ${m}: "${m}", \nInvalid JSONPath - ${e} `)
+              S3DB_Logging("exception", "", `Invalid JSONPath defined in Customer config (${cust}): ${m}: "${m}", \nInvalid JSONPath - ${e} `)
+            }
           }
         }
       }
