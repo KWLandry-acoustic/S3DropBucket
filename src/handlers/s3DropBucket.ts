@@ -591,7 +591,8 @@ const testdata = ""
 //testS3Key = "TestData/MasterCustomer_Sample-mar232025-json-update-10-25-000d4919-2865-49fa-a5ac-32999a583f0a.json"
 //testS3Key = "TestData/MasterCustomer_Sample-Queued-json-update-10-25-000d4919-2865-49fa-a5ac-32999a583f0a.json"
 //testS3Key = "TestData/SugarCRM_Leads_Leads.data.json.1746103736.13047"
-testS3Key = "TestData/Clorox_UpdateMaster_SUR-WEB-CLX-FTR1.csv"
+//testS3Key = "TestData/Clorox_UpdateMaster_SUR-WEB-CLX-FTR1.csv"
+testS3Key = "TestData/SugarCRM_Contacts_Contacts.data.json.1747640024.16675"
 
 
 
@@ -3267,9 +3268,17 @@ async function validateCustomerConfig (config: CustomerConfig) {
       for (const m in jm)
       {
 
-        const p = jm[m]
-        const p2 = p.substring(2, p.length)
+        debugger ///
 
+
+        const p = jm[m]
+        let p2 = ""
+        if (typeof p === "string" && p.startsWith("$") )
+        {
+          p2 = p.substring(2, p.length)
+        }
+
+          
         if (["contactid", "contactkey", "addressablefields", "consent", "audience"].includes(m.toLowerCase()) ||
           ["contactid", "contactkey", "addressablefields", "consent", "audience"].includes(p2.toLowerCase())
         )
