@@ -3288,7 +3288,7 @@ async function validateCustomerConfig (config: CustomerConfig) {
         }
         else
         {
-          if (p.startsWith("$"))
+          if (typeof p === "string" && p.startsWith("$"))
           {
             try
             {
