@@ -1727,8 +1727,8 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
       ra.push({"messageId": r.messageId})
     })
       
-    S3DB_Logging("info", "506", `Received a Batch of SQS Work Queue Events (${event.Records.length}. \nWork Queue Record MessageIds: \n${JSON.stringify(ra)} \nContext: ${JSON.stringify(context)}`)
-    S3DB_Logging("info", "907", `Received a Batch of SQS Work Queue Events (${event.Records.length} Work Queue Records): \n${JSON.stringify(event)} \nContext: ${JSON.stringify(context)}`)
+    S3DB_Logging("info", "506", `Received a Batch (${event.Records.length}) of SQS Work Queue Events. \nWork Queue Record MessageIds: \n${JSON.stringify(ra)} \nContext: ${JSON.stringify(context)}`)
+    S3DB_Logging("info", "907", `Received a Batch (${event.Records.length}) of SQS Work Queue Events: \nWork Queue Records: \n${JSON.stringify(event)} \nContext: ${JSON.stringify(context)}`)
 
     if (S3DBConfig.s3dropbucket_workqueuequiesce)
     {
@@ -3425,6 +3425,8 @@ async function packageUpdates (workSet: object[], key: string, custConfig: Custo
         }
 
         S3DB_Logging("info", "921", `PackageUpdates StoreAndQueueWork for ${key} (File Stream Iter: ${iter}). \nFor a total of ${recs} Updates in ${batchCount} Batches.  Result: \n${JSON.stringify(sqwResult)} `)
+        S3DB_Logging("info", "941", `PackageUpdates StoreAndQueueWork - Updates (${recs}) from ${key} \n(File Stream Iter: ${iter}) for ${batchCount} Batches.  Updates: \n${JSON.stringify(updates)} `)
+
       }
     } catch (e)
     {
