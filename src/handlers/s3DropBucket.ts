@@ -207,7 +207,7 @@ export interface MasterCustomerConfig {
       [key: string]: string
     }
     methods: {
-      daydate: string
+      dateday: string
       date_iso1806_type: {
         [key: string]: string
       }
@@ -264,7 +264,7 @@ export interface CustomerConfig {
     consent: {[key: string]: string}
     audienceupdate: {[key: string]: string}
     methods: {
-      daydate: string       //ToDo: refactor as multiple properties config
+      dateday: string       //ToDo: refactor as multiple properties config
       date_iso1806_type: {[key: string]: string}
       phone_number_type: {[key: string]: string}
       string_to_number_type: {[key: string]: string}
@@ -312,7 +312,7 @@ let customersConfig: CustomerConfig = {
     consent: {"": ""},
     audienceupdate: {"": ""},
     methods: {
-      "daydate": "",
+      "dateday": "",
       "date_iso1806_type": {"": ""},
       "phone_number_type": {"": ""},
       "string_to_number_type": {"": ""},
@@ -1664,7 +1664,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
         consent: {"": ""},
         audienceupdate: {"": ""},
         methods: {
-          daydate: "",
+          dateday: "",
           date_iso1806_type: {"": ""},
           phone_number_type: {"": ""},
           string_to_number_type: {"": ""},
@@ -3222,9 +3222,9 @@ async function validateCustomerConfig (config: CustomerConfig) {
       Object.assign(config.transforms, {methods: {}})
     }
 
-    if (!config.transforms.methods.daydate)
+    if (!config.transforms.methods.dateday)
     {
-      Object.assign(config.transforms.methods, {daydate: {}})
+      Object.assign(config.transforms.methods, {dateday: {}})
     }
 
     if (!config.transforms.methods.date_iso1806_type)
@@ -4680,7 +4680,7 @@ function transforms (updates: object[], config: CustomerConfig) {
   //  csvMap  --- Essentially Add Columns to Data (future: refactor as 'addcolumns')
   //
   // Apply transformational Methods - Transform the values of the Columns
-  //  Daydate - add a column of the day of the week (Sun, Mon, Tue, Wed, Thus, Fri, Sat)
+  //  dateday - add a column of the day of the week (Sun, Mon, Tue, Wed, Thus, Fri, Sat)
   //  Connect Date-to-ISO-8601 format
   //  Connect String-To-Number format
   //  Connect Phone format
@@ -4853,7 +4853,7 @@ function transforms (updates: object[], config: CustomerConfig) {
   //ToDo: Add JSONPath support, not critical as the object can only be JSON at this point, but helpful as consistency for value references
 
   //Modify Column Values - to replace the value in the column simply specify the same column name for source and destination.
-  //Transform: DayDate     - Not strictly a modify existing Column Method, will create a new Column with day of week from a referenced date value.
+  //Transform: dateday     - Not strictly a modify existing Column Method, will create a new Column with day of week from a referenced date value.
   //
   //ToDo: Provide a transform to break timestamps out into
   //    Day - Done
@@ -4864,8 +4864,8 @@ function transforms (updates: object[], config: CustomerConfig) {
   try
   {
 
-    if (typeof config.transforms.methods.daydate !== undefined &&
-      Object.keys(config.transforms.methods.daydate).length > 0)
+    if (typeof config.transforms.methods.dateday !== undefined &&
+      Object.keys(config.transforms.methods.dateday).length > 0)
     {
       const t: typeof updates = []
       let toDay: string = ""
@@ -4881,14 +4881,14 @@ function transforms (updates: object[], config: CustomerConfig) {
       ]
 
       
-      //"daydate": "date_modified",   - Current config 
+      //"dateday": "date_modified",   - Current config 
       //ToDo: modify to support key:value config as in other Transform configs
-      // "daydate": {"key": "value"}
+      // "dateday": {"key": "value"}
         
         
       for (const update of updates)
       {
-        Object.entries(config.transforms.methods.daydate).forEach(([key, val]) => {
+        Object.entries(config.transforms.methods.dateday).forEach(([key, val]) => {
           //Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{} '.
           //No index signature with a parameter of type 'string' was found on type '{}'.ts(7053)
           const updateObj: {[key: string]: string} = update as {[key: string]: string}
@@ -4898,13 +4898,13 @@ function transforms (updates: object[], config: CustomerConfig) {
           if (typeof toDay !== "undefined" && toDay !== "undefined" && toDay !== null && toDay.length > 0)
           {
             const dt = new Date(toDay)
-            const day = {daydate: days[dt.getDay()]}
+            const day = {dateday: days[dt.getDay()]}
             Object.assign(update, day)
           }
           else
           {
-            //S3DB_Logging("error", "933", `Error - Transform - DayDate Transform failed for ${val} as the string value '${toDay}' returns invalid date value`)
-            const day = {daydate: 'na'}
+            //S3DB_Logging("error", "933", `Error - Transform - dateday Transform failed for ${val} as the string value '${toDay}' returns invalid date value`)
+            const day = {dateday: 'na'}
             Object.assign(update, day)
           }
         })
@@ -4917,20 +4917,20 @@ function transforms (updates: object[], config: CustomerConfig) {
         updates = t
       } else
       {
-        S3DB_Logging("error", "933", `Error - Transform - Applying DayDate Transform returns fewer records (${t.length}) than initial set ${updates.length}`)
+        S3DB_Logging("error", "933", `Error - Transform - Applying dateday Transform returns fewer records (${t.length}) than initial set ${updates.length}`)
         throw new Error(
-          `Error - Transform - Applying DayDate Transform returns fewer records (${t.length}) than initial set ${updates.length}`
+          `Error - Transform - Applying dateday Transform returns fewer records (${t.length}) than initial set ${updates.length}`
         )
       }
 
-      S3DB_Logging("info", "935", `Transforms (DayDate) applied: \n${JSON.stringify(updates)}`)
+      S3DB_Logging("info", "935", `Transforms (dateday) applied: \n${JSON.stringify(updates)}`)
 
     }
   } catch (e)
   {
     debugger //catch
 
-    S3DB_Logging("exception", "934", `Exception - Applying DayDate Transform \n${e}`)
+    S3DB_Logging("exception", "934", `Exception - Applying dateday Transform \n${e}`)
   }
 
 
