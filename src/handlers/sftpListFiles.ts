@@ -1,7 +1,10 @@
 /* eslint-disable no-debugger */
 "use strict"
-import type sftpClient, {ListFilterFunction} from 'ssh2-sftp-client'
+//import type sftpClient {ListFilterFunction} from 'ssh2-sftp-client'
+import type sftpClient from 'ssh2-sftp-client'
+import type {ListFilterFunction} from 'ssh2-sftp-client'
 import {S3DB_Logging, SFTPClient} from './s3DropBucket'
+
 
 export async function sftpListFiles (remoteDir: string, fileGlob: ListFilterFunction) {
   S3DB_Logging("info", "700", `Listing ${remoteDir} ...`)

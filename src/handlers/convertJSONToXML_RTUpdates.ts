@@ -1,6 +1,6 @@
 /* eslint-disable no-debugger */
 "use strict"
-import {type CustomerConfig, xmlRows, S3DB_Logging} from './s3DropBucket'
+import {type CustomerConfig, S3DB_Logging} from './s3DropBucket'
 
 export function convertJSONToXML_RTUpdates (updates: object[], config: CustomerConfig) {
   if (updates.length < 1)
@@ -10,7 +10,7 @@ export function convertJSONToXML_RTUpdates (updates: object[], config: CustomerC
     )
   }
 
-  xmlRows = `<Envelope> <Body> <InsertUpdateRelationalTable> <TABLE_ID> ${config.listid} </TABLE_ID><ROWS>`
+  let xmlRows = `<Envelope> <Body> <InsertUpdateRelationalTable> <TABLE_ID> ${config.listid} </TABLE_ID><ROWS>`
 
   let r = 0
 

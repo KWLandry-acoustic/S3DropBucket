@@ -7,7 +7,7 @@
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "resolveJsonModule": true, /* Enable importing .json files. */
-    "target": "ES2023",
+    "target": "ES2022",
     "baseUrl": "./",
     // "sourceMap": true,
     "inlineSourceMap": true, /* Include sourcemap files inside the emitted JavaScript. */
