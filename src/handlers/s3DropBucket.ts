@@ -94,6 +94,12 @@ import {Ajv} from "ajv"  //Ajv JSON schema validator
 
 import sftpClient, {ListFilterFunction} from "ssh2-sftp-client"
 import {config} from 'process'
+import {sftpConnect} from './sftpConnect'
+import {sftpDisconnect} from './sftpDisconnect'
+import {sftpListFiles} from './sftpListFiles'
+import {sftpUploadFile} from './sftpUploadFile'
+import {sftpDownloadFile} from './sftpDownloadFile'
+import {sftpDeleteFile} from './sftpDeleteFile'
 
 
 
@@ -139,7 +145,7 @@ let s3 = {} as S3Client
 
 const fh_Client = new FirehoseClient({region: process.env.S3DropBucketRegion})
 
-const SFTPClient = new sftpClient()
+export const SFTPClient = new sftpClient()
 
 
 //For when needed to reference Lambda execution environment /tmp folder
@@ -2277,103 +2283,6 @@ export const s3DropBucketSFTPHandler: Handler = async (
   // }
 }
 
-async function sftpConnect (options: {
-  host: string
-  port: string
-  username?: string
-  password?: string
-}) {
-  S3DB_Logging("info", "700", `Connecting to ${options.host}: ${options.port}`)
-
-  try
-  {
-    // await SFTPClient.connect(options)
-  } catch (err)
-  {
-    debugger //catch
-
-    S3DB_Logging("exception", "", `Failed to connect: ${err}`)
-  }
-}
-
-async function sftpDisconnect () {
-  // await SFTPClient.end()
-}
-
-async function sftpListFiles (remoteDir: string, fileGlob: ListFilterFunction) {
-  S3DB_Logging("info", "700", `Listing ${remoteDir} ...`)
-
-  let fileObjects: sftpClient.FileInfo[] = []
-  try
-  {
-    fileObjects = await SFTPClient.list(remoteDir, fileGlob)
-  } catch (err)
-  {
-    debugger //catch
-
-    S3DB_Logging("exception", "", `Listing failed: ${err}`)
-  }
-
-  const fileNames = []
-
-  for (const file of fileObjects)
-  {
-    if (file.type === "d")
-    {
-      S3DB_Logging("info", "700", `${new Date(file.modifyTime).toISOString()} PRE ${file.name}`)
-    } else
-    {
-      S3DB_Logging("info", "700", `${new Date(file.modifyTime).toISOString()} ${file.size} ${file.name}`)
-    }
-
-    fileNames.push(file.name)
-  }
-
-  return fileNames
-}
-
-async function sftpUploadFile (localFile: string, remoteFile: string) {
-  S3DB_Logging("info", "700", `Uploading ${localFile} to ${remoteFile} ...`)
-  try
-  {
-    // await SFTPClient.put(localFile, remoteFile)
-  } catch (err)
-  {
-    debugger //catch
-
-    S3DB_Logging("exception", "", `Uploading failed: ${err}`)
-  }
-}
-
-async function sftpDownloadFile (remoteFile: string, localFile: string) {
-  S3DB_Logging("info", "700", `Downloading ${remoteFile} to ${localFile} ...`)
-  try
-  {
-    // await SFTPClient.get(remoteFile, localFile)
-  } catch (err)
-  {
-
-    debugger //catch
-
-    S3DB_Logging("exception", "", `Downloading failed: ${err}`)
-  }
-}
-
-async function sftpDeleteFile (remoteFile: string) {
-  S3DB_Logging("info", "700", `Deleting ${remoteFile}`)
-  try
-  {
-    // await SFTPClient.delete(remoteFile)
-  } catch (err)
-  {
-    debugger //catch
-
-    S3DB_Logging("exception", "", `Deleting failed: ${err}`)
-  }
-}
-
-
-
 async function getValidateS3DropBucketConfig () {
   //Article notes that Lambda runs faster referencing process.env vars, lets see.
   //Did not pan out, with all the issues with conversions needed to actually use as primary reference, can't see it being faster
@@ -4054,8 +3963,8 @@ async function buildMutationsConnect (updates: object[], config: CustomerConfig)
           //if (typeof value === "string") v = value
           //else v = String(value)
 
-          //Skip Payload Vars, Vars injected to carry Transformed Values and are already processed above,
-          // and are not valid for the actual Update
+          //Skip Vars that were injected to carry ancillary Values into this portion of bulding out the mutation and which have already been 
+          // processed above and are actually not valid for the actual Update
           if (!["contactid", "contactkey", "addressable", "consent", "audience"].includes(key.toLowerCase()))
           {
             ca = {name: key, value: value}
