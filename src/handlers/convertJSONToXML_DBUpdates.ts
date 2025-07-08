@@ -1,6 +1,6 @@
 /* eslint-disable no-debugger */
 "use strict"
-import {type CustomerConfig, S3DB_Logging} from './s3DropBucket'
+import {type CustomerConfig, s3dbConfig, S3DB_Logging} from './s3DropBucket'
 
 export function convertJSONToXML_DBUpdates (updates: object[], config: CustomerConfig) {
   if (updates.length < 1)

@@ -1,6 +1,6 @@
 /* eslint-disable no-debugger */
 "use strict"
-import {S3DB_Logging} from './s3DropBucket'
+import {s3dbConfig, S3DB_Logging} from './s3DropBucket'
 
 export async function sftpConnect (options: {
   host: string

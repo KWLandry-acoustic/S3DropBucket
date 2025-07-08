@@ -1,6 +1,6 @@
 /* eslint-disable no-debugger */
 "use strict"
-import {S3DB_Logging} from './s3DropBucket'
+import {s3dbConfig, S3DB_Logging} from './s3DropBucket'
 
 export async function sftpUploadFile (localFile: string, remoteFile: string) {
   S3DB_Logging("info", "700", `Uploading ${localFile} to ${remoteFile} ...`)
