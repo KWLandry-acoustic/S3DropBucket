@@ -142,12 +142,12 @@ export async function getValidateS3DropBucketConfig () {
       )
     } else process.env["S3DropBucketConfigs"] = s3dbc.s3dropbucket_configs
 
-    if (!s3dbc.s3dropbucket_workbucket || s3dbc.s3dropbucket_workbucket === "")
+    if (!s3dbc.s3dropbucket_bulkimportbucket || s3dbc.s3dropbucket_bulkimportbucket === "")
     {
       throw new Error(
-        `S3DropBucket Config invalid definition: missing S3DropBucketWorkBucket (${s3dbc.s3dropbucket_workbucket}) `
+        `S3DropBucket Config invalid definition: missing S3DropBucketWorkBucket (${s3dbc.s3dropbucket_bulkimportbucket}) `
       )
-    } else process.env["S3DropBucketWorkBucket"] = s3dbc.s3dropbucket_workbucket
+    } else process.env["S3DropBucketWorkBucket"] = s3dbc.s3dropbucket_bulkimportbucket
 
     if (!s3dbc.s3dropbucket_workqueue || s3dbc.s3dropbucket_workqueue === "")
     {

@@ -4,6 +4,7 @@ import {type CustomerConfig, type S3DBConfig, S3DB_Logging, s3dbConfig, batchCou
 import {putToFirehose} from './putToFirehose'
 import {storeAndQueueCampaignWork} from './storeAndQueueCampaignWork'
 import {storeAndQueueConnectWork} from './storeAndQueueConnectWork'
+import {writeBulkImport} from './writeBulkImport'
 
 export async function packageUpdates (workSet: object[], key: string, custConfig: CustomerConfig, s3dbConfig: S3DBConfig, iter: number) {
 
@@ -11,9 +12,9 @@ export async function packageUpdates (workSet: object[], key: string, custConfig
 
   S3DB_Logging("info", "918", `Packaging ${workSet.length} updates from ${key} (File Stream Iter: ${iter}). \nBatch count so far ${batchCount}. `)
 
-  //Check if these updates are to be Aggregated or this is an Aggregated file coming through. 
-  // If there are Chunks to Process and Singular Updates is set, 
-  //    send to Aggregator (unless these are updates coming through FROM an Aggregated file).
+  //First, Check if these updates are to be Aggregated (or this is an Aggregated file coming through) 
+  // If there are Chunks to Process and Singular Updates is set send to Aggregator, unless these are 
+  //  updates coming through FROM an Aggregated file.
   if (key.toLowerCase().indexOf("s3dropbucket_aggregator") < 0 && //This is Not an Aggregator file
     custConfig.updates.toLowerCase() === "singular" && //Cust Config marks these updates to be Aggregated when coming through
     workSet.length > 0) //There are Updates to be processed 
@@ -70,22 +71,39 @@ export async function packageUpdates (workSet: object[], key: string, custConfig
     }
 
   }
-  else //Based on outcome of If - Not Firehose Aggregator work so need to package to Connect or Campaign
+  else //Not Firehose Aggregator file so need to package to Connect or Campaign
   {
-    //Ok, the work to be Packaged is either from a "Multiple" updates Customer file or from an "Aggregated" file. 
+
+    //Ok, the work to be Packaged is from either a "Multiple" updates Customer file or an "Aggregated" file. 
+
+    
+    //if update type is RefSet and this is an Aggregated file, write direct to bulk import
+    if (key.toLowerCase().indexOf("s3dropbucket_aggregator") > 0 &&
+      custConfig.updatetype.toLowerCase() === "referenceset")
+    {
+      const wbi = writeBulkImport(key, workSet, s3dbConfig, custConfig)
+
+      //Schedule the Import Job 
+      //ToDo: ....
+
+      S3DB_Logging("info","526",`Result from writing ${key} to BulkImport: \n${wbi}`)
+    }
+
+    
+
+
+    //Otherwise, 
     let updates: object[] = []
 
     try
     {
-
       //Process everything passed, especially if there are more than 100 passed at one time, or fewer than 100. 
       while (workSet.length > 0)
       {
-        updates = [] as object[]
+        //updates = [] as object[]
         while (workSet.length > 0 && updates.length < 100)
         {
           const c = workSet.pop() ?? {}
-
           updates.push(c)
         }
 
@@ -129,3 +147,4 @@ export async function packageUpdates (workSet: object[], key: string, custConfig
 
   return sqwResult
 }
+

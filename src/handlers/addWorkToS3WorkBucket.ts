@@ -1,6 +1,6 @@
 /* eslint-disable no-debugger */
 "use strict"
-import {PutObjectCommand, type PutObjectCommandOutput} from '@aws-sdk/client-s3'
+import {PutObjectCommand, type PutObjectCommandInput, type PutObjectCommandOutput} from '@aws-sdk/client-s3'
 import {s3dbConfig, S3DB_Logging, s3} from './s3DropBucket'
 
 
@@ -16,10 +16,10 @@ export async function addWorkToS3WorkBucket (queueUpdates: string, key: string) 
     }
   }
 
-  const s3WorkPutInput = {
+  const s3WorkPutInput: PutObjectCommandInput = {
     Body: queueUpdates,
-    Bucket: s3dbConfig.s3dropbucket_workbucket,
-    Key: key,
+    Bucket: s3dbConfig.s3dropbucket_bulkimportbucket,
+    Key: key
   }
 
   let S3ProcessBucketResultStatus = ""
@@ -41,9 +41,9 @@ export async function addWorkToS3WorkBucket (queueUpdates: string, key: string) 
       .catch((err) => {
         debugger //catch
 
-        S3DB_Logging("exception", "", `Exception - Put Object Command for writing work(${key} to S3 Processing bucket(${s3dbConfig.s3dropbucket_workbucket}): \n${err}`)
+        S3DB_Logging("exception", "", `Exception - Put Object Command for writing work(${key} to S3 Processing bucket(${s3dbConfig.s3dropbucket_bulkimportbucket}): \n${err}`)
         throw new Error(
-          `PutObjectCommand Results Failed for (${key} of ${queueUpdates.length} characters) to S3 Processing bucket (${s3dbConfig.s3dropbucket_workbucket}): \n${err}`
+          `PutObjectCommand Results Failed for (${key} of ${queueUpdates.length} characters) to S3 Processing bucket (${s3dbConfig.s3dropbucket_bulkimportbucket}): \n${err}`
         )
         //return {StoreS3WorkException: err}
       })
@@ -51,9 +51,9 @@ export async function addWorkToS3WorkBucket (queueUpdates: string, key: string) 
   {
     debugger //catch
 
-    S3DB_Logging("exception", "", `Exception - Put Object Command for writing work(${key} to S3 Processing bucket(${s3dbConfig.s3dropbucket_workbucket}): \n${e}`)
+    S3DB_Logging("exception", "", `Exception - Put Object Command for writing work(${key} to S3 Processing bucket(${s3dbConfig.s3dropbucket_bulkimportbucket}): \n${e}`)
     throw new Error(
-      `Exception - Put Object Command for writing work(${key} to S3 Processing bucket(${s3dbConfig.s3dropbucket_workbucket}): \n${e}`
+      `Exception - Put Object Command for writing work(${key} to S3 Processing bucket(${s3dbConfig.s3dropbucket_bulkimportbucket}): \n${e}`
     )
     // return { StoreS3WorkException: e }
   }
@@ -62,7 +62,7 @@ export async function addWorkToS3WorkBucket (queueUpdates: string, key: string) 
 
   const vidString = addWorkToS3ProcessBucket.VersionId ?? ""
 
-  S3DB_Logging("info", "914", `Added Work File ${key} to Work Bucket (${s3dbConfig.s3dropbucket_workbucket}). \n${JSON.stringify(addWorkToS3ProcessBucket)}`)
+  S3DB_Logging("info", "914", `Added Work File ${key} to Work Bucket (${s3dbConfig.s3dropbucket_bulkimportbucket}). \n${JSON.stringify(addWorkToS3ProcessBucket)}`)
 
   const aw3pbr = {
     versionId: vidString,

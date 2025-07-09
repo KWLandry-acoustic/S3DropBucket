@@ -348,7 +348,8 @@ export interface S3DBConfig {
   restapiurl: string
   authapiurl: string
   s3dropbucket: string
-  s3dropbucket_workbucket: string
+  s3dropbucket_bulkimportbucket: string
+  s3dropbucket_bulkimportquiesce: boolean
   s3dropbucket_workqueue: string
   s3dropbucket_firehosestream: string
   s3dropbucket_loglevel: string
@@ -393,6 +394,7 @@ interface S3DropBucketConfig {
   s3dropbucket: string
   s3dropbucket_workbucket: string
   s3dropbucket_configs: string
+  s3dropbucket_bulkimportbucket: string
 
   // Queue configuration
   s3dropbucket_workqueue: string
@@ -404,6 +406,7 @@ interface S3DropBucketConfig {
   s3dropbucket_quiesce: boolean
   s3dropbucket_workqueuequiesce: boolean
   s3dropbucket_queuebucketquiesce: boolean
+  s3dropbucket_bulkimportquiesce: boolean
 
   // Maintenance settings for incoming files
   s3dropbucket_mainthours: number
@@ -444,25 +447,31 @@ export interface SQSBatchItemFails {
 interface AddWorkToS3Results {
   versionId: string
   S3ProcessBucketResultStatus: string
-  AddWorkToS3ProcessBucket: string
+  AddWorkToS3ProcessBucketResult: string
 }
 
-interface SQSResults {
+interface AddWorkToSQSResults {
   SQSWriteResultStatus: string
-  AddToSQSQueue: string
+  AddWorkToSQSQueueResult: string
+}
+
+export interface AddWorkToBulkImportResults {
+  BulkImportWriteResultStatus: string
+  AddWorkToBulkImportResult: string
 }
 
 interface StoreAndQueueWorkResults {
   AddWorkToS3WorkBucketResults: AddWorkToS3Results
-  AddWorkToSQSWorkQueueResults: SQSResults
-  PutToFireHoseAggregatorResult: string
+  AddWorkToSQSWorkQueueResults: AddWorkToSQSResults
+  PutToFireHoseAggregatorResults: string
   PutToFireHoseAggregatorResultDetails: string
   PutToFireHoseException: string
 }
 
-interface StoreAndQueueDataWorkResults {
+interface StoreAndQueueWorkResults {
   AddWorkToS3WorkBucketResults: AddWorkToS3Results
-  AddWorkToSQSWorkQueueResults: SQSResults
+  AddWorkToSQSWorkQueueResults: AddWorkToSQSResults
+  AddWorkToBulkImportResults: AddWorkToBulkImportResults
 }
 
 
@@ -478,7 +487,7 @@ interface ProcessS3ObjectStreamResult {
   OnClose_Result: string
   StreamReturnLocation: string
   OnDataResult: {
-    StoreAndQueueWorkResult: StoreAndQueueDataWorkResults
+    StoreAndQueueWorkResult: StoreAndQueueWorkResults
   }
   OnEndStreamEndResult: {
     StoreAndQueueWorkResult: StoreAndQueueWorkResults
@@ -502,12 +511,19 @@ let ProcessS3ObjectStreamOutcome: ProcessS3ObjectStreamResult = {
       AddWorkToS3WorkBucketResults: {
         versionId: '',
         S3ProcessBucketResultStatus: '',
-        AddWorkToS3ProcessBucket: ''
+        AddWorkToS3ProcessBucketResult: ''
       },
       AddWorkToSQSWorkQueueResults: {
         SQSWriteResultStatus: '',
-        AddToSQSQueue: ''
-      }
+        AddWorkToSQSQueueResult: ''
+      },
+      AddWorkToBulkImportResults: {
+        BulkImportWriteResultStatus: '',
+        AddWorkToBulkImportResult: ''
+      },
+      PutToFireHoseAggregatorResults: '',
+      PutToFireHoseAggregatorResultDetails: '',
+      PutToFireHoseException: ''
     }
   },
   OnEndStreamEndResult: {
@@ -515,13 +531,17 @@ let ProcessS3ObjectStreamOutcome: ProcessS3ObjectStreamResult = {
       AddWorkToS3WorkBucketResults: {
         versionId: '',
         S3ProcessBucketResultStatus: '',
-        AddWorkToS3ProcessBucket: ''
+        AddWorkToS3ProcessBucketResult: ''
       },
       AddWorkToSQSWorkQueueResults: {
         SQSWriteResultStatus: '',
-        AddToSQSQueue: ''
+        AddWorkToSQSQueueResult: ''
       },
-      PutToFireHoseAggregatorResult: '',
+      AddWorkToBulkImportResults: {
+        BulkImportWriteResultStatus: '',
+        AddWorkToBulkImportResult: ''
+      },
+      PutToFireHoseAggregatorResults: '',
       PutToFireHoseAggregatorResultDetails: '',
       PutToFireHoseException: ''
     }
@@ -704,20 +724,8 @@ export const s3DropBucketHandler: Handler = async (
     if (event.Records[0].s3.object.key.indexOf("S3DropBucket_Aggregator") > -1)
     {
       S3DB_Logging("info", "947", `Processing an Aggregated File ${event.Records[0].s3.object.key}`)
+      
     }
-
-
-
-    //if (S3DBConfig.S3DropBucketPurgeCount > 0) {
-    //  console.warn(
-    //    `Purge Requested, Only action will be to Purge ${S3DBConfig.S3DropBucketPurge} of ${S3DBConfig.S3DropBucketPurgeCount} Records. `
-    //  )
-    //  const d = await purgeBucket(
-    //    Number(S3DBConfig.S3DropBucketPurgeCount!),
-    //    S3DBConfig.S3DropBucketPurge!
-    //  )
-    //  return d
-    //}
 
     if (s3dbConfig.s3dropbucket_quiesce)
     {
@@ -744,20 +752,11 @@ export const s3DropBucketHandler: Handler = async (
         return
       }
 
-      //ToDo: Resolve Duplicates Issue - S3 allows Duplicate Object Names but Delete marks all Objects of same Name Deleted.
-      //   Which causes an issue with Key Not Found after an Object of Name A is processed and deleted, then another Object of Name A comes up in a Trigger.
-
       vid = r.s3.object.versionId ?? ""
       et = r.s3.object.eTag ?? ""
 
       try
-      {
-        //if (key.indexOf("S3DropBucket_Aggregator") > -1)
-        //{
-        //  key = key.replace("S3DropBucket_Aggregator-", "S3DropBucketAggregator-")
-        //  S3DB_Logging("info", "", `Aggregator File key reformed: ${key}`)
-        //}      
-
+      { 
         customersConfig = await getFormatCustomerConfig(key) as CustomerConfig
 
       } catch (e)
@@ -767,57 +766,6 @@ export const s3DropBucketHandler: Handler = async (
         S3DB_Logging("exception", "", `Exception - Awaiting Customer Config (${key}) \n${e} `)
         break
       }
-
-      //Initial work out for writing logs to S3 Bucket
-      /*
-      try {
-        if (key.indexOf("S3DropBucket-LogsS3DropBucket_Aggregator") > -1)
-          console.warn(`Warning -- Found Invalid Aggregator File Name - ${key} \nVersionID: ${vid}, \neTag: ${et}`)
-        if (S3DBConfig.SelectiveLogging.indexOf("_101,") > -1)
-          console.info(
-            `(101) Processing inbound data for ${customersConfig.Customer} - ${key}`
-          )
-      } catch (e) {
-        throw new Error(
-          `Exception - Retrieving Customer Config for ${key} \n${e}`
-        )
-      }
-      */
-
-
-
-
-
-      //ReQueue .xml files - in lieu of requeing through config, have work files (....xml) moved
-      // to the S3DropBucket bucket and drive an object creation event to the handler
-      /*
-      try {
-        if (key.indexOf(".xml") > -1) {
-          console.warn(`Warning -- Found Invalid Aggregator File Name - ${key} \nVersionID: ${vid}, \neTag: ${et}`)
-  
-          await getS3Work(key, bucket)
-            .then(async (work) => {
-              const workSet = work.split("</Envelope>")
-              await packageUpdates(
-                workSet,
-                key,
-                customersConfig
-              )
-          })
-  
-          if (S3DBConfig.SelectiveLogging.indexOf("_101,") > -1)
-            console.info(
-              `(101) Processing inbound data for ${customersConfig.Customer} - ${key} \nVersionID: ${vid}, \neTag: ${et}`
-            )
-        }
-      } catch (e) {
-        throw new Error(
-          `Exception - ReQueing Work from ${bucket} for ${key} \nVersionID: ${vid}, \neTag: ${et} \n${e}`
-        )
-      }
-      */
-
-
 
       batchCount = 0
       recs = 0
@@ -842,7 +790,7 @@ export const s3DropBucketHandler: Handler = async (
             Wrote Work To Work Bucket: ${streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToS3WorkBucketResults?.S3ProcessBucketResultStatus ?? "Not Found"}
             Queued Work To Work Queue: ${streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToSQSWorkQueueResults?.SQSWriteResultStatus ?? "Not Found"} 
               Or: 
-            Put To Firehose: ${streamRes.OnEndStreamEndResult.StoreAndQueueWorkResult?.PutToFireHoseAggregatorResult ?? "Not Found"}. 
+            Put To Firehose: ${streamRes.OnEndStreamEndResult.StoreAndQueueWorkResult?.PutToFireHoseAggregatorResults ?? "Not Found"}. 
             `
           
             S3DB_Logging("info", "503", `Completed processing all records of the S3 Object ${key} \neTag: ${et}. \nStatus: ${recordProcessingOutcome}`)
@@ -886,8 +834,8 @@ export const s3DropBucketHandler: Handler = async (
 
 
             if (
-              (typeof streamRes.OnEndStreamEndResult.StoreAndQueueWorkResult.PutToFireHoseAggregatorResult !== "undefined" &&
-                streamRes.OnEndStreamEndResult.StoreAndQueueWorkResult.PutToFireHoseAggregatorResult === "200") ||
+              (typeof streamRes.OnEndStreamEndResult.StoreAndQueueWorkResult.PutToFireHoseAggregatorResults !== "undefined" &&
+                streamRes.OnEndStreamEndResult.StoreAndQueueWorkResult.PutToFireHoseAggregatorResults === "200") ||
 
               (typeof streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToS3WorkBucketResults?.S3ProcessBucketResultStatus !== "undefined" &&
                 streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToS3WorkBucketResults?.S3ProcessBucketResultStatus === "200") &&
@@ -1511,13 +1459,17 @@ async function processS3ObjectContentStream (
                       AddWorkToS3WorkBucketResults: {
                         versionId: "",
                         S3ProcessBucketResultStatus: "200",       //Fake Status to drive cleanup/deletion logic, but true enough here
-                        AddWorkToS3ProcessBucket: "All Work Packaged in OnData, No Work Left to Package"
+                        AddWorkToS3ProcessBucketResult: "All Work Packaged in OnData, No Work Left to Package"
                       },
                       AddWorkToSQSWorkQueueResults: {
                         SQSWriteResultStatus: "200",              //Fake Status to drive cleanup/deletion logic, but true enough here
-                        AddToSQSQueue: "All Work Packaged in OnData, No Work Left to Package"
+                        AddWorkToSQSQueueResult: "All Work Packaged in OnData, No Work Left to Package"
                       },
-                      PutToFireHoseAggregatorResult: "",
+                      AddWorkToBulkImportResults: {
+                        BulkImportWriteResultStatus: '',
+                        AddWorkToBulkImportResult: ''
+                      },
+                      PutToFireHoseAggregatorResults: "",
                       PutToFireHoseAggregatorResultDetails: "",
                       PutToFireHoseException: ""
                     }
@@ -1853,7 +1805,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
         //tqm.workKey = await getAnS3ObjectforTesting( tcc.s3DropBucketWorkBucket! ) ?? ""
         s3dbQM.workKey = testS3Key
         s3dbQM.custconfig.customer = testS3Key
-        s3dbConfig.s3dropbucket_workbucket = testS3Bucket
+        s3dbConfig.s3dropbucket_bulkimportbucket = testS3Bucket
         localTesting = true
       } else
       {
@@ -1881,7 +1833,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
 
         customersConfig = await getFormatCustomerConfig(s3dbQM.custconfig.customer) as CustomerConfig
 
-        const work = await getS3Work(s3dbQM.workKey, s3dbConfig.s3dropbucket_workbucket)
+        const work = await getS3Work(s3dbQM.workKey, s3dbConfig.s3dropbucket_bulkimportbucket)
 
         if (work.length > 0)
         {
@@ -1959,7 +1911,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
             //Delete the Work file
             const fd = await deleteS3Object(
               s3dbQM.workKey,
-              s3dbConfig.s3dropbucket_workbucket
+              s3dbConfig.s3dropbucket_bulkimportbucket
             )
             if (fd === "204")
             {
