@@ -348,7 +348,8 @@ export interface S3DBConfig {
   restapiurl: string
   authapiurl: string
   s3dropbucket: string
-  s3dropbucket_bulkimportbucket: string
+  s3dropbucket_workbucket: string
+  s3dropbucket_bulkimport: string
   s3dropbucket_bulkimportquiesce: boolean
   s3dropbucket_workqueue: string
   s3dropbucket_firehosestream: string
@@ -394,7 +395,7 @@ interface S3DropBucketConfig {
   s3dropbucket: string
   s3dropbucket_workbucket: string
   s3dropbucket_configs: string
-  s3dropbucket_bulkimportbucket: string
+  s3dropbucket_bulkimport: string
 
   // Queue configuration
   s3dropbucket_workqueue: string
@@ -611,7 +612,7 @@ const testdata = ""
 //testS3Key = "TestData/MasterCustomer_Sample-Queued-json-update-10-25-000d4919-2865-49fa-a5ac-32999a583f0a.json"
 //testS3Key = "TestData/SugarCRM_Leads_Leads.data.json.1746103736.13047"
 //testS3Key = "TestData/Clorox_UpdateMaster_SUR-WEB-CLX-FTR1.csv"
-//testS3Key = "TestData/SugarCRM_Contacts_Contacts.data.json.1747640024.16675"
+testS3Key = "TestData/SugarCRM_Contacts_Contacts.data.json.1747640024.16675"
 testS3Key = "TestData/SugarCRM_Contacts_Contacts-data.json.1747640024-updatesTesting.json"
 
 
@@ -1805,7 +1806,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
         //tqm.workKey = await getAnS3ObjectforTesting( tcc.s3DropBucketWorkBucket! ) ?? ""
         s3dbQM.workKey = testS3Key
         s3dbQM.custconfig.customer = testS3Key
-        s3dbConfig.s3dropbucket_bulkimportbucket = testS3Bucket
+        s3dbConfig.s3dropbucket_workbucket = testS3Bucket
         localTesting = true
       } else
       {
@@ -1833,7 +1834,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
 
         customersConfig = await getFormatCustomerConfig(s3dbQM.custconfig.customer) as CustomerConfig
 
-        const work = await getS3Work(s3dbQM.workKey, s3dbConfig.s3dropbucket_bulkimportbucket)
+        const work = await getS3Work(s3dbQM.workKey, s3dbConfig.s3dropbucket_workbucket)
 
         if (work.length > 0)
         {
@@ -1911,7 +1912,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
             //Delete the Work file
             const fd = await deleteS3Object(
               s3dbQM.workKey,
-              s3dbConfig.s3dropbucket_bulkimportbucket
+              s3dbConfig.s3dropbucket_workbucket
             )
             if (fd === "204")
             {

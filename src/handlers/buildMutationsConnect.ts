@@ -400,8 +400,6 @@ export async function buildMutationsConnect (updates: object[], config: Customer
       const r = {...create_mutation, variables: createMutationVars}
       S3DB_Logging("info", "817", `CreateUpdate Multiple Contacts Mutation: \n${JSON.stringify(r)}`)
 
-      debugger ///
-
       return r
 
     }

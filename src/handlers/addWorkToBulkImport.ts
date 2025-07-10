@@ -26,7 +26,7 @@ export async function addWorkToBulkImport (key: string, refsetUpdates: object[],
 
   const bulkImportPutCommand: PutObjectCommandInput = {
     Body: JSON.stringify(refsetUpdates),
-    Bucket: s3dbConfig.s3dropbucket_bulkimportbucket,
+    Bucket: s3dbConfig.s3dropbucket_bulkimport,
     Key: key
   }
   
@@ -48,18 +48,18 @@ export async function addWorkToBulkImport (key: string, refsetUpdates: object[],
       .catch((err) => {
         debugger //catch
 
-        S3DB_Logging("exception", "", `Exception - Put Object Command for writing work(${key} to Bulk Import bucket(${s3dbConfig.s3dropbucket_bulkimportbucket}): \n${err}`)
+        S3DB_Logging("exception", "", `Exception - Put Object Command for writing work(${key} to Bulk Import bucket(${s3dbConfig.s3dropbucket_bulkimport}): \n${err}`)
         throw new Error(
-          `PutObjectCommand Results Failed for (${key} of ${refsetUpdates.length} characters) to Bulk Import bucket (${s3dbConfig.s3dropbucket_bulkimportbucket}): \n${err}`
+          `PutObjectCommand Results Failed for (${key} of ${refsetUpdates.length} characters) to Bulk Import bucket (${s3dbConfig.s3dropbucket_bulkimport}): \n${err}`
         )
       })
   } catch (e)
   {
     debugger //catch
 
-    S3DB_Logging("exception", "", `Exception - Put Object Command for writing updates (${key} to Bulk Import bucket(${s3dbConfig.s3dropbucket_bulkimportbucket}): \n${e}`)
+    S3DB_Logging("exception", "", `Exception - Put Object Command for writing updates (${key} to Bulk Import bucket(${s3dbConfig.s3dropbucket_bulkimport}): \n${e}`)
     throw new Error(
-      `Exception - Put Object Command for writing work(${key} to Bulk Import bucket(${s3dbConfig.s3dropbucket_bulkimportbucket}): \n${e}`
+      `Exception - Put Object Command for writing work(${key} to Bulk Import bucket(${s3dbConfig.s3dropbucket_bulkimport}): \n${e}`
     )
     // return { StoreS3WorkException: e }
   }
@@ -69,7 +69,7 @@ export async function addWorkToBulkImport (key: string, refsetUpdates: object[],
     AddWorkToBulkImportResult: JSON.stringify(bulkImportResult)
   } as AddWorkToBulkImportResults
 
-  S3DB_Logging("info", "527", `Added Updates ${key} to Bulk Import Bucket (${s3dbConfig.s3dropbucket_bulkimportbucket}). \n${JSON.stringify(bulkImportStatus)}`)
+  S3DB_Logging("info", "527", `Added Updates ${key} to Bulk Import Bucket (${s3dbConfig.s3dropbucket_bulkimport}). \n${JSON.stringify(bulkImportStatus)}`)
 
   return bulkImportStatus
 

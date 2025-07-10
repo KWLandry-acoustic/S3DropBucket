@@ -4,7 +4,7 @@ import {type CustomerConfig, type S3DBConfig, S3DB_Logging, s3dbConfig, batchCou
 import {putToFirehose} from './putToFirehose'
 import {storeAndQueueCampaignWork} from './storeAndQueueCampaignWork'
 import {storeAndQueueConnectWork} from './storeAndQueueConnectWork'
-import {writeBulkImport} from './writeBulkImport'
+import {addWorkToBulkImport} from './addWorkToBulkImport'
 
 export async function packageUpdates (workSet: object[], key: string, custConfig: CustomerConfig, s3dbConfig: S3DBConfig, iter: number) {
 
@@ -81,16 +81,13 @@ export async function packageUpdates (workSet: object[], key: string, custConfig
     if (key.toLowerCase().indexOf("s3dropbucket_aggregator") > 0 &&
       custConfig.updatetype.toLowerCase() === "referenceset")
     {
-      const wbi = writeBulkImport(key, workSet, s3dbConfig, custConfig)
+      const wbi = addWorkToBulkImport(key, workSet, s3dbConfig, custConfig)
 
       //Schedule the Import Job 
       //ToDo: ....
 
       S3DB_Logging("info","526",`Result from writing ${key} to BulkImport: \n${wbi}`)
     }
-
-    
-
 
     //Otherwise, 
     let updates: object[] = []

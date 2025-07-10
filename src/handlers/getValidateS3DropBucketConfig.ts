@@ -106,7 +106,7 @@ export async function getValidateS3DropBucketConfig () {
     else
     {
       throw new Error(
-        `S3DropBucket Config invalid or missing definition: EventEmitterMaxListeners.`
+        `S3DropBucket Config - Invalid or missing definition: EventEmitterMaxListeners.`
       )
     }
 
@@ -115,7 +115,7 @@ export async function getValidateS3DropBucketConfig () {
     if (!s3dbc.s3dropbucket_loglevel || s3dbc.s3dropbucket_loglevel === "")
     {
       throw new Error(
-        `S3DropBucket Config invalid definition: missing LogLevel.`
+        `S3DropBucket Config - Invalid definition: missing LogLevel.`
       )
     } else process.env.s3dropbucketLogLevel = s3dbc.s3dropbucket_loglevel
 
@@ -123,7 +123,7 @@ export async function getValidateS3DropBucketConfig () {
     if (!s3dbc.s3dropbucket_selectivelogging || s3dbc.s3dropbucket_selectivelogging === "")
     {
       throw new Error(
-        `S3DropBucket Config invalid definition: missing SelectiveLogging.`
+        `S3DropBucket Config - Invalid definition: missing SelectiveLogging.`
       )
 
     } else process.env["S3DropBucketSelectiveLogging"] = s3dbc.s3dropbucket_selectivelogging
@@ -131,28 +131,28 @@ export async function getValidateS3DropBucketConfig () {
     if (!s3dbc.s3dropbucket || s3dbc.s3dropbucket === "")
     {
       throw new Error(
-        `S3DropBucket Config invalid definition: missing S3DropBucket (${s3dbc.s3dropbucket}).`
+        `S3DropBucket Config - Invalid definition: missing S3DropBucket (${s3dbc.s3dropbucket}).`
       )
     } else process.env["S3DropBucket"] = s3dbc.s3dropbucket
 
     if (!s3dbc.s3dropbucket_configs || s3dbc.s3dropbucket_configs === "")
     {
       throw new Error(
-        `S3DropBucket Config invalid definition: missing S3DropBucketConfigs (${s3dbc.s3dropbucket_configs}).`
+        `S3DropBucket Config - Invalid definition: missing S3DropBucketConfigs (${s3dbc.s3dropbucket_configs}).`
       )
     } else process.env["S3DropBucketConfigs"] = s3dbc.s3dropbucket_configs
 
-    if (!s3dbc.s3dropbucket_bulkimportbucket || s3dbc.s3dropbucket_bulkimportbucket === "")
+    if (!s3dbc.s3dropbucket_bulkimport || s3dbc.s3dropbucket_bulkimport === "")
     {
       throw new Error(
-        `S3DropBucket Config invalid definition: missing S3DropBucketWorkBucket (${s3dbc.s3dropbucket_bulkimportbucket}) `
+        `S3DropBucket Config - Invalid definition: missing S3DropBucket BulkImport Bucket definition (${s3dbc.s3dropbucket_bulkimport}) `
       )
-    } else process.env["S3DropBucketWorkBucket"] = s3dbc.s3dropbucket_bulkimportbucket
+    } else process.env["S3DropBucketBulkImportBucket"] = s3dbc.s3dropbucket_bulkimport
 
     if (!s3dbc.s3dropbucket_workqueue || s3dbc.s3dropbucket_workqueue === "")
     {
       throw new Error(
-        `S3DropBucket Config invalid definition: missing S3DropBucketWorkQueue (${s3dbc.s3dropbucket_workqueue}) `
+        `S3DropBucket Config - Invalid definition: missing S3DropBucketWorkQueue (${s3dbc.s3dropbucket_workqueue}) `
       )
     } else process.env["S3DropBucketWorkQueue"] = s3dbc.s3dropbucket_workqueue
 
@@ -160,20 +160,20 @@ export async function getValidateS3DropBucketConfig () {
     if (!s3dbc.connectapiurl || s3dbc.connectapiurl === "")
     {
       throw new Error(
-        `S3DropBucket Config invalid definition: missing connectapiurl - ${s3dbc.connectapiurl} `)
+        `S3DropBucket Config - Invalid definition: missing connectapiurl - ${s3dbc.connectapiurl} `)
     } else process.env["connectapiurl"] = s3dbc.connectapiurl
 
     if (!s3dbc.xmlapiurl || s3dbc.xmlapiurl === "")
     {
       throw new Error(
-        `S3DropBucket Config invalid definition: missing xmlapiurl - ${s3dbc.xmlapiurl} `
+        `S3DropBucket Config - Invalid definition: missing xmlapiurl - ${s3dbc.xmlapiurl} `
       )
     } else process.env["xmlapiurl"] = s3dbc.xmlapiurl
 
     if (!s3dbc.restapiurl || s3dbc.restapiurl === "")
     {
       throw new Error(
-        `S3DropBucket Config invalid definition: missing restapiurl - ${s3dbc.restapiurl} `
+        `S3DropBucket Config - Invalid definition: missing restapiurl - ${s3dbc.restapiurl} `
       )
     } else process.env["restapiurl"] = s3dbc.restapiurl
 
@@ -181,7 +181,7 @@ export async function getValidateS3DropBucketConfig () {
     if (!s3dbc.authapiurl || s3dbc.authapiurl === "")
     {
       throw new Error(
-        `S3DropBucket Config invalid definition: missing authapiurl - ${s3dbc.authapiurl} `
+        `S3DropBucket Config - Invalid definition: missing authapiurl - ${s3dbc.authapiurl} `
       )
     }
     else
@@ -192,7 +192,7 @@ export async function getValidateS3DropBucketConfig () {
     if (!s3dbc.s3dropbucket_jsonseparator || s3dbc.s3dropbucket_jsonseparator === "")
     {
       throw new Error(
-        `S3DropBucket Config invalid definition: missing jsonSeperator - ${s3dbc.s3dropbucket_workqueuequiesce} `
+        `S3DropBucket Config - Invalid definition: missing jsonSeperator - ${s3dbc.s3dropbucket_workqueuequiesce} `
       )
     }
     else
@@ -207,7 +207,7 @@ export async function getValidateS3DropBucketConfig () {
 
     else
       throw new Error(
-        `S3DropBucket Config invalid definition: WorkQueueQuiesce - ${s3dbc.s3dropbucket_workqueuequiesce} `
+        `S3DropBucket Config - Invalid definition: WorkQueueQuiesce - ${s3dbc.s3dropbucket_workqueuequiesce} `
       )
 
     //process.env["RetryQueueInitialWaitTimeSeconds"]
@@ -215,63 +215,63 @@ export async function getValidateS3DropBucketConfig () {
 
     else
       throw new Error(
-        `S3DropBucket Config invalid definition: missing MaxBatchesWarning - ${s3dbc.s3dropbucket_maxbatcheswarning} `
+        `S3DropBucket Config - Invalid definition: missing MaxBatchesWarning - ${s3dbc.s3dropbucket_maxbatcheswarning} `
       )
 
     if (s3dbc.s3dropbucket_quiesce === true || s3dbc.s3dropbucket_quiesce === false) process.env["S3DropBucketQuiesce"] = s3dbc.s3dropbucket_quiesce.toString()
 
     else
       throw new Error(
-        `S3DropBucket Config invalid or missing definition: DropBucketQuiesce - ${s3dbc.s3dropbucket_quiesce} `
+        `S3DropBucket Config - Invalid or missing definition: DropBucketQuiesce - ${s3dbc.s3dropbucket_quiesce} `
       )
 
-    if (!isNaN(s3dbc.s3dropbucket_mainthours) && typeof s3dbc.s3dropbucket_mainthours === "number") process.env["S3DropBucketMaintHours"] = s3dbc.s3dropbucket_mainthours.toString()
+    //if (!isNaN(s3dbc.s3dropbucket_mainthours) && typeof s3dbc.s3dropbucket_mainthours === "number") process.env["S3DropBucketMaintHours"] = s3dbc.s3dropbucket_mainthours.toString()
 
-    else
-    {
-      s3dbc.s3dropbucket_mainthours = -1
-      process.env["S3DropBucketMaintHours"] = s3dbc.s3dropbucket_mainthours.toString()
-    }
+    //else
+    //{
+    //  s3dbc.s3dropbucket_mainthours = -1
+    //  process.env["S3DropBucketMaintHours"] = s3dbc.s3dropbucket_mainthours.toString()
+    //}
 
-    if (!isNaN(s3dbc.s3dropbucket_maintlimit) && typeof s3dbc.s3dropbucket_maintlimit === "number") process.env["S3DropBucketMaintLimit"] = s3dbc.s3dropbucket_maintlimit.toString()
+    //if (!isNaN(s3dbc.s3dropbucket_maintlimit) && typeof s3dbc.s3dropbucket_maintlimit === "number") process.env["S3DropBucketMaintLimit"] = s3dbc.s3dropbucket_maintlimit.toString()
 
-    else
-    {
-      s3dbc.s3dropbucket_maintlimit = 0
-      process.env["S3DropBucketMaintLimit"] = s3dbc.s3dropbucket_maintlimit.toString()
-    }
+    //else
+    //{
+    //  s3dbc.s3dropbucket_maintlimit = 0
+    //  process.env["S3DropBucketMaintLimit"] = s3dbc.s3dropbucket_maintlimit.toString()
+    //}
 
-    if (!isNaN(s3dbc.s3dropbucket_maintconcurrency) && typeof s3dbc.s3dropbucket_maintconcurrency === "number") process.env["S3DropBucketMaintConcurrency"] = s3dbc.s3dropbucket_maintconcurrency.toString()
+    //if (!isNaN(s3dbc.s3dropbucket_maintconcurrency) && typeof s3dbc.s3dropbucket_maintconcurrency === "number") process.env["S3DropBucketMaintConcurrency"] = s3dbc.s3dropbucket_maintconcurrency.toString()
 
-    else
-    {
-      s3dbc.s3dropbucket_maintlimit = 1
-      process.env["S3DropBucketMaintConcurrency"] = s3dbc.s3dropbucket_maintconcurrency.toString()
-    }
+    //else
+    //{
+    //  s3dbc.s3dropbucket_maintlimit = 1
+    //  process.env["S3DropBucketMaintConcurrency"] = s3dbc.s3dropbucket_maintconcurrency.toString()
+    //}
 
-    if (!isNaN(s3dbc.s3dropbucket_workqueuemainthours) && typeof s3dbc.s3dropbucket_workqueuemaintlimit === "number") process.env["S3DropBucketWorkQueueMaintHours"] = s3dbc.s3dropbucket_workqueuemainthours.toString()
+    //if (!isNaN(s3dbc.s3dropbucket_workqueuemainthours) && typeof s3dbc.s3dropbucket_workqueuemaintlimit === "number") process.env["S3DropBucketWorkQueueMaintHours"] = s3dbc.s3dropbucket_workqueuemainthours.toString()
 
-    else
-    {
-      s3dbc.s3dropbucket_workqueuemainthours = -1
-      process.env["S3DropBucketWorkQueueMaintHours"] = s3dbc.s3dropbucket_workqueuemainthours.toString()
-    }
+    //else
+    //{
+    //  s3dbc.s3dropbucket_workqueuemainthours = -1
+    //  process.env["S3DropBucketWorkQueueMaintHours"] = s3dbc.s3dropbucket_workqueuemainthours.toString()
+    //}
 
-    if (!isNaN(s3dbc.s3dropbucket_workqueuemaintlimit) && typeof s3dbc.s3dropbucket_workqueuemaintlimit === "number") process.env["S3DropBucketWorkQueueMaintLimit"] = s3dbc.s3dropbucket_workqueuemaintlimit.toString()
+    //if (!isNaN(s3dbc.s3dropbucket_workqueuemaintlimit) && typeof s3dbc.s3dropbucket_workqueuemaintlimit === "number") process.env["S3DropBucketWorkQueueMaintLimit"] = s3dbc.s3dropbucket_workqueuemaintlimit.toString()
 
-    else
-    {
-      s3dbc.s3dropbucket_workqueuemaintlimit = 0
-      process.env["S3DropBucketWorkQueueMaintLimit"] = s3dbc.s3dropbucket_workqueuemaintlimit.toString()
-    }
+    //else
+    //{
+    //  s3dbc.s3dropbucket_workqueuemaintlimit = 0
+    //  process.env["S3DropBucketWorkQueueMaintLimit"] = s3dbc.s3dropbucket_workqueuemaintlimit.toString()
+    //}
 
-    if (!isNaN(s3dbc.s3dropbucket_workqueuemaintconcurrency) && typeof s3dbc.s3dropbucket_workqueuemaintconcurrency === "number") process.env["S3DropBucketWorkQueueMaintConcurrency"] = s3dbc.s3dropbucket_workqueuemaintconcurrency.toString()
+    //if (!isNaN(s3dbc.s3dropbucket_workqueuemaintconcurrency) && typeof s3dbc.s3dropbucket_workqueuemaintconcurrency === "number") process.env["S3DropBucketWorkQueueMaintConcurrency"] = s3dbc.s3dropbucket_workqueuemaintconcurrency.toString()
 
-    else
-    {
-      s3dbc.s3dropbucket_workqueuemaintconcurrency = 1
-      process.env["S3DropBucketWorkQueueMaintConcurrency"] = s3dbc.s3dropbucket_workqueuemaintconcurrency.toString()
-    }
+    //else
+    //{
+    //  s3dbc.s3dropbucket_workqueuemaintconcurrency = 1
+    //  process.env["S3DropBucketWorkQueueMaintConcurrency"] = s3dbc.s3dropbucket_workqueuemaintconcurrency.toString()
+    //}
 
     if (s3dbc.s3dropbucket_log === true || s3dbc.s3dropbucket_log === false)
     {
@@ -286,21 +286,21 @@ export async function getValidateS3DropBucketConfig () {
     if (!s3dbc.s3dropbucket_logbucket || s3dbc.s3dropbucket_logbucket === "") s3dbc.s3dropbucket_logbucket = ""
     process.env["S3DropBucketLogBucket"] = s3dbc.s3dropbucket_logbucket.toString()
 
-    if (!s3dbc.s3dropbucket_purge || s3dbc.s3dropbucket_purge === "")
-    {
-      throw new Error(
-        `S3DropBucket Config invalid or missing definition: DropBucketPurge - ${s3dbc.s3dropbucket_purge} `
-      )
-    } else process.env["S3DropBucketPurge"] = s3dbc.s3dropbucket_purge
+    //if (!s3dbc.s3dropbucket_purge || s3dbc.s3dropbucket_purge === "")
+    //{
+    //  throw new Error(
+    //    `S3DropBucket Config - Invalid or missing definition: DropBucketPurge - ${s3dbc.s3dropbucket_purge} `
+    //  )
+    //} else process.env["S3DropBucketPurge"] = s3dbc.s3dropbucket_purge
 
-    if (!isNaN(s3dbc.s3dropbucket_purgecount) && typeof s3dbc.s3dropbucket_purgecount === "number") process.env["S3DropBucketPurgeCount"] = s3dbc.s3dropbucket_purgecount.toFixed()
+    //if (!isNaN(s3dbc.s3dropbucket_purgecount) && typeof s3dbc.s3dropbucket_purgecount === "number") process.env["S3DropBucketPurgeCount"] = s3dbc.s3dropbucket_purgecount.toFixed()
 
-    else
-    {
-      throw new Error(
-        `S3DropBucket Config invalid or missing definition: S3DropBucketPurgeCount - ${s3dbc.s3dropbucket_purgecount} `
-      )
-    }
+    //else
+    //{
+    //  throw new Error(
+    //    `S3DropBucket Config - Invalid or missing definition: S3DropBucketPurgeCount - ${s3dbc.s3dropbucket_purgecount} `
+    //  )
+    //}
 
     if (s3dbc.s3dropbucket_queuebucketquiesce === true || s3dbc.s3dropbucket_queuebucketquiesce === false)
     {
@@ -308,24 +308,24 @@ export async function getValidateS3DropBucketConfig () {
     }
     else
       throw new Error(
-        `S3DropBucket Config invalid or missing definition: QueueBucketQuiesce - ${s3dbc.s3dropbucket_queuebucketquiesce} `
+        `S3DropBucket Config - Invalid or missing definition: QueueBucketQuiesce - ${s3dbc.s3dropbucket_queuebucketquiesce} `
       )
 
-    if (!s3dbc.s3dropbucket_workqueuebucketpurge || s3dbc.s3dropbucket_workqueuebucketpurge === "")
-    {
-      throw new Error(
-        `S3DropBucket Config invalid or missing definition: WorkQueueBucketPurge - ${s3dbc.s3dropbucket_workqueuebucketpurge} `
-      )
-    } else process.env["S3DropBucketWorkQueueBucketPurge"] = s3dbc.s3dropbucket_workqueuebucketpurge
+    //if (!s3dbc.s3dropbucket_workqueuebucketpurge || s3dbc.s3dropbucket_workqueuebucketpurge === "")
+    //{
+    //  throw new Error(
+    //    `S3DropBucket Config - Invalid or missing definition: WorkQueueBucketPurge - ${s3dbc.s3dropbucket_workqueuebucketpurge} `
+    //  )
+    //} else process.env["S3DropBucketWorkQueueBucketPurge"] = s3dbc.s3dropbucket_workqueuebucketpurge
 
-    if (!isNaN(s3dbc.s3dropbucket_workqueuebucketpurgecount) && typeof s3dbc.s3dropbucket_workqueuebucketpurgecount === "number") process.env["S3DropBucketWorkQueueBucketPurgeCount"] = s3dbc.s3dropbucket_workqueuebucketpurgecount.toFixed()
+    //if (!isNaN(s3dbc.s3dropbucket_workqueuebucketpurgecount) && typeof s3dbc.s3dropbucket_workqueuebucketpurgecount === "number") process.env["S3DropBucketWorkQueueBucketPurgeCount"] = s3dbc.s3dropbucket_workqueuebucketpurgecount.toFixed()
 
-    else
-    {
-      throw new Error(
-        `S3DropBucket Config invalid or missing definition: WorkQueueBucketPurgeCount - ${s3dbc.s3dropbucket_workqueuebucketpurgecount} `
-      )
-    }
+    //else
+    //{
+    //  throw new Error(
+    //    `S3DropBucket Config - Invalid or missing definition: WorkQueueBucketPurgeCount - ${s3dbc.s3dropbucket_workqueuebucketpurgecount} `
+    //  )
+    //}
 
     if (s3dbc.s3dropbucket_prefixfocus && s3dbc.s3dropbucket_prefixfocus !== "" && s3dbc.s3dropbucket_prefixfocus.length > 3)
     {
@@ -340,25 +340,25 @@ export async function getValidateS3DropBucketConfig () {
     //     process.env.WorkQueueVisibilityTimeout = tc.WorkQueueVisibilityTimeout.toFixed()
     // else
     //     throw new Error(
-    //         `S3DropBucket Config invalid definition: WorkQueueVisibilityTimeout - ${ tc.WorkQueueVisibilityTimeout } `,
+    //         `S3DropBucket Config - Invalid definition: WorkQueueVisibilityTimeout - ${ tc.WorkQueueVisibilityTimeout } `,
     //     )
     // if (tc.WorkQueueWaitTimeSeconds !== undefined)
     //     process.env.WorkQueueWaitTimeSeconds = tc.WorkQueueWaitTimeSeconds.toFixed()
     // else
     //     throw new Error(
-    //         `S3DropBucket Config invalid definition: WorkQueueWaitTimeSeconds - ${ tc.WorkQueueWaitTimeSeconds } `,
+    //         `S3DropBucket Config - Invalid definition: WorkQueueWaitTimeSeconds - ${ tc.WorkQueueWaitTimeSeconds } `,
     //     )
     // if (tc.RetryQueueVisibilityTimeout !== undefined)
     //     process.env.RetryQueueVisibilityTimeout = tc.WorkQueueWaitTimeSeconds.toFixed()
     // else
     //     throw new Error(
-    //         `S3DropBucket Config invalid definition: RetryQueueVisibilityTimeout - ${ tc.RetryQueueVisibilityTimeout } `,
+    //         `S3DropBucket Config - Invalid definition: RetryQueueVisibilityTimeout - ${ tc.RetryQueueVisibilityTimeout } `,
     //     )
     // if (tc.RetryQueueInitialWaitTimeSeconds !== undefined)
     //     process.env.RetryQueueInitialWaitTimeSeconds = tc.RetryQueueInitialWaitTimeSeconds.toFixed()
     // else
     //     throw new Error(
-    //         `S3DropBucket Config invalid definition: RetryQueueInitialWaitTimeSeconds - ${ tc.RetryQueueInitialWaitTimeSeconds } `,
+    //         `S3DropBucket Config - Invalid definition: RetryQueueInitialWaitTimeSeconds - ${ tc.RetryQueueInitialWaitTimeSeconds } `,
     //     )
   } catch (e)
   {
