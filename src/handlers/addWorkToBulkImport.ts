@@ -8,6 +8,9 @@ export async function addWorkToBulkImport (key: string, refsetUpdates: object[],
 
 {
 
+  debugger ///
+
+  
   if (s3dbConfig.s3dropbucket_bulkimportquiesce)
   {
     S3DB_Logging("warn", "526", `BulkImport Quiesce is in effect, no New Work will be written to the BulkImport Bucket. Updates are from ${key}`)

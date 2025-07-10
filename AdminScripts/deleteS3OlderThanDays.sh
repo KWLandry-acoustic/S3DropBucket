@@ -1,16 +1,12 @@
 #!/bin/bash
 
 ###############################################################################
-# S3 Cleanup Script - Deletes files older than specified days
-# Compatible with Bash 3.2.57 on macOS
-# Usage: chmod +x deleteS3_OlderThanDays.sh
-# sudo bash ./deleteS3_OlderThanDays.sh --days 7 my-bucket
-# Example: 
+# S3 Object Cleanup Script
+# Deletes objects older than specified days from S3 bucket
+# Usage: 
 # sudo bash ./deleteS3_OlderThanDays.sh --days 2 --prefix Funding_Circle s3dropbucket-aggregator-fr Assume_Admin_Role_Frankfurt
 # Use DELETE_LIMIT to contain total deleted files in the run
 ###############################################################################
-
-set -eo pipefail
 
 # Configuration
 MAX_RETRIES=3
@@ -24,6 +20,9 @@ DELETE_LIMIT=10000     # Maximum number of objects to delete
 total_processed=0
 total_deleted=0
 total_errors=0
+total_newer_files=0
+total_objects_seen=0
+DEBUG_MODE=false
 
 # Use a temp file for error tracking instead of associative array
 error_file=$(mktemp)
@@ -32,6 +31,10 @@ trap 'rm -f $error_file' EXIT
 function log_message() {
     local level=$1
     shift
+    # Skip DEBUG messages unless DEBUG_MODE is enabled
+    if [ "$level" = "DEBUG" ] && [ "$DEBUG_MODE" = false ]; then
+        return
+    fi
     echo "[$(date +'%Y-%m-%d %H:%M:%S')] [$level] $*"
 }
 
@@ -140,6 +143,7 @@ function process_batch() {
     
     return 1
 }
+
 function delete_old_files() {
     local bucket=$1
     local days=$2
@@ -190,11 +194,17 @@ function delete_old_files() {
             log_message "INFO" "No objects found in bucket"
             break
         fi
+        
+        # Debug: Show how many objects were found
+        local object_count=$(echo "$response" | jq '.Contents | length' 2>/dev/null || echo 0)
+        log_message "DEBUG" "Found $object_count objects in this batch"
 
         while IFS=$'\t' read -r key last_modified || [ -n "$key" ]; do
             if [ -z "$key" ] || [ -z "$last_modified" ]; then
                 continue
             fi
+            
+            : $((total_objects_seen += 1))
 
             if [ "$total_deleted" -ge "$DELETE_LIMIT" ]; then
                 log_message "INFO" "Reached maximum delete limit ($DELETE_LIMIT objects)"
@@ -208,11 +218,17 @@ function delete_old_files() {
             local object_date
             object_date=$(convert_date "$last_modified")
             
+            # Debug logging
+            log_message "DEBUG" "Processing: $key, LastModified: $last_modified, Converted: $object_date, Cutoff: $cutoff_date"
+            
             if [ -n "$object_date" ] && [ "$object_date" -gt 0 ] 2>/dev/null; then
                 if [ "$object_date" -lt "$cutoff_date" ]; then
+                    log_message "DEBUG" "File qualifies for deletion: $key"
                     batch_keys="${batch_keys}{\"Key\":\"$key\"},"
                     : $((batch_size += 1))
                     : $((total_processed += 1))
+                else
+                    : $((total_newer_files += 1))
                     
                     if [ "$batch_size" -eq "$MAX_BATCH_SIZE" ]; then
                         batch_keys=${batch_keys%,}
@@ -237,15 +253,16 @@ function delete_old_files() {
             fi
         done < <(echo "$response" | jq -r '.Contents[]|[.Key,.LastModified]|@tsv' 2>/dev/null || echo "")
 
-        if [ -n "$batch_keys" ] && [ "$batch_count" -lt "$MAX_DELETE_BATCHES" ] && [ "$total_deleted" -lt "$DELETE_LIMIT" ]; then
+        # Process any remaining files in the batch
+        if [ -n "$batch_keys" ] && [ "$batch_size" -gt 0 ] && [ "$batch_count" -lt "$MAX_DELETE_BATCHES" ] && [ "$total_deleted" -lt "$DELETE_LIMIT" ]; then
             batch_keys=${batch_keys%,}
             batch_json="{\"Objects\":[$batch_keys],\"Quiet\":true}"
             if process_batch "$bucket" "$batch_json" "$dry_run"; then
                 : $((total_deleted += batch_size))
                 : $((batch_count += 1))
-                log_message "INFO" "Completed batch $batch_count of $MAX_DELETE_BATCHES (Total deleted: $total_deleted)"
+                log_message "INFO" "Completed final batch $batch_count of $MAX_DELETE_BATCHES (Total deleted: $total_deleted)"
             else
-                track_error "batch_$total_processed" "Failed to delete batch"
+                track_error "batch_$total_processed" "Failed to delete final batch"
             fi
             batch_keys=""
             batch_size=0
@@ -259,8 +276,10 @@ function delete_old_files() {
 function print_summary() {
     echo ""
     log_message "INFO" "Cleanup Summary:"
+    log_message "INFO" "  Total objects examined: $total_objects_seen"
     log_message "INFO" "  Files processed: $total_processed"
     log_message "INFO" "  Files deleted: $total_deleted"
+    log_message "INFO" "  Files newer than cutoff (not deleted): $total_newer_files"
     log_message "INFO" "  Errors encountered: $total_errors"
     [ "$DRY_RUN" = true ] && log_message "INFO" "  (DRY RUN - No actual deletions performed)"
     
@@ -283,6 +302,7 @@ if [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
     echo "  --days <n>     Delete files older than n days (default: 3)"
     echo "  --prefix <p>   Only process files with prefix p"
     echo "  --dry-run      Show what would be deleted without actually deleting"
+    echo "  --debug        Enable debug logging"
     echo "  --help, -h     Show this help message"
     echo ""
     echo "Example:"
@@ -312,6 +332,10 @@ while [ $# -gt 0 ]; do
             ;;
         --dry-run)
             DRY_RUN=true
+            shift
+            ;;
+        --debug)
+            DEBUG_MODE=true
             shift
             ;;
         -*)

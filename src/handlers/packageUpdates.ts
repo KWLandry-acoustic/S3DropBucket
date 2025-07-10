@@ -12,11 +12,14 @@ export async function packageUpdates (workSet: object[], key: string, custConfig
 
   S3DB_Logging("info", "918", `Packaging ${workSet.length} updates from ${key} (File Stream Iter: ${iter}). \nBatch count so far ${batchCount}. `)
 
+  debugger ///
+
+
   //First, Check if these updates are to be Aggregated (or this is an Aggregated file coming through) 
-  // If there are Chunks to Process and Singular Updates is set send to Aggregator, unless these are 
+  // If there are Chunks to Process and Singular Updates is set, send to Aggregator, unless these are 
   //  updates coming through FROM an Aggregated file.
   if (key.toLowerCase().indexOf("s3dropbucket_aggregator") < 0 && //This is Not an Aggregator file
-    custConfig.updates.toLowerCase() === "singular" && //Cust Config marks these updates to be Aggregated when coming through
+    (custConfig.updates.toLowerCase() === "singular" || custConfig.updatetype.toLowerCase() === 'referenceset') && //Cust Config marks these updates to be Aggregated when coming through (Singular or ReferenceSet)
     workSet.length > 0) //There are Updates to be processed 
   {
 
