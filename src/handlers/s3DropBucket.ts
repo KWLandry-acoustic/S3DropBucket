@@ -409,15 +409,15 @@ interface S3DropBucketConfig {
   s3dropbucket_queuebucketquiesce: boolean
   s3dropbucket_bulkimportquiesce: boolean
 
-  // Maintenance settings for incoming files
-  s3dropbucket_mainthours: number
-  s3dropbucket_maintlimit: number
-  s3dropbucket_maintconcurrency: number
+  //// Maintenance settings for incoming files
+  //s3dropbucket_mainthours: number
+  //s3dropbucket_maintlimit: number
+  //s3dropbucket_maintconcurrency: number
 
-  // Work queue maintenance settings
-  s3dropbucket_workqueuemainthours: number
-  s3dropbucket_workqueuemaintlimit: number
-  s3dropbucket_workqueuemaintconcurrency: number
+  //// Work queue maintenance settings
+  //s3dropbucket_workqueuemainthours: number
+  //s3dropbucket_workqueuemaintlimit: number
+  //s3dropbucket_workqueuemaintconcurrency: number
 
   // Optional properties that might be present in the config
   s3dropbucket_selectivelogging?: string
@@ -445,13 +445,13 @@ export interface SQSBatchItemFails {
   ]
 }
 
-interface AddWorkToS3Results {
+export interface AddWorkToS3WorkBucketResults {
   versionId: string
   S3ProcessBucketResultStatus: string
-  AddWorkToS3ProcessBucketResult: string
+  AddWorkToS3WorkBucketResult: string
 }
 
-interface AddWorkToSQSResults {
+export interface AddWorkToSQSWorkQueueResults {
   SQSWriteResultStatus: string
   AddWorkToSQSQueueResult: string
 }
@@ -461,20 +461,15 @@ export interface AddWorkToBulkImportResults {
   AddWorkToBulkImportResult: string
 }
 
-interface StoreAndQueueWorkResults {
-  AddWorkToS3WorkBucketResults: AddWorkToS3Results
-  AddWorkToSQSWorkQueueResults: AddWorkToSQSResults
+export interface StoreAndQueueWorkResults {
+  AddWorkToS3WorkBucketResults: AddWorkToS3WorkBucketResults
+  AddWorkToSQSWorkQueueResults: AddWorkToSQSWorkQueueResults
+  AddWorkToBulkImportResults: AddWorkToBulkImportResults
+  StoreQueueWorkException: string
   PutToFireHoseAggregatorResults: string
   PutToFireHoseAggregatorResultDetails: string
   PutToFireHoseException: string
 }
-
-interface StoreAndQueueWorkResults {
-  AddWorkToS3WorkBucketResults: AddWorkToS3Results
-  AddWorkToSQSWorkQueueResults: AddWorkToSQSResults
-  AddWorkToBulkImportResults: AddWorkToBulkImportResults
-}
-
 
 interface ProcessS3ObjectStreamResult {
   Key: string
@@ -512,7 +507,7 @@ let ProcessS3ObjectStreamOutcome: ProcessS3ObjectStreamResult = {
       AddWorkToS3WorkBucketResults: {
         versionId: '',
         S3ProcessBucketResultStatus: '',
-        AddWorkToS3ProcessBucketResult: ''
+        AddWorkToS3WorkBucketResult: ''
       },
       AddWorkToSQSWorkQueueResults: {
         SQSWriteResultStatus: '',
@@ -524,7 +519,8 @@ let ProcessS3ObjectStreamOutcome: ProcessS3ObjectStreamResult = {
       },
       PutToFireHoseAggregatorResults: '',
       PutToFireHoseAggregatorResultDetails: '',
-      PutToFireHoseException: ''
+      PutToFireHoseException: '',
+      StoreQueueWorkException: ''
     }
   },
   OnEndStreamEndResult: {
@@ -532,7 +528,7 @@ let ProcessS3ObjectStreamOutcome: ProcessS3ObjectStreamResult = {
       AddWorkToS3WorkBucketResults: {
         versionId: '',
         S3ProcessBucketResultStatus: '',
-        AddWorkToS3ProcessBucketResult: ''
+        AddWorkToS3WorkBucketResult: ''
       },
       AddWorkToSQSWorkQueueResults: {
         SQSWriteResultStatus: '',
@@ -544,7 +540,8 @@ let ProcessS3ObjectStreamOutcome: ProcessS3ObjectStreamResult = {
       },
       PutToFireHoseAggregatorResults: '',
       PutToFireHoseAggregatorResultDetails: '',
-      PutToFireHoseException: ''
+      PutToFireHoseException: '',
+      StoreQueueWorkException: ''
     }
   },
   DeleteResult: ''
@@ -613,8 +610,8 @@ const testdata = ""
 //testS3Key = "TestData/SugarCRM_Leads_Leads.data.json.1746103736.13047"
 //testS3Key = "TestData/Clorox_UpdateMaster_SUR-WEB-CLX-FTR1.csv"
 //testS3Key = "TestData/SugarCRM_Contacts_Contacts.data.json.1747640024.16675"
-//testS3Key = "TestData/SugarCRM_Contacts_Contacts-data.json.1747640024-updatesTesting.json"
-testS3Key = "TestData/Jai-Shopify-Products_juy092025.json"
+testS3Key = "TestData/SugarCRM_Contacts_Contacts-data.json.1747640024-updatesTesting.json"
+//testS3Key = "TestData/Jai-Shopify-Products_juy092025.json"
 
 
 
@@ -1461,11 +1458,11 @@ async function processS3ObjectContentStream (
                     StoreAndQueueWorkResult: {
                       AddWorkToS3WorkBucketResults: {
                         versionId: "",
-                        S3ProcessBucketResultStatus: "200",       //Fake Status to drive cleanup/deletion logic, but true enough here
-                        AddWorkToS3ProcessBucketResult: "All Work Packaged in OnData, No Work Left to Package"
+                        S3ProcessBucketResultStatus: "200", //Fake Status to drive cleanup/deletion logic, but true enough here
+                        AddWorkToS3WorkBucketResult: "All Work Packaged in OnData, No Work Left to Package"
                       },
                       AddWorkToSQSWorkQueueResults: {
-                        SQSWriteResultStatus: "200",              //Fake Status to drive cleanup/deletion logic, but true enough here
+                        SQSWriteResultStatus: "200", //Fake Status to drive cleanup/deletion logic, but true enough here
                         AddWorkToSQSQueueResult: "All Work Packaged in OnData, No Work Left to Package"
                       },
                       AddWorkToBulkImportResults: {
@@ -1474,7 +1471,8 @@ async function processS3ObjectContentStream (
                       },
                       PutToFireHoseAggregatorResults: "",
                       PutToFireHoseAggregatorResultDetails: "",
-                      PutToFireHoseException: ""
+                      PutToFireHoseException: "",
+                      StoreQueueWorkException: ''
                     }
                   }
                 }
@@ -1844,7 +1842,8 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
           S3DB_Logging("info", "512", `Work file ${s3dbQM.workKey} retrieved: Result:\n${JSON.stringify(work)}`)
           
           if ((customersConfig.updatetype.toLowerCase() === "createupdatecontacts") ||
-            (customersConfig.updatetype.toLowerCase() === "createattributes")
+            (customersConfig.updatetype.toLowerCase() === "updatecontacts")
+            //(customersConfig.updatetype.toLowerCase() === "referenceset") //Should never see this at this point, Bulk Import is finished in the first lambda
           )
           {
             postResult = await postToConnect(

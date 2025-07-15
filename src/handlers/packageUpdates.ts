@@ -1,14 +1,34 @@
 /* eslint-disable no-debugger */
 "use strict"
-import {type CustomerConfig, type S3DBConfig, S3DB_Logging, s3dbConfig, batchCount, recs} from './s3DropBucket'
+import {type CustomerConfig, type S3DBConfig, type StoreAndQueueWorkResults, type AddWorkToBulkImportResults, S3DB_Logging, s3dbConfig, batchCount, recs} from './s3DropBucket'
 import {putToFirehose} from './putToFirehose'
 import {storeAndQueueCampaignWork} from './storeAndQueueCampaignWork'
 import {storeAndQueueConnectWork} from './storeAndQueueConnectWork'
 import {addWorkToBulkImport} from './addWorkToBulkImport'
 
-export async function packageUpdates (workSet: object[], key: string, custConfig: CustomerConfig, s3dbConfig: S3DBConfig, iter: number) {
 
-  let sqwResult: object = {}
+let sqwResult: StoreAndQueueWorkResults = {
+  AddWorkToS3WorkBucketResults: {
+    versionId: '',
+    S3ProcessBucketResultStatus: '',
+    AddWorkToS3WorkBucketResult: ''
+  },
+  AddWorkToSQSWorkQueueResults: {
+    SQSWriteResultStatus: '',
+    AddWorkToSQSQueueResult: ''
+  },
+  AddWorkToBulkImportResults: {
+    BulkImportWriteResultStatus: '',
+    AddWorkToBulkImportResult: ''
+  },
+  StoreQueueWorkException: '',
+  PutToFireHoseAggregatorResults: '',
+  PutToFireHoseAggregatorResultDetails: '',
+  PutToFireHoseException: ''
+}
+
+
+export async function packageUpdates (workSet: object[], key: string, custConfig: CustomerConfig, s3dbConfig: S3DBConfig, iter: number) {
 
   S3DB_Logging("info", "918", `Packaging ${workSet.length} updates from ${key} (File Stream Iter: ${iter}). \nBatch count so far ${batchCount}. `)
 
@@ -23,7 +43,13 @@ export async function packageUpdates (workSet: object[], key: string, custConfig
     workSet.length > 0) //There are Updates to be processed 
   {
 
-    let firehoseResults = {}
+    //let firehoseResults 
+    let firehoseResults = {
+      PutToFireHoseAggregatorResults: "",
+      PutToFireHoseAggregatorResultDetails: "",
+      PutToFireHoseException: "",
+    }
+
 
     try //Interior try/catch for firehose processing
     {
@@ -40,18 +66,8 @@ export async function packageUpdates (workSet: object[], key: string, custConfig
         custConfig.customer,
         iter
       ).then((res) => {
-        const fRes = res as {
-          //OnEnd_PutToFireHoseAggregator: string
-          PutToFireHoseAggregatorResult: string
-          PutToFireHoseException: string
-        }
-
-        sqwResult = {
-          ...sqwResult,
-          ...fRes,
-        }
-
-        return sqwResult
+        
+        return res
 
       })
     } catch (e) //Interior try/catch for firehose processing
@@ -64,17 +80,22 @@ export async function packageUpdates (workSet: object[], key: string, custConfig
         ...sqwResult,
         PutToFireHoseException: `Exception - PutToFirehose \n${e} `,
       }
+      return sqwResult
     }
 
     S3DB_Logging("info", "943", `Completed FireHose Aggregator processing ${key} (File Stream Iter: ${iter}) \n${JSON.stringify(sqwResult)}`)
 
-    return sqwResult = {
+    sqwResult = {
       ...sqwResult,
-      PutToFireHoseResults: `PutToFirehose Results: \n${JSON.stringify(firehoseResults)} `,
+      PutToFireHoseAggregatorResults: '',
+      PutToFireHoseAggregatorResultDetails: `PutToFirehose Results: \n${JSON.stringify(firehoseResults)} `,
+      PutToFireHoseException: ''
     }
 
+    return sqwResult
+
   }
-  else //Not Firehose Aggregator file so need to package to Connect or Campaign
+  else //Package to Connect or Campaign or Bulk Import
   {
 
     //Ok, the work to be Packaged is from either a "Multiple" updates Customer file or an "Aggregated" file. 
@@ -84,12 +105,20 @@ export async function packageUpdates (workSet: object[], key: string, custConfig
     if (key.toLowerCase().indexOf("s3dropbucket_aggregator") > 0 &&
       custConfig.updatetype.toLowerCase() === "referenceset")
     {
-      const wbi = addWorkToBulkImport(key, workSet, s3dbConfig, custConfig)
+      const wbi = await addWorkToBulkImport(key, workSet, s3dbConfig, custConfig)
+        .then((r) => {
+        return r
+      })
 
       //Schedule the Import Job 
       //ToDo: ....
 
-      S3DB_Logging("info","526",`Result from writing ${key} to BulkImport: \n${wbi}`)
+      S3DB_Logging("info", "526", `Result from writing ${key} to BulkImport: \n${wbi}`)
+      
+      sqwResult.AddWorkToBulkImportResults = wbi
+
+      return sqwResult
+
     }
 
     //Otherwise, 
@@ -107,6 +136,8 @@ export async function packageUpdates (workSet: object[], key: string, custConfig
           updates.push(c)
         }
 
+        let sqw
+
         //Ok, now send to appropriate staging for actually updating endpoint (Campaign or Connect)
         if (custConfig.targetupdate.toLowerCase() === "connect")
           sqwResult = await storeAndQueueConnectWork(updates, key, custConfig, iter)
@@ -121,7 +152,7 @@ export async function packageUpdates (workSet: object[], key: string, custConfig
               //console.info( `Debug Await StoreAndQueueWork (Campaign) Result: ${ JSON.stringify( res ) }` )
               return res
             })
-        }
+        }  
 
         else
         {

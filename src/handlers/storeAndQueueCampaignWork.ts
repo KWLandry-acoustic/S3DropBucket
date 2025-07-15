@@ -3,12 +3,35 @@
 import {v4 as uuidv4} from 'uuid'
 import {convertJSONToXML_DBUpdates} from './convertJSONToXML_DBUpdates'
 import {convertJSONToXML_RTUpdates} from './convertJSONToXML_RTUpdates'
-import {type CustomerConfig, type S3DBConfig, batchCount, s3dbConfig, S3DB_Logging, customersConfig} from './s3DropBucket'
+import {type CustomerConfig, type S3DBConfig, type StoreAndQueueWorkResults, batchCount, s3dbConfig, S3DB_Logging, customersConfig, type AddWorkToS3WorkBucketResults, type AddWorkToSQSWorkQueueResults} from './s3DropBucket'
 import {addWorkToS3WorkBucket} from './addWorkToS3WorkBucket'
 import {transforms} from './transforms'
 import {addWorkToSQSWorkQueue} from './addWorkToSQSWorkQueue'
 
 let xmlRows = ''
+
+
+let sqwResult: StoreAndQueueWorkResults = {
+  AddWorkToS3WorkBucketResults: {
+    versionId: '',
+    S3ProcessBucketResultStatus: '',
+    AddWorkToS3WorkBucketResult: ''
+  },
+  AddWorkToSQSWorkQueueResults: {
+    SQSWriteResultStatus: '',
+    AddWorkToSQSQueueResult: ''
+  },
+  AddWorkToBulkImportResults: {
+    BulkImportWriteResultStatus: '',
+    AddWorkToBulkImportResult: ''
+  },
+  StoreQueueWorkException: '',
+  PutToFireHoseAggregatorResults: '',
+  PutToFireHoseAggregatorResultDetails: '',
+  PutToFireHoseException: ''
+}
+
+
 
 export async function storeAndQueueCampaignWork (
   updates: object[],
@@ -67,18 +90,17 @@ export async function storeAndQueueCampaignWork (
 
   key = `${key}-update-${batchCount}-${updateCount}-${uuidv4()}.xml`
 
-  //if ( Object.values( updates ).length !== recs )
-  //{
-  //     selectiveLogging("error", "", `Recs Count ${recs} does not reflect Updates Count ${Object.values(updates).length} `)
-  //}
-  let addWorkToS3WorkBucketResult
-  let addWorkToSQSWorkQueueResult
+
+
+  let addS3WorkBucketResult: AddWorkToS3WorkBucketResults|void 
+  let addWorkToSQSWorkQueueResult: AddWorkToSQSWorkQueueResults|void 
 
   try
   {
-    addWorkToS3WorkBucketResult = await addWorkToS3WorkBucket(xmlRows, key)
+    addS3WorkBucketResult = await addWorkToS3WorkBucket(xmlRows, key)
       .then((res) => {
-        return {"workfile": key, ...res} //return res 
+
+        return res
       })
       .catch((err) => {
         debugger //catch
@@ -93,11 +115,26 @@ export async function storeAndQueueCampaignWork (
 
     S3DB_Logging("exception", "", s3StoreError)
 
-    return {
-      StoreS3WorkException: s3StoreError,
-      StoreQueueWorkException: "",
-      AddWorkToS3WorkBucketResults: JSON.stringify(addWorkToS3WorkBucketResult),
+    sqwResult = {
+      ...sqwResult,
+      StoreQueueWorkException: s3StoreError,
+      AddWorkToS3WorkBucketResults: {
+        versionId: '',
+        S3ProcessBucketResultStatus: '',
+        AddWorkToS3WorkBucketResult: JSON.stringify(s3StoreError)
+      }
     }
+
+    return sqwResult
+  }
+
+  sqwResult = {
+    ...sqwResult,
+    StoreQueueWorkException: '',
+    AddWorkToS3WorkBucketResults: {
+      versionId: '',
+      S3ProcessBucketResultStatus: '',
+      AddWorkToS3WorkBucketResult: JSON.stringify({"workfile": key, ...addS3WorkBucketResult})    }
   }
 
   //S3DB_Logging(oppty to message s3 store results)
@@ -120,20 +157,21 @@ export async function storeAndQueueCampaignWork (
   {
     debugger //catch
 
-    const sqwError = `Exception - StoreAndQueueWork Add work to SQS Queue exception \n${e} `
+    const sqwError = `Exception - StoreAndQueueWork - Add work to SQS Queue exception \n${e} `
     S3DB_Logging("exception", "", sqwError)
 
-    return {StoreQueueWorkException: sqwError}
+    sqwResult = {
+      ...sqwResult,
+      StoreQueueWorkException: sqwError
+    }
+
+    return sqwResult
   }
 
 
   //If we made it this Far, all's good 
-  S3DB_Logging("info", "915", `Results of Storing and Queuing (Campaign) Work ${key} to Work Queue: ${JSON.stringify(addWorkToSQSWorkQueueResult)} \n${JSON.stringify(
-    addWorkToS3WorkBucketResult)}`)
+  S3DB_Logging("info", "915", `Results of Storing and Queuing (Campaign) Work ${key} to Work Queue: ${JSON.stringify(sqwResult)}`)
 
-  return {
-    AddWorkToS3WorkBucketResults: addWorkToS3WorkBucketResult,
-    AddWorkToSQSWorkQueueResults: addWorkToSQSWorkQueueResult,
-    xmlRows
-  }
+  return sqwResult
+
 }
