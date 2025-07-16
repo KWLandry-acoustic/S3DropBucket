@@ -102,7 +102,7 @@ export async function packageUpdates (workSet: object[], key: string, custConfig
     if (key.toLowerCase().indexOf("s3dropbucket_aggregator") > 0 &&
       custConfig.updatetype.toLowerCase() === "referenceset")
     {
-      const wbi = await addWorkToBulkImport(key, workSet, s3dbConfig, custConfig)
+      const awbi = await addWorkToBulkImport(key, workSet, s3dbConfig, custConfig)
         .then((r) => {
         return r
       })
@@ -110,9 +110,9 @@ export async function packageUpdates (workSet: object[], key: string, custConfig
       //Schedule the Import Job 
       //ToDo: ....
 
-      S3DB_Logging("info", "526", `Result from writing ${key} to BulkImport: \n${wbi}`)
+      S3DB_Logging("info", "526", `Result from writing ${key} to BulkImport: \n${awbi}`)
       
-      sqwResult.AddWorkToBulkImportResults = wbi
+      sqwResult.AddWorkToBulkImportResults = awbi
 
       return sqwResult
 
@@ -132,8 +132,6 @@ export async function packageUpdates (workSet: object[], key: string, custConfig
           const c = workSet.pop() ?? {}
           updates.push(c)
         }
-
-        let sqw
 
         //Ok, now send to appropriate staging for actually updating endpoint (Campaign or Connect)
         if (custConfig.targetupdate.toLowerCase() === "connect")

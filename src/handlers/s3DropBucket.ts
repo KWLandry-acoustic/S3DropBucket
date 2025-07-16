@@ -33,7 +33,7 @@ import {
 } from "@aws-sdk/client-s3"
 
 import {NodeHttpHandler} from "@smithy/node-http-handler"
-import https from "https";  
+import https from "https"
 
 
 import {
@@ -480,7 +480,7 @@ interface ProcessS3ObjectStreamResult {
   DeleteResult: string
 }
 
-let ProcessS3ObjectStreamOutcome: ProcessS3ObjectStreamResult = {
+let processS3ObjectStreamOutcome: ProcessS3ObjectStreamResult = {
   Key: '',
   Processed: '',
   ReadStreamEndResult: '',
@@ -598,9 +598,9 @@ const testdata = ""
 //testS3Key = "TestData/MasterCustomer_Sample-Queued-json-update-10-25-000d4919-2865-49fa-a5ac-32999a583f0a.json"
 //testS3Key = "TestData/SugarCRM_Leads_Leads.data.json.1746103736.13047"
 //testS3Key = "TestData/Clorox_UpdateMaster_SUR-WEB-CLX-FTR1.csv"
-testS3Key = "TestData/SugarCRM_Contacts_Contacts.data.json.1747640024.16675"
+//testS3Key = "TestData/SugarCRM_Contacts_Contacts.data.json.1747640024.16675"
 //testS3Key = "TestData/SugarCRM_Contacts_Contacts-data.json.1747640024-updatesTesting.json"
-//testS3Key = "TestData/Jai-Shopify-Products_juy092025.json"
+testS3Key = "TestData/Jai-Shopify-Products_juy092025.json"
 
 
 
@@ -621,7 +621,7 @@ export const s3DropBucketHandler: Handler = async (
 
     //Ignore Aggregation Error Files created by FireHose process
     if (event.Records[0].s3.object.key.toLowerCase().indexOf("aggregationerror") > -1) return ""
-    
+
     //Ignore any Metadata Files created
     if (event.Records[0].s3.object.key.toLowerCase().indexOf("metadata") > -1) return ""
 
@@ -652,15 +652,15 @@ export const s3DropBucketHandler: Handler = async (
       testS3Bucket = ""
       localTesting = false
     }
-    
-    
+
+
     if (typeof process.env.AWS_REGION !== "undefined" && process.env.AWS_REGION !== "undefined" && process.env.AWS_REGION.length > 0) 
     {
       s3 = new S3Client({
         region: process.env.AWS_REGION,         //{region: 'us-east-1'})
         requestHandler: smithyReqHandler
       })
-      
+
       //const client = new SQSClient({
       //  credentials: {accessKeyId, secretAccessKey},
       //  endpoint,
@@ -713,7 +713,7 @@ export const s3DropBucketHandler: Handler = async (
     if (event.Records[0].s3.object.key.indexOf("S3DropBucket_Aggregator") > -1)
     {
       S3DB_Logging("info", "947", `Processing an Aggregated File ${event.Records[0].s3.object.key}`)
-      
+
     }
 
     if (s3dbConfig.s3dropbucket_quiesce)
@@ -745,7 +745,7 @@ export const s3DropBucketHandler: Handler = async (
       et = r.s3.object.eTag ?? ""
 
       try
-      { 
+      {
         customersConfig = await getFormatCustomerConfig(key) as CustomerConfig
 
       } catch (e)
@@ -758,122 +758,17 @@ export const s3DropBucketHandler: Handler = async (
 
       batchCount = 0
       recs = 0
-      
+
       try
       {
-        ProcessS3ObjectStreamOutcome = await processS3ObjectContentStream(
+        processS3ObjectStreamOutcome = await processS3ObjectContentStream(
           key,
           bucket,
           customersConfig
         )
           .then(async (streamRes) => {
 
-            let delResultCode
-
-            streamRes.Key = key
-            streamRes.Processed = streamRes.OnEndRecordStatus
-            
-            const recordProcessingOutcome = `Processing Outcome: ${streamRes.OnEndRecordStatus}
-            As:
-            ${JSON.stringify(streamRes.OnEndStreamEndResult?.StoreAndQueueWorkResult) ?? "Not Found"}
-            Wrote Work To Work Bucket: ${streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToS3WorkBucketResults?.S3ProcessBucketResultStatus ?? "Not Found"}
-            Queued Work To Work Queue: ${streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToSQSWorkQueueResults?.SQSWriteResultStatus ?? "Not Found"} 
-              Or: 
-            Put To Firehose: ${streamRes.OnEndStreamEndResult.StoreAndQueueWorkResult?.PutToFireHoseAggregatorResults ?? "Not Found"}. 
-            `
-
-            S3DB_Logging("info", "503", `Completed processing all records of the S3 Object ${key} \neTag: ${et}. \nStatus: ${recordProcessingOutcome}`)
-
-            //Don't delete the test data
-            if (localTesting)
-            {
-              S3DB_Logging("info", "504", `Processing Complete for ${key} (Test Data - Not Deleting). \n${JSON.stringify(streamRes)}`)
-              streamRes = {...streamRes, DeleteResult: `Processing Complete for ${key} (Test Data - Not Deleting)`}
-              return streamRes
-            }
-
-            //check object to assure no reference errors as the results either came through PutFirehose or Stream so 
-            // all of the object may not be filled in,
-            //ToDo: refactor ProcessS3ObjectStreamResolution to dynamically add status sections rather than presets
-
-            //if (typeof streamRes.PutToFireHoseAggregatorResult === "undefined")
-            //{
-            //  S3DB_Logging("info", "504", `Processing Complete for ${key}. Stream Result PutToFireHoseAggregatorResult Not Complete.  \n${JSON.stringify(streamRes)}`)
-            //  //streamRes.PutToFireHoseAggregatorResult =
-            //}
-
-            //if (typeof streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult === "undefined")
-            //{
-            //  S3DB_Logging("info", "504", `Processing Complete for ${key}. Stream Result StoreAndQueueWorkResult Not Complete.  \n${JSON.stringify(streamRes)}`)
-            //  //streamRes.OnEndStreamEndResult =    //ProcessS3ObjectStreamOutcome.OnEndStreamEndResult
-            //}
-
-            //if (typeof streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToS3WorkBucketResults?.S3ProcessBucketResult === "undefined")
-            //{
-            //  S3DB_Logging("info", "504", `Processing Complete for ${key}. Stream Result PutToFireHoseAggregatorResult Not Complete.  \n${JSON.stringify(streamRes)}`)
-            //  //streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToS3WorkBucketResults?.S3ProcessBucketResult
-            //}
-
-            //if (typeof streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToSQSWorkQueueResults?.SQSWriteResultStatus === "undefined")
-            //{
-            //  S3DB_Logging("info", "504", `Processing Complete for ${key}. Stream Result AddWorkToSQSWorkQueueResults?.SQSWriteResultStatus Not Complete.  \n${JSON.stringify(streamRes)}`)
-            //  //streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToSQSWorkQueueResults?.SQSWriteResultStatus
-            //}
-
-
-            if (
-              (typeof streamRes.OnEndStreamEndResult.StoreAndQueueWorkResult.PutToFireHoseAggregatorResults !== "undefined" &&
-                streamRes.OnEndStreamEndResult.StoreAndQueueWorkResult.PutToFireHoseAggregatorResults === "200") ||
-
-              (typeof streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToS3WorkBucketResults?.S3ProcessBucketResultStatus !== "undefined" &&
-                streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToS3WorkBucketResults?.S3ProcessBucketResultStatus === "200") &&
-
-              (typeof streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToSQSWorkQueueResults?.SQSWriteResultStatus !== "undefined" &&
-                streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToSQSWorkQueueResults?.SQSWriteResultStatus === "200")
-            )
-            {
-              try
-              {
-                //Once File successfully processed, delete the original S3 Object
-                delResultCode = await deleteS3Object(key, bucket)
-                  .catch((e) => {
-                    debugger //catch
-
-                    S3DB_Logging("exception", "", `Exception - DeleteS3Object - ${e}`)
-                  })
-
-                if (delResultCode !== "204")
-                {
-                  streamRes = {
-                    ...streamRes,
-                    DeleteResult: JSON.stringify(delResultCode)
-                  }
-                  S3DB_Logging("error", "504", `Processing Successful, but Unsuccessful Delete of ${key}, Expected 204 result code, received ${delResultCode} \n\n${JSON.stringify(streamRes)}`
-                  )
-                } else
-                {
-                  streamRes = {
-                    ...streamRes,
-                    DeleteResult: `Successful Delete of ${key}  (Result ${JSON.stringify(delResultCode)})`
-                  }
-                  S3DB_Logging("info", "504", `Processing Successful, Successful Delete of ${key} (Result ${delResultCode}). \n${JSON.stringify(streamRes)}`)
-                }
-              } catch (e)
-              {
-                debugger //catch
-
-                S3DB_Logging("exception", "", `Exception - Deleting S3 Object after successful processing of the Content Stream for ${key} \n${e} \n\n${JSON.stringify(streamRes)}`)
-              }
-            }
-            else
-            {
-              S3DB_Logging("error", "504", `Processing Complete for ${key} however Status indicates to not Delete the file. \n(Result ${JSON.stringify(streamRes)})`)
-              streamRes = {
-                ...streamRes,
-                DeleteResult: `Processing Complete for ${key} however Status indicates to not Delete the file.  (Result ${JSON.stringify(streamRes)})`
-              }
-            }
-
+            ////////
             return streamRes
           })
           .catch((e) => {
@@ -882,25 +777,161 @@ export const s3DropBucketHandler: Handler = async (
 
             const err = `Exception - Process S3 Object Stream Catch - \n${e} \nStack: \n${e.stack}`
 
-            ProcessS3ObjectStreamOutcome = {
-              ...ProcessS3ObjectStreamOutcome,
+            processS3ObjectStreamOutcome = {
+              ...processS3ObjectStreamOutcome,
               ProcessS3ObjectStreamCatch: err,
             }
 
-            S3DB_Logging("exception", "", JSON.stringify(ProcessS3ObjectStreamOutcome))
+            S3DB_Logging("exception", "", JSON.stringify(processS3ObjectStreamOutcome))
 
-            return ProcessS3ObjectStreamOutcome
+            return processS3ObjectStreamOutcome
           })
       } catch (e)
       {
         debugger //catch
 
-        S3DB_Logging("exception", "", `Exception - Processing S3 Object Content Stream for ${key} \n${e}`)
+        const err = `Exception - Process S3 Object Stream Catch - \n${e}`
+
+        S3DB_Logging("exception", "", `Exception - Processing S3 Object Content Stream (Catch) for ${key} \n${e}`)
+
+        processS3ObjectStreamOutcome = {
+          ...processS3ObjectStreamOutcome,
+          ProcessS3ObjectStreamCatch: err,
+        }
+
+        return processS3ObjectStreamOutcome
+      
+      
+      
+      }
+
+      S3DB_Logging("info", "903", `Returned from Processing S3 Object Content Stream for ${key}. Result: ${JSON.stringify(processS3ObjectStreamOutcome)}`)
+
+
+      let delResultCode
+
+
+
+      try
+      {
+        processS3ObjectStreamOutcome.Key = key
+        processS3ObjectStreamOutcome.Processed = processS3ObjectStreamOutcome?.OnEndRecordStatus ?? ""
+
+        const recordProcessingOutcome = `Processing Outcome: ${processS3ObjectStreamOutcome.OnEndRecordStatus}
+            As:
+            ${JSON.stringify(processS3ObjectStreamOutcome?.OnEndStreamEndResult?.StoreAndQueueWorkResult) ?? "Not Found"}
+            Wrote Work To Work Bucket: ${processS3ObjectStreamOutcome?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToS3WorkBucketResults?.S3ProcessBucketResultStatus ?? "Not Found"}
+            Queued Work To Work Queue: ${processS3ObjectStreamOutcome?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToSQSWorkQueueResults?.SQSWriteResultStatus ?? "Not Found"} 
+              Or: 
+            Put To Firehose: ${processS3ObjectStreamOutcome?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.PutToFireHoseAggregatorResults ?? "Not Found"}. 
+            `
+
+        S3DB_Logging("info", "503", `Completed processing all records of the S3 Object ${key} \neTag: ${et}. \nStatus: ${recordProcessingOutcome}`)
+
+        //Don't delete the test data
+        if (localTesting)
+        {
+          S3DB_Logging("info", "504", `Processing Complete for ${key} (Test Data - Not Deleting). \n${JSON.stringify(processS3ObjectStreamOutcome)}`)
+          
+          processS3ObjectStreamOutcome = {
+            ...processS3ObjectStreamOutcome,
+            DeleteResult: `Processing Complete for ${key} (Test Data - Not Deleting)`
+          }
+
+          return processS3ObjectStreamOutcome
+        }
+
+        //check object to assure no reference errors as the results either came through PutFirehose or Stream so 
+        // all of the object may not be filled in,
+        //ToDo: refactor ProcessS3ObjectStreamResolution to dynamically add status sections rather than presets
+
+        //if (typeof streamRes.PutToFireHoseAggregatorResult === "undefined")
+        //{
+        //  S3DB_Logging("info", "504", `Processing Complete for ${key}. Stream Result PutToFireHoseAggregatorResult Not Complete.  \n${JSON.stringify(streamRes)}`)
+        //  //streamRes.PutToFireHoseAggregatorResult =
+        //}
+
+        //if (typeof streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult === "undefined")
+        //{
+        //  S3DB_Logging("info", "504", `Processing Complete for ${key}. Stream Result StoreAndQueueWorkResult Not Complete.  \n${JSON.stringify(streamRes)}`)
+        //  //streamRes.OnEndStreamEndResult =    //ProcessS3ObjectStreamOutcome.OnEndStreamEndResult
+        //}
+
+        //if (typeof streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToS3WorkBucketResults?.S3ProcessBucketResult === "undefined")
+        //{
+        //  S3DB_Logging("info", "504", `Processing Complete for ${key}. Stream Result PutToFireHoseAggregatorResult Not Complete.  \n${JSON.stringify(streamRes)}`)
+        //  //streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToS3WorkBucketResults?.S3ProcessBucketResult
+        //}
+
+        //if (typeof streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToSQSWorkQueueResults?.SQSWriteResultStatus === "undefined")
+        //{
+        //  S3DB_Logging("info", "504", `Processing Complete for ${key}. Stream Result AddWorkToSQSWorkQueueResults?.SQSWriteResultStatus Not Complete.  \n${JSON.stringify(streamRes)}`)
+        //  //streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToSQSWorkQueueResults?.SQSWriteResultStatus
+        //}
+
+        debugger ///
+        
+        if (
+          (typeof processS3ObjectStreamOutcome?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.PutToFireHoseAggregatorResults !== "undefined" &&
+            processS3ObjectStreamOutcome?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.PutToFireHoseAggregatorResults === "200") ||
+
+          (typeof processS3ObjectStreamOutcome?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToS3WorkBucketResults?.S3ProcessBucketResultStatus !== "undefined" &&
+            processS3ObjectStreamOutcome?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToS3WorkBucketResults?.S3ProcessBucketResultStatus === "200") &&
+
+          (typeof processS3ObjectStreamOutcome?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToSQSWorkQueueResults?.SQSWriteResultStatus !== "undefined" &&
+            processS3ObjectStreamOutcome?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToSQSWorkQueueResults?.SQSWriteResultStatus === "200")
+        )
+        {
+
+          //Once File successfully processed, delete the original S3 Object
+          delResultCode = await deleteS3Object(key, bucket)
+            .catch((e) => {
+              debugger //catch
+
+              S3DB_Logging("exception", "", `Exception - DeleteS3Object - ${e}`)
+            })
+
+          if (delResultCode !== "204")
+          {
+            processS3ObjectStreamOutcome = {
+              ...processS3ObjectStreamOutcome,
+              DeleteResult: JSON.stringify(delResultCode)
+            }
+            S3DB_Logging("error", "504", `Processing Successful, but Unsuccessful Delete of ${key}, Expected 204 result code, received ${delResultCode} \n\n${JSON.stringify(processS3ObjectStreamOutcome)}`
+            )
+          } else
+          {
+            processS3ObjectStreamOutcome = {
+              ...processS3ObjectStreamOutcome,
+              DeleteResult: `Successful Delete of ${key}  (Result ${JSON.stringify(delResultCode)})`
+            }
+            S3DB_Logging("info", "504", `Processing Successful, Successful Delete of ${key} (Result ${delResultCode}). \n${JSON.stringify(processS3ObjectStreamOutcome)}`)
+          }
+
+        }
+        else
+        {
+          S3DB_Logging("error", "504", `Processing Complete for ${key} however Status indicates to not Delete the file. \n(Result ${JSON.stringify(processS3ObjectStreamOutcome)})`)
+          processS3ObjectStreamOutcome = {
+            ...processS3ObjectStreamOutcome,
+            DeleteResult: `Processing Complete for ${key} however Status indicates to not Delete the file.  (Result ${JSON.stringify(processS3ObjectStreamOutcome)})`
+          }
+        }
+      } catch (e)
+      {
+        debugger //catch
+
+        S3DB_Logging("exception", "", `Exception - Deleting S3 Object after successful processing of the Content Stream for ${key} \n${e} \n\n${JSON.stringify(processS3ObjectStreamOutcome)}`)
       }
 
 
 
-      S3DB_Logging("info", "903", `Returned from Processing S3 Object Content Stream for ${key}. Result: ${JSON.stringify(ProcessS3ObjectStreamOutcome)}`)
+
+
+
+
+
+
 
       //Check for important Config updates (which caches the config in Lambdas long-running cache)
       try
@@ -938,7 +969,7 @@ export const s3DropBucketHandler: Handler = async (
     //Need to protect against the Result String becoming excessively long
 
     const n = new Date().toISOString()
-    let objectStreamResolution = n + "  -  " + JSON.stringify(ProcessS3ObjectStreamOutcome) + "\n\n"
+    let objectStreamResolution = n + "  -  " + JSON.stringify(processS3ObjectStreamOutcome) + "\n\n"
     const osrl = objectStreamResolution.length
 
     if (osrl > 10000)
@@ -947,18 +978,18 @@ export const s3DropBucketHandler: Handler = async (
       objectStreamResolution = `Excessive Length of ProcessS3ObjectStreamResolution: ${osrl} Truncated: \n ${objectStreamResolution.substring(0, 5000
       )} ... ${objectStreamResolution.substring(osrl - 5000, osrl)}`
 
-      S3DB_Logging("warn", "920", `Final outcome (truncated to first and last 5,000 characters) of all processing for ${ProcessS3ObjectStreamOutcome.Key}: \n ${JSON.stringify(objectStreamResolution)}`)
+      S3DB_Logging("warn", "920", `Final outcome (truncated to first and last 5,000 characters) of all processing for ${processS3ObjectStreamOutcome.Key}: \n ${JSON.stringify(objectStreamResolution)}`)
     }
 
 
-    const k = ProcessS3ObjectStreamOutcome.Key
-    const p = ProcessS3ObjectStreamOutcome.Processed
+    const k = processS3ObjectStreamOutcome.Key
+    const p = processS3ObjectStreamOutcome.Processed
 
     S3DB_Logging("info", "505", `Completing S3DropBucket Processing of Request Id ${event.Records[0].responseElements["x-amz-request-id"]} for ${k} \n${p}`)
-    S3DB_Logging("info", "920", `Final outcome of all processing for ${ProcessS3ObjectStreamOutcome.Key}: \n${JSON.stringify(objectStreamResolution)}`)
+    S3DB_Logging("info", "920", `Final outcome of all processing for ${processS3ObjectStreamOutcome.Key}: \n${JSON.stringify(objectStreamResolution)}`)
 
     //Done with logging the results of this pass, empty the object for the next processing cycle
-    ProcessS3ObjectStreamOutcome = {} as ProcessS3ObjectStreamResult
+    processS3ObjectStreamOutcome = {} as ProcessS3ObjectStreamResult
 
     return objectStreamResolution   //Return the results logging object
   } catch (e)
@@ -991,7 +1022,7 @@ export async function S3DB_Logging (level: string, index: string, msg: string) {
     selectiveDebug = customersConfig.selectivelogging
     slConfig = `CustomersConfig:${customersConfig.customer}`
   }
-    
+
   if (localTesting) process.env.S3DropBucketLogLevel = "ALL"
 
   const r = await s3.config.region() ?? "Unknown"   //Authoritative
@@ -1062,7 +1093,7 @@ async function processS3ObjectContentStream (
 
   let streamResult: ProcessS3ObjectStreamResult  // = ProcessS3ObjectStreamResolution
 
-  ProcessS3ObjectStreamOutcome = await s3
+  processS3ObjectStreamOutcome = await s3
     .send(new GetObjectCommand(s3C))
     .then(async (getS3StreamResult: GetObjectCommandOutput) => {
       if (getS3StreamResult.$metadata.httpStatusCode != 200)
@@ -1127,10 +1158,75 @@ async function processS3ObjectContentStream (
         //
         // })
         //#region
-      } else
+
+
+
+
+
+
+
+
+      } else if (key.toLowerCase().indexOf("s3dropbucket_aggregator") > 0 &&
+        custConfig.updatetype.toLowerCase() === "referenceset")
+      {
+        //add pipe for jsonCSV here 
+
+        debugger ///  
+
+        //convert JSON to CSV 
+        const jsonCSV = stringify({
+          delimiter: ":",
+        }, (data) => {
+
+          debugger ///
+
+          jsonCSV.on("readable", function () {
+            let row
+
+            debugger ///
+
+            while ((row = jsonCSV.read()) !== null)
+            {
+              //refsetUpdates.push(row)  //replace with S3 write stream
+            }
+          })
+          jsonCSV.on("error", function (err) {
+            debugger ///
+            S3DB_Logging("error", "", `${JSON.stringify(err)}`)
+          })
+
+
+        })
+
+        s3ContentReadableStream = s3ContentReadableStream.pipe(jsonCSV)
+        jsonCSV.on("readable", function () {
+          let row
+
+          debugger ///
+
+          while ((row = jsonCSV.read()) !== null)
+          {
+            //refsetUpdates.push(row)  //replace with S3 write stream
+          }
+        })
+        jsonCSV.on("error", function (err) {
+          debugger ///
+          S3DB_Logging("error", "", `${JSON.stringify(err)}`)
+        })
+      }
+      else
       {
         s3ContentReadableStream = s3ContentReadableStream.pipe(t)
       }
+
+
+
+
+
+
+
+
+
 
       //Placeholder - Everything should be JSON by the time we get here
       if (custConfig.format.toLowerCase() === "json")
@@ -1219,7 +1315,7 @@ async function processS3ObjectContentStream (
       recs = 0
       let iter = 0
       let apiLimit = 100
-      if(custConfig.targetupdate.toLowerCase() === "connect") apiLimit = 25
+      if (custConfig.targetupdate.toLowerCase() === "connect") apiLimit = 25
 
       let packageResult = {} as StoreAndQueueWorkResults
 
@@ -1288,12 +1384,12 @@ async function processS3ObjectContentStream (
               //
               //Next, Build a consistent Object of an Array of Objects
               // [{},{},{},...]
-              
+
 
               //Debug a buried Undefined Exception in Handler
               if (typeof oa === "undefined") S3DB_Logging("exception", "", `OnData Array is Undefined`)
               //
-              
+
               if (Array.isArray(oa))
               {
                 preserveArraySize = oa.length
@@ -1344,7 +1440,7 @@ async function processS3ObjectContentStream (
 
                   S3DB_Logging("info", "938", `S3ContentStream OnData - A Batch (${batchCount}) of ${chunk.length} Updates from ${key} is now being sent to Packaging. \nPreviously processed ${recs} records of the size of the data read of ${preserveArraySize} records. \n${chunksGlobal.length} records are waiting to be processed.`)
 
-                  
+
                   packageResult = await packageUpdates(updates, key, custConfig, s3dbConfig, iter) as StoreAndQueueWorkResults
 
                   //ToDo: Refactor this status reporting approach, need a way to preserve every Update status without storing volumes
@@ -1405,12 +1501,12 @@ async function processS3ObjectContentStream (
                 {
                   let chunk = []
                   let limit = apiLimit
-                  
+
                   //if (custConfig.targetupdate.toLowerCase() === "campaign") limit = 100 
                   //if (custConfig.targetupdate.toLowerCase() === "connect") limit = 25 
-                  
+
                   chunk = chunksGlobal.splice(0, limit)
-      
+
                   updates.push(...chunk)
                   recs += chunk.length
                   batchCount++
@@ -1424,7 +1520,7 @@ async function processS3ObjectContentStream (
                       return res as StoreAndQueueWorkResults
                     })
                 }
-        
+
                 //Best we can do is reflect the last packaging outcome, as we
                 // should Exception out if there are any issues, the last reflects success mostly
                 streamResult = {
@@ -1433,13 +1529,13 @@ async function processS3ObjectContentStream (
                     StoreAndQueueWorkResult: packageResult
                   }
                 }
-              
+
               }
               else
               {
 
                 S3DB_Logging("info", "938", `S3ContentStream OnEnd - With No Remaining Updates to Process from ${key}. Current Batch ${batchCount}. \nPreviously processed ${recs} records of the size of the data read of ${preserveArraySize} records.`)
-                            
+
                 streamResult = {
                   ...streamResult,
                   OnEndStreamEndResult: {
@@ -1482,10 +1578,10 @@ async function processS3ObjectContentStream (
 
             streamResult = {
               ...streamResult,
-                ReadStreamEndResult: streamEndResult,
-                OnEndRecordStatus: `Processed ${recs} records as ${batchCount} batches.`
-              }
-            
+              ReadStreamEndResult: streamEndResult,
+              OnEndRecordStatus: `Processed ${recs} records as ${batchCount} batches.`
+            }
+
 
             S3DB_Logging("info", "902", `Content Stream OnEnd for (${key}) - Store and Queue Work of ${batchCount} Batches of ${recs} records - Stream Result: \n${JSON.stringify(streamResult)} `)
 
@@ -1544,7 +1640,7 @@ async function processS3ObjectContentStream (
     })
 
   // return processS3ObjectResults
-  return ProcessS3ObjectStreamOutcome
+  return processS3ObjectStreamOutcome
   //return streamResult
 }
 
@@ -1633,7 +1729,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
     {
       if (typeof process.env.S3DropBucketRegion !== "undefined" && process.env.S3DropBucketRegion?.length > 6)
       {
-        
+
         s3 = new S3Client({
           region: process.env.S3DropBucketRegion,         //{region: 'us-east-1'})
           requestHandler: smithyReqHandler
@@ -1667,7 +1763,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
     event.Records.forEach((r) => {
       ra.push({"messageId": r.messageId})
     })
-      
+
     S3DB_Logging("info", "506", `Received a Batch (${event.Records.length}) of SQS Work Queue Events. \nWork Queue Record MessageIds: \n${JSON.stringify(ra)} \nContext: ${JSON.stringify(context)}`)
     S3DB_Logging("info", "907", `Received a Batch (${event.Records.length}) of SQS Work Queue Events: \nWork Queue Records: \n${JSON.stringify(event)} \nContext: ${JSON.stringify(context)}`)
 
@@ -1821,7 +1917,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
         {
           //Retrieve Contents of the Work File
           S3DB_Logging("info", "512", `Work file ${s3dbQM.workKey} retrieved: Result:\n${JSON.stringify(work)}`)
-          
+
           if ((customersConfig.updatetype.toLowerCase() === "createupdatecontacts") ||
             (customersConfig.updatetype.toLowerCase() === "updatecontacts")
             //(customersConfig.updatetype.toLowerCase() === "referenceset") //Should never see this at this point, Bulk Import is finished in the first lambda
@@ -1835,7 +1931,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
             )
           }
 
-          
+
 
           if (customersConfig.updatetype.toLowerCase() === "relational" ||
             customersConfig.updatetype.toLowerCase() === "dbkeyed" ||
@@ -1856,7 +1952,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
           //      partially successful
           //      successfully posted
 
-        
+
           S3DB_Logging("info", "508", `POST Result for ${s3dbQM.workKey}: ${postResult} `)
 
           let deleteWork = false
@@ -1919,7 +2015,7 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
             \nUpdates to Retried List: \n${JSON.stringify(sqsBatchFail)} `
             //Last Result: \n${postResult}. `
           )
-          
+
           //ToDo: verify count is correct for the work files being processed, 
           S3DB_Logging("info", "511", `Finished ${s3dbQM.updateCount} Updates from ${s3dbQM.workKey}`)
 
