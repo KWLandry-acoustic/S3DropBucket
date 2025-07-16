@@ -11,7 +11,7 @@ import {addWorkToSQSWorkQueue} from './addWorkToSQSWorkQueue'
 let xmlRows = ''
 
 
-let sqwResult: StoreAndQueueWorkResults = {
+let sqwCampaignResult: StoreAndQueueWorkResults = {
   AddWorkToS3WorkBucketResults: {
     versionId: '',
     S3ProcessBucketResultStatus: '',
@@ -92,12 +92,12 @@ export async function storeAndQueueCampaignWork (
 
 
 
-  let addS3WorkBucketResult: AddWorkToS3WorkBucketResults|void 
-  let addWorkToSQSWorkQueueResult: AddWorkToSQSWorkQueueResults|void 
+  let addS3WorkBucketRes: AddWorkToS3WorkBucketResults
+  let addSQSWorkQueueRes: AddWorkToSQSWorkQueueResults
 
   try
   {
-    addS3WorkBucketResult = await addWorkToS3WorkBucket(xmlRows, key)
+    addS3WorkBucketRes = await addWorkToS3WorkBucket(xmlRows, key)
       .then((res) => {
 
         return res
@@ -106,6 +106,19 @@ export async function storeAndQueueCampaignWork (
         debugger //catch
 
         S3DB_Logging("exception", "", `Exception - AddWorkToS3WorkBucket ${err} (File Stream Iter: ${iter} file: ${key})`)
+        
+        sqwCampaignResult = {
+          ...sqwCampaignResult,
+          AddWorkToS3WorkBucketResults: {
+            versionId: '',
+            S3ProcessBucketResultStatus: 'Exception',
+            AddWorkToS3WorkBucketResult: JSON.stringify(err),
+          }
+        }
+
+        //return sqwCampaignResult
+        throw new Error(JSON.stringify(sqwCampaignResult))
+
       })
   } catch (e)
   {
@@ -115,8 +128,8 @@ export async function storeAndQueueCampaignWork (
 
     S3DB_Logging("exception", "", s3StoreError)
 
-    sqwResult = {
-      ...sqwResult,
+    sqwCampaignResult = {
+      ...sqwCampaignResult,
       StoreQueueWorkException: s3StoreError,
       AddWorkToS3WorkBucketResults: {
         versionId: '',
@@ -125,24 +138,23 @@ export async function storeAndQueueCampaignWork (
       }
     }
 
-    return sqwResult
+    return sqwCampaignResult
   }
 
-  sqwResult = {
-    ...sqwResult,
-    StoreQueueWorkException: '',
-    AddWorkToS3WorkBucketResults: {
-      versionId: '',
-      S3ProcessBucketResultStatus: '',
-      AddWorkToS3WorkBucketResult: JSON.stringify({"workfile": key, ...addS3WorkBucketResult})    }
+
+
+  sqwCampaignResult = {
+    ...sqwCampaignResult,
+    AddWorkToS3WorkBucketResults: addS3WorkBucketRes
   }
+
 
   //S3DB_Logging(oppty to message s3 store results)
   const marker = "Initially Queued on " + new Date()
 
   try
   {
-    addWorkToSQSWorkQueueResult = await addWorkToSQSWorkQueue(
+    addSQSWorkQueueRes = await addWorkToSQSWorkQueue(
       config,
       key,
       batchCount,
@@ -160,18 +172,23 @@ export async function storeAndQueueCampaignWork (
     const sqwError = `Exception - StoreAndQueueWork - Add work to SQS Queue exception \n${e} `
     S3DB_Logging("exception", "", sqwError)
 
-    sqwResult = {
-      ...sqwResult,
+    sqwCampaignResult = {
+      ...sqwCampaignResult,
       StoreQueueWorkException: sqwError
     }
 
-    return sqwResult
+    return sqwCampaignResult
+  }
+
+  sqwCampaignResult = {
+    ...sqwCampaignResult,
+    AddWorkToSQSWorkQueueResults: addSQSWorkQueueRes
   }
 
 
   //If we made it this Far, all's good 
-  S3DB_Logging("info", "915", `Results of Storing and Queuing (Campaign) Work ${key} to Work Queue: ${JSON.stringify(sqwResult)}`)
+  S3DB_Logging("info", "915", `Results of Storing and Queuing (Campaign) Work ${key} to Work Queue: ${JSON.stringify(sqwCampaignResult)}`)
 
-  return sqwResult
+  return sqwCampaignResult
 
 }

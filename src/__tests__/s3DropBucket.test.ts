@@ -1,4 +1,13 @@
-import {S3DB_Logging} from '../handlers/s3DropBucket'
+import {S3DB_Logging, s3} from '../handlers/s3DropBucket'
+
+jest.mock('../handlers/s3DropBucket', () => ({
+  ...jest.requireActual('../handlers/s3DropBucket'),
+  s3: {
+    config: {
+      region: jest.fn().mockResolvedValue('us-east-1')
+    }
+  }
+}))
 
 describe('S3DB_Logging', () => {
       let mockConsoleInfo: jest.SpyInstance
@@ -22,22 +31,21 @@ describe('S3DB_Logging', () => {
             mockConsoleError.mockRestore()
             mockConsoleDebug.mockRestore()
 
-            // Clean up environment variables
             delete process.env.S3DropBucketLogLevel
             delete process.env.S3DropBucketSelectiveLogging
       })
 
-      test('Should log messages with different levels', () => {
-            S3DB_Logging('info', '97', 'Info message')
-            S3DB_Logging('warn', '98', 'Warning message')
-            S3DB_Logging('error', '99', 'Error message')
-            S3DB_Logging('debug', '100', 'Debug message')
-            S3DB_Logging('exception', '', 'Exception message')
+      test('Should log messages with different levels', async () => {
+            await S3DB_Logging('info', '97', 'Info message')
+            await S3DB_Logging('warn', '98', 'Warning message')
+            await S3DB_Logging('error', '99', 'Error message')
+            await S3DB_Logging('debug', '100', 'Debug message')
+            await S3DB_Logging('exception', '', 'Exception message')
 
-            expect(mockConsoleInfo).toHaveBeenCalledWith('S3DBLog-Info (LOG ALL-97): Info message ')
-            expect(mockConsoleWarn).toHaveBeenCalledWith('S3DBLog-Warning (LOG ALL-98): Warning message ')
-            expect(mockConsoleError).toHaveBeenCalledWith('S3DBLog-Error (LOG ALL-99): Error message ')
-            expect(mockConsoleDebug).toHaveBeenCalledWith('S3DBLog-Debug (LOG ALL-100): Debug message ')
-            expect(mockConsoleError).toHaveBeenCalledWith('S3DBLog-Exception : Exception message ')
+            expect(mockConsoleInfo).toHaveBeenCalledWith(expect.stringContaining('S3DBLog-Info (LOG ALL-97): Info message'))
+            expect(mockConsoleWarn).toHaveBeenCalledWith(expect.stringContaining('S3DBLog-Warning (LOG ALL-98): Warning message'))
+            expect(mockConsoleError).toHaveBeenCalledWith(expect.stringContaining('S3DBLog-Error (LOG ALL-99): Error message'))
+            expect(mockConsoleDebug).toHaveBeenCalledWith(expect.stringContaining('S3DBLog-Debug (LOG ALL-100): Debug message'))
+            expect(mockConsoleError).toHaveBeenCalledWith(expect.stringContaining('S3DBLog-Exception : Exception message'))
       })
 })

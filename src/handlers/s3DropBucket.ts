@@ -93,6 +93,7 @@ import {deleteS3Object} from './deleteS3Object'
 import {postToConnect} from './postToConnect'
 import {postToCampaign} from './postToCampaign'
 import {getAnS3ObjectforTesting} from './getAnS3ObjectforTesting'
+import type {S3DBQueueMessage} from './addWorkToSQSWorkQueue'
 
 
 
@@ -328,17 +329,6 @@ export interface AccessRequest {
   token_type: string
   refresh_token: string
   expires_in: number
-}
-
-export interface S3DBQueueMessage {
-  workKey: string
-  versionId: string
-  marker: string
-  attempts: number
-  batchCount: string
-  updateCount: string
-  custconfig: CustomerConfig
-  lastQueued: string
 }
 
 export interface S3DBConfig {
@@ -609,8 +599,8 @@ const testdata = ""
 //testS3Key = "TestData/MasterCustomer_Sample-Queued-json-update-10-25-000d4919-2865-49fa-a5ac-32999a583f0a.json"
 //testS3Key = "TestData/SugarCRM_Leads_Leads.data.json.1746103736.13047"
 //testS3Key = "TestData/Clorox_UpdateMaster_SUR-WEB-CLX-FTR1.csv"
-//testS3Key = "TestData/SugarCRM_Contacts_Contacts.data.json.1747640024.16675"
-testS3Key = "TestData/SugarCRM_Contacts_Contacts-data.json.1747640024-updatesTesting.json"
+testS3Key = "TestData/SugarCRM_Contacts_Contacts.data.json.1747640024.16675"
+//testS3Key = "TestData/SugarCRM_Contacts_Contacts-data.json.1747640024-updatesTesting.json"
 //testS3Key = "TestData/Jai-Shopify-Products_juy092025.json"
 
 
@@ -1285,7 +1275,7 @@ async function processS3ObjectContentStream (
             {
               const oa = s3Chunk.value
 
-              //What JSON is possible to come through here (at this point it's always JSON)
+              //What JSON is possible to come through here? (at this point it's always JSON)
               //  {} a single Object - Pura
               //  [{},{},{}] An Array of Objects - Alerus
               //  An Array of Line Delimited Objects - (Firehose Aggregated files)

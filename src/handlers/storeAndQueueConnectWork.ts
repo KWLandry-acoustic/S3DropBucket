@@ -2,12 +2,12 @@
 "use strict"
 import {v4 as uuidv4} from 'uuid'
 import {buildMutationsConnect} from './buildMutationsConnect'
-import {type CustomerConfig, type StoreAndQueueWorkResults, batchCount, s3dbConfig, S3DB_Logging, customersConfig, type AddWorkToS3WorkBucketResults, type AddWorkToSQSWorkQueueResults} from './s3DropBucket'
+import {type CustomerConfig, type StoreAndQueueWorkResults, type AddWorkToS3WorkBucketResults, type AddWorkToSQSWorkQueueResults, batchCount, s3dbConfig, S3DB_Logging, customersConfig} from './s3DropBucket'
 import {addWorkToS3WorkBucket} from './addWorkToS3WorkBucket'
-import {transforms} from './transforms'
 import {addWorkToSQSWorkQueue} from './addWorkToSQSWorkQueue'
+import {transforms} from './transforms'
 
-let sqwResult: StoreAndQueueWorkResults = {
+let sqwConnectResult: StoreAndQueueWorkResults = {
   AddWorkToS3WorkBucketResults: {
     versionId: '',
     S3ProcessBucketResultStatus: '',
@@ -54,8 +54,6 @@ export async function storeAndQueueConnectWork (
     S3DB_Logging("exception", "", `Exception - Transforms - ${e}`)
     throw new Error(`Exception - Transforms - ${e}`)
   }
-
-
 
   S3DB_Logging("info", "800", `After Transform (Updates: ${updateCount}. File Stream Iter: ${iter}): \n${JSON.stringify(updates)}`)
 
@@ -118,12 +116,12 @@ export async function storeAndQueueConnectWork (
   //}
   S3DB_Logging("info", "811", `Queuing Work File ${key} for ${s3Key}. Batch ${batchCount} of ${updateCount} records)`)
 
-  let addWorkToS3WorkBucketResult: AddWorkToS3WorkBucketResults|void
-  let addWorkToSQSWorkQueueResult: AddWorkToSQSWorkQueueResults|void
+  let addWorkS3WorkBucketRes: AddWorkToS3WorkBucketResults
+  let addWorkSQSWorkQueueRes: AddWorkToSQSWorkQueueResults
 
   try
   {
-    addWorkToS3WorkBucketResult = await addWorkToS3WorkBucket(mutationWithUpdates, key)
+    addWorkS3WorkBucketRes = await addWorkToS3WorkBucket(mutationWithUpdates, key)
       .then((res) => {
 
         return res
@@ -132,17 +130,19 @@ export async function storeAndQueueConnectWork (
         debugger //catch
 
         S3DB_Logging("exception", "", `Exception - AddWorkToS3WorkBucket (file: ${key}) ${err}`)
-        
-        sqwResult = {
-          ...sqwResult,
+
+        sqwConnectResult = {
+          ...sqwConnectResult,
           AddWorkToS3WorkBucketResults: {
             versionId: '',
-            S3ProcessBucketResultStatus: '',
+            S3ProcessBucketResultStatus: 'Exception',
             AddWorkToS3WorkBucketResult: JSON.stringify(err),
           }
         }
-      
-      
+
+        //return sqwConnectResult
+        throw new Error(JSON.stringify(sqwConnectResult))
+
       })
   } catch (e)
   {
@@ -151,35 +151,34 @@ export async function storeAndQueueConnectWork (
     const s3StoreError = `Exception - StoreAndQueueWork Add work (file: ${key}) to S3 Work Bucket exception \n${e} `
     S3DB_Logging("exception", "", s3StoreError)
 
-    sqwResult = {
-      ...sqwResult,
+    sqwConnectResult = {
+      ...sqwConnectResult,
       StoreQueueWorkException: s3StoreError,
       AddWorkToS3WorkBucketResults: {
         versionId: '',
-        S3ProcessBucketResultStatus: '',
+        S3ProcessBucketResultStatus: 'Exception',
         AddWorkToS3WorkBucketResult: JSON.stringify(e),
       }
     }
 
-    return sqwResult
+    //return sqwConnectResult
+    throw new Error(JSON.stringify(sqwConnectResult))
 
   }
 
-      sqwResult = {
-        ...sqwResult,
-        AddWorkToS3WorkBucketResults: {
-          versionId: '',
-          S3ProcessBucketResultStatus: '',
-          AddWorkToS3WorkBucketResult: JSON.stringify({"workfile": key, ...addWorkToS3WorkBucketResult})
-        }
-      }
+  debugger ///
+
+  sqwConnectResult = {
+    ...sqwConnectResult,
+    AddWorkToS3WorkBucketResults: addWorkS3WorkBucketRes
+  }
 
 
   const marker = "Initially Queued on " + new Date()
 
   try
   {
-    addWorkToSQSWorkQueueResult = await addWorkToSQSWorkQueue(
+    addWorkSQSWorkQueueRes = await addWorkToSQSWorkQueue(
       custConfig,
       key,
       //v,
@@ -191,6 +190,26 @@ export async function storeAndQueueConnectWork (
 
       return res
     })
+      .catch((err) => {
+        debugger //catch
+
+        const s3StoreError = `Exception - StoreAndQueueWork - Queue Work for ${key} to SQS Queue exception \n${err} `
+        S3DB_Logging("exception", "", s3StoreError)
+
+        sqwConnectResult = {
+          ...sqwConnectResult,
+          StoreQueueWorkException: s3StoreError,
+          AddWorkToS3WorkBucketResults: {
+            versionId: '',
+            S3ProcessBucketResultStatus: 'Exception',
+            AddWorkToS3WorkBucketResult: JSON.stringify(err),
+          }
+        }
+
+        //return sqwConnectResult
+        throw new Error(JSON.stringify(sqwConnectResult))
+
+      })
   } catch (e)
   {
     debugger //catch
@@ -198,8 +217,8 @@ export async function storeAndQueueConnectWork (
     const sqwError = `Exception - StoreAndQueueWork Add work to SQS Queue exception \n${e} `
     S3DB_Logging("exception", "", sqwError)
 
-    sqwResult = {
-      ...sqwResult,
+    sqwConnectResult = {
+      ...sqwConnectResult,
       StoreQueueWorkException: sqwError,
       AddWorkToSQSWorkQueueResults: {
         SQSWriteResultStatus: '',
@@ -207,11 +226,21 @@ export async function storeAndQueueConnectWork (
       }
     }
 
-    return sqwResult
+    //return sqwConnectResult
+    throw new Error(JSON.stringify(sqwConnectResult))
   }
 
-  S3DB_Logging("info", "915", `Results of Storing and Queuing (Connect) Work ${key} to Work Queue: ${JSON.stringify(sqwResult)}`)
+  S3DB_Logging("info", "915", `Results of Storing and Queuing (Connect) Work ${key} to Work Queue: ${JSON.stringify(sqwConnectResult)}`)
+
+  debugger ///
+
+  sqwConnectResult = {
+    ...sqwConnectResult,
+    //...addWorkS3WorkBucketRes,
+    AddWorkToSQSWorkQueueResults: addWorkSQSWorkQueueRes
+  }
 
 
-  return sqwResult
+  debugger ///
+  return sqwConnectResult
 }

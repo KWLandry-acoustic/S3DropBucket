@@ -11,6 +11,6 @@ export default {
     collectCoverage: true,
     coverageDirectory: 'coverage',
     coverageProvider: 'v8',
-    testMatch: ['**/tests/unit/*.test.ts'],
+    testMatch: ['**/__tests__/*.test.ts'],
 };
 
