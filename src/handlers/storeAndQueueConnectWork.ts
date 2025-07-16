@@ -90,7 +90,7 @@ export async function storeAndQueueConnectWork (
   //{
   //  S3DB_Logging("info", "855", `Testing - GraphQL Call (${s3dbConfig.connectapiurl}) Updates: \n${mutationUpdates}`)
   //  const c = await postToConnect(mutationUpdates, customersConfig, "6", s3Key)
-  //  debugger ///
+  //  debugger 
   //}
   //Derive Key Name for Update File
   if (s3Key.indexOf("TestData") > -1)
@@ -166,8 +166,6 @@ export async function storeAndQueueConnectWork (
 
   }
 
-  debugger ///
-
   sqwConnectResult = {
     ...sqwConnectResult,
     AddWorkToS3WorkBucketResults: addWorkS3WorkBucketRes
@@ -232,15 +230,11 @@ export async function storeAndQueueConnectWork (
 
   S3DB_Logging("info", "915", `Results of Storing and Queuing (Connect) Work ${key} to Work Queue: ${JSON.stringify(sqwConnectResult)}`)
 
-  debugger ///
-
   sqwConnectResult = {
     ...sqwConnectResult,
     //...addWorkS3WorkBucketRes,
     AddWorkToSQSWorkQueueResults: addWorkSQSWorkQueueRes
   }
 
-
-  debugger ///
   return sqwConnectResult
 }

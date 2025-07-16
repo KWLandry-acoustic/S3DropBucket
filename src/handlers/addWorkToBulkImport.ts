@@ -2,6 +2,7 @@
 "use strict"
 import {PutObjectCommand, type PutObjectCommandInput, type PutObjectCommandOutput} from '@aws-sdk/client-s3'
 import {S3DB_Logging, s3, type S3DBConfig, type CustomerConfig, type AddWorkToBulkImportResults} from './s3DropBucket'
+import {stringify} from 'csv-stringify'
 
 
 export async function addWorkToBulkImport (key: string, refsetUpdates: object[], s3dbConfig: S3DBConfig, custConfig: CustomerConfig)
@@ -22,6 +23,25 @@ export async function addWorkToBulkImport (key: string, refsetUpdates: object[],
 
     return bulkImportStatus
   }
+
+debugger ///  
+
+  //convert JSON to CSV 
+  const jsonCSV = stringify({
+    delimiter: ":",
+  })
+
+  jsonCSV.on("readable", function () {
+    let row
+    while ((row = jsonCSV.read()) !== null)
+    {
+      refsetUpdates.push(row)  //replace with S3 write stream
+    }
+  })
+  jsonCSV.on("error", function (err) {
+    console.error(err.message)
+  });
+
 
 
   //Build the Bulk Import File Name

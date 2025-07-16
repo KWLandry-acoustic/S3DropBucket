@@ -144,7 +144,5 @@ export async function addWorkToSQSWorkQueue (
 
   S3DB_Logging("info", "940", `Work Queued (${key} for ${recCount} updates) to the SQS Work Queue (${s3dbConfig.s3dropbucket_workqueue}) \nresults: \n${JSON.stringify(queueWorkResult)}`)
 
-  debugger ///
-
   return queueWorkResult
 }

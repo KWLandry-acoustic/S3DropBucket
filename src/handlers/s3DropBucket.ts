@@ -72,10 +72,9 @@ import {JSONParser} from '@streamparser/json-node'
 //import {transform} from '@streamparser/json-node'
 import {transform} from "stream-transform"
 
-
 import {parse} from "csv-parse"
 
-
+import {stringify} from "csv-stringify"
 
 import sftpClient, {ListFilterFunction} from "ssh2-sftp-client"
 import {config} from 'process'
@@ -782,9 +781,8 @@ export const s3DropBucketHandler: Handler = async (
               Or: 
             Put To Firehose: ${streamRes.OnEndStreamEndResult.StoreAndQueueWorkResult?.PutToFireHoseAggregatorResults ?? "Not Found"}. 
             `
-          
-            S3DB_Logging("info", "503", `Completed processing all records of the S3 Object ${key} \neTag: ${et}. \nStatus: ${recordProcessingOutcome}`)
 
+            S3DB_Logging("info", "503", `Completed processing all records of the S3 Object ${key} \neTag: ${et}. \nStatus: ${recordProcessingOutcome}`)
 
             //Don't delete the test data
             if (localTesting)
@@ -801,7 +799,7 @@ export const s3DropBucketHandler: Handler = async (
             //if (typeof streamRes.PutToFireHoseAggregatorResult === "undefined")
             //{
             //  S3DB_Logging("info", "504", `Processing Complete for ${key}. Stream Result PutToFireHoseAggregatorResult Not Complete.  \n${JSON.stringify(streamRes)}`)
-            //  //streamRes.PutToFireHoseAggregatorResult = 
+            //  //streamRes.PutToFireHoseAggregatorResult =
             //}
 
             //if (typeof streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult === "undefined")
@@ -819,7 +817,7 @@ export const s3DropBucketHandler: Handler = async (
             //if (typeof streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToSQSWorkQueueResults?.SQSWriteResultStatus === "undefined")
             //{
             //  S3DB_Logging("info", "504", `Processing Complete for ${key}. Stream Result AddWorkToSQSWorkQueueResults?.SQSWriteResultStatus Not Complete.  \n${JSON.stringify(streamRes)}`)
-            //  //streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToSQSWorkQueueResults?.SQSWriteResultStatus 
+            //  //streamRes?.OnEndStreamEndResult?.StoreAndQueueWorkResult?.AddWorkToSQSWorkQueueResults?.SQSWriteResultStatus
             //}
 
 
@@ -1740,13 +1738,6 @@ export const S3DropBucketQueueProcessorHandler: Handler = async (
       )
     }
     */
-
-
-
-
-
-
-
 
 
 
