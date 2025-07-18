@@ -36,16 +36,26 @@ export async function putToFirehose (chunks: object[], key: string, cust: string
       jo = Object.assign(jo, {Customer: cust})
       const fd = Buffer.from(JSON.stringify(jo), "utf-8")
 
-      const fp = {
+      const fp: PutRecordCommandInput = {
         DeliveryStreamName: s3dbConfig.s3dropbucket_firehosestream,
         Record: {
           Data: fd,
         },
-      } as PutRecordCommandInput
+      }
 
       const firehoseCommand = new PutRecordCommand(fp)
       //let putFirehoseResp: object = {}
-      let putFirehoseResp = {} as PutRecordCommandOutput
+
+      let putFirehoseResp: PutRecordCommandOutput | FireHosePutResult = {
+        RecordId: '',
+        $metadata: {}
+      }
+
+      //let putFirehoseResp: FireHosePutResult = {
+      //  PutToFireHoseAggregatorResults: '',
+      //  PutToFireHoseAggregatorResultDetails: '',
+      //  PutToFireHoseException: ''
+      //}
 
       let fhRetry = true
       while (fhRetry)
@@ -53,8 +63,7 @@ export async function putToFirehose (chunks: object[], key: string, cust: string
 
         try
         {
-
-          fh_Client.send(firehoseCommand)
+          putFirehoseResp = await fh_Client.send(firehoseCommand)
             .then((res: PutRecordCommandOutput) => {
 
               S3DB_Logging("info", "922", `Inbound Update from ${key} - Put to Firehose Aggregator (File Stream Iter: ${iter}) Detailed Result: \n${fd.toString()} \n\nFirehose Result: ${JSON.stringify(res)} `)
@@ -83,8 +92,9 @@ export async function putToFirehose (chunks: object[], key: string, cust: string
               //   message: "ServiceUnavailableException: Slow down"
               // }
 
-              return res
+              debugger ///
 
+              return res
             })
             .catch(async (e) => {
 
@@ -94,11 +104,15 @@ export async function putToFirehose (chunks: object[], key: string, cust: string
 
               S3DB_Logging("exception", "", `Exception - Put to Firehose Aggregator (promise catch) (File Stream Iter: ${iter}) for ${key} \n( FH Data Length: ${fp.Record?.Data?.length}. FH Delivery Stream: ${JSON.stringify(fp.DeliveryStreamName)} FH Client Region: ${fr})  \n${e} `)
 
-              firehosePutResult.PutToFireHoseAggregatorResults = "Exception"
-              firehosePutResult.PutToFireHoseAggregatorResultDetails = `UnSuccessful Put to Firehose Aggregator for ${key} (File Stream Iter: ${iter}) \n ${JSON.stringify(e)} `
-              firehosePutResult.PutToFireHoseException = `Exception - Put to Firehose Aggregator for ${key} (File Stream Iter: ${iter}) \n${e} `
+              firehosePutResult = {
+                PutToFireHoseAggregatorResults: "Exception",
+                PutToFireHoseAggregatorResultDetails: `UnSuccessful Put to Firehose Aggregator for ${key} (File Stream Iter: ${iter}) \n ${JSON.stringify(e)} `,
+                PutToFireHoseException: `Exception - Put to Firehose Aggregator for ${key} (File Stream Iter: ${iter}) \n${e} `
+              }
 
-              return firehosePutResult
+              //return firehosePutResult
+              throw new Error(JSON.stringify(firehosePutResult))
+
             })
 
           //// Testing - sample firehose put 
@@ -110,7 +124,7 @@ export async function putToFirehose (chunks: object[], key: string, cust: string
 
           let msg = ''
 
-          if (putFirehoseResp.$metadata &&
+          if ('$metadata' in putFirehoseResp &&
             typeof putFirehoseResp === 'object' &&
             'message' in putFirehoseResp)
           {
@@ -137,18 +151,23 @@ export async function putToFirehose (chunks: object[], key: string, cust: string
             PutToFireHoseAggregatorResults: 'Exception',
             PutToFireHoseAggregatorResultDetails: '',
             PutToFireHoseException: `Exception - PutToFirehose (catch) (File Stream Iter: ${iter}) \n${e} `
-
           }
 
-          return firehosePutResult
+          //return firehosePutResult
+          throw new Error(JSON.stringify(firehosePutResult))
 
         }
 
         //end while
       }
 
+      debugger ///
 
-      const sc = putFirehoseResp.$metadata.httpStatusCode?.toString(2) || 'na'
+      let sc = ''
+      if ('$metadata' in putFirehoseResp)
+      {
+        sc = putFirehoseResp.$metadata.httpStatusCode?.toString() || 'na'
+      }
 
       if (sc === '200') 
       {
